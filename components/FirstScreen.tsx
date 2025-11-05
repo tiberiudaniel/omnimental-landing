@@ -211,7 +211,7 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
           <span className="h-[1px] w-10 bg-[#D8C6B6]" />
           OmniMental Coaching
         </div>
-        <TypewriterText text={typeof question === "string" ? question : ""} speed={48} />
+        <TypewriterText text={typeof question === "string" ? question : ""} />
 
         <div className="mt-8 space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
