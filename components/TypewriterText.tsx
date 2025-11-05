@@ -17,8 +17,13 @@ export default function TypewriterText({ text }: TypewriterTextProps) {
   const characters = useMemo(() => Math.max(Array.from(text ?? "").length, 1), [text]);
   const durationSeconds = useMemo(() => Math.min(Math.max(characters * 0.05, 1.2), 4), [characters]);
 
-  const styleVars: CSSProperties = {
-    "--typewriter-steps": characters,
+  type TypewriterVars = CSSProperties & {
+    "--typewriter-steps"?: string;
+    "--typewriter-duration"?: string;
+  };
+
+  const styleVars: TypewriterVars = {
+    "--typewriter-steps": `${characters}`,
     "--typewriter-duration": `${durationSeconds}s`,
   };
 
