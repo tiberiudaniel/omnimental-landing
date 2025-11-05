@@ -1,7 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useMemo, useState } from "react";
 import CTAButton from "../../components/CTAButton";
+import ClientI18nWrapper from "../../components/ClientI18nWrapper";
+import SiteHeader from "../../components/SiteHeader";
+import MenuOverlay from "../../components/MenuOverlay";
 
 const resetProgramBenefits = [
   "Identify ce te consumă energetic.",
@@ -66,18 +69,25 @@ const highlightCards = [
   },
 ];
 
-export default function GroupInfoPage() {
+function GroupInfoContent() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navLinks = useMemo(
+    () => [
+      { label: "Program", href: "/group-info", description: "Detalii Mental Coaching Group" },
+      { label: "Evaluare", href: "/evaluation", description: "Completează scala de progres" },
+      { label: "Despre mine", href: "/about", description: "Cine sunt și cum lucrez" },
+      { label: "Contact", href: "mailto:hello@omnimental.ro", description: "Scrie-mi direct" },
+    ],
+    []
+  );
+
   return (
     <div className="bg-[#FDFCF9] min-h-screen pb-20">
-      <div className="mx-auto max-w-4xl px-6 pt-12">
-        <Link
-          href="/"
-          className="inline-flex items-center text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] transition hover:text-[#E60012]"
-        >
-          ← Înapoi la pagina principală
-        </Link>
+      <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />
+      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
 
-        <section className="mt-8 rounded-[8px] border border-[#D8C6B6] bg-white px-8 py-12 shadow-[0_12px_28px_rgba(0,0,0,0.05)]">
+      <div className="mx-auto max-w-4xl px-6 pt-12">
+        <section className="rounded-[8px] border border-[#D8C6B6] bg-white px-8 py-12 shadow-[0_12px_28px_rgba(0,0,0,0.05)]">
           <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
             Mental Coaching Online Group
           </div>
@@ -220,5 +230,13 @@ export default function GroupInfoPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function GroupInfoPage() {
+  return (
+    <ClientI18nWrapper>
+      <GroupInfoContent />
+    </ClientI18nWrapper>
   );
 }

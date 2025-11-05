@@ -1,99 +1,74 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 
 interface TypewriterTextProps {
   text: string;
-  speed?: number; // milisecunde între caractere
-  mistakeChance?: number; // șansa de a face o greșeală (0-1)
 }
 
-export default function TypewriterText({ text, speed = 50, mistakeChance = 0.05 }: TypewriterTextProps) {
-  const [displayText, setDisplayText] = useState("");
-  const timeoutsRef = useRef<number[]>([]);
-  const resetFrameRef = useRef<number | null>(null);
+export default function TypewriterText({ text }: TypewriterTextProps) {
+  const [animationKey, setAnimationKey] = useState(0);
 
   useEffect(() => {
-    const clearScheduled = () => {
-      timeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
-      timeoutsRef.current = [];
-    };
+    setAnimationKey((prev) => prev + 1);
+  }, [text]);
 
-    clearScheduled();
+  const characters = useMemo(() => Math.max(Array.from(text ?? "").length, 1), [text]);
+  const durationSeconds = useMemo(() => Math.min(Math.max(characters * 0.05, 1.2), 4), [characters]);
 
-    if (resetFrameRef.current !== null) {
-      window.cancelAnimationFrame(resetFrameRef.current);
-      resetFrameRef.current = null;
-    }
-
-    resetFrameRef.current = window.requestAnimationFrame(() => {
-      setDisplayText("");
-    });
-
-    let cancelled = false;
-
-    const schedule = (fn: () => void, delay: number) => {
-      const id = window.setTimeout(fn, delay);
-      timeoutsRef.current.push(id);
-    };
-
-    const typeNext = (index: number) => {
-      if (cancelled || index >= text.length) return;
-      const nextChar = text[index];
-
-      const commitCorrect = () => {
-        setDisplayText((prev) => prev + nextChar);
-        const pause =
-          nextChar === "." || nextChar === "," ? speed * 5 : speed;
-        schedule(() => typeNext(index + 1), pause);
-      };
-
-      if (Math.random() < mistakeChance) {
-        const wrongChar = String.fromCharCode(97 + Math.floor(Math.random() * 26));
-        setDisplayText((prev) => prev + wrongChar);
-
-        schedule(() => {
-          setDisplayText((prev) => prev.slice(0, -1));
-        }, speed * 1.5);
-
-        schedule(() => {
-          commitCorrect();
-        }, speed * 3);
-      } else {
-        commitCorrect();
-      }
-    };
-
-    schedule(() => typeNext(0), speed);
-
-    return () => {
-      cancelled = true;
-      clearScheduled();
-      if (resetFrameRef.current !== null) {
-        window.cancelAnimationFrame(resetFrameRef.current);
-        resetFrameRef.current = null;
-      }
-    };
-  }, [text, speed, mistakeChance]);
+  const styleVars: CSSProperties = {
+    "--typewriter-steps": characters,
+    "--typewriter-duration": `${durationSeconds}s`,
+  };
 
   return (
-    <h2
-      className="text-3xl md:text-4xl font-mono font-medium text-center leading-snug mb-6"
-      style={{
-        color: "#232020ff",
-        letterSpacing: "0.05em",
-        textShadow: "1px 1px 2px rgba(0,0,0,0.08)",
-        fontFamily: '"Courier Prime", monospace',
-      }}
-    >
-      {displayText}
-      <motion.span
-        animate={{ opacity: [0, 1, 0] }}
-        transition={{ repeat: Infinity, duration: 1 }}
+    <div className="mb-6 w-full bg-[#F6F2EE] px-6 py-5">
+      <h2
+        className="text-center text-2xl font-semibold leading-snug text-[#1F1F1F] md:text-[28px]"
+        style={{
+          letterSpacing: "0.04em",
+          fontFamily: '"Courier Prime", monospace',
+        }}
       >
-        _
-      </motion.span>
-    </h2>
+        <span key={animationKey} className="inline-block">
+          <span className="typewriter-text" style={styleVars}>
+            {text}
+          </span>
+        </span>
+      </h2>
+      <style jsx>{`
+        .typewriter-text {
+          display: inline-block;
+          overflow: hidden;
+          white-space: nowrap;
+          border-right: 1px solid #1f1f1f;
+          padding-right: 2px;
+          animation:
+            typing var(--typewriter-duration) steps(var(--typewriter-steps), end) forwards,
+            cursor-blink 0.85s step-end infinite;
+          width: var(--typewriter-steps)ch;
+        }
+
+        @keyframes typing {
+          from {
+            width: 0ch;
+          }
+          to {
+            width: var(--typewriter-steps)ch;
+          }
+        }
+
+        @keyframes cursor-blink {
+          0%,
+          100% {
+            border-right-color: transparent;
+          }
+          50% {
+            border-right-color: #1f1f1f;
+          }
+        }
+      `}</style>
+    </div>
   );
 }

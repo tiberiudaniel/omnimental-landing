@@ -1,18 +1,38 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
+import React, { useEffect, useMemo, useState } from "react";
 import FirstScreen from "../components/FirstScreen";
 import CardOption from "../components/CardOption";
 import SessionDetails from "../components/SessionDetails";
 import TypewriterText from "../components/TypewriterText";
 import { I18nProvider, useI18n } from "../components/I18nProvider";
+import AboutPreview from "../components/AboutPreview";
+import SocialProof from "../components/SocialProof";
+import SiteHeader from "../components/SiteHeader";
+import MenuOverlay from "../components/MenuOverlay";
 
 function PageContent() {
-  const { lang, setLang, t } = useI18n();
+  const { t } = useI18n();
   const [step, setStep] = useState<"first" | "cards" | "details">("first");
   const [selectedCard, setSelectedCard] = useState<"individual" | "group" | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const chooseOption = t("chooseOption");
+
+  useEffect(() => {
+    if (step === "first") {
+      setMenuOpen(false);
+    }
+  }, [step]);
+
+  const navLinks = useMemo(
+    () => [
+      { label: "Program", href: "/group-info", description: "Detalii Mental Coaching Group" },
+      { label: "Evaluare", href: "/evaluation", description: "Completează scala de progres" },
+      { label: "Despre mine", href: "/about", description: "Cine sunt și cum lucrez" },
+      { label: "Contact", href: "mailto:hello@omnimental.ro", description: "Scrie-mi direct" },
+    ],
+    []
+  );
   const getLabel = (key: string) => {
     const value = t(key);
     return typeof value === "string" ? value : key;
@@ -25,27 +45,11 @@ function PageContent() {
 
   return (
     <div className="bg-bgLight min-h-screen">
-      <header className="flex items-center justify-between bg-white p-4 shadow">
-        <div className="flex items-center gap-4">
-          <Image src="/assets/logo.jpg" alt="OmniMental logo" width={80} height={32} priority />
-          <span className="text-2xl font-semibold tracking-wide text-neutral-dark">
-            OmniMental
-          </span>
-        </div>
-        <div className="flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 p-1 text-xs font-semibold text-neutral-dark">
-          {(["ro", "en"] as const).map((locale) => (
-            <button
-              key={locale}
-              onClick={() => setLang(locale)}
-              className={`rounded-full px-3 py-1.5 transition ${
-                lang === locale ? "bg-white text-primary shadow-sm" : "text-primary/70 hover:text-primary"
-              }`}
-            >
-              {locale.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </header>
+      <SiteHeader
+        showMenu={step !== "first"}
+        onMenuToggle={() => setMenuOpen(true)}
+      />
+      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
 
       <main>
         {step === "first" && <FirstScreen onNext={() => setStep("cards")} />}
@@ -68,7 +72,11 @@ function PageContent() {
         )}
 
         {step === "details" && selectedCard && (
-          <SessionDetails type={selectedCard} />
+          <div className="px-4 pb-16 pt-12">
+            <SessionDetails type={selectedCard} />
+            <AboutPreview />
+            <SocialProof />
+          </div>
         )}
       </main>
     </div>
