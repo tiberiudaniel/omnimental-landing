@@ -1,25 +1,22 @@
-// app/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import FirstScreen from "../components/FirstScreen";
 import CardOption from "../components/CardOption";
 import SessionDetails from "../components/SessionDetails";
 import TypewriterText from "../components/TypewriterText";
-import { testFirebase } from "../lib/testFirebase";
 import { I18nProvider, useI18n } from "../components/I18nProvider";
 
 function PageContent() {
   const { lang, setLang, t } = useI18n();
-
   const [step, setStep] = useState<"first" | "cards" | "details">("first");
   const [selectedCard, setSelectedCard] = useState<"individual" | "group" | null>(null);
-
-  useEffect(() => {
-    // client-only Firebase test
-    testFirebase().catch((e) => console.warn("testFirebase failed:", e));
-  }, []);
+  const chooseOption = t("chooseOption");
+  const getLabel = (key: string) => {
+    const value = t(key);
+    return typeof value === "string" ? value : key;
+  };
 
   const handleCardSelect = (type: "individual" | "group") => {
     setSelectedCard(type);
@@ -28,14 +25,26 @@ function PageContent() {
 
   return (
     <div className="bg-bgLight min-h-screen">
-      <header className="flex justify-between items-center p-4 bg-white shadow">
-        <Image src="/assets/logo.jpg" alt="Logo" width={120} height={40} />
-        <button
-          onClick={() => setLang(lang === "ro" ? "en" : "ro")}
-          className="text-primary"
-        >
-          {lang.toUpperCase()}
-        </button>
+      <header className="flex items-center justify-between bg-white p-4 shadow">
+        <div className="flex items-center gap-4">
+          <Image src="/assets/logo.jpg" alt="OmniMental logo" width={80} height={32} priority />
+          <span className="text-2xl font-semibold tracking-wide text-neutral-dark">
+            OmniMental
+          </span>
+        </div>
+        <div className="flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 p-1 text-xs font-semibold text-neutral-dark">
+          {(["ro", "en"] as const).map((locale) => (
+            <button
+              key={locale}
+              onClick={() => setLang(locale)}
+              className={`rounded-full px-3 py-1.5 transition ${
+                lang === locale ? "bg-white text-primary shadow-sm" : "text-primary/70 hover:text-primary"
+              }`}
+            >
+              {locale.toUpperCase()}
+            </button>
+          ))}
+        </div>
       </header>
 
       <main>
@@ -43,13 +52,14 @@ function PageContent() {
 
         {step === "cards" && (
           <div className="flex flex-col items-center min-h-screen px-4 pt-12">
-            <TypewriterText text={t("chooseOption")} />
+            <TypewriterText text={typeof chooseOption === "string" ? chooseOption : ""} />
 
             <div className="flex flex-col md:flex-row w-full justify-center mt-8">
               {(["individual", "group"] as const).map((type) => (
                 <CardOption
                   key={type}
-                  title={t(type)}
+                  type={type}
+                  title={getLabel(type)}
                   onClick={() => handleCardSelect(type)}
                 />
               ))}
@@ -58,7 +68,7 @@ function PageContent() {
         )}
 
         {step === "details" && selectedCard && (
-          <SessionDetails type={selectedCard} i18nKey={selectedCard} />
+          <SessionDetails type={selectedCard} />
         )}
       </main>
     </div>

@@ -6,7 +6,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../firebaseConfig";  
+import { getDb } from "../lib/firebase";
+
+const db = getDb();
 
 const schema = z.object({
   name: z.string().min(1, "Numele este obligatoriu"),
@@ -38,18 +40,20 @@ export default function CTAButton({ text }: { text: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="mt-6 px-6 py-3 bg-[#F6F2EE] text-[#0F172A] rounded font-[Manrope] font-semibold hover:bg-[#D8C6B6] hover:text-[#E60012] transition"
+        className="group mt-6 inline-flex items-center gap-3 rounded-[6px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#2C2C2C]/10 focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
       >
         {text}
+        <span className="translate-y-[1px] text-sm transition group-hover:translate-x-1">
+          →
+        </span>
       </button>
 
       <Dialog open={open} onClose={() => setOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="bg-[#FDFCF9] p-6 rounded-lg max-w-md w-full shadow-lg border border-[#D8C6B6]">
-            <DialogTitle 
-              className="text-lg font-mono font-medium text-[#222222] italic text-center"
-              style={{ letterSpacing: '0.05em', textShadow: '1px 1px 2px rgba(0,0,0,0.08)', fontFamily: '"Courier New", monospace' }}
+          <DialogPanel className="relative w-full max-w-md overflow-hidden rounded-[8px] border border-[#D8C6B6] bg-white p-6 shadow-[0_12px_32px_rgba(0,0,0,0.08)]">
+            <DialogTitle
+              className="text-center text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]"
             >
               Formular de înscriere
             </DialogTitle>
@@ -57,18 +61,22 @@ export default function CTAButton({ text }: { text: string }) {
               <input
                 placeholder="Nume"
                 {...register("name")}
-                className="w-full p-2 border border-[#D8C6B6] rounded font-[Inter] text-[#0F172A] placeholder:text-[#888888] focus:outline-none focus:ring-2 focus:ring-[#E60012]"
+                className="w-full rounded-[6px] border border-[#D8C6B6] px-4 py-3 text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
               />
-              {errors.name && <p className="text-[#E60012] text-sm">{errors.name.message}</p>}
+              {errors.name && (
+                <p className="text-sm text-[#E60012]">{errors.name.message}</p>
+              )}
               <input
                 placeholder="Email"
                 {...register("email")}
-                className="w-full p-2 border border-[#D8C6B6] rounded font-[Inter] text-[#0F172A] placeholder:text-[#888888] focus:outline-none focus:ring-2 focus:ring-[#E60012]"
+                className="w-full rounded-[6px] border border-[#D8C6B6] px-4 py-3 text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
               />
-              {errors.email && <p className="text-[#E60012] text-sm">{errors.email.message}</p>}
-              <button 
-                type="submit" 
-                className="w-full mt-2 bg-[#F6F2EE] text-[#0F172A] py-2 rounded font-[Manrope] font-semibold hover:bg-[#D8C6B6] hover:text-[#E60012] transition"
+              {errors.email && (
+                <p className="text-sm text-[#E60012]">{errors.email.message}</p>
+              )}
+              <button
+                type="submit"
+                className="group w-full rounded-[6px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#2C2C2C]/10 focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
               >
                 Trimite
               </button>

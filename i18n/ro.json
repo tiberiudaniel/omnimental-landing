@@ -2,10 +2,29 @@
   "firstScreenQuestion": "Ce te interesează cel mai mult?",
   "firstScreenPlaceholder": "Ex: relaxare, stres, mindfulness…",
   "firstScreenSuggestionsBtn": "Dă-mi câteva opțiuni",
+  "firstScreenHideSuggestionsBtn": "Ascunde opțiunile",
   "firstScreenContinueBtn": "Continuă",
+  "firstScreenMicrocopy": "Apasă Enter pentru a continua sau alege una dintre temele evidențiate.",
+  "firstScreenSuggestionHint": "Sugestiile preiau ideile esențiale din programul Mental Coaching Online Group.",
+  "firstScreenSuggestionsTitle": "Tematici",
+  "firstScreenSuggestionsRefresh": "Reîncarcă",
+  "firstScreenSuggestionsList": [
+    "Grup mental coaching",
+    "Resetare sistem nervos",
+    "Ieșire din bucla stresului",
+    "Claritate și focus",
+    "Antrenament nerv vag",
+    "CBT și ACT aplicat",
+    "Sesiuni de biofeedback",
+    "Hipnoză ghidată",
+    "De la Awareness la Mastery",
+    "Leadership din jocul interior"
+  ],
   "chooseOption": "Alege ce anume te interesează",
   "individual": "Sesiuni individuale",
   "group": "Grup online",
+  "individualDescription": "Îndrumare unu-la-unu adaptată obiectivelor tale personale.",
+  "groupDescription": "Antrenament de grup care combină mental coaching, biofeedback și responsabilitate colectivă.",
   "individualIntro": "Citește informațiile despre această opțiune",
   "groupIntro": "Citește informațiile despre această opțiune",
   "individualSections": [
@@ -20,7 +39,13 @@
     "Beneficii: motivație, suport, învățare colectivă"
   ],
   "signup": "Înscriere",
-  "sessionDescription": "Detaliile sesiunii vor apărea aici"
+  "sessionDescription": "Detaliile sesiunii vor apărea aici",
+  "sessionMetaGroup": "Live & Online",
+  "sessionMetaIndividual": "Live & Zoom",
+  "reassuranceTitle": "CE PRIMEȘTI",
+  "reassurancePoints": [
+    "Coaching live și interactiv",
+    "Instrumente validate științific",
+    "Accent pe transformări măsurabile"
+  ]
 }
-
-

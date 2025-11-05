@@ -2,10 +2,29 @@
   "firstScreenQuestion": "What interests you the most?",
   "firstScreenPlaceholder": "Ex: relaxation, stress, mindfulness…",
   "firstScreenSuggestionsBtn": "Give me some options",
+  "firstScreenHideSuggestionsBtn": "Hide suggestions",
   "firstScreenContinueBtn": "Continue",
+  "firstScreenMicrocopy": "Press Enter to move on or choose one of the highlighted themes.",
+  "firstScreenSuggestionHint": "Suggestions surface key ideas from the Mental Coaching Online Group program.",
+  "firstScreenSuggestionsTitle": "Themes",
+  "firstScreenSuggestionsRefresh": "Refresh",
+  "firstScreenSuggestionsList": [
+    "Mental coaching group",
+    "Nervous system reset",
+    "Stress loop exit",
+    "Clarity and focus",
+    "Vagus nerve training",
+    "CBT + ACT practice",
+    "Biofeedback sessions",
+    "Hypnotherapy reset",
+    "Awareness to mastery",
+    "Inner game leadership"
+  ],
   "chooseOption": "Choose what interests you",
   "individual": "Individual Sessions",
   "group": "Online Group",
+  "individualDescription": "Personal one-on-one guidance focused on your unique goals.",
+  "groupDescription": "Transformative group training that blends mental coaching, biofeedback, and collective accountability.",
   "individualIntro": "Read information about this option",
   "groupIntro": "Read information about this option",
   "individualSections": [
@@ -20,5 +39,13 @@
     "Benefits: motivation, support, collective learning"
   ],
   "signup": "Sign Up",
-  "sessionDescription": "Session details will appear here"
+  "sessionDescription": "Session details will appear here",
+  "sessionMetaGroup": "Live & Online",
+  "sessionMetaIndividual": "Live & Zoom",
+  "reassuranceTitle": "WHAT YOU RECEIVE",
+  "reassurancePoints": [
+    "Interactive live coaching",
+    "Science-backed tools",
+    "Focus on measurable shifts"
+  ]
 }

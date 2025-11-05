@@ -1,7 +1,7 @@
 // ./components/ClientI18nWrapper.tsx
 "use client";
 
-import I18nProvider from "./I18nProvider";
+import { I18nProvider } from "./I18nProvider";
 
 type Props = {
   children: React.ReactNode;

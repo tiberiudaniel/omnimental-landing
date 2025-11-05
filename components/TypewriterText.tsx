@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
 interface TypewriterTextProps {
@@ -11,48 +11,69 @@ interface TypewriterTextProps {
 
 export default function TypewriterText({ text, speed = 50, mistakeChance = 0.05 }: TypewriterTextProps) {
   const [displayText, setDisplayText] = useState("");
-  const [cursorVisible, setCursorVisible] = useState(true);
+  const timeoutsRef = useRef<number[]>([]);
+  const resetFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    let i = 0;
+    const clearScheduled = () => {
+      timeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+      timeoutsRef.current = [];
+    };
 
-    const typeInterval = setInterval(() => {
-      if (i < text.length) {
-        let nextChar = text[i];
+    clearScheduled();
 
-        // Simulare greșeală
-        if (Math.random() < mistakeChance) {
-          const wrongChar = String.fromCharCode(97 + Math.floor(Math.random() * 26));
-          setDisplayText((prev) => prev + wrongChar);
+    if (resetFrameRef.current !== null) {
+      window.cancelAnimationFrame(resetFrameRef.current);
+      resetFrameRef.current = null;
+    }
 
-          // Mic delay și backspace pentru corectare
-          setTimeout(() => {
-            setDisplayText((prev) => prev.slice(0, -1) + nextChar);
-          }, speed * 3);
-        } else {
-          setDisplayText((prev) => prev + nextChar);
-        }
+    resetFrameRef.current = window.requestAnimationFrame(() => {
+      setDisplayText("");
+    });
 
-        i++;
+    let cancelled = false;
 
-        // Pauză naturală după punct sau virgulă
-        if (nextChar === "." || nextChar === ",") {
-          clearInterval(typeInterval);
-          setTimeout(() => i, speed * 5); // mic delay
-        }
+    const schedule = (fn: () => void, delay: number) => {
+      const id = window.setTimeout(fn, delay);
+      timeoutsRef.current.push(id);
+    };
+
+    const typeNext = (index: number) => {
+      if (cancelled || index >= text.length) return;
+      const nextChar = text[index];
+
+      const commitCorrect = () => {
+        setDisplayText((prev) => prev + nextChar);
+        const pause =
+          nextChar === "." || nextChar === "," ? speed * 5 : speed;
+        schedule(() => typeNext(index + 1), pause);
+      };
+
+      if (Math.random() < mistakeChance) {
+        const wrongChar = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+        setDisplayText((prev) => prev + wrongChar);
+
+        schedule(() => {
+          setDisplayText((prev) => prev.slice(0, -1));
+        }, speed * 1.5);
+
+        schedule(() => {
+          commitCorrect();
+        }, speed * 3);
       } else {
-        clearInterval(typeInterval);
+        commitCorrect();
       }
-    }, speed);
+    };
 
-    // Cursor animat
-    const cursorInterval = setInterval(() => {
-      setCursorVisible((prev) => !prev);
-    }, 500);
+    schedule(() => typeNext(0), speed);
 
     return () => {
-      clearInterval(typeInterval);
-      clearInterval(cursorInterval);
+      cancelled = true;
+      clearScheduled();
+      if (resetFrameRef.current !== null) {
+        window.cancelAnimationFrame(resetFrameRef.current);
+        resetFrameRef.current = null;
+      }
     };
   }, [text, speed, mistakeChance]);
 
