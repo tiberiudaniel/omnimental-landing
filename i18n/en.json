@@ -1,0 +1,24 @@
+{
+  "firstScreenQuestion": "What interests you the most?",
+  "firstScreenPlaceholder": "Ex: relaxation, stress, mindfulness…",
+  "firstScreenSuggestionsBtn": "Give me some options",
+  "firstScreenContinueBtn": "Continue",
+  "chooseOption": "Choose what interests you",
+  "individual": "Individual Sessions",
+  "group": "Online Group",
+  "individualIntro": "Read information about this option",
+  "groupIntro": "Read information about this option",
+  "individualSections": [
+    "Overview: one-on-one sessions for mental clarity",
+    "Session types: mental coaching, mindfulness, focus",
+    "Holistic approach: psychology, mental nutrition, meditation",
+    "Benefits: clarity, focus, mental energy"
+  ],
+  "groupSections": [
+    "Overview online group",
+    "Meeting structure: 5-10 people, weekly sessions",
+    "Benefits: motivation, support, collective learning"
+  ],
+  "signup": "Sign Up",
+  "sessionDescription": "Session details will appear here"
+}

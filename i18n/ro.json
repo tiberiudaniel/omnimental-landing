@@ -1,0 +1,26 @@
+{
+  "firstScreenQuestion": "Ce te interesează cel mai mult?",
+  "firstScreenPlaceholder": "Ex: relaxare, stres, mindfulness…",
+  "firstScreenSuggestionsBtn": "Dă-mi câteva opțiuni",
+  "firstScreenContinueBtn": "Continuă",
+  "chooseOption": "Alege ce anume te interesează",
+  "individual": "Sesiuni individuale",
+  "group": "Grup online",
+  "individualIntro": "Citește informațiile despre această opțiune",
+  "groupIntro": "Citește informațiile despre această opțiune",
+  "individualSections": [
+    "Prezentare generală: sesiuni unu-la-unu pentru claritate mentală",
+    "Tipuri sesiuni: coaching mental, mindfulness, focus",
+    "Abordare holistică: psihologie, nutriție mentală, meditație",
+    "Beneficii: claritate, focus, energie mentală"
+  ],
+  "groupSections": [
+    "Prezentare generală grup online",
+    "Structura întâlniri: 5-10 persoane, sesiuni săptămânale",
+    "Beneficii: motivație, suport, învățare colectivă"
+  ],
+  "signup": "Înscriere",
+  "sessionDescription": "Detaliile sesiunii vor apărea aici"
+}
+
+
