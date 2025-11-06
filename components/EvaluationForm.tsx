@@ -16,6 +16,20 @@ import { getDb } from "../lib/firebase";
 
 const db = getDb();
 
+type StepConfig = {
+  key: string;
+  label: string;
+  sections?: Array<(typeof evaluationSections)[number]["key"]>;
+};
+
+const STEP_CONFIG: StepConfig[] = [
+  { key: "info", label: "Profil participant" },
+  { key: "resilience", label: "Stres & autoeficacitate", sections: ["pss", "gse"] },
+  { key: "presence", label: "Prezență conștientă", sections: ["maas"] },
+  { key: "emotions", label: "Starea emoțională", sections: ["panas"] },
+  { key: "vitality", label: "Vitalitate", sections: ["svs"] },
+];
+
 const STAGES = [
   { value: "t0", label: "Start (săptămâna 0)" },
   { value: "t1", label: "3 săptămâni" },
@@ -105,6 +119,7 @@ export default function EvaluationForm() {
   );
   const [retrying, setRetrying] = useState(false);
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
 
   const totalRequired = useMemo(
     () => Object.keys(initialEvaluationValues).length,
@@ -119,8 +134,64 @@ export default function EvaluationForm() {
     setAnswers((prev) => ({ ...prev, [id]: value }));
   };
 
+  const sectionsByKey = useMemo(() => {
+    return evaluationSections.reduce<Record<string, (typeof evaluationSections)[number]>>(
+      (acc, section) => {
+        acc[section.key] = section;
+        return acc;
+      },
+      {}
+    );
+  }, []);
+
+  const getSectionsForStep = (step: StepConfig) => {
+    if (!step.sections) return [];
+    return step.sections.map((key) => sectionsByKey[key]).filter(Boolean);
+  };
+
+  const infoStepComplete = formState.name.trim().length > 0;
+
+  const isSectionGroupComplete = (step: StepConfig) => {
+    const sections = getSectionsForStep(step);
+    if (!sections.length) return true;
+    return sections.every((section) =>
+      section.items.every((item) => answers[item.id] !== "")
+    );
+  };
+
+  const isCurrentStepComplete = () => {
+    const step = STEP_CONFIG[currentStep];
+    if (!step) return false;
+    if (step.key === "info") return infoStepComplete;
+    return isSectionGroupComplete(step);
+  };
+
+  const handleNextStep = () => {
+    if (currentStep < STEP_CONFIG.length - 1) {
+      setFormState((prev) => ({ ...prev, errors: [] }));
+      setCurrentStep((prev) => prev + 1);
+    }
+  };
+
+  const handlePreviousStep = () => {
+    setFormState((prev) => ({ ...prev, errors: [] }));
+    setCurrentStep((prev) => Math.max(0, prev - 1));
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (currentStep < STEP_CONFIG.length - 1) {
+      if (isCurrentStepComplete()) {
+        handleNextStep();
+      } else {
+        setFormState((prev) => ({
+          ...prev,
+          errors: ["Te rugăm să completezi toate întrebările din această etapă."],
+        }));
+      }
+      return;
+    }
 
     const errors: string[] = [];
 
@@ -200,6 +271,7 @@ export default function EvaluationForm() {
     setAnswers({ ...initialEvaluationValues });
     setScores(null);
     setRetryMessage(null);
+    setCurrentStep(0);
   };
 
   const retryPendingEvaluations = async () => {
@@ -246,6 +318,10 @@ export default function EvaluationForm() {
     );
   };
 
+  const currentStepConfig = STEP_CONFIG[currentStep] ?? STEP_CONFIG[0];
+  const sectionsForCurrentStep = getSectionsForStep(currentStepConfig);
+  const progressPercentage = ((currentStep + 1) / STEP_CONFIG.length) * 100;
+
   return (
     <div className="space-y-8">
       <header className="space-y-2 border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
@@ -278,125 +354,170 @@ export default function EvaluationForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-10">
-        <section className="grid gap-4 border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] md:grid-cols-2">
-          <label className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
-            Nume participant
-            <input
-              type="text"
-              value={formState.name}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, name: event.target.value }))
-              }
-              className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
-              required
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+            <span>
+              Pas {currentStep + 1}/{STEP_CONFIG.length}
+            </span>
+            <span>{currentStepConfig?.label}</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-[#F6F2EE]">
+            <div
+              className="h-full rounded-full bg-[#E60012] transition-all"
+              style={{ width: `${progressPercentage}%` }}
             />
-          </label>
-          <label className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
-            Email (opțional)
-            <input
-              type="email"
-              value={formState.email}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, email: event.target.value }))
-              }
-              className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
-            />
-          </label>
-          <label className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
-            Etapă program
-            <select
-              value={formState.stage}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, stage: event.target.value }))
-              }
-              className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
-            >
-              {STAGES.map((stage) => (
-                <option key={stage.value} value={stage.value}>
-                  {stage.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-2 text-sm text-[#2C2C2C] md:col-span-2">
-            Notițe despre starea actuală (opțional)
-            <textarea
-              value={formState.journal}
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, journal: event.target.value }))
-              }
-              rows={4}
-              className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
-              placeholder="Ce observi acum față de începutul programului?"
-            />
-          </label>
-        </section>
+          </div>
+        </div>
 
-        {evaluationSections.map((section) => (
-          <section
-            key={section.key}
-            className="space-y-4 border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
-          >
-            <header className="space-y-1">
-              <h2 className="text-lg font-semibold text-[#1F1F1F]">{section.title}</h2>
-              <p className="text-sm text-[#2C2C2C]/80">{section.description}</p>
-            </header>
-            <div className="space-y-4">
-              {section.items.map((item) => (
-                <div key={item.id} className="space-y-2 text-sm text-[#2C2C2C]">
-                  <div className="flex items-center gap-2">
-                    <span>{item.prompt}</span>
-                    {item.reverse && (
-                      <span className="rounded-full bg-[#F6F2EE] px-2 py-[2px] text-[10px] uppercase tracking-[0.2em] text-[#A08F82]">
-                        inversat
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    {Array.from({ length: item.max - item.min + 1 }).map((_, index) => {
-                      const value = item.min + index;
-                      const id = `${item.id}-${value}`;
-                      return (
-                        <label
-                          key={id}
-                          className={`flex cursor-pointer flex-col items-center gap-1 rounded-[6px] border px-3 py-2 text-xs uppercase tracking-[0.2em] transition ${
-                            answers[item.id] === value
-                              ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                              : "border-[#D8C6B6] text-[#2C2C2C] hover:border-[#2C2C2C]"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name={item.id}
-                            value={value}
-                            checked={answers[item.id] === value}
-                            onChange={() => handleLikertChange(item.id, value)}
-                            className="hidden"
-                          />
-                          <span>{value}</span>
-                          <span className="text-[10px] font-semibold">
-                            {section.scaleLabels[value - item.min] ?? ""}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+        {currentStepConfig?.key === "info" ? (
+          <section className="grid gap-4 border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] md:grid-cols-2">
+            <label className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
+              Nume participant
+              <input
+                type="text"
+                value={formState.name}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, name: event.target.value }))
+                }
+                className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
+              Email (opțional)
+              <input
+                type="email"
+                value={formState.email}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, email: event.target.value }))
+                }
+                className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
+              Etapă program
+              <select
+                value={formState.stage}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, stage: event.target.value }))
+                }
+                className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
+              >
+                {STAGES.map((stage) => (
+                  <option key={stage.value} value={stage.value}>
+                    {stage.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-2 text-sm text-[#2C2C2C] md:col-span-2">
+              Notițe despre starea actuală (opțional)
+              <textarea
+                value={formState.journal}
+                onChange={(event) =>
+                  setFormState((prev) => ({ ...prev, journal: event.target.value }))
+                }
+                rows={4}
+                className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
+                placeholder="Ce observi acum față de începutul programului?"
+              />
+            </label>
           </section>
-        ))}
+        ) : (
+          sectionsForCurrentStep.map((section) => (
+            <section
+              key={section.key}
+              className="space-y-4 border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
+            >
+              <header className="space-y-1">
+                <h2 className="text-lg font-semibold text-[#1F1F1F]">{section.title}</h2>
+                <p className="text-sm text-[#2C2C2C]/80">{section.description}</p>
+              </header>
+              <div className="space-y-4">
+                {section.items.map((item) => (
+                  <div key={item.id} className="space-y-2 text-sm text-[#2C2C2C]">
+                    <div className="flex items-center gap-2">
+                      <span>{item.prompt}</span>
+                      {item.reverse && (
+                        <span className="rounded-full bg-[#F6F2EE] px-2 py-[2px] text-[10px] uppercase tracking-[0.2em] text-[#A08F82]">
+                          inversat
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {Array.from({ length: item.max - item.min + 1 }).map((_, index) => {
+                        const value = item.min + index;
+                        const id = `${item.id}-${value}`;
+                        return (
+                          <label
+                            key={id}
+                            className={`flex cursor-pointer flex-col items-center gap-1 rounded-[6px] border px-3 py-2 text-xs uppercase tracking-[0.2em] transition ${
+                              answers[item.id] === value
+                                ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
+                                : "border-[#D8C6B6] text-[#2C2C2C] hover:border-[#2C2C2C]"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name={item.id}
+                              value={value}
+                              checked={answers[item.id] === value}
+                              onChange={() => handleLikertChange(item.id, value)}
+                              className="hidden"
+                            />
+                            <span>{value}</span>
+                            <span className="text-[10px] font-semibold">
+                              {section.scaleLabels[value - item.min] ?? ""}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+
+        {formState.errors.length > 0 && (
+          <div className="space-y-2 border border-[#E60012] bg-[#FBE9EB] px-4 py-3 text-sm text-[#2C2C2C]">
+            {formState.errors.map((error) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-x-3">
-            <button
-              type="submit"
-              disabled={formState.submitting}
-              className="inline-flex items-center gap-2 rounded-[6px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#2C2C2C]/10 focus:outline-none focus:ring-1 focus:ring-[#2C2C2C] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {formState.submitting ? "Se salvează..." : "Trimite evaluarea"}
-            </button>
+          <div className="flex flex-wrap gap-2">
+            {currentStep > 0 && (
+              <button
+                type="button"
+                onClick={handlePreviousStep}
+                className="inline-flex items-center gap-2 rounded-[6px] border border-[#D8C6B6] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#F6F2EE] focus:outline-none focus:ring-1 focus:ring-[#D8C6B6]"
+              >
+                Înapoi
+              </button>
+            )}
+            {currentStep < STEP_CONFIG.length - 1 ? (
+              <button
+                type="button"
+                onClick={handleNextStep}
+                disabled={!isCurrentStepComplete()}
+                className="inline-flex items-center gap-2 rounded-[6px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#2C2C2C]/10 focus:outline-none focus:ring-1 focus:ring-[#2C2C2C] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Continuă
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={formState.submitting || !isCurrentStepComplete()}
+                className="inline-flex items-center gap-2 rounded-[6px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#2C2C2C]/10 focus:outline-none focus:ring-1 focus:ring-[#2C2C2C] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {formState.submitting ? "Se salvează..." : "Trimite evaluarea"}
+              </button>
+            )}
             <button
               type="button"
               onClick={handleReset}
@@ -409,14 +530,6 @@ export default function EvaluationForm() {
             <span>Progres XP: {Math.round((completedCount / totalRequired) * 100)}%</span>
           </p>
         </div>
-
-        {formState.errors.length > 0 && (
-          <div className="space-y-2 border border-[#E60012] bg-[#FBE9EB] px-4 py-3 text-sm text-[#2C2C2C]">
-            {formState.errors.map((error) => (
-              <p key={error}>{error}</p>
-            ))}
-          </div>
-        )}
       </form>
 
       {scores && (

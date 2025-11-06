@@ -167,6 +167,23 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
       ? introValue.filter((part) => typeof part === "string").join(" ")
       : "";
 
+  const filteredHighlightCards =
+    type === "individual"
+      ? highlightCards.filter((card, index) => {
+          if (index === 0 && intro) {
+            return card.description.trim() !== intro.trim();
+          }
+          return true;
+        })
+      : highlightCards;
+
+  const processTitleValue = t("individualProcessTitle");
+  const processTitle =
+    typeof processTitleValue === "string" ? processTitleValue : "";
+  const processValue = t("individualProcessSteps");
+  const processSteps: string[] = Array.isArray(processValue)
+    ? processValue.filter((step): step is string => typeof step === "string")
+    : [];
   const sectionsValue = t(`${type}Sections`);
   const sectionList: string[] = Array.isArray(sectionsValue)
     ? sectionsValue.filter((item): item is string => typeof item === "string")
@@ -184,6 +201,68 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
   const footerValue = t("individualFooter");
   const footerText = typeof footerValue === "string" ? footerValue : "";
 
+  type FaqItem = { question: string; answer: string };
+  const faqValue = t("individualFaq");
+  const faqItems: FaqItem[] = Array.isArray(faqValue)
+    ? faqValue.flatMap((item) => {
+        if (!item || typeof item !== "object") {
+          return [];
+        }
+        const record = item as Record<string, unknown>;
+        const question = record.question;
+        const answer = record.answer;
+        if (typeof question !== "string" || typeof answer !== "string") {
+          return [];
+        }
+        return [{ question, answer }];
+      })
+    : [];
+  const faqTitleValue = t("individualFaqTitle");
+  const faqTitle = typeof faqTitleValue === "string" ? faqTitleValue : "";
+
+  type Testimonial = { quote: string; author?: string; role?: string };
+  const testimonialsValue = t("individualTestimonials");
+  const testimonials: Testimonial[] = Array.isArray(testimonialsValue)
+    ? testimonialsValue.flatMap((item) => {
+        if (!item || typeof item !== "object") {
+          return [];
+        }
+        const record = item as Record<string, unknown>;
+        const quote = record.quote;
+        if (typeof quote !== "string") {
+          return [];
+        }
+        return [
+          {
+            quote,
+            author: typeof record.author === "string" ? record.author : undefined,
+            role: typeof record.role === "string" ? record.role : undefined,
+          },
+        ];
+      })
+    : [];
+  const testimonialsTitleValue = t("individualTestimonialsTitle");
+  const testimonialsTitle =
+    typeof testimonialsTitleValue === "string" ? testimonialsTitleValue : "";
+
+  const ctaButtonTextValue = t("individualCtaButton");
+  const customCtaText =
+    typeof ctaButtonTextValue === "string" ? ctaButtonTextValue : cta;
+  const ctaDialogTitleValue = t("individualCtaDialogTitle");
+  const ctaDialogTitle =
+    typeof ctaDialogTitleValue === "string" ? ctaDialogTitleValue : undefined;
+  const ctaDialogDescriptionValue = t("individualCtaDialogDescription");
+  const ctaDialogDescription =
+    typeof ctaDialogDescriptionValue === "string"
+      ? ctaDialogDescriptionValue
+      : undefined;
+  const ctaSuccessValue = t("individualCtaSuccessMessage");
+  const ctaSuccessMessage =
+    typeof ctaSuccessValue === "string" ? ctaSuccessValue : undefined;
+  const ctaSubmitValue = t("individualCtaSubmit");
+  const ctaSubmitLabel =
+    typeof ctaSubmitValue === "string" ? ctaSubmitValue : undefined;
+
   return (
     <div className="panel-canvas panel-canvas--left panel-canvas--brain-left w-full max-w-5xl rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-10 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px] lg:mx-auto">
       <TypewriterText
@@ -194,7 +273,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
       />
 
       <div className="mt-8 grid gap-8 md:grid-cols-2">
-        {highlightCards.map((card, index) => (
+        {filteredHighlightCards.map((card, index) => (
           <motion.div
             key={card.title}
             initial={{ opacity: 0, y: 24 }}
@@ -216,34 +295,49 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
             </p>
           </motion.div>
         ))}
-
-        {sectionList.length > 0 && (
-          <motion.div
-            key="individual-sections"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: highlightCards.length * 0.1 }}
-            className="rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
-          >
-            {sectionsTitle ? (
-              <h3 className="text-xl font-semibold text-[#1F1F1F]">
-                {sectionsTitle}
-              </h3>
-            ) : null}
-            <ul className="mt-4 space-y-3">
-              {sectionList.map((item) => (
-                <li
-                  key={item}
-                  className="flex items-start gap-3 text-base leading-relaxed text-[#2C2C2C]"
-                >
-                  <span className="mt-2 h-2 w-2 rounded-full bg-[#E60012]" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
       </div>
+
+      {sectionList.length > 0 && (
+        <motion.div
+          key="individual-sections"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: filteredHighlightCards.length * 0.1 }}
+          className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]"
+        >
+          {sectionsTitle ? (
+            <h3 className="text-2xl font-semibold text-[#1F1F1F]">
+              {sectionsTitle}
+            </h3>
+          ) : null}
+          <ul className="mt-4 space-y-3 text-base leading-relaxed text-[#2C2C2C]">
+            {sectionList.map((item) => (
+              <li key={item} className="flex items-start gap-3">
+                <span className="mt-2 h-2 w-2 rounded-full bg-[#E60012]" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+      )}
+
+      {processSteps.length > 0 && (
+        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
+          {processTitle ? (
+            <h3 className="text-2xl font-semibold text-[#1F1F1F]">
+              {processTitle}
+            </h3>
+          ) : null}
+          <ol className="mt-4 space-y-3 text-base text-[#2C2C2C]">
+            {processSteps.map((step) => (
+              <li key={step} className="flex gap-3">
+                <span className="text-[#A08F82]">→</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {footerText ? (
         <p className="mt-8 text-sm leading-relaxed text-[#2C2C2C]/80">
@@ -252,12 +346,60 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
       ) : null}
 
       <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <CTAButton text={cta} />
+        <CTAButton
+          text={customCtaText}
+          dialogTitle={ctaDialogTitle}
+          dialogDescription={ctaDialogDescription}
+          successMessage={ctaSuccessMessage}
+          submitLabel={ctaSubmitLabel}
+        />
         <div className="flex items-center gap-3 text-xs uppercase tracking-[0.35em] text-[#2C2C2C]">
           <span className="h-px w-16 bg-[#D8C6B6]" />
           {metaLabel}
         </div>
       </div>
+      {faqItems.length > 0 && (
+        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
+          {faqTitle ? (
+            <h3 className="text-2xl font-semibold text-[#1F1F1F]">
+              {faqTitle}
+            </h3>
+          ) : null}
+          <div className="mt-4 space-y-4 text-left text-sm text-[#2C2C2C]">
+            {faqItems.map((item) => (
+              <div key={item.question}>
+                <p className="font-semibold text-[#1F1F1F]">{item.question}</p>
+                <p className="mt-1 text-[#2C2C2C]/80">{item.answer}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {testimonials.length > 0 && (
+        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
+          {testimonialsTitle ? (
+            <h3 className="text-2xl font-semibold text-[#1F1F1F]">
+              {testimonialsTitle}
+            </h3>
+          ) : null}
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            {testimonials.map((testimonial) => (
+              <blockquote
+                key={testimonial.quote}
+                className="rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE]/80 px-5 py-4 text-left text-sm text-[#2C2C2C]"
+              >
+                <p className="italic">“{testimonial.quote}”</p>
+                <footer className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#A08F82]">
+                  {testimonial.author}
+                  {testimonial.role ? ` • ${testimonial.role}` : ""}
+                </footer>
+              </blockquote>
+            ))}
+          </div>
+        </section>
+      )}
+
       {reassuranceBlock}
     </div>
   );

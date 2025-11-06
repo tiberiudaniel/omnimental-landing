@@ -3,15 +3,16 @@
 import Image from "next/image";
 
 const metrics = [
-  { label: "Programe finalizate", value: "15+" },
-  { label: "Ore coaching/an", value: "150+" },
+  { label: "Ani de experiență", value: "27+" },
+  { label: "Programe finalizate", value: "78+" },
+  { label: "Ore coaching/an", value: "340+" },
   { label: "Indice satisfacție", value: "9.6/10" },
 ];
 
 export default function SocialProof() {
   return (
     <section className="mt-12 space-y-10">
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-4">
         {metrics.map((metric) => (
           <div
             key={metric.label}

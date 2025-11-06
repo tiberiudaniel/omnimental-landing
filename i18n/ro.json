@@ -31,23 +31,90 @@
     "Cum îmi gestionez reacțiile impulsive",
     "Îmi regăsesc motivația și sensul personal"
   ],
+  "intentCloudTitle": "Și totuși, ce este important? Selectează 7.",
+  "intentCloudHelper": "Alege cuvintele care descriu cel mai bine ce vrei să rezolvi acum.",
+  "intentCloudButton": "Continuă",
+  "intentCloudList": [
+    "Vreau liniște.",
+    "Nu reușesc să mă fac înțeles.",
+    "Mă cert mereu cu partenerul.",
+    "Nu știu cum să spun ce simt.",
+    "Vreau să fiu ascultat, nu judecat.",
+    "Mă simt sub presiune la muncă.",
+    "Mă epuizează relația cu șeful.",
+    "Nu știu să pun limite.",
+    "Mă simt vinovat când spun «nu».",
+    "Vreau relații mai autentice.",
+    "Nu mai am răbdare nici cu mine.",
+    "M-am săturat să fiu stresat.",
+    "Nu mai pot să mă concentrez.",
+    "Mi-e teamă să greșesc.",
+    "Vreau mai multă claritate.",
+    "Simt că pierd controlul.",
+    "Nu mai am energie.",
+    "Vreau să fiu mai calm.",
+    "Nu știu ce vreau cu adevărat.",
+    "Mă simt blocat.",
+    "Vreau să am mai multă încredere.",
+    "Mă simt pierdut.",
+    "Vreau să dorm mai bine.",
+    "Nu mai vreau să mă compar cu alții.",
+    "Vreau echilibru.",
+    "Mă copleșește totul.",
+    "Nu pot să mă relaxez.",
+    "Vreau să scap de anxietate.",
+    "Vreau să mă cunosc mai bine.",
+    "Nu reușesc să mă țin de plan.",
+    "Vreau să-mi controlez emoțiile.",
+    "Mă simt gol pe dinăuntru.",
+    "Vreau să am mai mult focus.",
+    "Mă autosabotez.",
+    "Vreau să-mi găsesc direcția.",
+    "Nu mai simt bucurie în ce fac.",
+    "Vreau să fiu mai productiv.",
+    "Vreau să-mi înțeleg mintea.",
+    "Mă simt în derivă.",
+    "Vreau să simt că trăiesc cu sens."
+  ],
+  "intentCloudSliderLabel": "Cât de intens simți asta acum?",
+  "journeyIntroQuotes": [
+    "„Foarte puțin este necesar pentru a avea o viață fericită; totul este în interiorul tău, în felul în care gândești.” — Marcus Aurelius",
+    "„Fericirea nu depinde de ceea ce se întâmplă în exterior, ci de ceea ce se întâmplă în interior.” — Harold B. Lee",
+    "„Nu putem deveni ceea ce avem nevoie să fim dacă rămânem ceea ce suntem.” — Oprah Winfrey"
+  ],
+  "journeyIntroTitle": "„Mintea se liniștește când pui în cuvinte ce simți.”",
+  "journeyIntroBody": "Apasă start și parcurge câțiva pași scurți ca să te clarifici.",
+  "journeyIntroButton": "Enter",
+  "journalPrompt": "Scrie simplu: ce te preocupă acum?",
+  "journalPlaceholder": "Ex: «Sunt mereu tensionat și nu reușesc să mă concentrez.»",
+  "journalButton": "Trimite",
+  "journalHelper": "200 de caractere sunt suficiente. Nu trebuie să fie perfect.",
+  "reflectionOneLine1": "Bine. Dar ce e cu adevărat mai important?",
+  "reflectionOneLine2": "Hai să clarificăm.",
+  "reflectionContinueIntro": "Hai să clarificăm",
+  "reflectionContinue": "Continuă",
+  "reflectionTwoIntro": "Pare că vrei să lucrezi la {{tags}}.",
+  "reflectionTwoBody": "Există două moduri prin care poți face asta. Alege calea care ți se potrivește acum.",
+  "cardsHeadline": "Alege experiența potrivită pentru ritmul tău",
   "chooseOption": "Alege varianta potrivită ție",
   "individual": "Sesiuni individuale",
   "group": "Grup online",
   "individualDescription": "Îndrumare unu-la-unu adaptată obiectivelor tale personale.",
   "groupDescription": "Antrenament de grup care combină mental coaching, biofeedback și responsabilitate colectivă.",
-  "individualIntro": "Claritate. Schimbare. Performanță. Sesiunile individuale sunt spații dedicate lucrului în profunzime. Explorăm împreună procese mentale, emoționale și comportamentale pentru rezultate concrete, calibrate la ritmul și resursele tale.",
+  "individualIntro": "Sesiunile individuale OmniMental sunt întâlniri unu-la-unu în care cartografiem rapid declanșatorii, reglăm sistemul nervos și construim ritualuri clare pentru decizii și energie.",
   "groupIntro": "Citește informațiile despre această opțiune",
-  "individualSections": [
-    "Coaching individual — clarificarea obiectivelor, creșterea performanței, dezvoltare personală.",
-    "Executive coaching — leadership, decizie, comunicare strategică și gestionarea presiunii.",
-    "Life coaching — echilibru între roluri, valori și sens personal.",
-    "Hipno-coaching — transe ghidate pentru restructurarea tiparelor mentale și consolidarea încrederii.",
-    "Intervenție strategică — tehnici avansate de schimbare cognitivă și emoțională validate în psihologie aplicată.",
-    "Supervizare și meta-reflecție — pentru coachi, traineri și profesioniști din domeniul uman.",
-    "Rezultate: claritate decizională, reziliență emoțională, reprogramarea tiparelor limitative."
+  "individualProcessTitle": "Procesul unei sesiuni",
+  "individualProcessSteps": [
+    "Explorare & obiective – cartografiem declanșatorii și setăm rezultatul sesiunii.",
+    "Intervenție ghidată – lucrăm cu respirație, biofeedback, reframing și hipnoză ușoară pentru schimbare imediată.",
+    "Integrare & ritual zilnic – ieși cu pași clari, materiale suport și accountability."
   ],
-  "individualSectionsTitle": "Tipuri de sesiuni disponibile",
+  "individualSectionsTitle": "Pachete recomandate",
+  "individualSections": [
+    "Sprint de 4 sesiuni (4-5 săptămâni) – reset mental pentru obiective punctuale și claritate rapidă.",
+    "Program de 3 luni (6 sesiuni) – transformare susținută, consolidare de obiceiuri și suport între sesiuni.",
+    "Mentorat anual (12 sesiuni) – leadership interior pentru profesioniști cu ritm de top și responsabilitate mare."
+  ],
   "groupSections": [
     "Prezentare generală grup online",
     "Structura întâlniri: 5-10 persoane, sesiuni săptămânale",
@@ -65,16 +132,56 @@
   ],
   "individualHighlights": [
     {
-      "title": "Claritate, schimbare, performanță",
-      "description": "Sesiunile individuale sunt spații dedicate lucrului în profunzime. Explorăm împreună procese mentale, emoționale și comportamentale pentru rezultate concrete, calibrate la ritmul și resursele tale."
+      "title": "De ce sesiuni individuale?",
+      "description": "Sesiunile individuale sunt întâlniri unu-la-unu între client și profesionist (coach, terapeut sau psihoterapeut), având scopul de a sprijini schimbarea, claritatea și dezvoltarea personală sau profesională."
     },
     {
-      "title": "Cum funcționează",
-      "description": "Durata: 60–75 de minute. Format: online sau în cabinet. Frecvență: setată împreună (de la săptămânal la ritm personal). Metodologie: coaching, hipnoză ericksoniană, modele cognitive și strategii de performanță validate."
+      "title": "Cum lucrăm în sesiune",
+      "description": "Începem cu diagnostic și obiective, apoi combinăm respirație, CBT, ACT, hipnoză ericksoniană și biofeedback pentru a crea intervenții rapide și sigure.",
+      "inlineLink": {
+        "href": "/evaluation",
+        "label": "Vezi scala de progres"
+      }
+    },
+    {
+      "title": "Ce primești între sesiuni",
+      "description": "Primești rezumat audio, exerciții scurte și reminder-e pentru integrarea zilnică, plus follow-up pe email în 24h."
     }
   ],
-  "individualFooter": "Toate sesiunile se desfășoară într-un cadru etic și confidențial, cu scop de dezvoltare și optimizare personală, nu de diagnostic sau tratament psihologic."
-  ,
+  "individualFooter": "Toate sesiunile se desfășoară într-un cadru etic și confidențial, cu scop de dezvoltare și optimizare personală, nu de diagnostic sau tratament psihologic.",
+  "individualFaqTitle": "Întrebări rapide",
+  "individualFaq": [
+    {
+      "question": "Cât durează o sesiune?",
+      "answer": "60–75 de minute, în funcție de tema zilei și de nivelul de integrare necesar."
+    },
+    {
+      "question": "Unde se desfășoară întâlnirile?",
+      "answer": "Online (Zoom) sau, la cerere, în cabinetul din București. Alegem varianta care îți oferă cel mai mult confort."
+    },
+    {
+      "question": "Ce se întâmplă dacă trebuie să reprogramez?",
+      "answer": "Anunță cu minim 24h și mutăm sesiunea fără costuri. În caz de urgențe, găsim mereu o soluție."
+    }
+  ],
+  "individualTestimonialsTitle": "Ce spun clienții",
+  "individualTestimonials": [
+    {
+      "quote": "În patru sesiuni mi-am recăpătat focusul și am evitat un burnout. Ritualurile zilnice pe care le-am primit sunt încă parte din rutina mea.",
+      "author": "Andreea",
+      "role": "Marketing Director, tech"
+    },
+    {
+      "quote": "OmniMental m-a ajutat să iau decizii rapide fără blocaje. Fiecare întâlnire se termină cu un plan concret și follow-up.",
+      "author": "Mihai",
+      "role": "Fondator, fintech"
+    }
+  ],
+  "individualCtaButton": "Programează o sesiune exploratorie",
+  "individualCtaDialogTitle": "Programare sesiune exploratorie",
+  "individualCtaDialogDescription": "Completează numele și emailul, iar în 24h revin cu disponibilitățile și pașii următori.",
+  "individualCtaSuccessMessage": "Cererea ta a fost trimisă! Revin cu un răspuns în maximum 24 de ore.",
+  "individualCtaSubmit": "Trimite cererea",
   "navProgram": "Program",
   "navProgramDesc": "Detalii Mental Coaching Group",
   "navSessions": "Sesiuni",

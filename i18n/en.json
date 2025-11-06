@@ -31,23 +31,90 @@
     "Taming impulsive reactions",
     "Finding motivation and a sense of purpose"
   ],
+  "intentCloudSliderLabel": "How intense does this feel right now?",
+  "journeyIntroQuotes": [
+    "“Very little is needed to make a happy life; it is all within yourself in your way of thinking.” — Marcus Aurelius",
+    "“Happiness does not depend on what happens outside of you but on what happens inside of you; it is measured by the spirit with which you meet the problems of life.” — Harold B. Lee",
+    "“We can’t become what we need to be by remaining what we are.” — Oprah Winfrey"
+  ],
+  "journeyIntroTitle": "“The mind softens when you put feelings into words.”",
+  "journeyIntroBody": "Hit enter and walk through a few short steps to get clear.",
+  "journeyIntroButton": "Enter",
+  "journalPrompt": "Write simply: what worries you right now?",
+  "journalPlaceholder": "e.g. “I feel tense all the time and can’t focus.”",
+  "journalButton": "Send",
+  "journalHelper": "200 characters are enough. It doesn’t have to be perfect.",
+  "reflectionOneLine1": "Good. But what truly matters most?",
+  "reflectionOneLine2": "Let’s clarify it together.",
+  "reflectionContinueIntro": "Let’s clarify this",
+  "reflectionContinue": "Continue",
+  "reflectionTwoIntro": "It sounds like you want to work on {{tags}}.",
+  "reflectionTwoBody": "There are two ways you can do that. Choose the one that fits right now.",
+  "cardsHeadline": "Choose the experience that fits your rhythm",
+  "intentCloudTitle": "And still, what matters most? Pick 7.",
+  "intentCloudHelper": "Tap the words that best describe what you want to work on now.",
+  "intentCloudButton": "Continue",
+  "intentCloudList": [
+    "I want peace.",
+    "I can't make myself understood.",
+    "I keep arguing with my partner.",
+    "I don't know how to say what I feel.",
+    "I want to be heard, not judged.",
+    "I feel under pressure at work.",
+    "My relationship with my boss drains me.",
+    "I don't know how to set boundaries.",
+    "I feel guilty when I say no.",
+    "I want more authentic relationships.",
+    "I have no patience even with myself.",
+    "I'm tired of being stressed.",
+    "I can't focus anymore.",
+    "I'm afraid to make mistakes.",
+    "I want more clarity.",
+    "I feel like I'm losing control.",
+    "I'm out of energy.",
+    "I want to be calmer.",
+    "I don't know what I truly want.",
+    "I feel stuck.",
+    "I want more confidence.",
+    "I feel lost.",
+    "I want to sleep better.",
+    "I don't want to compare myself to others.",
+    "I want balance.",
+    "Everything overwhelms me.",
+    "I can't relax.",
+    "I want to escape anxiety.",
+    "I want to know myself better.",
+    "I can't stick to my plan.",
+    "I want to control my emotions.",
+    "I feel empty inside.",
+    "I want more focus.",
+    "I self-sabotage.",
+    "I want to find my direction.",
+    "I no longer enjoy what I do.",
+    "I want to be more productive.",
+    "I want to understand my mind.",
+    "I feel adrift.",
+    "I want to feel I'm living with purpose."
+  ],
   "chooseOption": "Choose the option that suits you",
   "individual": "Individual Sessions",
   "group": "Online Group",
   "individualDescription": "Personal one-on-one guidance focused on your unique goals.",
   "groupDescription": "Transformative group training that blends mental coaching, biofeedback, and collective accountability.",
-  "individualIntro": "Clarity. Change. Performance. Individual sessions are deep-dive spaces where we explore mental, emotional, and behavioral processes to deliver concrete outcomes aligned with your rhythm and objectives.",
+  "individualIntro": "OmniMental individual sessions are one-on-one intensives where we map triggers fast, regulate the nervous system, and build crystal-clear rituals for decisions and energy.",
   "groupIntro": "Read information about this option",
-  "individualSections": [
-    "Coaching sessions — clarify goals, unlock performance, drive personal growth.",
-    "Executive coaching — leadership, decision-making, strategic communication, pressure management.",
-    "Life coaching — align roles, values, relationships, and personal meaning.",
-    "Hypno-coaching — guided trance for restructuring thought patterns and strengthening confidence.",
-    "Strategic intervention — advanced cognitive and emotional change techniques backed by applied psychology.",
-    "Supervision & meta-reflection — for coaches, trainers, and human-centered professionals seeking clarity.",
-    "Outcomes: sharper decisions, emotional resilience, reprogrammed limiting patterns."
+  "individualProcessTitle": "Session flow",
+  "individualProcessSteps": [
+    "Explore & set objectives – we map triggers and align on the outcome of the session.",
+    "Guided intervention – breathwork, biofeedback, reframing, and light hypnosis create immediate change.",
+    "Integration & daily ritual – you leave with precise steps, support materials, and accountability."
   ],
-  "individualSectionsTitle": "Available session formats",
+  "individualSectionsTitle": "Recommended packages",
+  "individualSections": [
+    "4-session sprint (4–5 weeks) – mental reset for specific objectives and quick clarity.",
+    "3-month program (6 sessions) – sustained transformation, habit consolidation, and between-session support.",
+    "Annual mentorship (12 sessions) – inner leadership for high-performing professionals with constant stakes."
+  ],
   "groupSections": [
     "Overview online group",
     "Meeting structure: 5-10 people, weekly sessions",
@@ -65,15 +132,56 @@
   ],
   "individualHighlights": [
     {
-      "title": "Clarity, change, performance",
-      "description": "Individual sessions are deep-dive spaces covering mental, emotional, and behavioral layers, calibrated to your pace and resources."
+      "title": "Why individual sessions?",
+      "description": "Individual sessions are one-on-one meetings between the client and a professional (coach, therapist, or psychotherapist) designed to support change, clarity, and personal or professional development."
     },
     {
-      "title": "How it works",
-      "description": "Duration: 60–75 minutes per session. Format: online or in-person. Frequency: set together (from weekly to customized pace). Methodology combines coaching, Ericksonian hypnosis, cognitive frameworks, and performance strategies."
+      "title": "How we work inside the session",
+      "description": "We begin with diagnostics and objectives, then blend breathwork, CBT, ACT, light hypnosis, and biofeedback to create fast, safe interventions.",
+      "inlineLink": {
+        "href": "/evaluation",
+        "label": "See the progress scale"
+      }
+    },
+    {
+      "title": "What you receive between sessions",
+      "description": "You get an audio recap, mini exercises, reminders for daily integration, and follow-up over email within 24 hours."
     }
   ],
   "individualFooter": "All sessions take place in an ethical, confidential setting focused on development and optimisation, not on diagnosis or psychological treatment.",
+  "individualFaqTitle": "Quick answers",
+  "individualFaq": [
+    {
+      "question": "How long is a session?",
+      "answer": "60–75 minutes, depending on the topic and the integration work needed."
+    },
+    {
+      "question": "Where do we meet?",
+      "answer": "Online via Zoom or, on request, in the Bucharest studio. We choose what keeps you most focused."
+    },
+    {
+      "question": "What if I need to reschedule?",
+      "answer": "Give at least 24h notice and we move the session with no penalty. In emergencies, we always find a workaround."
+    }
+  ],
+  "individualTestimonialsTitle": "Clients about OmniMental",
+  "individualTestimonials": [
+    {
+      "quote": "In four sessions I regained my focus and avoided a burnout. The daily rituals I received are still part of my routine.",
+      "author": "Andreea",
+      "role": "Marketing Director, tech"
+    },
+    {
+      "quote": "In six sessions I stopped overthinking and made decisive moves in my company. Each meeting ends with a clear plan and follow-up.",
+      "author": "Mihai",
+      "role": "Founder, fintech"
+    }
+  ],
+  "individualCtaButton": "Book a discovery session",
+  "individualCtaDialogTitle": "Book a discovery session",
+  "individualCtaDialogDescription": "Leave your name and email — I’ll reply within 24 hours with availability and next steps.",
+  "individualCtaSuccessMessage": "Your request was sent! I’ll get back within 24 hours.",
+  "individualCtaSubmit": "Send request",
   "navProgram": "Program",
   "navProgramDesc": "Mental Coaching Group details",
   "navSessions": "Sessions",

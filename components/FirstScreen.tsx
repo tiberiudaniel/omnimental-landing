@@ -20,6 +20,7 @@ const db = getDb();
 
 interface FirstScreenProps {
   onNext: () => void;
+  onSubmit?: (text: string) => void;
 }
 
 const MAX_SUGGESTIONS = 2;
@@ -47,7 +48,7 @@ const pickRandom = (pool: string[], count: number) => {
   return copy.slice(0, limitCount);
 };
 
-export default function FirstScreen({ onNext }: FirstScreenProps) {
+export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
   const { lang, t } = useI18n();
   const welcomeValue = t("firstScreenWelcome");
   const question = t("firstScreenQuestion");
@@ -194,6 +195,7 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
 
     setIsSubmitting(true);
     setInput("");
+    onSubmit?.(trimmed);
     onNext();
 
     void persistSuggestion(trimmed);

@@ -17,7 +17,21 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-export default function CTAButton({ text }: { text: string }) {
+type CTAButtonProps = {
+  text: string;
+  dialogTitle?: string;
+  dialogDescription?: string;
+  successMessage?: string;
+  submitLabel?: string;
+};
+
+export default function CTAButton({
+  text,
+  dialogTitle,
+  dialogDescription,
+  successMessage,
+  submitLabel,
+}: CTAButtonProps) {
   const [open, setOpen] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -29,7 +43,7 @@ export default function CTAButton({ text }: { text: string }) {
         ...data,
         timestamp: serverTimestamp(),
       });
-      alert("Înscriere trimisă!");
+      alert(successMessage ?? "Înscriere trimisă!");
       setOpen(false);
     } catch (e) {
       console.error(e);
@@ -55,8 +69,13 @@ export default function CTAButton({ text }: { text: string }) {
             <DialogTitle
               className="text-center text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]"
             >
-              Formular de înscriere
+              {dialogTitle ?? "Formular de înscriere"}
             </DialogTitle>
+            {dialogDescription ? (
+              <p className="mt-2 text-center text-sm text-[#2C2C2C]/80">
+                {dialogDescription}
+              </p>
+            ) : null}
             <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-3">
               <input
                 placeholder="Nume"
@@ -78,7 +97,7 @@ export default function CTAButton({ text }: { text: string }) {
                 type="submit"
                 className="group w-full rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
               >
-                Trimite
+                {submitLabel ?? "Trimite"}
               </button>
             </form>
           </DialogPanel>
