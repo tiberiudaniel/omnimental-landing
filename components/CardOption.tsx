@@ -8,9 +8,10 @@ interface CardOptionProps {
   type: "individual" | "group";
   title?: string;
   onClick: () => void;
+  isSelected?: boolean;
 }
 
-export default function CardOption({ type, title, onClick }: CardOptionProps) {
+export default function CardOption({ type, title, onClick, isSelected = false }: CardOptionProps) {
   const { t } = useI18n();
   const [hovered, setHovered] = useState(false);
   const descriptionKey =
@@ -25,12 +26,14 @@ export default function CardOption({ type, title, onClick }: CardOptionProps) {
 
   const fallbackTitle = t(type);
   const heading = title ?? (typeof fallbackTitle === "string" ? fallbackTitle : type);
+  const activeState = hovered || isSelected;
+
   return (
     <div
-      className={`relative w-full max-w-xs cursor-pointer rounded-[12px] border border-[#D8C6B6] p-8 text-left transition ${
-        hovered
+      className={`relative w-full max-w-xs cursor-pointer rounded-[12px] border p-8 text-left transition ${
+        activeState
           ? "border-[#E60012] bg-[#F6F2EE]/95 shadow-[0_16px_40px_rgba(0,0,0,0.08)]"
-          : "bg-white shadow-[0_12px_32px_rgba(0,0,0,0.05)]"
+          : "border-[#D8C6B6] bg-white shadow-[0_12px_32px_rgba(0,0,0,0.05)]"
       }`}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
@@ -45,10 +48,11 @@ export default function CardOption({ type, title, onClick }: CardOptionProps) {
       }}
       role="button"
       tabIndex={0}
+      aria-pressed={isSelected}
     >
       <div
         className={`text-xs font-semibold uppercase tracking-[0.35em] ${
-          hovered ? "text-[#E60012]" : "text-[#A08F82]"
+          activeState ? "text-[#E60012]" : "text-[#A08F82]"
         }`}
       >
         {type === "individual" ? "Individual" : "Group"}
@@ -58,6 +62,11 @@ export default function CardOption({ type, title, onClick }: CardOptionProps) {
       <p className="mt-4 text-sm leading-6 text-[#2C2C2C]">
         {description}
       </p>
+      {isSelected && (
+        <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full border border-[#E60012]/40 bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#E60012]">
+          ✓
+        </div>
+      )}
     </div>
   );
 }

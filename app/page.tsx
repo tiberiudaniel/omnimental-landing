@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import FirstScreen from "../components/FirstScreen";
 import CardOption from "../components/CardOption";
@@ -31,6 +31,7 @@ function PageContent() {
 
   const [step, setStep] = useState<Step>("intro");
   const [selectedCard, setSelectedCard] = useState<"individual" | "group" | null>(null);
+  const [pendingSelection, setPendingSelection] = useState<"individual" | "group" | null>(null);
   const [journalEntry, setJournalEntry] = useState("");
   const [intentTags, setIntentTags] = useState<string[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -56,18 +57,18 @@ function PageContent() {
 
   const reflectionTwoLines = useMemo(() => {
     const introValue = t("reflectionTwoIntro");
-    const bodyValue = t("reflectionTwoBody");
     const tagsPreview = intentTags.slice(0, 3).join(", ") || "claritate";
     const introLine =
       typeof introValue === "string"
         ? introValue.replace("{{tags}}", tagsPreview)
         : `Pare că vrei să lucrezi la ${tagsPreview}.`;
-    const bodyLine =
-      typeof bodyValue === "string"
-        ? bodyValue
-        : "Există două moduri prin care poți continua.";
-    return [introLine, bodyLine];
+    return [introLine];
   }, [intentTags, t]);
+  const reflectionTwoBodyValue = t("reflectionTwoBody");
+  const cardsSubheadline =
+    typeof reflectionTwoBodyValue === "string"
+      ? reflectionTwoBodyValue
+      : "Există două moduri prin care poți face asta.";
 
   const reflectionTwoButton = reflectionContinue;
 
@@ -85,8 +86,15 @@ function PageContent() {
   };
 
   const handleCardSelect = (type: "individual" | "group") => {
+    setPendingSelection(type);
     setSelectedCard(type);
-    goToStep("details");
+
+    setTimeout(() => {
+      goToStep("details");
+      setTimeout(() => {
+        document.getElementById("sessions")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }, 400);
 
     void addDoc(collection(db, "userJourneys"), {
       entry: journalEntry,
@@ -116,6 +124,12 @@ function PageContent() {
     setIntentTags(tags);
     goToStep("reflectionSummary");
   };
+
+  useEffect(() => {
+    if (step !== "cards") {
+      setPendingSelection(null);
+    }
+  }, [step]);
 
   return (
     <div className="bg-bgLight min-h-screen">
@@ -161,16 +175,29 @@ function PageContent() {
               enableSound
             />
 
-            <div className="mt-8 flex w-full max-w-4xl flex-col items-stretch justify-center gap-4 md:flex-row md:gap-6">
+            <p className="mt-4 text-center text-sm text-[#2C2C2C]/80 px-4">
+              {cardsSubheadline}
+            </p>
+            <div className="mt-6 flex w-full max-w-4xl flex-col items-stretch justify-center gap-4 md:flex-row md:gap-6">
               {(["individual", "group"] as const).map((type) => (
                 <CardOption
                   key={type}
                   type={type}
                   title={getLabel(type)}
                   onClick={() => handleCardSelect(type)}
+                  isSelected={pendingSelection === type}
                 />
               ))}
             </div>
+            <p className="mt-4 text-center text-sm text-[#2C2C2C]/70">
+              {pendingSelection
+                ? lang === "ro"
+                  ? "Încărcăm detaliile opțiunii alese..."
+                  : "Loading the details of your choice..."
+                : lang === "ro"
+                ? "Selectează pentru a vedea cum arată în detaliu."
+                : "Pick a path to reveal its full details."}
+            </p>
           </div>
         )}
 

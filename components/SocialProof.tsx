@@ -27,19 +27,20 @@ export default function SocialProof() {
       </div>
 
       <div className="panel-canvas panel-canvas--brain-center mx-auto max-w-xl rounded-[12px] border border-[#D8C6B6] bg-white/92 p-6 text-center shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
-        <div className="relative mx-auto h-72 w-full">
+        <div className="relative mx-auto h-60 w-full overflow-hidden rounded-[12px] border border-[#E4D8CE]/80">
           <Image
-            src="/assets/biohacking-wheel.jpg"
-            alt="Diagrama Biohacking"
+            src="/assets/tech-mind-brain-left.jpg"
+            alt="Hartă mentală OmniMental"
             fill
             sizes="(min-width: 768px) 400px, 80vw"
-            className="object-contain"
+            className="object-cover filter brightness-[1.08] saturate-[0.75]"
             priority={false}
           />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#FDFCF9]/85 to-[#F4E8DA]/80" />
         </div>
         <p className="mt-4 text-sm leading-relaxed text-[#2C2C2C]/80">
-          Integrarea practicilor de biohacking susține claritatea mentală, energia și longevitatea —
-          aceleași arii pe care le antrenăm în sesiunile OmniMental.
+          Hartă mentală OmniMental – un reminder vizual că intervențiile merg dinspre claritate spre
+          ritm, prin sisteme conectate.
         </p>
       </div>
     </section>

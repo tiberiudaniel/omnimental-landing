@@ -1,6 +1,7 @@
 // components/SessionDetails.tsx
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 import { motion } from "framer-motion";
@@ -27,6 +28,20 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
   );
   const metaLabel = typeof metaLabelValue === "string" ? metaLabelValue : "";
   const cta = typeof ctaValue === "string" ? ctaValue : "";
+  const metaBadge = (
+    <div className="flex items-center gap-4 text-xs uppercase tracking-[0.35em] text-[#2C2C2C]">
+      <div className="relative h-16 w-16 overflow-hidden rounded-full border border-[#D8C6B6] bg-[#F6F2EE]/80 shadow-[0_6px_18px_rgba(0,0,0,0.08)]">
+        <Image
+          src="/assets/clock.png"
+          alt="Program schedule emblem"
+          fill
+          sizes="64px"
+          className="object-cover filter sepia-[20%] saturate-[70%]"
+        />
+      </div>
+      <span>{metaLabel}</span>
+    </div>
+  );
 
   const groupSummary = useMemo(
     () => [
@@ -103,10 +118,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
 
         <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <CTAButton text={cta} />
-          <div className="flex items-center gap-3 text-xs uppercase tracking-[0.35em] text-[#2C2C2C]">
-            <span className="h-px w-16 bg-[#D8C6B6]" />
-            {metaLabel}
-          </div>
+          {metaBadge}
         </div>
 
         {reassuranceBlock}
@@ -353,10 +365,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
           successMessage={ctaSuccessMessage}
           submitLabel={ctaSubmitLabel}
         />
-        <div className="flex items-center gap-3 text-xs uppercase tracking-[0.35em] text-[#2C2C2C]">
-          <span className="h-px w-16 bg-[#D8C6B6]" />
-          {metaLabel}
-        </div>
+        {metaBadge}
       </div>
       {faqItems.length > 0 && (
         <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">

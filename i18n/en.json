@@ -44,6 +44,7 @@
   "journalPlaceholder": "e.g. “I feel tense all the time and can’t focus.”",
   "journalButton": "Send",
   "journalHelper": "200 characters are enough. It doesn’t have to be perfect.",
+  "firstScreenSuggestionsSource": "Captured from real answers",
   "reflectionOneLine1": "Good. But what truly matters most?",
   "reflectionOneLine2": "Let’s clarify it together.",
   "reflectionContinueIntro": "Let’s clarify this",

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
@@ -23,7 +24,9 @@ interface FirstScreenProps {
   onSubmit?: (text: string) => void;
 }
 
-const MAX_SUGGESTIONS = 2;
+const PLACEHOLDER_SAMPLE_COUNT = 3;
+const SUGGESTION_BATCH_MIN = 3;
+const SUGGESTION_BATCH_MAX = 5;
 const SUGGESTION_FETCH_LIMIT = 100;
 const PRIMARY_COLLECTION = "userInterests";
 const FALLBACK_COLLECTIONS = ["usersInterests", "usersinterests", "userSuggestions"];
@@ -59,6 +62,7 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
   const suggestionHintValue = t("firstScreenSuggestionHint");
   const suggestionRefreshValue = t("firstScreenSuggestionsRefresh");
   const suggestionTitleValue = t("firstScreenSuggestionsTitle");
+  const suggestionSourceValue = t("firstScreenSuggestionsSource");
   const welcomeText = typeof welcomeValue === "string" ? welcomeValue : "";
   const questionText =
     typeof question === "string" ? question : "";
@@ -70,6 +74,8 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
     typeof suggestionRefreshValue === "string" ? suggestionRefreshValue : "";
   const suggestionTitle =
     typeof suggestionTitleValue === "string" ? suggestionTitleValue : "";
+  const suggestionSource =
+    typeof suggestionSourceValue === "string" ? suggestionSourceValue : "";
 
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -153,7 +159,10 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
       return;
     }
 
-    const selection = pickRandom(storedSuggestions, Math.min(2, storedSuggestions.length));
+    const selection = pickRandom(
+      storedSuggestions,
+      Math.min(PLACEHOLDER_SAMPLE_COUNT, storedSuggestions.length),
+    );
     if (!selection.length) {
       setPlaceholderText(placeholderTemplate);
       return;
@@ -201,8 +210,19 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
     void persistSuggestion(trimmed);
   };
 
+  const pullSuggestionBatch = () => {
+    if (!activeSuggestionPool.length) return [];
+    const range = SUGGESTION_BATCH_MAX - SUGGESTION_BATCH_MIN + 1;
+    const desired =
+      Math.min(
+        activeSuggestionPool.length,
+        Math.floor(Math.random() * range) + SUGGESTION_BATCH_MIN,
+      );
+    return pickRandom(activeSuggestionPool, desired);
+  };
+
   const handleSuggestionsToggle = () => {
-    setSuggestions(pickRandom(activeSuggestionPool, MAX_SUGGESTIONS));
+    setSuggestions(pullSuggestionBatch());
     setShowSuggestions(true);
   };
 
@@ -213,7 +233,19 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
           <span className="h-[1px] w-10 bg-[#D8C6B6]" />
           OmniMental Coaching
         </div>
-        <div className="mt-8 w-full rounded-[16px] border border-[#E4D8CE] bg-[#F6F2EE] px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
+        <div className="relative mt-8 w-full">
+          <div className="absolute inset-0 overflow-hidden rounded-[16px] border border-[#E4D8CE]">
+            <Image
+              src="/assets/tech-mind-brain-left.jpg"
+              alt="Mindful silhouette artwork"
+              fill
+              sizes="(min-width: 768px) 640px, 90vw"
+              className="object-cover opacity-50 mix-blend-multiply"
+              priority={false}
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#FDFCF9]/90 via-[#F6F2EE]/85 to-[#E4D8CE]/75" />
+          </div>
+          <div className="relative rounded-[16px] border border-[#E4D8CE] bg-[#FDFCF9]/95 px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[1px]">
           {introPhase === "welcome" && welcomeText ? (
             <TypewriterText
               key={`${lang}-welcome-${welcomeText}`}
@@ -268,6 +300,7 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
             <div className="mt-4 h-[1px] w-full bg-[#E4D8CE]" />
           </div>
         </div>
+        </div>
 
         {!showSuggestions && (
           <div className="mt-6">
@@ -285,12 +318,17 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
             <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.25em] text-[#2C2C2C]">
               <span>{suggestionTitle}</span>
               <button
-                onClick={() => setSuggestions(pickRandom(activeSuggestionPool, MAX_SUGGESTIONS))}
+                onClick={() => setSuggestions(pullSuggestionBatch())}
                 className="text-[#E60012] transition hover:text-[#B8000E]"
               >
                 {suggestionRefresh}
               </button>
             </div>
+            {suggestionSource ? (
+              <p className="mt-1 text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+                {suggestionSource}
+              </p>
+            ) : null}
             <div className="mt-4 flex flex-wrap gap-3">
               {suggestions.map((s) => (
                 <button

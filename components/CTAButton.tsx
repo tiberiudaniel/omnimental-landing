@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,20 +33,38 @@ export default function CTAButton({
   submitLabel,
 }: CTAButtonProps) {
   const [open, setOpen] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
+  useEffect(() => {
+    if (!open) {
+      setSubmitted(false);
+      setIsSubmitting(false);
+      reset();
+    }
+  }, [open, reset]);
+
   const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true);
     try {
       await addDoc(collection(db, "signups"), {
         ...data,
         timestamp: serverTimestamp(),
       });
-      alert(successMessage ?? "Înscriere trimisă!");
-      setOpen(false);
+      setSubmitted(true);
+      reset();
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -76,30 +94,49 @@ export default function CTAButton({
                 {dialogDescription}
               </p>
             ) : null}
-            <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-3">
-              <input
-                placeholder="Nume"
-                {...register("name")}
-                className="w-full rounded-[8px] border border-[#D8C6B6] px-4 py-3 text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:border-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
-              />
-              {errors.name && (
-                <p className="text-sm text-[#E60012]">{errors.name.message}</p>
-              )}
-              <input
-                placeholder="Email"
-                {...register("email")}
-                className="w-full rounded-[8px] border border-[#D8C6B6] px-4 py-3 text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:border-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
-              />
-              {errors.email && (
-                <p className="text-sm text-[#E60012]">{errors.email.message}</p>
-              )}
-              <button
-                type="submit"
-                className="group w-full rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
-              >
-                {submitLabel ?? "Trimite"}
-              </button>
-            </form>
+            {submitted ? (
+              <div className="mt-6 space-y-4 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[#2C2C2C] text-2xl text-[#E60012]">
+                  ✓
+                </div>
+                <p className="text-base leading-relaxed text-[#2C2C2C]">
+                  {successMessage ?? "Înscriere trimisă. Te contactăm în scurt timp."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+                >
+                  OK
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-3">
+                <input
+                  placeholder="Nume"
+                  {...register("name")}
+                  className="w-full rounded-[8px] border border-[#D8C6B6] px-4 py-3 text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:border-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+                />
+                {errors.name && (
+                  <p className="text-sm text-[#E60012]">{errors.name.message}</p>
+                )}
+                <input
+                  placeholder="Email"
+                  {...register("email")}
+                  className="w-full rounded-[8px] border border-[#D8C6B6] px-4 py-3 text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:border-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+                />
+                {errors.email && (
+                  <p className="text-sm text-[#E60012]">{errors.email.message}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="group w-full rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? "Se trimite..." : submitLabel ?? "Trimite"}
+                </button>
+              </form>
+            )}
           </DialogPanel>
         </div>
       </Dialog>
