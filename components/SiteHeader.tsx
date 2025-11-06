@@ -10,7 +10,7 @@ interface SiteHeaderProps {
 
 export default function SiteHeader({ showMenu = true, onMenuToggle }: SiteHeaderProps) {
   const { lang, setLang } = useI18n();
-  const availableLocales = ["ro"] as const;
+  const availableLocales = ["ro", "en"] as const;
 
   return (
     <header className="flex items-center justify-between bg-white p-4 shadow">

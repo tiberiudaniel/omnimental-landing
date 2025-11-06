@@ -23,15 +23,16 @@ const defaultNavigationText = {
 
 export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) {
   const { t } = useI18n();
+  const getLabel = (key: string, fallback: string): string => {
+    const value = t(key);
+    return typeof value === "string" ? value : fallback;
+  };
 
   if (!open) return null;
 
-  const navigationLabel =
-    typeof t("navHeading") === "string" ? t("navHeading") : defaultNavigationText.heading;
-  const closeLabel =
-    typeof t("navClose") === "string" ? t("navClose") : defaultNavigationText.close;
-  const ctaLabel =
-    typeof t("menuCtaLabel") === "string" ? t("menuCtaLabel") : defaultNavigationText.cta;
+  const navigationLabel = getLabel("navHeading", defaultNavigationText.heading);
+  const closeLabel = getLabel("navClose", defaultNavigationText.close);
+  const ctaLabel = getLabel("menuCtaLabel", defaultNavigationText.cta);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose}>
