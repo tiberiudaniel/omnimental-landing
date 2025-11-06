@@ -7,7 +7,7 @@ import en from "../i18n/en.json";
 import ro from "../i18n/ro.json";
 
 type Lang = "en" | "ro";
-type TranslationValue = string | string[];
+type TranslationValue = unknown;
 type Translations = Record<string, TranslationValue>;
 
 type I18nContextType = {

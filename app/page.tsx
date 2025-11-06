@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import FirstScreen from "../components/FirstScreen";
 import CardOption from "../components/CardOption";
 import SessionDetails from "../components/SessionDetails";
@@ -13,16 +13,21 @@ import MenuOverlay from "../components/MenuOverlay";
 
 function PageContent() {
   const { t } = useI18n();
-  const [step, setStep] = useState<"first" | "cards" | "details">("first");
+  type Step = "first" | "cards" | "details";
+
+  const [step, setStep] = useState<Step>("first");
   const [selectedCard, setSelectedCard] = useState<"individual" | "group" | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const chooseOption = t("chooseOption");
+  const chooseOptionText =
+    typeof chooseOption === "string" ? chooseOption : "";
 
-  useEffect(() => {
-    if (step === "first") {
+  const goToStep = (nextStep: Step) => {
+    setStep(nextStep);
+    if (nextStep === "first") {
       setMenuOpen(false);
     }
-  }, [step]);
+  };
 
   const navLinks = useMemo(
     () => [
@@ -40,7 +45,7 @@ function PageContent() {
 
   const handleCardSelect = (type: "individual" | "group") => {
     setSelectedCard(type);
-    setStep("details");
+    goToStep("details");
   };
 
   return (
@@ -52,11 +57,16 @@ function PageContent() {
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
 
       <main>
-        {step === "first" && <FirstScreen onNext={() => setStep("cards")} />}
+        {step === "first" && <FirstScreen onNext={() => goToStep("cards")} />}
 
         {step === "cards" && (
           <div className="flex flex-col items-center min-h-screen px-4 pt-12">
-            <TypewriterText text={typeof chooseOption === "string" ? chooseOption : ""} />
+            <TypewriterText
+              key={`choose-${chooseOptionText || "option"}`}
+              text={chooseOptionText}
+              speed={96}
+              enableSound
+            />
 
             <div className="flex flex-col md:flex-row w-full justify-center mt-8">
               {(["individual", "group"] as const).map((type) => (

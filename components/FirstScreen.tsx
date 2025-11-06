@@ -52,13 +52,13 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
   const suggestionsLabel = t("firstScreenSuggestionsBtn");
   const continueLabel = t("firstScreenContinueBtn");
   const suggestionValue = t("firstScreenSuggestionsList");
-  const microcopyValue = t("firstScreenMicrocopy");
   const suggestionHintValue = t("firstScreenSuggestionHint");
   const suggestionRefreshValue = t("firstScreenSuggestionsRefresh");
   const suggestionTitleValue = t("firstScreenSuggestionsTitle");
+  const questionText =
+    typeof question === "string" ? question : "";
   const placeholderTemplate =
     typeof placeholderTemplateValue === "string" ? placeholderTemplateValue : "";
-  const microcopy = typeof microcopyValue === "string" ? microcopyValue : "";
   const suggestionHint =
     typeof suggestionHintValue === "string" ? suggestionHintValue : "";
   const suggestionRefresh =
@@ -211,7 +211,12 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
           <span className="h-[1px] w-10 bg-[#D8C6B6]" />
           OmniMental Coaching
         </div>
-        <TypewriterText text={typeof question === "string" ? question : ""} />
+        <TypewriterText
+          key={`${lang}-${questionText || "question"}`}
+          text={questionText}
+          speed={102}
+          enableSound
+        />
 
         <div className="mt-8 space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">

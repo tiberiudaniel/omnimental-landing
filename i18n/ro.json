@@ -25,7 +25,7 @@
   "group": "Grup online",
   "individualDescription": "Îndrumare unu-la-unu adaptată obiectivelor tale personale.",
   "groupDescription": "Antrenament de grup care combină mental coaching, biofeedback și responsabilitate colectivă.",
-  "individualIntro": "Claritate. Schimbare. Performanță. Sesiunile individuale sunt spații dedicate lucrului în profunzime, în care explorăm procese mentale, emoționale și comportamentale pentru rezultate concrete, aliniate ritmului și obiectivelor tale.",
+  "individualIntro": "Claritate. Schimbare. Performanță. Sesiunile individuale sunt spații dedicate lucrului în profunzime. Explorăm împreună procese mentale, emoționale și comportamentale pentru rezultate concrete, calibrate la ritmul și resursele tale.",
   "groupIntro": "Citește informațiile despre această opțiune",
   "individualSections": [
     "Coaching individual — clarificarea obiectivelor, creșterea performanței, dezvoltare personală.",
@@ -34,11 +34,9 @@
     "Hipno-coaching — transe ghidate pentru restructurarea tiparelor mentale și consolidarea încrederii.",
     "Intervenție strategică — tehnici avansate de schimbare cognitivă și emoțională validate în psihologie aplicată.",
     "Supervizare și meta-reflecție — pentru coachi, traineri și profesioniști din domeniul uman.",
-    "Format: 60–75 min, online sau la cabinet, cu frecvență stabilită împreună.",
-    "Metodologie: coaching, hipnoză ericksoniană, modele cognitive, strategii de performanță.",
-    "Rezultate: claritate decizională, reziliență emoțională, reprogramarea tiparelor limitative.",
-    "Descoperă mai multe despre formările și experiența mea în pagina \u201eDespre mine\u201d."
+    "Rezultate: claritate decizională, reziliență emoțională, reprogramarea tiparelor limitative."
   ],
+  "individualSectionsTitle": "Tipuri de sesiuni disponibile",
   "groupSections": [
     "Prezentare generală grup online",
     "Structura întâlniri: 5-10 persoane, sesiuni săptămânale",
@@ -53,5 +51,16 @@
     "Coaching live și interactiv",
     "Instrumente validate științific",
     "Accent pe transformări măsurabile"
-  ]
+  ],
+  "individualHighlights": [
+    {
+      "title": "Claritate, schimbare, performanță",
+      "description": "Sesiunile individuale sunt spații dedicate lucrului în profunzime. Explorăm împreună procese mentale, emoționale și comportamentale pentru rezultate concrete, calibrate la ritmul și resursele tale."
+    },
+    {
+      "title": "Cum funcționează",
+      "description": "Durata: 60–75 de minute. Format: online sau în cabinet. Frecvență: setată împreună (de la săptămânal la ritm personal). Metodologie: coaching, hipnoză ericksoniană, modele cognitive și strategii de performanță validate."
+    }
+  ],
+  "individualFooter": "Toate sesiunile se desfășoară într-un cadru etic și confidențial, cu scop de dezvoltare și optimizare personală, nu de diagnostic sau tratament psihologic."
 }

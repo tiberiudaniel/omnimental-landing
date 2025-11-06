@@ -69,7 +69,12 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
   if (type === "group") {
     return (
       <div className="relative mt-8 w-full border border-[#D8C6B6] bg-white px-8 py-10 shadow-[0_12px_32px_rgba(0,0,0,0.08)] md:w-4/5">
-        <TypewriterText text="Mental Coaching Online Group" />
+        <TypewriterText
+          key="group-details-heading"
+          text="Mental Coaching Online Group"
+          speed={98}
+          enableSound
+        />
 
         <div className="mt-8 grid gap-8 md:grid-cols-2">
           {groupSummary.map((card, index) => (
@@ -109,23 +114,143 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
     );
   }
 
-  const introValue = t(`${type}Intro`);
-  const sectionsValue = t(`${type}Sections`);
-  const intro = typeof introValue === "string" ? introValue : introValue.join(" ");
-  const sectionList = Array.isArray(sectionsValue)
-    ? sectionsValue
-    : typeof sectionsValue === "string"
-    ? sectionsValue.split(",").map((s) => s.trim()).filter(Boolean)
+  type HighlightCard = {
+    title: string;
+    description: string;
+    inlineLink?: { href: string; label: string };
+  };
+
+  const highlightsValue = t("individualHighlights");
+  const highlightCards: HighlightCard[] = Array.isArray(highlightsValue)
+    ? highlightsValue.flatMap((item) => {
+        if (!item || typeof item !== "object") {
+          return [];
+        }
+
+        const maybeHighlight = item as Record<string, unknown>;
+        const title = maybeHighlight.title;
+        const description = maybeHighlight.description;
+        const inlineLink = maybeHighlight.inlineLink;
+
+        if (typeof title !== "string" || typeof description !== "string") {
+          return [];
+        }
+
+        let parsedInlineLink: HighlightCard["inlineLink"];
+        if (
+          inlineLink &&
+          typeof inlineLink === "object" &&
+          typeof (inlineLink as Record<string, unknown>).href === "string" &&
+          typeof (inlineLink as Record<string, unknown>).label === "string"
+        ) {
+          parsedInlineLink = {
+            href: (inlineLink as Record<string, string>).href,
+            label: (inlineLink as Record<string, string>).label,
+          };
+        }
+
+        return [
+          {
+            title,
+            description,
+            inlineLink: parsedInlineLink,
+          } as HighlightCard,
+        ];
+      })
     : [];
+
+  const introValue = t(`${type}Intro`);
+  const intro =
+    typeof introValue === "string"
+      ? introValue
+      : Array.isArray(introValue)
+      ? introValue.filter((part) => typeof part === "string").join(" ")
+      : "";
+
+  const sectionsValue = t(`${type}Sections`);
+  const sectionList: string[] = Array.isArray(sectionsValue)
+    ? sectionsValue.filter((item): item is string => typeof item === "string")
+    : typeof sectionsValue === "string"
+    ? sectionsValue
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+
+  const sectionsTitleValue = t("individualSectionsTitle");
+  const sectionsTitle =
+    typeof sectionsTitleValue === "string" ? sectionsTitleValue : "";
+
+  const footerValue = t("individualFooter");
+  const footerText = typeof footerValue === "string" ? footerValue : "";
 
   return (
     <div className="mt-8 w-full border border-[#D8C6B6] bg-white px-8 py-10 shadow-[0_12px_32px_rgba(0,0,0,0.08)] md:w-3/4">
-      <TypewriterText text={intro} />
-      <ul className="mt-4 list-disc space-y-2 pl-6">
-        {sectionList.map((item, idx) => (
-          <li key={idx}>{item}</li>
+      <TypewriterText
+        key={`individual-intro-${intro}`}
+        text={intro}
+        speed={94}
+        enableSound
+      />
+
+      <div className="mt-8 grid gap-8 md:grid-cols-2">
+        {highlightCards.map((card, index) => (
+          <motion.div
+            key={card.title}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="border border-[#D8C6B6] bg-[#F6F2EE] px-6 py-8"
+          >
+            <h3 className="text-xl font-semibold text-[#1F1F1F]">{card.title}</h3>
+            <p className="mt-4 text-base leading-relaxed text-[#2C2C2C]">
+              {card.description}
+              {card.inlineLink && (
+                <Link
+                  href={card.inlineLink.href}
+                  className="ml-1 text-sm font-semibold text-[#E60012] underline underline-offset-8 hover:text-[#B8000E]"
+                >
+                  {card.inlineLink.label}
+                </Link>
+              )}
+            </p>
+          </motion.div>
         ))}
-      </ul>
+
+        {sectionList.length > 0 && (
+          <motion.div
+            key="individual-sections"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: highlightCards.length * 0.1 }}
+            className="border border-[#D8C6B6] bg-[#F6F2EE] px-6 py-8"
+          >
+            {sectionsTitle ? (
+              <h3 className="text-xl font-semibold text-[#1F1F1F]">
+                {sectionsTitle}
+              </h3>
+            ) : null}
+            <ul className="mt-4 space-y-3">
+              {sectionList.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-start gap-3 text-base leading-relaxed text-[#2C2C2C]"
+                >
+                  <span className="mt-2 h-2 w-2 rounded-full bg-[#E60012]" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        )}
+      </div>
+
+      {footerText ? (
+        <p className="mt-8 text-sm leading-relaxed text-[#2C2C2C]/80">
+          {footerText}
+        </p>
+      ) : null}
+
       <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <CTAButton text={cta} />
         <div className="flex items-center gap-3 text-xs uppercase tracking-[0.35em] text-[#2C2C2C]">

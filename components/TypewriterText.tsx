@@ -1,31 +1,202 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface TypewriterTextProps {
   text: string;
+  speed?: number;
+  enableSound?: boolean;
+  onComplete?: () => void;
 }
 
-export default function TypewriterText({ text }: TypewriterTextProps) {
-  const [animationKey, setAnimationKey] = useState(0);
+export default function TypewriterText({
+  text,
+  speed = 88,
+  enableSound = false,
+  onComplete,
+}: TypewriterTextProps) {
+  const [displayedText, setDisplayedText] = useState("");
+  const [index, setIndex] = useState(0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const completionRef = useRef(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const noiseBufferRef = useRef<AudioBuffer | null>(null);
 
   useEffect(() => {
-    setAnimationKey((prev) => prev + 1);
-  }, [text]);
+    if (!enableSound) {
+      if (audioContextRef.current) {
+        void audioContextRef.current.close().catch(() => undefined);
+      }
+      audioContextRef.current = null;
+      return;
+    }
 
-  const characters = useMemo(() => Math.max(Array.from(text ?? "").length, 1), [text]);
-  const durationSeconds = useMemo(() => Math.min(Math.max(characters * 0.05, 1.2), 4), [characters]);
+    if (typeof window === "undefined") {
+      return;
+    }
 
-  type TypewriterVars = CSSProperties & {
-    "--typewriter-steps"?: string;
-    "--typewriter-duration"?: string;
+    try {
+      const maybeWindow = window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const AudioContextCtor =
+        window.AudioContext ?? maybeWindow.webkitAudioContext;
+      if (!AudioContextCtor) {
+        console.warn("AudioContext is not supported in this browser.");
+        return;
+      }
+      const context = new AudioContextCtor();
+      audioContextRef.current = context;
+
+      const frameCount = Math.max(Math.round(context.sampleRate * 0.08), 1);
+      const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i += 1) {
+        data[i] = (Math.random() * 2 - 1) * 0.45;
+      }
+      noiseBufferRef.current = buffer;
+    } catch (error) {
+      console.warn("Could not create AudioContext:", error);
+      audioContextRef.current = null;
+      noiseBufferRef.current = null;
+    }
+
+    return () => {
+      if (audioContextRef.current) {
+        void audioContextRef.current.close().catch(() => undefined);
+        audioContextRef.current = null;
+      }
+      noiseBufferRef.current = null;
+    };
+  }, [enableSound]);
+
+  const playClick = () => {
+    const context = audioContextRef.current;
+    if (!context) {
+      return;
+    }
+
+    const resumePromise =
+      context.state === "suspended" ? context.resume() : Promise.resolve();
+
+    void resumePromise
+      .then(() => {
+        const now = context.currentTime;
+
+        let noiseSource: AudioBufferSourceNode | null = null;
+        if (noiseBufferRef.current) {
+          noiseSource = context.createBufferSource();
+          noiseSource.buffer = noiseBufferRef.current;
+
+          const bandpass = context.createBiquadFilter();
+          bandpass.type = "bandpass";
+          const centerFreq = 2200 + Math.random() * 600;
+          bandpass.frequency.setValueAtTime(centerFreq, now);
+          bandpass.Q.setValueAtTime(1.4, now);
+
+          const noiseGain = context.createGain();
+          noiseGain.gain.setValueAtTime(0.014, now);
+          noiseGain.gain.linearRampToValueAtTime(0.004, now + 0.012);
+          noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+
+          noiseSource.connect(bandpass);
+          bandpass.connect(noiseGain);
+          noiseGain.connect(context.destination);
+
+          noiseSource.start(now + 0.001);
+          noiseSource.stop(now + 0.09);
+          noiseSource.addEventListener("ended", () => {
+            bandpass.disconnect();
+            noiseGain.disconnect();
+          });
+        }
+
+        const thockOsc = context.createOscillator();
+        thockOsc.type = "sine";
+        const thockFreq = 180 + Math.random() * 60;
+        thockOsc.frequency.setValueAtTime(thockFreq, now);
+
+        const thockGain = context.createGain();
+        thockGain.gain.setValueAtTime(0.02, now);
+        thockGain.gain.linearRampToValueAtTime(0.005, now + 0.02);
+        thockGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+
+        thockOsc.connect(thockGain);
+        thockGain.connect(context.destination);
+
+        thockOsc.start(now + 0.001);
+        thockOsc.stop(now + 0.1);
+        thockOsc.addEventListener("ended", () => {
+          thockGain.disconnect();
+          if (noiseSource) {
+            noiseSource.disconnect();
+          }
+        });
+      })
+      .catch((error) => {
+        console.warn("Keyboard sound resume failed:", error);
+      });
   };
 
-  const styleVars: TypewriterVars = {
-    "--typewriter-steps": `${characters}`,
-    "--typewriter-duration": `${durationSeconds}s`,
-  };
+  useEffect(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    if (!text) {
+      if (!completionRef.current && onComplete) {
+        completionRef.current = true;
+        onComplete();
+      }
+      return;
+    }
+
+    if (index >= text.length) {
+      if (!completionRef.current && onComplete) {
+        completionRef.current = true;
+        onComplete();
+      }
+      return;
+    }
+
+    completionRef.current = false;
+
+    const char = text[index];
+    const baseSpeed = Math.max(speed, 30);
+    const variation = baseSpeed * 0.45;
+    let delay = baseSpeed + (Math.random() - 0.5) * variation;
+
+    if (char === "," || char === ";") {
+      delay *= 2.4;
+    } else if (char === "." || char === "!" || char === "?") {
+      delay *= 4.8;
+    } else if (char === " ") {
+      delay *= 1.9;
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      setDisplayedText((prev) => prev + char);
+      setIndex((prev) => prev + 1);
+
+      if (enableSound && char.trim()) {
+        playClick();
+      }
+    }, Math.max(delay, 24));
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [index, text, speed, enableSound, onComplete]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="mb-6 w-full bg-[#F6F2EE] px-6 py-5">
@@ -34,43 +205,28 @@ export default function TypewriterText({ text }: TypewriterTextProps) {
         style={{
           letterSpacing: "0.04em",
           fontFamily: '"Courier Prime", monospace',
+          minHeight: "3.2rem",
         }}
       >
-        <span key={animationKey} className="inline-block">
-          <span className="typewriter-text" style={styleVars}>
-            {text}
-          </span>
+        <span aria-label={text} role="text" className="inline-block">
+          {displayedText}
+          <span className="typewriter-cursor">|</span>
         </span>
       </h2>
       <style jsx>{`
-        .typewriter-text {
+        .typewriter-cursor {
           display: inline-block;
-          overflow: hidden;
-          white-space: nowrap;
-          border-right: 1px solid #1f1f1f;
-          padding-right: 2px;
-          animation:
-            typing var(--typewriter-duration) steps(var(--typewriter-steps), end) forwards,
-            cursor-blink 0.85s step-end infinite;
-          width: var(--typewriter-steps)ch;
+          margin-left: 2px;
+          animation: cursorBlink 0.85s step-end infinite;
         }
 
-        @keyframes typing {
-          from {
-            width: 0ch;
-          }
-          to {
-            width: var(--typewriter-steps)ch;
-          }
-        }
-
-        @keyframes cursor-blink {
+        @keyframes cursorBlink {
           0%,
           100% {
-            border-right-color: transparent;
+            opacity: 0;
           }
           50% {
-            border-right-color: #1f1f1f;
+            opacity: 1;
           }
         }
       `}</style>

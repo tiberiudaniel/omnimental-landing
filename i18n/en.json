@@ -25,7 +25,7 @@
   "group": "Online Group",
   "individualDescription": "Personal one-on-one guidance focused on your unique goals.",
   "groupDescription": "Transformative group training that blends mental coaching, biofeedback, and collective accountability.",
-  "individualIntro": "Clarity. Change. Performance. Individual sessions are deep-dive spaces where we explore mental, emotional, and behavioral processes to deliver concrete outcomes that match your pace and objectives.",
+  "individualIntro": "Clarity. Change. Performance. Individual sessions are deep-dive spaces where we explore mental, emotional, and behavioral processes to deliver concrete outcomes aligned with your rhythm and objectives.",
   "groupIntro": "Read information about this option",
   "individualSections": [
     "Coaching sessions — clarify goals, unlock performance, drive personal growth.",
@@ -34,11 +34,9 @@
     "Hypno-coaching — guided trance for restructuring thought patterns and strengthening confidence.",
     "Strategic intervention — advanced cognitive and emotional change techniques backed by applied psychology.",
     "Supervision & meta-reflection — for coaches, trainers, and human-centered professionals seeking clarity.",
-    "Format: 60–75 minutes, online or in-person, with frequency tailored together.",
-    "Methodology: coaching, Ericksonian hypnosis, cognitive models, performance strategies.",
-    "Outcomes: sharper decisions, emotional resilience, reprogrammed limiting patterns.",
-    "Learn more about my background and training on the \"About\" page."
+    "Outcomes: sharper decisions, emotional resilience, reprogrammed limiting patterns."
   ],
+  "individualSectionsTitle": "Available session formats",
   "groupSections": [
     "Overview online group",
     "Meeting structure: 5-10 people, weekly sessions",
@@ -53,5 +51,16 @@
     "Interactive live coaching",
     "Science-backed tools",
     "Focus on measurable shifts"
-  ]
+  ],
+  "individualHighlights": [
+    {
+      "title": "Clarity, change, performance",
+      "description": "Individual sessions are deep-dive spaces covering mental, emotional, and behavioral layers, calibrated to your pace and resources."
+    },
+    {
+      "title": "How it works",
+      "description": "Duration: 60–75 minutes per session. Format: online or in-person. Frequency: set together (from weekly to customized pace). Methodology combines coaching, Ericksonian hypnosis, cognitive frameworks, and performance strategies."
+    }
+  ],
+  "individualFooter": "All sessions take place in an ethical, confidential setting focused on development and optimisation, not on diagnosis or psychological treatment."
 }

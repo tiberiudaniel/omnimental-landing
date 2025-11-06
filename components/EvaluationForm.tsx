@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import {
   collection,
   addDoc,
@@ -98,7 +98,9 @@ export default function EvaluationForm() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [answers, setAnswers] = useState<EvaluationFormValues>({ ...initialEvaluationValues });
   const [scores, setScores] = useState<ReturnType<typeof computeScores> | null>(null);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(() =>
+    typeof window === "undefined" ? 0 : loadPendingEvaluations().length
+  );
   const [retrying, setRetrying] = useState(false);
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
@@ -110,10 +112,6 @@ export default function EvaluationForm() {
   const completedCount = useMemo(() => {
     return Object.values(answers).filter((value) => value !== "").length;
   }, [answers]);
-
-  useEffect(() => {
-    setPendingCount(loadPendingEvaluations().length);
-  }, []);
 
   const handleLikertChange = (id: string, value: number) => {
     setAnswers((prev) => ({ ...prev, [id]: value }));
