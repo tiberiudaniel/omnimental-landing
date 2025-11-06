@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import ClientI18nWrapper from "../../components/ClientI18nWrapper";
 import SiteHeader from "../../components/SiteHeader";
 import MenuOverlay from "../../components/MenuOverlay";
+import { useNavigationLinks } from "../../components/useNavigationLinks";
 
 const values = [
   {
@@ -23,15 +24,7 @@ const values = [
 
 function AboutContent() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const navLinks = useMemo(
-    () => [
-      { label: "Program", href: "/group-info", description: "Detalii Mental Coaching Group" },
-      { label: "Evaluare", href: "/evaluation", description: "Completează scala de progres" },
-      { label: "Despre mine", href: "/about", description: "Cine sunt și cum lucrez" },
-      { label: "Contact", href: "mailto:hello@omnimental.ro", description: "Scrie-mi direct" },
-    ],
-    []
-  );
+  const navLinks = useNavigationLinks();
 
   return (
     <div className="bg-[#FDFCF9] min-h-screen pb-24">
@@ -39,7 +32,7 @@ function AboutContent() {
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
 
       <div className="mx-auto max-w-5xl px-6 pt-12">
-        <header className="grid gap-8 border border-[#D8C6B6] bg-white px-8 py-12 shadow-[0_12px_28px_rgba(0,0,0,0.05)] md:grid-cols-[3fr_2fr]">
+        <header className="panel-canvas panel-canvas--hero panel-canvas--brain-left grid gap-8 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-12 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px] md:grid-cols-[3fr_2fr]">
           <div>
             <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">Despre mine</div>
             <h1 className="mt-4 text-3xl font-semibold text-[#1F1F1F]">
@@ -56,7 +49,7 @@ function AboutContent() {
               atenția și rămân conectați la sens.
             </p>
           </div>
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[8px] border border-[#D8C6B6] bg-[#F6F2EE]">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95">
             <Image
               src="https://static.wixstatic.com/media/139de8_ab63b1409ab845eba55ed224056ded17~mv2.jpg/v1/fill/w_1200,h_1200,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Vegus-Nerve-dreamstime_xxl_215358845.jpg"
               alt="Vagus nerve diagram"
@@ -71,7 +64,7 @@ function AboutContent() {
           {values.map((value) => (
             <div
               key={value.title}
-              className="rounded-[8px] border border-[#D8C6B6] bg-[#F6F2EE] px-6 py-6 text-[#2C2C2C] shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
+              className="rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-6 text-[#2C2C2C] shadow-[0_12px_32px_rgba(0,0,0,0.06)]"
             >
               <h2 className="text-lg font-semibold text-[#1F1F1F]">{value.title}</h2>
               <p className="mt-3 text-sm leading-relaxed">{value.text}</p>
@@ -80,7 +73,7 @@ function AboutContent() {
         </section>
 
         <section className="mt-10 grid gap-8 md:grid-cols-2">
-          <div className="rounded-[8px] border border-[#D8C6B6] bg-white px-8 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
             <h2 className="text-2xl font-semibold text-[#1F1F1F]">Instrumente preferate</h2>
             <ul className="mt-4 space-y-2 pl-5 text-sm text-[#2C2C2C]">
               <li className="list-disc">Antrenament HRV și biofeedback pentru reglaj autonom.</li>
@@ -89,7 +82,7 @@ function AboutContent() {
               <li className="list-disc">Jurnalizare ghidată și ancore somatice pentru focus zilnic.</li>
             </ul>
           </div>
-          <div className="rounded-[8px] border border-[#D8C6B6] bg-[#F6F2EE] px-8 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
             <h2 className="text-2xl font-semibold text-[#1F1F1F]">Valorile cu care lucrez</h2>
             <ul className="mt-4 space-y-2 pl-5 text-sm text-[#2C2C2C]">
               <li className="list-disc">Curajul de a privi interiorul chiar și când e inconfortabil.</li>

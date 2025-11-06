@@ -49,7 +49,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
   );
 
   const reassuranceBlock = reassurancePoints.length ? (
-    <div className="mt-10 border border-[#D8C6B6] bg-white p-6">
+    <div className="mt-10 rounded-[10px] border border-[#D8C6B6] bg-white/92 p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] backdrop-blur-[1px]">
       <h4 className="text-xs font-semibold uppercase tracking-[0.35em] text-neutral-dark/60">
         {reassuranceTitle}
       </h4>
@@ -68,7 +68,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
 
   if (type === "group") {
     return (
-      <div className="relative mt-8 w-full border border-[#D8C6B6] bg-white px-8 py-10 shadow-[0_12px_32px_rgba(0,0,0,0.08)] md:w-4/5">
+      <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right relative w-full max-w-5xl rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-10 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px] lg:mx-auto">
         <TypewriterText
           key="group-details-heading"
           text="Mental Coaching Online Group"
@@ -83,7 +83,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="border border-[#D8C6B6] bg-[#F6F2EE] px-6 py-8"
+              className="rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
             >
               <h3 className="text-xl font-semibold text-[#1F1F1F]">{card.title}</h3>
               <p className="mt-4 text-base leading-relaxed text-[#2C2C2C]">
@@ -185,7 +185,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
   const footerText = typeof footerValue === "string" ? footerValue : "";
 
   return (
-    <div className="mt-8 w-full border border-[#D8C6B6] bg-white px-8 py-10 shadow-[0_12px_32px_rgba(0,0,0,0.08)] md:w-3/4">
+    <div className="panel-canvas panel-canvas--left panel-canvas--brain-left w-full max-w-5xl rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-10 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px] lg:mx-auto">
       <TypewriterText
         key={`individual-intro-${intro}`}
         text={intro}
@@ -200,7 +200,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="border border-[#D8C6B6] bg-[#F6F2EE] px-6 py-8"
+            className="rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
           >
             <h3 className="text-xl font-semibold text-[#1F1F1F]">{card.title}</h3>
             <p className="mt-4 text-base leading-relaxed text-[#2C2C2C]">
@@ -223,7 +223,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: highlightCards.length * 0.1 }}
-            className="border border-[#D8C6B6] bg-[#F6F2EE] px-6 py-8"
+            className="rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
           >
             {sectionsTitle ? (
               <h3 className="text-xl font-semibold text-[#1F1F1F]">

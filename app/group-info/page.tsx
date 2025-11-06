@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import CTAButton from "../../components/CTAButton";
 import ClientI18nWrapper from "../../components/ClientI18nWrapper";
 import SiteHeader from "../../components/SiteHeader";
 import MenuOverlay from "../../components/MenuOverlay";
+import { useNavigationLinks } from "../../components/useNavigationLinks";
 
 const resetProgramBenefits = [
   "Identify ce te consumă energetic.",
@@ -71,15 +72,7 @@ const highlightCards = [
 
 function GroupInfoContent() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const navLinks = useMemo(
-    () => [
-      { label: "Program", href: "/group-info", description: "Detalii Mental Coaching Group" },
-      { label: "Evaluare", href: "/evaluation", description: "Completează scala de progres" },
-      { label: "Despre mine", href: "/about", description: "Cine sunt și cum lucrez" },
-      { label: "Contact", href: "mailto:hello@omnimental.ro", description: "Scrie-mi direct" },
-    ],
-    []
-  );
+  const navLinks = useNavigationLinks();
 
   return (
     <div className="bg-[#FDFCF9] min-h-screen pb-20">
@@ -87,7 +80,7 @@ function GroupInfoContent() {
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
 
       <div className="mx-auto max-w-4xl px-6 pt-12">
-        <section className="rounded-[8px] border border-[#D8C6B6] bg-white px-8 py-12 shadow-[0_12px_28px_rgba(0,0,0,0.05)]">
+        <section className="panel-canvas panel-canvas--hero panel-canvas--brain-center rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-12 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px]">
           <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
             Mental Coaching Online Group
           </div>
@@ -108,7 +101,7 @@ function GroupInfoContent() {
           {highlightCards.map((card) => (
             <div
               key={card.title}
-              className="rounded-[8px] border border-[#D8C6B6] bg-[#F6F2EE] px-6 py-6 text-[#2C2C2C] shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
+              className="rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-6 text-[#2C2C2C] shadow-[0_12px_32px_rgba(0,0,0,0.06)]"
             >
               <h2 className="text-lg font-semibold text-[#1F1F1F]">{card.title}</h2>
               <p className="mt-3 text-sm leading-relaxed">{card.copy}</p>
@@ -117,7 +110,7 @@ function GroupInfoContent() {
         </section>
 
         <section className="mt-10 grid gap-8 md:grid-cols-[2fr_1fr]">
-          <div className="rounded-[8px] border border-[#D8C6B6] bg-white px-8 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
             <h2 className="text-2xl font-semibold text-[#1F1F1F]">Ce rezolvi concret</h2>
             <p className="mt-4 text-[#2C2C2C]">
               Sistemul nervos poate fi recalibrat. Lucrăm cu corpul, mintea și respirația ca să-ți recapeți
@@ -131,7 +124,7 @@ function GroupInfoContent() {
               ))}
             </ul>
           </div>
-          <div className="rounded-[8px] border border-[#D8C6B6] bg-[#F6F2EE] px-6 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
             <h3 className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]">
               Testimonial fondator
             </h3>
@@ -143,7 +136,7 @@ function GroupInfoContent() {
           </div>
         </section>
 
-        <section className="mt-10 rounded-[8px] border border-[#D8C6B6] bg-white px-8 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
           <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">Rezultate</div>
           <h2 className="mt-3 text-2xl font-semibold text-[#1F1F1F]">Ce obții după 12 săptămâni</h2>
           <ul className="mt-4 space-y-2 pl-5 text-sm text-[#2C2C2C]">
@@ -159,7 +152,7 @@ function GroupInfoContent() {
         </section>
 
         <section className="mt-10 grid gap-8 md:grid-cols-2">
-          <div className="rounded-[8px] border border-[#D8C6B6] bg-[#F6F2EE] px-8 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
             <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">Structură</div>
             <h2 className="mt-3 text-2xl font-semibold text-[#1F1F1F]">
               Parcursul pe niveluri
@@ -173,7 +166,7 @@ function GroupInfoContent() {
               ))}
             </ol>
           </div>
-          <div className="rounded-[8px] border border-[#D8C6B6] bg-white px-8 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
             <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">Metode</div>
             <h2 className="mt-3 text-2xl font-semibold text-[#1F1F1F]">
               Ce folosim și cum aplicăm
@@ -188,7 +181,7 @@ function GroupInfoContent() {
           </div>
         </section>
 
-        <section className="mt-10 rounded-[8px] border border-[#D8C6B6] bg-white px-8 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
           <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">Pentru cine</div>
           <h2 className="mt-3 text-2xl font-semibold text-[#1F1F1F]">
             Dacă te regăsești aici, programul e pentru tine
@@ -202,7 +195,7 @@ function GroupInfoContent() {
           </ul>
         </section>
 
-        <section className="mt-10 rounded-[8px] border border-[#D8C6B6] bg-[#F6F2EE] px-8 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
           <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">Transformare</div>
           <h2 className="mt-3 text-2xl font-semibold text-[#1F1F1F]">
             Cum se schimbă ritmul tău interior
@@ -216,7 +209,7 @@ function GroupInfoContent() {
           </ul>
         </section>
 
-        <section className="mt-12 rounded-[8px] border border-[#D8C6B6] bg-white px-8 py-10 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+        <section className="mt-12 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-10 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
           <p className="text-[#2C2C2C]">
             Dacă simți că ai ajuns la limită cu ceea ce știi acum și vrei să intri în liga celor care își
             stăpânesc mintea, emoțiile și performanța, acest program este pentru tine.

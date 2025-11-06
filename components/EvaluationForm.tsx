@@ -12,7 +12,9 @@ import {
   initialEvaluationValues,
   type EvaluationFormValues,
 } from "../lib/evaluation";
-import { db } from "../firebaseConfig";
+import { getDb } from "../lib/firebase";
+
+const db = getDb();
 
 const STAGES = [
   { value: "t0", label: "Start (săptămâna 0)" },

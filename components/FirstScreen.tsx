@@ -14,7 +14,9 @@ import {
 } from "firebase/firestore";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "../components/I18nProvider";
-import { db } from "../firebaseConfig";
+import { getDb } from "../lib/firebase";
+
+const db = getDb();
 
 interface FirstScreenProps {
   onNext: () => void;
@@ -47,6 +49,7 @@ const pickRandom = (pool: string[], count: number) => {
 
 export default function FirstScreen({ onNext }: FirstScreenProps) {
   const { lang, t } = useI18n();
+  const welcomeValue = t("firstScreenWelcome");
   const question = t("firstScreenQuestion");
   const placeholderTemplateValue = t("firstScreenPlaceholder");
   const suggestionsLabel = t("firstScreenSuggestionsBtn");
@@ -55,6 +58,7 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
   const suggestionHintValue = t("firstScreenSuggestionHint");
   const suggestionRefreshValue = t("firstScreenSuggestionsRefresh");
   const suggestionTitleValue = t("firstScreenSuggestionsTitle");
+  const welcomeText = typeof welcomeValue === "string" ? welcomeValue : "";
   const questionText =
     typeof question === "string" ? question : "";
   const placeholderTemplate =
@@ -72,6 +76,9 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
   const [storedSuggestions, setStoredSuggestions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [placeholderText, setPlaceholderText] = useState(placeholderTemplate);
+  const [introPhase, setIntroPhase] = useState<"welcome" | "question">(
+    welcomeText ? "welcome" : "question"
+  );
   const isMountedRef = useRef(true);
 
   const fallbackSuggestions = useMemo(() => {
@@ -140,30 +147,25 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
   }, []);
 
   useEffect(() => {
-    if (!activeSuggestionPool.length) {
+    if (!storedSuggestions.length) {
       setPlaceholderText(placeholderTemplate);
       return;
     }
 
-    const selection = pickRandom(activeSuggestionPool, Math.min(2, activeSuggestionPool.length));
+    const selection = pickRandom(storedSuggestions, Math.min(2, storedSuggestions.length));
     if (!selection.length) {
       setPlaceholderText(placeholderTemplate);
       return;
     }
 
-    const colonIndex = placeholderTemplate.indexOf(":");
-    const prefix =
-      colonIndex >= 0
-        ? placeholderTemplate.slice(0, colonIndex + 1).trim()
-        : "";
-    const prefixWithSpace = prefix ? `${prefix} ` : "";
-    setPlaceholderText(`${prefixWithSpace}${selection.join(", ")}`);
-  }, [placeholderTemplate, activeSuggestionPool]);
+    setPlaceholderText(`Ex: ${selection.join("; ")}`);
+  }, [placeholderTemplate, storedSuggestions]);
 
   useEffect(() => {
     setShowSuggestions(false);
     setSuggestions([]);
-  }, [lang]);
+    setIntroPhase(welcomeText ? "welcome" : "question");
+  }, [lang, welcomeText]);
 
   const persistSuggestion = async (text: string) => {
     try {
@@ -192,8 +194,6 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
 
     setIsSubmitting(true);
     setInput("");
-    setSuggestions([]);
-    setShowSuggestions(false);
     onNext();
 
     void persistSuggestion(trimmed);
@@ -205,60 +205,73 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
   };
 
   return (
-    <section className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">
-      <div className="w-full max-w-3xl rounded-[8px] border border-[#D8C6B6] bg-white px-8 py-11 shadow-[0_12px_28px_rgba(0,0,0,0.05)]">
+    <section className="hero-canvas flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">
+      <div className="relative z-10 w-full max-w-3xl rounded-[10px] border border-[#D8C6B6] bg-white/92 px-8 py-11 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
         <div className="flex items-center gap-2 pb-6 text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C]">
           <span className="h-[1px] w-10 bg-[#D8C6B6]" />
           OmniMental Coaching
         </div>
-        <TypewriterText
-          key={`${lang}-${questionText || "question"}`}
-          text={questionText}
-          speed={102}
-          enableSound
-        />
+        <div className="mt-8 w-full rounded-[16px] border border-[#E4D8CE] bg-[#F6F2EE] px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
+          {introPhase === "welcome" && welcomeText ? (
+            <TypewriterText
+              key={`${lang}-welcome-${welcomeText}`}
+              text={welcomeText}
+              speed={90}
+              enableSound
+              onComplete={() => setIntroPhase("question")}
+              wrapperClassName="mb-5 w-full bg-transparent px-0 py-0"
+            />
+          ) : (
+            <TypewriterText
+              key={`${lang}-question-${questionText || "question"}`}
+              text={questionText}
+              speed={102}
+              enableSound
+              wrapperClassName="mb-5 w-full bg-transparent px-0 py-0"
+            />
+          )}
 
-        <div className="mt-8 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div className="flex-1 rounded-[6px] border border-[#D8C6B6] bg-white transition hover:border-[#2C2C2C] focus-within:border-[#2C2C2C] focus-within:shadow-[0_0_0_1px_rgba(44,44,44,0.05)]">
-              <input
-                type="text"
-                placeholder={placeholderText}
-                value={input}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setInput(value);
-                  if (showSuggestions) {
-                    setShowSuggestions(false);
-                    setSuggestions([]);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void handleSubmit();
-                  }
-                }}
-                className="w-full rounded-[6px] px-4 py-3 text-base text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:outline-none"
-              />
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex-1 rounded-[8px] border border-[#D8C6B6] bg-white transition hover:border-[#2C2C2C] focus-within:border-[#2C2C2C] focus-within:shadow-[0_0_0_1px_rgba(44,44,44,0.05)]">
+                <input
+                  type="text"
+                  placeholder={placeholderText}
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    if (showSuggestions) {
+                      setShowSuggestions(false);
+                      setSuggestions([]);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleSubmit();
+                    }
+                  }}
+                  className="w-full rounded-[8px] bg-transparent px-4 py-3 text-base text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:outline-none"
+                />
+              </div>
+              <button
+                onClick={() => handleSubmit()}
+                disabled={isSubmitting || !input.trim()}
+                className="inline-flex items-center justify-center rounded-[8px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {typeof continueLabel === "string" ? continueLabel : ""}
+              </button>
             </div>
-            <button
-              onClick={() => handleSubmit()}
-              disabled={isSubmitting || !input.trim()}
-              className="inline-flex items-center justify-center rounded-[6px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#2C2C2C]/10 focus:outline-none focus:ring-1 focus:ring-[#2C2C2C] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {typeof continueLabel === "string" ? continueLabel : ""}
-            </button>
-          </div>
 
-          <div className="h-[1px] w-full bg-[#F6F2EE]" />
+            <div className="mt-4 h-[1px] w-full bg-[#E4D8CE]" />
+          </div>
         </div>
 
         {!showSuggestions && (
           <div className="mt-6">
             <button
               onClick={handleSuggestionsToggle}
-              className="inline-flex items-center gap-2 rounded-[6px] border border-[#E60012] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#E60012] transition hover:bg-[#E60012]/10 focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+              className="inline-flex items-center gap-2 rounded-[8px] border border-[#E60012] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#E60012] transition hover:bg-[#E60012]/10 focus:outline-none focus:ring-1 focus:ring-[#E60012]"
             >
               {typeof suggestionsLabel === "string" ? suggestionsLabel : ""}
             </button>
@@ -266,7 +279,7 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
         )}
 
         {showSuggestions && (
-          <div className="mt-8 rounded-[6px] border border-[#D8C6B6] bg-[#F6F2EE] px-5 py-6">
+          <div className="mt-8 rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE] px-5 py-6">
             <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.25em] text-[#2C2C2C]">
               <span>{suggestionTitle}</span>
               <button
@@ -280,7 +293,7 @@ export default function FirstScreen({ onNext }: FirstScreenProps) {
               {suggestions.map((s) => (
                 <button
                   key={s}
-              onClick={() => handleSubmit(s)}
+                  onClick={() => handleSubmit(s)}
                   className="rounded-[4px] border border-[#D8C6B6] bg-white px-4 py-2 text-sm text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
                 >
                   {s}

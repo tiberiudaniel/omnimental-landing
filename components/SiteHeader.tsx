@@ -10,6 +10,7 @@ interface SiteHeaderProps {
 
 export default function SiteHeader({ showMenu = true, onMenuToggle }: SiteHeaderProps) {
   const { lang, setLang } = useI18n();
+  const availableLocales = ["ro"] as const;
 
   return (
     <header className="flex items-center justify-between bg-white p-4 shadow">
@@ -19,13 +20,15 @@ export default function SiteHeader({ showMenu = true, onMenuToggle }: SiteHeader
       </div>
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 p-1 text-xs font-semibold text-neutral-dark">
-          {(["ro", "en"] as const).map((locale) => (
+          {availableLocales.map((locale) => (
             <button
               key={locale}
+              type="button"
               onClick={() => setLang(locale)}
               className={`rounded-full px-3 py-1.5 transition ${
-                lang === locale ? "bg-white text-primary shadow-sm" : "text-primary/70 hover:text-primary"
+                lang === locale ? "bg-white text-primary shadow-sm" : "text-primary/70"
               }`}
+              aria-pressed={lang === locale}
             >
               {locale.toUpperCase()}
             </button>

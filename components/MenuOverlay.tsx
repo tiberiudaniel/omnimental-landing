@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import CTAButton from "./CTAButton";
+import { useI18n } from "./I18nProvider";
 
 export type NavLink = {
   label: string;
@@ -15,8 +15,23 @@ interface MenuOverlayProps {
   links: NavLink[];
 }
 
+const defaultNavigationText = {
+  heading: "Navigare",
+  close: "Închide",
+  cta: "Aplică acum",
+};
+
 export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) {
+  const { t } = useI18n();
+
   if (!open) return null;
+
+  const navigationLabel =
+    typeof t("navHeading") === "string" ? t("navHeading") : defaultNavigationText.heading;
+  const closeLabel =
+    typeof t("navClose") === "string" ? t("navClose") : defaultNavigationText.close;
+  const ctaLabel =
+    typeof t("menuCtaLabel") === "string" ? t("menuCtaLabel") : defaultNavigationText.cta;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose}>
@@ -25,13 +40,15 @@ export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) 
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">Navigare</div>
+          <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+            {navigationLabel}
+          </div>
           <button
             onClick={onClose}
-            aria-label="Închide meniul"
+            aria-label={closeLabel}
             className="text-sm font-semibold text-[#2C2C2C] transition hover:text-[#E60012]"
           >
-            Închide
+            {closeLabel}
           </button>
         </div>
         <ul className="mt-6 space-y-4">
@@ -51,7 +68,14 @@ export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) 
           ))}
         </ul>
         <div className="mt-6 border-t border-[#F6F2EE] pt-4">
-          <CTAButton text="Aplică acum" />
+          <a
+            href="mailto:hello@omnimental.ro"
+            onClick={onClose}
+            className="inline-flex items-center gap-2 rounded-[8px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+          >
+            {ctaLabel}
+            <span aria-hidden>→</span>
+          </a>
         </div>
       </div>
     </div>

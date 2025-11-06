@@ -27,16 +27,30 @@ export default function CardOption({ type, title, onClick }: CardOptionProps) {
   const heading = title ?? (typeof fallbackTitle === "string" ? fallbackTitle : type);
   return (
     <div
-      className={`relative m-4 w-full max-w-xs cursor-pointer border border-[#D8C6B6] p-8 text-left transition ${
+      className={`relative w-full max-w-xs cursor-pointer rounded-[12px] border border-[#D8C6B6] p-8 text-left transition ${
         hovered
-          ? "bg-[#F6F2EE] shadow-[0_12px_32px_rgba(0,0,0,0.08)]"
-          : "bg-white shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
+          ? "border-[#E60012] bg-[#F6F2EE]/95 shadow-[0_16px_40px_rgba(0,0,0,0.08)]"
+          : "bg-white shadow-[0_12px_32px_rgba(0,0,0,0.05)]"
       }`}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
-      <div className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]">
+      <div
+        className={`text-xs font-semibold uppercase tracking-[0.35em] ${
+          hovered ? "text-[#E60012]" : "text-[#A08F82]"
+        }`}
+      >
         {type === "individual" ? "Individual" : "Group"}
       </div>
       <h3 className="mt-3 text-xl font-semibold text-[#1F1F1F]">{heading}</h3>

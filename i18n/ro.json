@@ -1,5 +1,6 @@
 {
-  "firstScreenQuestion": "Ce te interesează cel mai mult?",
+  "firstScreenWelcome": "Bine ai venit.",
+  "firstScreenQuestion": "Spune-mi, pe scurt, ce te interesează?",
   "firstScreenPlaceholder": "Ex: relaxare, stres, mindfulness…",
   "firstScreenSuggestionsBtn": "Dă-mi câteva opțiuni",
   "firstScreenHideSuggestionsBtn": "Ascunde opțiunile",
@@ -20,7 +21,7 @@
     "De la Awareness la Mastery",
     "Leadership din jocul interior"
   ],
-  "chooseOption": "Alege ce anume te interesează",
+  "chooseOption": "Alege varianta potrivită ție",
   "individual": "Sesiuni individuale",
   "group": "Grup online",
   "individualDescription": "Îndrumare unu-la-unu adaptată obiectivelor tale personale.",
@@ -63,4 +64,18 @@
     }
   ],
   "individualFooter": "Toate sesiunile se desfășoară într-un cadru etic și confidențial, cu scop de dezvoltare și optimizare personală, nu de diagnostic sau tratament psihologic."
+  ,
+  "navProgram": "Program",
+  "navProgramDesc": "Detalii Mental Coaching Group",
+  "navSessions": "Sesiuni",
+  "navSessionsDesc": "Descoperă sesiunea individuală",
+  "navEvaluation": "Evaluare",
+  "navEvaluationDesc": "Completează scala de progres",
+  "navAbout": "Despre mine",
+  "navAboutDesc": "Cine sunt și cum lucrez",
+  "navContact": "Contact",
+  "navContactDesc": "Scrie-mi direct",
+  "navHeading": "Navigare",
+  "navClose": "Închide",
+  "menuCtaLabel": "Aplică acum"
 }

@@ -1,5 +1,6 @@
 {
-  "firstScreenQuestion": "What interests you the most?",
+  "firstScreenWelcome": "Welcome.",
+  "firstScreenQuestion": "Tell me, briefly, what you're interested in?",
   "firstScreenPlaceholder": "Ex: relaxation, stress, mindfulness…",
   "firstScreenSuggestionsBtn": "Give me some options",
   "firstScreenHideSuggestionsBtn": "Hide suggestions",
@@ -20,7 +21,7 @@
     "Awareness to mastery",
     "Inner game leadership"
   ],
-  "chooseOption": "Choose what interests you",
+  "chooseOption": "Choose the option that suits you",
   "individual": "Individual Sessions",
   "group": "Online Group",
   "individualDescription": "Personal one-on-one guidance focused on your unique goals.",
@@ -62,5 +63,18 @@
       "description": "Duration: 60–75 minutes per session. Format: online or in-person. Frequency: set together (from weekly to customized pace). Methodology combines coaching, Ericksonian hypnosis, cognitive frameworks, and performance strategies."
     }
   ],
-  "individualFooter": "All sessions take place in an ethical, confidential setting focused on development and optimisation, not on diagnosis or psychological treatment."
+  "individualFooter": "All sessions take place in an ethical, confidential setting focused on development and optimisation, not on diagnosis or psychological treatment.",
+  "navProgram": "Program",
+  "navProgramDesc": "Mental Coaching Group details",
+  "navSessions": "Sessions",
+  "navSessionsDesc": "Discover the individual session",
+  "navEvaluation": "Evaluation",
+  "navEvaluationDesc": "Complete the progress scale",
+  "navAbout": "About me",
+  "navAboutDesc": "Who I am and how I work",
+  "navContact": "Contact",
+  "navContactDesc": "Write to me directly",
+  "navHeading": "Navigation",
+  "navClose": "Close",
+  "menuCtaLabel": "Apply now"
 }

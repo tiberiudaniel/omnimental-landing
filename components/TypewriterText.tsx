@@ -7,6 +7,7 @@ interface TypewriterTextProps {
   speed?: number;
   enableSound?: boolean;
   onComplete?: () => void;
+  wrapperClassName?: string;
 }
 
 export default function TypewriterText({
@@ -14,6 +15,7 @@ export default function TypewriterText({
   speed = 88,
   enableSound = false,
   onComplete,
+  wrapperClassName,
 }: TypewriterTextProps) {
   const [displayedText, setDisplayedText] = useState("");
   const [index, setIndex] = useState(0);
@@ -198,8 +200,12 @@ export default function TypewriterText({
     };
   }, []);
 
+  const containerClassName =
+    wrapperClassName ??
+    "mb-6 w-full rounded-[10px] bg-[#F6F2EE] px-6 py-5 shadow-[inset_0_-1px_0_rgba(0,0,0,0.03)]";
+
   return (
-    <div className="mb-6 w-full bg-[#F6F2EE] px-6 py-5">
+    <div className={containerClassName}>
       <h2
         className="text-center text-2xl font-semibold leading-snug text-[#1F1F1F] md:text-[28px]"
         style={{

@@ -28,3 +28,134 @@ body {
   font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+.hero-canvas,
+.panel-canvas {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-canvas::before,
+.hero-canvas::after,
+.panel-canvas::before,
+.panel-canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero-canvas::before {
+  background-image: url("/assets/tech-mind-bg.jpg");
+  background-size: cover;
+  background-position: left center;
+  opacity: 0.32;
+  mix-blend-mode: multiply;
+  filter: grayscale(14%) saturate(72%);
+  transform: scale(1.05);
+}
+
+.hero-canvas::after {
+  background: linear-gradient(
+    135deg,
+    rgba(253, 252, 249, 0.95) 15%,
+    rgba(253, 252, 249, 0.75) 55%,
+    rgba(246, 242, 238, 0.6) 100%
+  );
+}
+
+.hero-canvas > * {
+  position: relative;
+  z-index: 1;
+}
+
+.panel-canvas::before {
+  background-image: url("/assets/tech-mind-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.18;
+  mix-blend-mode: multiply;
+  filter: grayscale(12%) saturate(70%);
+  transform: scale(1.08);
+}
+
+.panel-canvas::after {
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(253, 252, 249, 0.86) 40%,
+    rgba(246, 242, 238, 0.78) 100%
+  );
+}
+
+.panel-canvas--left::before {
+  background-position: left center;
+}
+
+.panel-canvas--hero::before {
+  opacity: 0.26;
+  background-position: center right;
+}
+
+.panel-canvas--hero::after {
+  background: linear-gradient(
+    110deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(253, 252, 249, 0.8) 48%,
+    rgba(232, 211, 187, 0.42) 100%
+  );
+}
+
+.panel-canvas--brain-left::before {
+  background-image: url("/assets/tech-mind-brain-left.jpg");
+  background-position: left center;
+  opacity: 0.22;
+}
+
+.panel-canvas--brain-left::after {
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.96) 5%,
+    rgba(253, 252, 249, 0.82) 45%,
+    rgba(238, 224, 206, 0.58) 100%
+  );
+}
+
+.panel-canvas--brain-right::before {
+  background-image: url("/assets/tech-mind-cogs-right.jpg");
+  background-position: right center;
+  opacity: 0.22;
+}
+
+.panel-canvas--brain-right::after {
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(253, 252, 249, 0.82) 55%,
+    rgba(230, 210, 188, 0.55) 100%
+  );
+}
+
+.panel-canvas--brain-center::before {
+  background-image: url("/assets/tech-mind-bg.jpg");
+  background-position: center;
+  opacity: 0.2;
+}
+
+.panel-canvas--brain-center::after {
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(253, 252, 249, 0.84) 50%,
+    rgba(238, 224, 206, 0.5) 100%
+  );
+}
+
+.panel-canvas > * {
+  position: relative;
+  z-index: 1;
+}
