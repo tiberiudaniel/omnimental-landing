@@ -62,7 +62,6 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
   const suggestionHintValue = t("firstScreenSuggestionHint");
   const suggestionRefreshValue = t("firstScreenSuggestionsRefresh");
   const suggestionTitleValue = t("firstScreenSuggestionsTitle");
-  const suggestionSourceValue = t("firstScreenSuggestionsSource");
   const welcomeText = typeof welcomeValue === "string" ? welcomeValue : "";
   const questionText =
     typeof question === "string" ? question : "";
@@ -74,8 +73,6 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
     typeof suggestionRefreshValue === "string" ? suggestionRefreshValue : "";
   const suggestionTitle =
     typeof suggestionTitleValue === "string" ? suggestionTitleValue : "";
-  const suggestionSource =
-    typeof suggestionSourceValue === "string" ? suggestionSourceValue : "";
 
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -86,7 +83,10 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
   const [introPhase, setIntroPhase] = useState<"welcome" | "question">(
     welcomeText ? "welcome" : "question"
   );
+  const [isInputHovered, setIsInputHovered] = useState(false);
   const isMountedRef = useRef(true);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fallbackSuggestions = useMemo(() => {
     const suggestionPool = Array.isArray(suggestionValue) ? suggestionValue : [];
@@ -96,9 +96,9 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
   const activeSuggestionPool =
     storedSuggestions.length > 0 ? storedSuggestions : fallbackSuggestions;
 
-  useEffect(() => {
-    let cancelled = false;
-    isMountedRef.current = true;
+useEffect(() => {
+  let cancelled = false;
+  isMountedRef.current = true;
 
     const fetchFromCollection = async (collectionName: string) => {
       try {
@@ -150,6 +150,14 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
     return () => {
       isMountedRef.current = false;
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (focusTimerRef.current) {
+        clearTimeout(focusTimerRef.current);
+      }
     };
   }, []);
 
@@ -226,26 +234,23 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
     setShowSuggestions(true);
   };
 
+  const handleQuestionComplete = () => {
+    if (focusTimerRef.current) {
+      clearTimeout(focusTimerRef.current);
+    }
+    focusTimerRef.current = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 900);
+  };
+
   return (
     <section className="hero-canvas flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">
-      <div className="relative z-10 w-full max-w-3xl rounded-[10px] border border-[#D8C6B6] bg-white/92 px-8 py-11 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
+      <div className="relative z-10 w-full max-w-3xl rounded-[12px] border border-[#E4D8CE] bg-white px-8 py-10 shadow-[0_8px_24px_rgba(31,41,55,0.08)]">
         <div className="flex items-center gap-2 pb-6 text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C]">
-          <span className="h-[1px] w-10 bg-[#D8C6B6]" />
+          <span className="h-[1px] w-10 bg-[#E60012]" />
           OmniMental Coaching
         </div>
-        <div className="relative mt-8 w-full">
-          <div className="absolute inset-0 overflow-hidden rounded-[16px] border border-[#E4D8CE]">
-            <Image
-              src="/assets/tech-mind-brain-left.jpg"
-              alt="Mindful silhouette artwork"
-              fill
-              sizes="(min-width: 768px) 640px, 90vw"
-              className="object-cover opacity-50 mix-blend-multiply"
-              priority={false}
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-[#FDFCF9]/90 via-[#F6F2EE]/85 to-[#E4D8CE]/75" />
-          </div>
-          <div className="relative rounded-[16px] border border-[#E4D8CE] bg-[#FDFCF9]/95 px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[1px]">
+        <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FDFCF9] px-6 py-6">
           {introPhase === "welcome" && welcomeText ? (
             <TypewriterText
               key={`${lang}-welcome-${welcomeText}`}
@@ -261,6 +266,7 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
               text={questionText}
               speed={102}
               enableSound
+              onComplete={handleQuestionComplete}
               wrapperClassName="mb-5 w-full bg-transparent px-0 py-0"
             />
           )}
@@ -269,8 +275,9 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <div className="flex-1 rounded-[8px] border border-[#D8C6B6] bg-white transition hover:border-[#2C2C2C] focus-within:border-[#2C2C2C] focus-within:shadow-[0_0_0_1px_rgba(44,44,44,0.05)]">
                 <input
+                  ref={inputRef}
                   type="text"
-                  placeholder={placeholderText}
+                  placeholder={isInputHovered ? "" : placeholderText}
                   value={input}
                   onChange={(e) => {
                     setInput(e.target.value);
@@ -279,6 +286,8 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
                       setSuggestions([]);
                     }
                   }}
+                  onMouseEnter={() => setIsInputHovered(true)}
+                  onMouseLeave={() => setIsInputHovered(false)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -291,22 +300,20 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
               <button
                 onClick={() => handleSubmit()}
                 disabled={isSubmitting || !input.trim()}
-                className="inline-flex items-center justify-center rounded-[8px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-[8px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012] disabled:cursor-not-allowed disabled:border-[#2C2C2C]/30 disabled:text-[#2C2C2C]/30"
               >
                 {typeof continueLabel === "string" ? continueLabel : ""}
               </button>
             </div>
 
-            <div className="mt-4 h-[1px] w-full bg-[#E4D8CE]" />
           </div>
-        </div>
         </div>
 
         {!showSuggestions && (
           <div className="mt-6">
             <button
               onClick={handleSuggestionsToggle}
-              className="inline-flex items-center gap-2 rounded-[8px] border border-[#E60012] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#E60012] transition hover:bg-[#E60012]/10 focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+              className="inline-flex items-center gap-2 rounded-[4px] border border-[#E60012] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
             >
               {typeof suggestionsLabel === "string" ? suggestionsLabel : ""}
             </button>
@@ -314,7 +321,7 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
         )}
 
         {showSuggestions && (
-          <div className="mt-8 rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE] px-5 py-6">
+          <div className="mt-8 space-y-3 rounded-[10px] border border-[#D8C6B6] bg-white px-5 py-6">
             <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.25em] text-[#2C2C2C]">
               <span>{suggestionTitle}</span>
               <button
@@ -324,11 +331,6 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
                 {suggestionRefresh}
               </button>
             </div>
-            {suggestionSource ? (
-              <p className="mt-1 text-xs uppercase tracking-[0.3em] text-[#A08F82]">
-                {suggestionSource}
-              </p>
-            ) : null}
             <div className="mt-4 flex flex-wrap gap-3">
               {suggestions.map((s) => (
                 <button

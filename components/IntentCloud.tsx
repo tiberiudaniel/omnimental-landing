@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
@@ -26,29 +25,6 @@ export default function IntentCloud({
   const db = getDb();
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const mountedRef = useRef(true);
-  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      if (transitionTimerRef.current) {
-        clearTimeout(transitionTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (status !== "saved") return;
-    const timer = setTimeout(() => {
-      if (mountedRef.current) {
-        setStatus("idle");
-      }
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [status]);
 
   const titleValue = t("intentCloudTitle");
   const helperValue = t("intentCloudHelper");
@@ -58,17 +34,29 @@ export default function IntentCloud({
   const title = typeof titleValue === "string" ? titleValue : "";
   const helper = typeof helperValue === "string" ? helperValue : "";
   const buttonLabel = typeof buttonValue === "string" ? buttonValue : "Continuă";
-  const heroCopy = helper ? `${title} ${helper}` : title;
-  const words = useMemo(
-    () =>
-      Array.isArray(rawList)
-        ? rawList.filter((item): item is string => typeof item === "string")
-        : [],
-    [rawList]
-  );
+  const progress = Math.min(selected.length / maxSelection, 1);
+
+  const words = useMemo(() => {
+    if (!Array.isArray(rawList)) return [];
+    return rawList
+      .filter((item): item is string => typeof item === "string")
+      .map((value, index) => {
+        const hash = Math.abs(
+          [...value].reduce((acc, char) => acc + char.charCodeAt(0), index),
+        );
+        const size = hash % 2; // 0 regular, 1 large
+        const shift = (hash % 9) - 4; // small horizontal shift
+        const tone = hash % 3;
+        return {
+          value,
+          size,
+          shift,
+          tone,
+        };
+      });
+  }, [rawList]);
 
   const toggleWord = (word: string) => {
-    setStatus("idle");
     setSelected((prev) => {
       if (prev.includes(word)) {
         return prev.filter((item) => item !== word);
@@ -98,122 +86,83 @@ export default function IntentCloud({
       return;
     }
     setError(null);
-    setStatus("saving");
     const snapshot = [...selected];
-
-    if (transitionTimerRef.current) {
-      clearTimeout(transitionTimerRef.current);
-    }
-    transitionTimerRef.current = setTimeout(() => {
-      onComplete(snapshot);
-      transitionTimerRef.current = null;
-    }, 500);
-
+    onComplete(snapshot);
     void addDoc(collection(db, "userIntentTags"), {
       tags: selected,
       lang,
       timestamp: serverTimestamp(),
-    })
-      .then(() => {
-        if (mountedRef.current) {
-          setStatus("saved");
-        }
-      })
-      .catch((err) => {
-        console.error("intent cloud save failed", err);
-        if (mountedRef.current) {
-          setStatus("idle");
-        }
-      });
+    }).catch((err) => {
+      console.error("intent cloud save failed", err);
+    });
   };
-
-  const progress = Math.min(selected.length / maxSelection, 1);
-  const statusMessage =
-    status === "saving"
-      ? lang === "ro"
-        ? "Se salvează alegerile tale..."
-        : "Saving your picks..."
-      : status === "saved"
-      ? lang === "ro"
-        ? "Notat. Continuăm."
-        : "Saved. Moving on."
-      : null;
 
   return (
     <section className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-12">
-      <div className="grid w-full max-w-5xl gap-6 rounded-[16px] border border-[#E4D8CE] bg-white/92 p-6 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px] md:grid-cols-[minmax(0,1fr)_260px] md:text-left">
-        <div className="space-y-6">
-          <TypewriterText text={heroCopy} speed={90} enableSound />
-          <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
-            {selected.length}/{maxSelection} selectate
+      <div className="w-full max-w-5xl space-y-6 rounded-[16px] border border-[#E4D8CE] bg-white/92 px-6 py-10 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
+        <TypewriterText text={title} speed={90} enableSound key={title} />
+        {helper ? (
+          <p className="text-sm text-[#2C2C2C]/80">{helper}</p>
+        ) : null}
+
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-2">
+          <div className="flex items-center justify-between text-xs font-medium text-[#2C2C2C]/70">
+            <span>
+              {selected.length}/{maxSelection} selectate
+            </span>
+            <span>{Math.round(progress * 100)}%</span>
           </div>
-          <div className="mx-auto mt-1 h-1 w-full max-w-md rounded-full bg-[#F0E5DC] md:mx-0">
+          <div className="h-2 w-full rounded-full bg-[#E8DDD3]">
             <div
-              className="h-full rounded-full bg-[#2C2C2C] transition-all duration-300"
+              className="h-full rounded-full bg-gradient-to-r from-[#E60012] via-[#C24B17] to-[#2C2C2C] transition-all duration-300 ease-out"
               style={{ width: `${progress * 100}%` }}
             />
           </div>
-          <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-3 md:mx-0 md:justify-start">
-            {words.map((word) => {
-              const isActive = selected.includes(word);
-              return (
-                <motion.button
-                  key={word}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  type="button"
-                  onClick={() => toggleWord(word)}
-                  className={`rounded-full border px-4 py-2 text-sm transition ${
-                    isActive
-                      ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                      : "border-[#D8C6B6] bg-white text-[#2C2C2C] hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
-                  }`}
-                >
-                  {word}
-                </motion.button>
-              );
-            })}
-          </div>
-          <div className="space-y-3 pt-4">
-            <button
-              type="button"
-              onClick={handleContinue}
-              disabled={
-                selected.length < minSelection ||
-                selected.length > maxSelection ||
-                status === "saving"
-              }
-              className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {buttonLabel}
-            </button>
-            {error && (
-              <p className="text-sm text-[#E60012]">{error}</p>
-            )}
-            {!error && statusMessage && (
-              <p className="text-sm text-[#2C2C2C]/70">{statusMessage}</p>
-            )}
-          </div>
         </div>
 
-        <div className="relative hidden overflow-hidden rounded-[14px] border border-[#D8C6B6]/80 bg-[#F6F2EE]/90 shadow-[0_12px_32px_rgba(0,0,0,0.06)] md:block">
-          <Image
-            src="/assets/tech-mind-cogs-right.jpg"
-            alt="Gears illustration"
-            fill
-            sizes="280px"
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-[#FDF7EF]/85" />
-          <div className="relative flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-[#2C2C2C]">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]">
-              Claritate ghidată
-            </p>
-            <p className="text-sm leading-relaxed">
-              Când aliniezi mintea cu ritmul tău, apar logică și decizii curate. Alege
-              cuvintele care descriu starea ta și continuăm împreună.
-            </p>
-          </div>
+        <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-3 md:gap-4">
+          {words.map(({ value, size, shift }) => {
+            const isActive = selected.includes(value);
+            return (
+              <motion.button
+                key={value}
+                whileHover={{ y: -4, scale: 1.04 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={() => toggleWord(value)}
+                className={`rounded-[18px] border bg-white px-4 py-2 text-sm font-medium tracking-[0.08em] shadow-[0_8px_20px_rgba(31,41,55,0.08)] transition focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E60012] ${
+                  isActive
+                    ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
+                    : "border-[#C0B0A1] text-[#1F1F1F] hover:border-[#E60012] hover:text-[#E60012]"
+                }`}
+                style={{
+                  fontSize: size === 1 ? "1rem" : "0.9rem",
+                  transform: `translateX(${shift}px)`,
+                  borderStyle: "solid",
+                  transitionProperty: "transform, box-shadow, border, color, background",
+                }}
+                aria-pressed={isActive}
+              >
+                {value}
+              </motion.button>
+            );
+          })}
+        </div>
+        <div className="space-y-3 pt-4">
+          <button
+            type="button"
+          onClick={handleContinue}
+          disabled={
+            selected.length < minSelection ||
+            selected.length > maxSelection
+          }
+          className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {buttonLabel}
+        </button>
+          {error && (
+            <p className="text-sm text-[#E60012]">{error}</p>
+          )}
         </div>
       </div>
     </section>

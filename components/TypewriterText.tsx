@@ -8,6 +8,8 @@ interface TypewriterTextProps {
   enableSound?: boolean;
   onComplete?: () => void;
   wrapperClassName?: string;
+  cursorClassName?: string;
+  pauseAtEndMs?: number;
 }
 
 export default function TypewriterText({
@@ -15,14 +17,18 @@ export default function TypewriterText({
   speed = 88,
   enableSound = false,
   onComplete,
-  wrapperClassName,
+  wrapperClassName = "mb-6 w-full bg-[#F6F2EE] px-6 py-5",
+  cursorClassName = "typewriter-cursor",
+  pauseAtEndMs = 800,
 }: TypewriterTextProps) {
   const [displayedText, setDisplayedText] = useState("");
   const [index, setIndex] = useState(0);
+  const [showCursor, setShowCursor] = useState(true);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completionRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const noiseBufferRef = useRef<AudioBuffer | null>(null);
+  const cursorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!enableSound) {
@@ -30,11 +36,11 @@ export default function TypewriterText({
         void audioContextRef.current.close().catch(() => undefined);
       }
       audioContextRef.current = null;
-      return;
+      return undefined;
     }
 
     if (typeof window === "undefined") {
-      return;
+      return undefined;
     }
 
     try {
@@ -45,7 +51,7 @@ export default function TypewriterText({
         window.AudioContext ?? maybeWindow.webkitAudioContext;
       if (!AudioContextCtor) {
         console.warn("AudioContext is not supported in this browser.");
-        return;
+        return undefined;
       }
       const context = new AudioContextCtor();
       audioContextRef.current = context;
@@ -156,6 +162,10 @@ export default function TypewriterText({
     if (index >= text.length) {
       if (!completionRef.current && onComplete) {
         completionRef.current = true;
+        const timeout = setTimeout(() => {
+          setShowCursor(false);
+        }, pauseAtEndMs);
+        cursorTimeoutRef.current = timeout;
         onComplete();
       }
       return;
@@ -190,22 +200,21 @@ export default function TypewriterText({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [index, text, speed, enableSound, onComplete]);
+  }, [index, text, speed, enableSound, onComplete, pauseAtEndMs]);
 
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      if (cursorTimeoutRef.current) {
+        clearTimeout(cursorTimeoutRef.current);
+      }
     };
   }, []);
 
-  const containerClassName =
-    wrapperClassName ??
-    "mb-6 w-full rounded-[10px] bg-[#F6F2EE] px-6 py-5 shadow-[inset_0_-1px_0_rgba(0,0,0,0.03)]";
-
   return (
-    <div className={containerClassName}>
+    <div className={wrapperClassName}>
       <h2
         className="text-center text-2xl font-semibold leading-snug text-[#1F1F1F] md:text-[28px]"
         style={{
@@ -216,7 +225,7 @@ export default function TypewriterText({
       >
         <span aria-label={text} role="text" className="inline-block">
           {displayedText}
-          <span className="typewriter-cursor">|</span>
+          {showCursor ? <span className={cursorClassName}>|</span> : null}
         </span>
       </h2>
       <style jsx>{`
