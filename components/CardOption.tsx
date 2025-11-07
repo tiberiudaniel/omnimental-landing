@@ -9,9 +9,18 @@ interface CardOptionProps {
   title?: string;
   onClick: () => void;
   isSelected?: boolean;
+  isRecommended?: boolean;
+  recommendedLabel?: string;
 }
 
-export default function CardOption({ type, title, onClick, isSelected = false }: CardOptionProps) {
+export default function CardOption({
+  type,
+  title,
+  onClick,
+  isSelected = false,
+  isRecommended = false,
+  recommendedLabel,
+}: CardOptionProps) {
   const { t } = useI18n();
   const [hovered, setHovered] = useState(false);
   const descriptionKey =
@@ -62,6 +71,11 @@ export default function CardOption({ type, title, onClick, isSelected = false }:
       <p className="mt-4 text-sm leading-6 text-[#2C2C2C]">
         {description}
       </p>
+      {isRecommended && (
+        <div className="absolute left-4 top-4 rounded-full border border-[#E60012]/40 bg-white/95 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#E60012]">
+          {recommendedLabel || "Recommended"}
+        </div>
+      )}
       {isSelected && (
         <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full border border-[#E60012]/40 bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#E60012]">
           ✓

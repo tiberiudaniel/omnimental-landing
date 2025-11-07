@@ -7,8 +7,32 @@ import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
 import { getDb } from "../lib/firebase";
 
+const CATEGORY_KEYS = [
+  "calm",
+  "relationships",
+  "career",
+  "clarity",
+  "boundaries",
+  "selfTrust",
+] as const;
+
+export type IntentCategory = (typeof CATEGORY_KEYS)[number];
+
+type IntentWord = {
+  key: string;
+  label: string;
+  category: IntentCategory;
+  size: number;
+  shift: number;
+};
+
+export type IntentCloudResult = {
+  tags: string[];
+  categories: Array<{ category: IntentCategory; count: number }>;
+};
+
 type IntentCloudProps = {
-  onComplete: (tags: string[]) => void;
+  onComplete: (result: IntentCloudResult) => void;
   minSelection?: number;
   maxSelection?: number;
 };
@@ -36,35 +60,70 @@ export default function IntentCloud({
   const buttonLabel = typeof buttonValue === "string" ? buttonValue : "Continuă";
   const progress = Math.min(selected.length / maxSelection, 1);
 
-  const words = useMemo(() => {
+  const words = useMemo<IntentWord[]>(() => {
     if (!Array.isArray(rawList)) return [];
-    return rawList
-      .filter((item): item is string => typeof item === "string")
-      .map((value, index) => {
-        const hash = Math.abs(
-          [...value].reduce((acc, char) => acc + char.charCodeAt(0), index),
-        );
-        const size = hash % 2; // 0 regular, 1 large
-        const shift = (hash % 9) - 4; // small horizontal shift
-        const tone = hash % 3;
-        return {
-          value,
+    const isCategory = (value: unknown): value is IntentCategory =>
+      typeof value === "string" && CATEGORY_KEYS.includes(value as IntentCategory);
+
+    return rawList.flatMap((item, index) => {
+      if (!item || typeof item !== "object") {
+        return [];
+      }
+
+      const record = item as Record<string, unknown>;
+      const key =
+        typeof record.key === "string" && record.key.trim().length > 0
+          ? record.key
+          : `intent-word-${index}`;
+      const label =
+        typeof record.label === "string" && record.label.trim().length > 0
+          ? record.label
+          : "";
+
+      if (!label) {
+        return [];
+      }
+
+      const category = isCategory(record.category) ? record.category : "clarity";
+
+      const hash = Math.abs([...label].reduce((acc, char) => acc + char.charCodeAt(0), index));
+      const size = hash % 2;
+      const shift = (hash % 9) - 4;
+
+      return [
+        {
+          key,
+          label,
+          category,
           size,
           shift,
-          tone,
-        };
-      });
+        },
+      ];
+    });
   }, [rawList]);
 
-  const toggleWord = (word: string) => {
+  const wordDictionary = useMemo(() => {
+    const map: Record<string, IntentWord> = {};
+    words.forEach((word) => {
+      map[word.key] = word;
+    });
+    return map;
+  }, [words]);
+
+  const selectedLabels = useMemo(
+    () => selected.map((key) => wordDictionary[key]?.label ?? key),
+    [selected, wordDictionary],
+  );
+
+  const toggleWord = (wordKey: string) => {
     setSelected((prev) => {
-      if (prev.includes(word)) {
-        return prev.filter((item) => item !== word);
+      if (prev.includes(wordKey)) {
+        return prev.filter((item) => item !== wordKey);
       }
       if (prev.length >= maxSelection) {
         return prev;
       }
-      return [...prev, word];
+      return [...prev, wordKey];
     });
   };
 
@@ -86,10 +145,24 @@ export default function IntentCloud({
       return;
     }
     setError(null);
-    const snapshot = [...selected];
-    onComplete(snapshot);
+    const snapshot = [...selectedLabels];
+    const categoryCounts = selected.reduce((acc, key) => {
+      const category = wordDictionary[key]?.category ?? "clarity";
+      acc[category] = (acc[category] ?? 0) + 1;
+      return acc;
+    }, {} as Record<IntentCategory, number>);
+
+    const sortedCategories = Object.entries(categoryCounts)
+      .map(([category, count]) => ({
+        category: category as IntentCategory,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    onComplete({ tags: snapshot, categories: sortedCategories });
     void addDoc(collection(db, "userIntentTags"), {
-      tags: selected,
+      tags: snapshot,
+      categories: sortedCategories,
       lang,
       timestamp: serverTimestamp(),
     }).catch((err) => {
@@ -121,15 +194,15 @@ export default function IntentCloud({
         </div>
 
         <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-3 md:gap-4">
-          {words.map(({ value, size, shift }) => {
-            const isActive = selected.includes(value);
+          {words.map(({ key, label, size, shift }) => {
+            const isActive = selected.includes(key);
             return (
               <motion.button
-                key={value}
+                key={key}
                 whileHover={{ y: -4, scale: 1.04 }}
                 whileTap={{ scale: 0.98 }}
                 type="button"
-                onClick={() => toggleWord(value)}
+                onClick={() => toggleWord(key)}
                 className={`rounded-[18px] border bg-white px-4 py-2 text-sm font-medium tracking-[0.08em] shadow-[0_8px_20px_rgba(31,41,55,0.08)] transition focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E60012] ${
                   isActive
                     ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
@@ -143,7 +216,7 @@ export default function IntentCloud({
                 }}
                 aria-pressed={isActive}
               >
-                {value}
+                {label}
               </motion.button>
             );
           })}

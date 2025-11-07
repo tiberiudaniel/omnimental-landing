@@ -20,8 +20,7 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
         (quote): quote is string => typeof quote === "string" && quote.trim().length > 0,
       );
       if (validQuotes.length > 0) {
-        const randomIndex = Math.floor(Math.random() * validQuotes.length);
-        return validQuotes[randomIndex];
+        return validQuotes[0];
       }
     }
     return typeof titleValue === "string" ? titleValue : "";
@@ -30,9 +29,9 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
   const buttonLabel = typeof buttonValue === "string" ? buttonValue : "Încep";
 
   return (
-    <section className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">
+    <section id="intro" className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">
       <div className="w-full max-w-3xl space-y-6 rounded-[16px] border border-[#E4D8CE] bg-white/92 px-8 py-12 text-center shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
-        <TypewriterText text={title} speed={90} enableSound />
+        <TypewriterText key={title} text={title} speed={90} enableSound />
         {body ? <p className="text-base leading-relaxed text-[#2C2C2C]/80">{body}</p> : null}
         <button
           type="button"

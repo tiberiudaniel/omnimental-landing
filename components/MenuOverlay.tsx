@@ -69,14 +69,17 @@ export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) 
           ))}
         </ul>
         <div className="mt-6 border-t border-[#F6F2EE] pt-4">
-          <a
-            href="mailto:hello@omnimental.ro"
-            onClick={onClose}
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              window.location.href = "mailto:hello@omnimental.ro";
+            }}
             className="inline-flex items-center gap-2 rounded-[8px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
           >
             {ctaLabel}
             <span aria-hidden>→</span>
-          </a>
+          </button>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 // components/I18nProvider.tsx
 "use client";
 
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import en from "../i18n/en.json";
 import ro from "../i18n/ro.json";
@@ -26,6 +26,12 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = useState<Lang>("ro");
   const translations = useMemo<Translations>(() => (lang === "ro" ? ro : en), [lang]);
   const t = (key: string) => translations[key] ?? key;
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = lang;
+    }
+  }, [lang]);
 
   return (
     <I18nContext.Provider value={{ lang, setLang, t }}>
