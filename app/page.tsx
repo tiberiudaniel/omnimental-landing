@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react"; // Eliminat useCallback, useEffect, useRef (nefolosite)
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import FirstScreen from "../components/FirstScreen";
 import CardOption from "../components/CardOption";
@@ -18,6 +18,7 @@ import IntentSummary from "../components/IntentSummary";
 import { useProfile } from "../components/ProfileProvider";
 import AccountModal from "../components/AccountModal";
 import { getDb } from "../lib/firebase";
+import IntroAnimation from "../components/IntroAnimation";
 
 const db = getDb();
 const REQUIRED_SELECTIONS = 7;
@@ -25,6 +26,7 @@ const REQUIRED_SELECTIONS = 7;
 function PageContent() {
   const { t, lang } = useI18n();
   type Step =
+    | "preIntro"
     | "intro"
     | "firstInput"
     | "reflectionPrompt"
@@ -34,7 +36,7 @@ function PageContent() {
     | "cards"
     | "details";
 
-  const [step, setStep] = useState<Step>("intro");
+  const [step, setStep] = useState<Step>("preIntro");
   const [selectedCard, setSelectedCard] = useState<"individual" | "group" | null>(null);
   const [journalEntry, setJournalEntry] = useState("");
   const [intentTags, setIntentTags] = useState<string[]>([]);
@@ -229,6 +231,8 @@ function PageContent() {
       ) : null}
 
       <main>
+        {step === "preIntro" && <IntroAnimation onComplete={() => goToStep("intro")} />}
+
         {step === "intro" && <JourneyIntro onStart={() => goToStep("firstInput")} />}
 
         {step === "firstInput" && (

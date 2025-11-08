@@ -10,7 +10,7 @@ import {
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyAE3Wv-gWo2-aNUWZ_CFMHDhurbaD0ASPA",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "omnimental-landing.firebaseapp.com",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "omnimental-landing.vercel.app",
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "omnimental-landing",
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "omnimental-landing.firebasestorage.app",
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "1012216607071",

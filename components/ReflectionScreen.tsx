@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import TypewriterText from "./TypewriterText";
 
 interface ReflectionScreenProps {
@@ -13,6 +13,24 @@ export default function ReflectionScreen({ lines, onContinue }: ReflectionScreen
     const cleaned = lines.find((line) => line && line.trim().length > 0);
     return cleaned ?? "";
   }, [lines]);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleComplete = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      onContinue();
+    }, 1500);
+  }, [onContinue]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <section className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">
@@ -22,7 +40,7 @@ export default function ReflectionScreen({ lines, onContinue }: ReflectionScreen
           text={primaryLine}
           speed={90}
           enableSound
-          onComplete={onContinue}
+          onComplete={handleComplete}
         />
       </div>
     </section>

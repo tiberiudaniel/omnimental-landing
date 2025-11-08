@@ -184,13 +184,13 @@ function ProgressContent() {
       <AccountModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
       <main className="px-4 py-12 md:px-8">
         <div className="mx-auto flex max-w-5xl flex-col gap-4 text-center">
-          <p className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+          <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
             {typeof latestLabel === "string" ? latestLabel : "Latest evaluation"}
           </p>
-          <h1 className="text-3xl font-semibold text-[#1F1F1F]">
+          <h1 className="text-3xl font-semibold text-[#2C1F18]">
             {typeof title === "string" ? title : "Your mental progress"}
           </h1>
-          <p className="text-sm text-[#2C2C2C]/80">
+          <p className="text-sm text-[#4A3A30]">
             {typeof subtitle === "string"
               ? subtitle
               : "Each saved evaluation becomes a map of recurring themes."}

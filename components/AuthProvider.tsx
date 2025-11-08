@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -19,13 +20,20 @@ import {
 import { getFirebaseAuth } from "../lib/firebase";
 
 const AUTH_EMAIL_STORAGE_KEY = "omnimental_auth_email";
+const KEEP_SIGNED_IN_KEY = "omnimental_keep_signed_in_until";
+const KEEP_SIGNED_IN_DURATION_MS = 10 * 24 * 60 * 60 * 1000; // 10 days
+
+type StoredAuthContext = {
+  email: string;
+  remember: boolean;
+};
 
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
   sendingLink: boolean;
   linkSentTo?: string;
-  sendMagicLink: (email: string) => Promise<void>;
+  sendMagicLink: (email: string, remember: boolean) => Promise<void>;
   signOutUser: () => Promise<void>;
 };
 
@@ -36,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [sendingLink, setSendingLink] = useState(false);
   const [linkSentTo, setLinkSentTo] = useState<string | undefined>(undefined);
+  const pendingRememberRef = useRef<boolean>(false);
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -51,26 +60,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     const auth = getFirebaseAuth();
-    if (isSignInWithEmailLink(auth, window.location.href)) {
-      let email = window.localStorage.getItem(AUTH_EMAIL_STORAGE_KEY);
-      if (!email) {
-        const promptValue = window.prompt("Introduce emailul folosit pentru autentificare");
-        email = promptValue ? promptValue.trim() : null;
+    if (!isSignInWithEmailLink(auth, window.location.href)) {
+      return;
+    }
+    let stored: StoredAuthContext | null = null;
+    const storedValue = window.localStorage.getItem(AUTH_EMAIL_STORAGE_KEY);
+    if (storedValue) {
+      try {
+        stored = JSON.parse(storedValue) as StoredAuthContext;
+      } catch (error) {
+        console.warn("Failed to parse stored auth context", error);
       }
-      if (email) {
-        void signInWithEmailLink(auth, email, window.location.href)
-          .then(() => {
-            window.localStorage.removeItem(AUTH_EMAIL_STORAGE_KEY);
-            window.history.replaceState({}, document.title, window.location.pathname);
-          })
-          .catch((error) => {
-            console.error("Email link sign-in failed", error);
-          });
-      }
+    }
+    let email = stored?.email ?? null;
+    if (!email) {
+      const promptValue = window.prompt("Introduce emailul folosit pentru autentificare");
+      email = promptValue ? promptValue.trim() : null;
+    }
+    if (email) {
+      pendingRememberRef.current = stored?.remember ?? false;
+      void signInWithEmailLink(auth, email, window.location.href)
+        .then(() => {
+          window.localStorage.removeItem(AUTH_EMAIL_STORAGE_KEY);
+          if (pendingRememberRef.current) {
+            const expires = Date.now() + KEEP_SIGNED_IN_DURATION_MS;
+            window.localStorage.setItem(KEEP_SIGNED_IN_KEY, String(expires));
+          } else {
+            window.localStorage.removeItem(KEEP_SIGNED_IN_KEY);
+          }
+          window.history.replaceState({}, document.title, window.location.pathname);
+        })
+        .catch((error) => {
+          console.error("Email link sign-in failed", error);
+        });
     }
   }, []);
 
-  const sendMagicLink = useCallback(async (email: string) => {
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (!user) {
+      return;
+    }
+    const keepValue = window.localStorage.getItem(KEEP_SIGNED_IN_KEY);
+    if (!keepValue) {
+      return;
+    }
+    const expires = Number(keepValue);
+    if (Number.isFinite(expires) && Date.now() > expires) {
+      const auth = getFirebaseAuth();
+      void signOut(auth).catch((error) => {
+        console.error("Auto sign-out failed", error);
+      });
+    }
+  }, [user]);
+
+  const sendMagicLink = useCallback(async (email: string, remember: boolean) => {
     if (!email) {
       throw new Error("Email is required");
     }
@@ -90,7 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await sendSignInLinkToEmail(auth, trimmed, actionCodeSettings);
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(AUTH_EMAIL_STORAGE_KEY, trimmed);
+        const payload: StoredAuthContext = { email: trimmed, remember };
+        window.localStorage.setItem(AUTH_EMAIL_STORAGE_KEY, JSON.stringify(payload));
       }
       setLinkSentTo(trimmed);
     } finally {
@@ -101,6 +148,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOutUser = useCallback(async () => {
     const auth = getFirebaseAuth();
     await signOut(auth);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(KEEP_SIGNED_IN_KEY);
+    }
     setLinkSentTo(undefined);
   }, []);
 

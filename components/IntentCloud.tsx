@@ -193,7 +193,7 @@ export default function IntentCloud({
           </div>
         </div>
 
-        <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-3 md:gap-4">
+        <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-2 md:gap-3">
           {words.map(({ key, label, size, shift }) => {
             const isActive = selected.includes(key);
             return (
@@ -203,13 +203,13 @@ export default function IntentCloud({
                 whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={() => toggleWord(key)}
-                className={`rounded-[18px] border bg-white px-4 py-2 text-sm font-medium tracking-[0.08em] shadow-[0_8px_20px_rgba(31,41,55,0.08)] transition focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E60012] ${
+                className={`rounded-[14px] border px-3.5 py-1.5 text-[0.82rem] font-semibold uppercase tracking-[0.18em] shadow-[0_6px_14px_rgba(31,41,55,0.08)] transition focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E60012] ${
                   isActive
                     ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                    : "border-[#C0B0A1] text-[#1F1F1F] hover:border-[#E60012] hover:text-[#E60012]"
+                    : "border-[#D6C7B8] bg-[#FCF7F1] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
                 }`}
                 style={{
-                  fontSize: size === 1 ? "1rem" : "0.9rem",
+                  fontSize: size === 1 ? "0.85rem" : "0.78rem",
                   transform: `translateX(${shift}px)`,
                   borderStyle: "solid",
                   transitionProperty: "transform, box-shadow, border, color, background",

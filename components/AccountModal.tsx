@@ -13,6 +13,7 @@ export default function AccountModal({ open, onClose }: AccountModalProps) {
   const { t } = useI18n();
   const { sendMagicLink, sendingLink, linkSentTo } = useAuth();
   const [email, setEmail] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [status, setStatus] = useState<"idle" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -24,9 +25,10 @@ export default function AccountModal({ open, onClose }: AccountModalProps) {
     event.preventDefault();
     setError(null);
     try {
-      await sendMagicLink(email);
+      await sendMagicLink(email, rememberMe);
       setStatus("sent");
       setEmail("");
+      setRememberMe(true);
     } catch (err) {
       const fallback =
         typeof errorMessageFallback === "string"
@@ -45,6 +47,7 @@ export default function AccountModal({ open, onClose }: AccountModalProps) {
   const savingLabel = t("accountModalSaving");
   const placeholderEmail = t("accountModalEmailPlaceholder");
   const errorMessageFallback = t("accountModalError");
+  const rememberLabel = t("accountModalRememberLabel");
   const successTitle = t("accountModalSuccessTitle");
   const successBody = t("accountModalSuccessBody");
 
@@ -105,6 +108,20 @@ export default function AccountModal({ open, onClose }: AccountModalProps) {
                 }
                 required
               />
+            </div>
+            <div className="flex items-center gap-2 text-left">
+              <input
+                id="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+                className="h-4 w-4 rounded border-[#D8C6B6] text-[#2C2C2C] focus:ring-[#E60012]"
+              />
+              <label htmlFor="remember-me" className="text-xs text-[#2C2C2C]/80">
+                {typeof rememberLabel === "string"
+                  ? rememberLabel
+                  : "Ține-mă conectat 10 zile"}
+              </label>
             </div>
             {error && <p className="text-sm text-[#E60012]">{error}</p>}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

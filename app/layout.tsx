@@ -3,7 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../components/AuthProvider";
 import { ProfileProvider } from "../components/ProfileProvider";
+import Script from "next/script";
 
+// Font setup
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -14,9 +16,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Site metadata
 const title = "OmniMental Coaching | Mental Coaching & Biofeedback";
 const description =
   "OmniMental oferă programe de mental coaching, biofeedback și intervenții strategice pentru profesioniști care vor claritate sub presiune.";
+
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://omnimental.ro");
@@ -47,19 +51,31 @@ export const metadata: Metadata = {
   },
 };
 
+// Single RootLayout export
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="ro">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <head>
+        {/* Roboto font */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
           <ProfileProvider>{children}</ProfileProvider>
         </AuthProvider>
+
+        {/* GSAP loaded after page interactive for safety */}
+        <Script
+          src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

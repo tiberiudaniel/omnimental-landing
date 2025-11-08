@@ -30,15 +30,15 @@ export default function SiteHeader({
     typeof signOutLabelValue === "string" ? signOutLabelValue : "Deconectează-te";
 
   return (
-    <header className="flex items-center justify-between bg-white p-4 shadow">
-      <div className="flex items-center gap-4">
-        <Image src="/assets/logo.jpg" alt="OmniMental logo" width={80} height={32} priority />
-        <span className="text-2xl font-semibold tracking-wide text-neutral-dark">OmniMental</span>
-      </div>
-      <div className="flex items-center gap-2">
+    <header className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 shadow">
+      <Link href="/" className="flex items-center gap-3">
+        <Image src="/assets/logo.jpg" alt="OmniMental logo" width={70} height={28} priority />
+        <span className="text-xl font-semibold tracking-wide text-neutral-dark">OmniMental</span>
+      </Link>
+      <div className="flex items-center gap-2 sm:gap-3">
         <Link
           href="/progress"
-          className="hidden rounded-full border border-[#2C2C2C] px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#2C2C2C] hover:text-white sm:inline-flex"
+          className="hidden rounded-full border border-[#2C2C2C] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:bg-[#2C2C2C] hover:text-white sm:inline-flex"
         >
           {progressLabel}
         </Link>
@@ -59,17 +59,17 @@ export default function SiteHeader({
                   }
                 }
           }
-          className="rounded-full border border-[#2C2C2C] px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#2C2C2C] hover:text-white"
+          className="rounded-full border border-[#2C2C2C] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:bg-[#2C2C2C] hover:text-white"
         >
           {user ? signOutLabel : signInLabel}
         </button>
-        <div className="flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 p-1 text-xs font-semibold text-neutral-dark">
+        <div className="flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 p-1 text-[10px] font-semibold text-neutral-dark">
           {availableLocales.map((locale) => (
             <button
               key={locale}
               type="button"
               onClick={() => setLang(locale)}
-              className={`rounded-full px-3 py-1.5 transition ${
+              className={`rounded-full px-2.5 py-1 transition ${
                 lang === locale ? "bg-white text-primary shadow-sm" : "text-primary/70"
               }`}
               aria-pressed={lang === locale}
