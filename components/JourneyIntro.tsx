@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState } from "react";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
 
@@ -14,19 +14,20 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
   const quotesValue = t("journeyIntroQuotes");
   const bodyValue = t("journeyIntroBody");
   const buttonValue = t("journeyIntroButton");
-  const title = useMemo(() => {
+
+  const [title] = useState(() => {
     if (Array.isArray(quotesValue)) {
       const validQuotes = quotesValue.filter(
         (quote): quote is string => typeof quote === "string" && quote.trim().length > 0,
       );
       if (validQuotes.length > 0) {
-        // Select a random quote instead of always the first one
         const randomIndex = Math.floor(Math.random() * validQuotes.length);
         return validQuotes[randomIndex];
       }
     }
     return typeof titleValue === "string" ? titleValue : "";
-  }, [quotesValue, titleValue]);
+  });
+
   const body = typeof bodyValue === "string" ? bodyValue : "";
   const buttonLabel = typeof buttonValue === "string" ? buttonValue : "Încep";
 
