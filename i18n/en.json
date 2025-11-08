@@ -56,12 +56,14 @@
   "journeyIntroQuotes": [
     "“Very little is needed to make a happy life; it is all within yourself in your way of thinking.” — Marcus Aurelius",
     "“The mind is like a mirror; life becomes clear only when you stop disturbing it.” — Lao Tzu",
-    "“Your strength lies in the silence between thoughts — that’s where true clarity begins.” — Anonymous",
+    "“Știai că: Cititul zilnic timp de 20 de minute poate îmbunătăți memoria și concentrarea cu până la 30%?",
     "“Happiness does not depend on what happens outside of you but on what happens inside of you.” — Harold B. Lee",
-    "“We can’t become what we need to be by remaining what we are.” — Oprah"
+    "“We can’t become what we need to be by remaining what we are.” — Oprah",
+    "“Știai că: Consumul de nuci și semințe zilnic furnizează acizi grași esențiali care reduc inflamația și susțin sănătatea creierului?"
   ],
+
   "journeyIntroTitle": "“The mind softens when you put feelings into words.”",
-  "journeyIntroBody": "Hit enter and walk through a few short steps to get clear.",
+  "journeyIntroBody": "Hit enter and start to improve.",
   "journeyIntroButton": "Enter",
   "journalPrompt": "Write simply: what worries you right now?",
   "journalPlaceholder": "e.g. “I feel tense all the time and can’t focus.”",

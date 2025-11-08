@@ -20,7 +20,9 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
         (quote): quote is string => typeof quote === "string" && quote.trim().length > 0,
       );
       if (validQuotes.length > 0) {
-        return validQuotes[0];
+        // Select a random quote instead of always the first one
+        const randomIndex = Math.floor(Math.random() * validQuotes.length);
+        return validQuotes[randomIndex];
       }
     }
     return typeof titleValue === "string" ? titleValue : "";
