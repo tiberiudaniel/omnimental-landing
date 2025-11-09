@@ -84,6 +84,51 @@
   "intentSummaryIntensityHigh": "Foarte urgent",
   "intentSummaryButton": "Continuă",
   "intentSummaryEmpty": "Selectează câteva opțiuni pentru a vedea analiza.",
+  "intentSummaryResultTitle": "Rezumatul tău",
+  "intentSummaryResultSubtitle": "Recomandarea mea",
+  "intentSummaryLoadLevels": {
+    "low": {
+      "label": "Nivel de încărcare: Scăzut",
+      "recommendation": "Ești pe direcția bună. Poți intra în programul de grup pentru consolidare sau poți lucra țintit cu 1–2 sesiuni individuale pe obiective specifice."
+    },
+    "moderate": {
+      "label": "Nivel de încărcare: Moderat",
+      "recommendation": "Ai baza pentru schimbări rapide. Recomand Programul de grup OmniMental (12 săptămâni). Dacă ai o temă punctuală, poți adăuga 1–2 sesiuni individuale."
+    },
+    "high": {
+      "label": "Nivel de încărcare: Ridicat",
+      "recommendation": "Pentru rezultate stabile și suport structurat, recomand Programul de grup OmniMental (12 săptămâni). Include protocol ghidat, practici săptămânale și monitorizare progres."
+    }
+  },
+  "intentSummaryPrimaryCta": "Programează un call de 20 min",
+  "intentSummarySecondaryCta": "Vezi detalii program OmniMental",
+  "intentSummaryTertiaryCta": "Prefer sesiuni individuale",
+  "intentSummaryBenefitRow": "• plan clar • practici simple • progres măsurat la 3 săptămâni",
+  "intentSummaryDisclaimer": "OmniMental este coaching de performanță și claritate mentală. Nu înlocuiește evaluarea sau tratamentul medical/psihiatric.",
+  "intentSummaryCategoryInsights": {
+    "calm": "Observ tensiuni acumulate care cer ritualuri rapide de reglare.",
+    "relationships": "Apare nevoia de limite clare și conversații oneste.",
+    "career": "Presiunea profesională îți consumă atenția strategică.",
+    "clarity": "Este momentul să-ți organizezi gândurile și prioritățile.",
+    "boundaries": "Semne clare că ai nevoie să-ți protejezi energia.",
+    "selfTrust": "Reapare îndoiala internă, cere exerciții consecvente de integrare."
+  },
+  "intentSummaryInsightFallback": "Recalibrează-ți ritmul intern și observă semnalele corpului înainte să apară blocajele.",
+  "intentSummarySpeedQuestion": "Cât de repede vrei să rezolvi {{area}}?",
+  "intentSummarySpeedOptions": {
+    "days": "Zile",
+    "weeks": "Săptămâni",
+    "months": "Luni"
+  },
+  "intentSummaryMotivationQuestion": "Cât de hotărât(ă) te simți?",
+  "intentSummaryTimeQuestion": "Cât timp pe săptămână poți investi?",
+  "intentSummaryTimeSuffix": "ore/săptămână",
+  "intentSummaryBudgetQuestion": "Ce buget e realist pentru această temă?",
+  "intentSummaryBudgetOptions": {
+    "low": "Buget minim",
+    "medium": "Buget mediu",
+    "high": "Buget maxim"
+  },
   "accountModalEyebrow": "Cont nou",
   "accountModalHeading": "Salvează-ți progresul",
   "accountModalDescription": "Primești un link securizat pe email pentru a-ți activa contul și a sincroniza evaluările. Verifică și în Spam.",
@@ -98,14 +143,15 @@
   "accountModalSuccessBody": "Ți-am trimis un link securizat. Deschide emailul și finalizează autentificarea în următoarele 15 minute.",
   "accountPromptMessage": "Salvează-ți progresul și primești istoricul temelor și evaluărilor.",
   "accountPromptButton": "Creează cont",
-  "journeyIntroQuotes": [
-    "„Foarte puțin este necesar pentru a avea o viață fericită; totul este în interiorul tău, în felul în care gândești.” — Marcus Aurelius",
-    "„Fericirea nu depinde de ceea ce se întâmplă în exterior, ci de ceea ce se întâmplă în interior.” — Harold B. Lee",
-    "„Nu putem deveni ceea ce avem nevoie să fim dacă rămânem ceea ce suntem.” — Oprah Winfrey"
+  "journeyIntroTitle": "Antrenează-ți mintea. Începe mini-evaluarea ta.",
+  "journeyIntroBody": "3–4 pași rapizi. La final primești o recomandare",
+  "journeyIntroButton": "Începe",
+  "journeyIntroBullets": [
+    "Claritate despre ce te ajută acum",
+    "Recomandare personalizată, nu generalități",
+    "Fără spam. Poți ieși oricând"
   ],
-  "journeyIntroTitle": "„Mintea se liniștește când pui în cuvinte ce simți.”",
-  "journeyIntroBody": "Apasă start și parcurge câțiva pași scurți ca să te clarifici.",
-  "journeyIntroButton": "Enter",
+  "journeyIntroMicrocopy": "Este simplu și durează doar 2 minute.",
   "journalPrompt": "Scrie simplu: ce te preocupă acum?",
   "journalPlaceholder": "Ex: «Sunt mereu tensionat și nu reușesc să mă concentrez.»",
   "journalButton": "Trimite",

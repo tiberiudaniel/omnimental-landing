@@ -39,6 +39,51 @@
   "intentSummaryIntensityHigh": "Very urgent",
   "intentSummaryButton": "Continue",
   "intentSummaryEmpty": "Select a few options to unlock the analysis.",
+  "intentSummaryResultTitle": "Your recap",
+  "intentSummaryResultSubtitle": "My recommendation",
+  "intentSummaryLoadLevels": {
+    "low": {
+      "label": "Load level: Low",
+      "recommendation": "You’re on the right track. Join the OmniMental group program for consolidation or book 1–2 individual sessions for specific goals."
+    },
+    "moderate": {
+      "label": "Load level: Moderate",
+      "recommendation": "You have enough clarity for rapid shifts. I recommend the OmniMental group program (12 weeks). Add 1–2 individual sessions if you need a focused reset."
+    },
+    "high": {
+      "label": "Load level: High",
+      "recommendation": "For steady results and structured support, I recommend the OmniMental group program (12 weeks). You’ll get guided protocol, weekly practices, and progress monitoring."
+    }
+  },
+  "intentSummaryPrimaryCta": "Book a 20-min call",
+  "intentSummarySecondaryCta": "See OmniMental program details",
+  "intentSummaryTertiaryCta": "I prefer individual sessions",
+  "intentSummaryBenefitRow": "• clear plan • simple practices • progress check at 3 weeks",
+  "intentSummaryDisclaimer": "OmniMental is performance and clarity coaching. It doesn’t replace medical or psychiatric evaluation/treatment.",
+  "intentSummaryCategoryInsights": {
+    "calm": "There’s accumulated tension asking for quick regulation rituals.",
+    "relationships": "You need clearer boundaries and honest conversations.",
+    "career": "Professional pressure is draining your strategic focus.",
+    "clarity": "Time to organize your thoughts and priorities.",
+    "boundaries": "Strong signals that you must protect your energy.",
+    "selfTrust": "Inner doubt resurfaces, calling for consistent integration work."
+  },
+  "intentSummaryInsightFallback": "Stay close to your inner tempo and notice body cues before friction builds up.",
+  "intentSummarySpeedQuestion": "How fast do you want to resolve {{area}}?",
+  "intentSummarySpeedOptions": {
+    "days": "Days",
+    "weeks": "Weeks",
+    "months": "Months"
+  },
+  "intentSummaryMotivationQuestion": "How motivated do you feel?",
+  "intentSummaryTimeQuestion": "How much weekly time can you invest?",
+  "intentSummaryTimeSuffix": "hrs/week",
+  "intentSummaryBudgetQuestion": "What budget feels realistic for this goal?",
+  "intentSummaryBudgetOptions": {
+    "low": "Minimal budget",
+    "medium": "Medium budget",
+    "high": "Maximum budget"
+  },
   "accountModalEyebrow": "New account",
   "accountModalHeading": "Save your progress",
   "accountModalDescription": "Enter your email to receive a secure link and sync every evaluation with your account.",
@@ -53,16 +98,15 @@
   "accountModalSuccessBody": "We just sent you a secure link. Open the email and finish signing in within the next 15 minutes.",
   "accountPromptMessage": "Save your progress to unlock your evaluation history and tailored recommendations.",
   "accountPromptButton": "Create account",
-  "journeyIntroQuotes": [
-    "“Foloseste-ti inteligenta, a creierului , a inimi, si a intestinului. Antrenează-ți mintea. Începe mini-evaluarea ta.” — Marcus Aurelius",
-    "“Știai că: Cititul zilnic timp de 20 de minute poate îmbunătăți memoria și concentrarea cu până la 30%?",
-    "“Happiness does not depend on what happens outside of you but on what happens inside of you.” — Harold B. Lee",
-    "“Știai că: Consumul de nuci și semințe zilnic furnizează acizi grași esențiali care reduc inflamația și susțin sănătatea creierului?"
+  "journeyIntroTitle": "Train your mind. Start your mini assessment.",
+  "journeyIntroBody": "3–4 quick steps. You’ll get a recommendation at the end.",
+  "journeyIntroButton": "Start",
+  "journeyIntroBullets": [
+    "Clarity about what helps you now",
+    "Personalized recommendation, not generic tips",
+    "No spam. Leave anytime"
   ],
-
-  "journeyIntroTitle": "“The mind softens when you put feelings into words.”",
-  "journeyIntroBody": "Hit enter and start to improve.",
-  "journeyIntroButton": "Enter",
+  "journeyIntroMicrocopy": "It’s simple and takes only 2 minutes.",
   "journalPrompt": "Write simply: what worries you right now?",
   "journalPlaceholder": "e.g. “I feel tense all the time and can’t focus.”",
   "journalButton": "Send",

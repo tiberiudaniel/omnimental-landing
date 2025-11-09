@@ -1,165 +1,216 @@
-export type LikertScale = {
-  id: string;
-  prompt: string;
-  min: number;
-  max: number;
-  reverse?: boolean;
-};
+export type TimeHorizon = "days" | "weeks" | "months";
+export type BudgetLevel = "low" | "medium" | "high";
+export type GoalType = "single" | "few" | "broad";
+export type EmotionalState = "stable" | "fluctuating" | "unstable";
+export type FormatPreference = "individual" | "group" | "unsure";
+export type ResolutionSpeed = TimeHorizon;
+export type BudgetPreference = BudgetLevel;
+
+export interface EvaluationAnswers {
+  urgency: number;
+  timeHorizon: TimeHorizon;
+  determination: number;
+  hoursPerWeek: number;
+  budgetLevel: BudgetLevel;
+  goalType: GoalType;
+  emotionalState: EmotionalState;
+  groupComfort: number;
+  learnFromOthers: number;
+  scheduleFit: number;
+  formatPreference: FormatPreference;
+  cloudFocusCount: number;
+}
+
+export type EvaluationSectionKey = "pss" | "gse" | "maas" | "panas" | "svs";
 
 export type EvaluationSection = {
-  key: "pss" | "gse" | "maas" | "panas" | "svs";
+  key: EvaluationSectionKey;
   title: string;
   description: string;
-  items: LikertScale[];
   scaleLabels: string[];
+  items: Array<{
+    id: string;
+    prompt: string;
+    min: number;
+    max: number;
+    reverse?: boolean;
+    subScale?: "positive" | "negative";
+  }>;
 };
 
-export const evaluationSections: EvaluationSection[] = [
+export const evaluationSections: readonly EvaluationSection[] = [
   {
     key: "pss",
-    title: "PSS-10 – Perceived Stress Scale",
-    description:
-      "Răspunsuri: 1 = Niciodată · 5 = Foarte des (itemii marcați sunt inversați la scorare)",
+    title: "PSS – Stres perceput",
+    description: "În ce măsură simți că situațiile de zi cu zi sunt dificile de controlat.",
     scaleLabels: ["Niciodată", "Rareori", "Uneori", "Destul de des", "Foarte des"],
     items: [
-      { id: "pss1", prompt: "În ultima lună, cât de des te-ai supărat din cauza unor lucruri care s-au întâmplat pe neașteptate?", min: 1, max: 5 },
-      { id: "pss2", prompt: "În ultima lună, cât de des te-ai simțit incapabil să controlezi lucruri importante din viața ta?", min: 1, max: 5 },
-      { id: "pss3", prompt: "În ultima lună, cât de des te-ai simțit nervos sau stresat?", min: 1, max: 5 },
-      { id: "pss4", prompt: "În ultima lună, cât de des ai simțit că reușești să faci față lucrurilor iritante din viața ta?", min: 1, max: 5, reverse: true },
-      { id: "pss5", prompt: "În ultima lună, cât de des ai simțit că te descurci bine cu schimbările importante care apar?", min: 1, max: 5, reverse: true },
-      { id: "pss6", prompt: "În ultima lună, cât de des ai simțit că ai control asupra lucrurilor din viața ta?", min: 1, max: 5, reverse: true },
-      { id: "pss7", prompt: "În ultima lună, cât de des ai fost încrezător în capacitatea ta de a rezolva probleme personale?", min: 1, max: 5, reverse: true },
-      { id: "pss8", prompt: "În ultima lună, cât de des ai simțit că lucrurile scapă de sub control?", min: 1, max: 5 },
-      { id: "pss9", prompt: "În ultima lună, cât de des te-ai simțit copleșit de tot ceea ce aveai de făcut?", min: 1, max: 5 },
-      { id: "pss10", prompt: "În ultima lună, cât de des ai simțit că dificultățile tale se acumulează atât de mult încât nu le mai poți depăși?", min: 1, max: 5 },
+      { id: "pss_01", prompt: "Cât de des te-ai simțit deranjat de ceva neașteptat?", min: 0, max: 4 },
+      { id: "pss_02", prompt: "Cât de des ai simțit că nu poți controla lucrurile importante din viață?", min: 0, max: 4 },
+      { id: "pss_03", prompt: "Cât de des te-ai simțit nervos sau stresat?", min: 0, max: 4 },
+      { id: "pss_04", prompt: "Cât de des te-ai simțit încrezător că îți rezolvi problemele personale?", min: 0, max: 4, reverse: true },
+      { id: "pss_05", prompt: "Cât de des ai simțit că lucrurile merg în direcția potrivită?", min: 0, max: 4, reverse: true },
+      { id: "pss_06", prompt: "Cât de des ai simțit că nu faci față tuturor lucrurilor pe care trebuie să le faci?", min: 0, max: 4 },
+      { id: "pss_07", prompt: "Cât de des ai reușit să controlezi iritările din viață?", min: 0, max: 4, reverse: true },
+      { id: "pss_08", prompt: "Cât de des ai simțit că deții controlul asupra situațiilor?", min: 0, max: 4, reverse: true },
+      { id: "pss_09", prompt: "Cât de des ai fost supărat pentru lucruri pe care nu le poți controla?", min: 0, max: 4 },
+      { id: "pss_10", prompt: "Cât de des ai simțit că problemele se tot adună?", min: 0, max: 4 },
     ],
   },
   {
     key: "gse",
-    title: "GSE – General Self-Efficacy Scale",
-    description: "Răspunsuri: 1 = Deloc adevărat · 4 = Exact adevărat",
-    scaleLabels: ["Deloc", "Mai degrabă", "În mare parte", "Exact"],
+    title: "GSE – Autoeficacitate",
+    description: "Încrederea ta că poți gestiona provocările și obstacolele.",
+    scaleLabels: ["Nu este adevărat", "Mai degrabă nu", "Mai degrabă da", "Exact așa este"],
     items: [
-      { id: "gse1", prompt: "Dacă cineva se opune, pot găsi modalități de a obține ceea ce vreau.", min: 1, max: 4 },
-      { id: "gse2", prompt: "Chiar dacă întâmpin dificultăți, rămân perseverent până când reușesc.", min: 1, max: 4 },
-      { id: "gse3", prompt: "Îmi este ușor să îmi ating obiectivele.", min: 1, max: 4 },
-      { id: "gse4", prompt: "Am încredere că mă pot descurca eficient în situații neașteptate.", min: 1, max: 4 },
-      { id: "gse5", prompt: "Datorită resurselor mele, pot face față surprizelor.", min: 1, max: 4 },
-      { id: "gse6", prompt: "Chiar dacă sunt probleme, le pot rezolva.", min: 1, max: 4 },
-      { id: "gse7", prompt: "Dacă trebuie, știu cum să gestionez situațiile dificile.", min: 1, max: 4 },
-      { id: "gse8", prompt: "În general, găsesc soluții la orice problemă.", min: 1, max: 4 },
-      { id: "gse9", prompt: "Pot rezolva majoritatea provocărilor dacă depun efortul necesar.", min: 1, max: 4 },
-      { id: "gse10", prompt: "Dacă am o problemă, de obicei găsesc mai multe moduri de a o rezolva.", min: 1, max: 4 },
+      { id: "gse_01", prompt: "Întotdeauna găsesc o cale să rezolv problemele dificile.", min: 1, max: 4 },
+      { id: "gse_02", prompt: "Dacă cineva îmi blochează drumul, găsesc alternative.", min: 1, max: 4 },
+      { id: "gse_03", prompt: "Pot obține ceea ce îmi propun dacă persist.", min: 1, max: 4 },
+      { id: "gse_04", prompt: "Pot rezolva probleme neprevăzute.", min: 1, max: 4 },
+      { id: "gse_05", prompt: "Mă pot baza pe calitățile mele chiar și în criză.", min: 1, max: 4 },
+      { id: "gse_06", prompt: "Rămân calm când întâmpin dificultăți.", min: 1, max: 4 },
+      { id: "gse_07", prompt: "Fac față eficient la orice.", min: 1, max: 4 },
+      { id: "gse_08", prompt: "Când mă confrunt cu o problemă, o abordez cu idei multiple.", min: 1, max: 4 },
+      { id: "gse_09", prompt: "Știu cum să gestionez situațiile neașteptate.", min: 1, max: 4 },
+      { id: "gse_10", prompt: "Pot rezolva orice dacă mă implic.", min: 1, max: 4 },
     ],
   },
   {
     key: "maas",
-    title: "MAAS – Mindful Attention Awareness Scale",
-    description:
-      "Răspunsuri: 1 = Aproape mereu · 6 = Aproape niciodată (itemii de mai jos, cu excepția celui pozitiv, se inversează)",
-    scaleLabels: ["Aproape mereu", "Foarte des", "Destul de des", "Uneori", "Rar", "Aproape niciodată"],
+    title: "MAAS – Prezență conștientă",
+    description: "Cum observi momentele vieții fără să decuplezi pilotul automat.",
+    scaleLabels: [
+      "Aproape niciodată",
+      "Rareori",
+      "Uneori",
+      "Destul de des",
+      "Foarte des",
+      "Aproape mereu",
+    ],
     items: [
-      { id: "maas1", prompt: "Mă trezesc făcând lucruri fără să fiu pe deplin conștient de ele.", min: 1, max: 6, reverse: true },
-      { id: "maas2", prompt: "Am tendința de a fi distras sau grăbit fără să fiu atent la prezent.", min: 1, max: 6, reverse: true },
-      { id: "maas3", prompt: "Fac lucruri automat, fără să îmi dau seama ce fac.", min: 1, max: 6, reverse: true },
-      { id: "maas4", prompt: "Mă concentrez pe ceea ce fac în momentul prezent.", min: 1, max: 6 },
-      { id: "maas5", prompt: "Mă prind că ascult pe cineva fără să fiu atent la ce spune.", min: 1, max: 6, reverse: true },
-      { id: "maas6", prompt: "Am tendința să nu observ senzațiile fizice atunci când sunt ocupat cu alte lucruri.", min: 1, max: 6, reverse: true },
+      { id: "maas_01", prompt: "Funcționez pe pilot automat fără să fiu atent la ce fac.", min: 1, max: 6, reverse: true },
+      { id: "maas_02", prompt: "Mă surprind pierdut în gânduri în loc să fiu prezent.", min: 1, max: 6, reverse: true },
+      { id: "maas_03", prompt: "Fac lucruri fără să observ că le fac.", min: 1, max: 6, reverse: true },
+      { id: "maas_04", prompt: "Mă implic într-o activitate dar mintea îmi este în altă parte.", min: 1, max: 6, reverse: true },
+      { id: "maas_05", prompt: "Nu observ senzațiile fizice până când sunt intense.", min: 1, max: 6, reverse: true },
+      { id: "maas_06", prompt: "Fac lucruri în grabă fără să acord atenție pașilor.", min: 1, max: 6, reverse: true },
     ],
   },
   {
     key: "panas",
-    title: "PANAS – Positive and Negative Affect Schedule",
-    description: "Răspunsuri: 1 = Deloc · 5 = Extrem (ultima săptămână)",
-    scaleLabels: ["Deloc", "Puțin", "Moderat", "Mult", "Extrem"],
+    title: "PANAS – Afect pozitiv și negativ",
+    description: "Ce emoții ai simțit în ultima perioadă.",
+    scaleLabels: ["Deloc", "Puțin", "Moderate", "Mult", "Foarte mult"],
     items: [
-      { id: "panas1", prompt: "Entuziast", min: 1, max: 5 },
-      { id: "panas2", prompt: "Hotărât", min: 1, max: 5 },
-      { id: "panas3", prompt: "Activ", min: 1, max: 5 },
-      { id: "panas4", prompt: "Inspirat", min: 1, max: 5 },
-      { id: "panas5", prompt: "Atent", min: 1, max: 5 },
-      { id: "panas6", prompt: "Neliniștit", min: 1, max: 5 },
-      { id: "panas7", prompt: "Nervos", min: 1, max: 5 },
-      { id: "panas8", prompt: "Abătut", min: 1, max: 5 },
-      { id: "panas9", prompt: "Iritat", min: 1, max: 5 },
-      { id: "panas10", prompt: "Îngrijorat", min: 1, max: 5 },
+      { id: "panas_p1", prompt: "Entuziasmat(ă)", min: 1, max: 5, subScale: "positive" },
+      { id: "panas_p2", prompt: "Determinată", min: 1, max: 5, subScale: "positive" },
+      { id: "panas_p3", prompt: "Inspirat(ă)", min: 1, max: 5, subScale: "positive" },
+      { id: "panas_p4", prompt: "Energetic(ă)", min: 1, max: 5, subScale: "positive" },
+      { id: "panas_p5", prompt: "Plin(ă) de bucurie", min: 1, max: 5, subScale: "positive" },
+      { id: "panas_n1", prompt: "Agitat(ă)", min: 1, max: 5, subScale: "negative" },
+      { id: "panas_n2", prompt: "Tensionat(ă)", min: 1, max: 5, subScale: "negative" },
+      { id: "panas_n3", prompt: "Iritat(ă)", min: 1, max: 5, subScale: "negative" },
+      { id: "panas_n4", prompt: "Îngrijorat(ă)", min: 1, max: 5, subScale: "negative" },
+      { id: "panas_n5", prompt: "Abătut(ă)", min: 1, max: 5, subScale: "negative" },
     ],
   },
   {
     key: "svs",
-    title: "SVS – Subjective Vitality Scale",
-    description: "Răspunsuri: 1 = Deloc adevărat · 7 = Complet adevărat",
-    scaleLabels: ["1", "2", "3", "4", "5", "6", "7"],
+    title: "SVS – Vitalitate subiectivă",
+    description: "Câtă energie interioară simți că ai în acest moment.",
+    scaleLabels: [
+      "Deloc adevărat",
+      "Foarte puțin",
+      "Puțin",
+      "Neutru",
+      "Destul de mult",
+      "Foarte mult",
+      "Complet adevărat",
+    ],
     items: [
-      {
-        id: "svs1",
-        prompt: "În general, mă simt plin de energie și vitalitate.",
-        min: 1,
-        max: 7,
-      },
+      { id: "svs_01", prompt: "Mă simt plin(ă) de viață.", min: 1, max: 7 },
+      { id: "svs_02", prompt: "Simt că am energie.", min: 1, max: 7 },
+      { id: "svs_03", prompt: "Sunt entuziast(ă) în ceea ce fac.", min: 1, max: 7 },
+      { id: "svs_04", prompt: "Mă simt alert(ă) și prezent(ă).", min: 1, max: 7 },
+      { id: "svs_05", prompt: "Mă simt puternic(ă) și energic(ă).", min: 1, max: 7 },
+      { id: "svs_06", prompt: "Corpul meu se simte plin de viață.", min: 1, max: 7 },
+      { id: "svs_07", prompt: "Am o vitalitate autentică.", min: 1, max: 7 },
     ],
   },
-];
+] as const;
 
-export type EvaluationFormValues = Record<string, number | "">;
+type EvaluationSections = typeof evaluationSections;
+type EvaluationItemId = EvaluationSections[number]["items"][number]["id"];
 
-export const initialEvaluationValues: EvaluationFormValues = evaluationSections.reduce(
+export type EvaluationFormValues = Record<EvaluationItemId, number | "">;
+
+export const initialEvaluationValues = evaluationSections.reduce(
   (acc, section) => {
     section.items.forEach((item) => {
-      acc[item.id] = "";
+      acc[item.id as EvaluationItemId] = "";
     });
     return acc;
   },
-  {} as EvaluationFormValues
+  {} as EvaluationFormValues,
 );
 
-export type EvaluationScores = {
-  pssTotal: number;
-  gseTotal: number;
-  maasTotal: number;
-  panasPositive: number;
-  panasNegative: number;
-  svs: number;
+const reverseValue = (value: number, min: number, max: number) => max + min - value;
+
+const getNumericValue = (answers: EvaluationFormValues, id: EvaluationItemId) => {
+  const value = answers[id];
+  return typeof value === "number" ? value : 0;
 };
 
-export function computeScores(values: EvaluationFormValues): EvaluationScores {
-  const getValue = (id: string) => Number(values[id] ?? 0);
-
-  const pssReverseIds = ["pss4", "pss5", "pss6", "pss7"];
-  const pssTotal = evaluationSections
-    .find((s) => s.key === "pss")!
-    .items.reduce((sum, item) => {
-      const raw = getValue(item.id);
-      if (!raw) return sum;
-      return sum + (pssReverseIds.includes(item.id) ? 6 - raw : raw);
+export function computeScores(answers: EvaluationFormValues) {
+  const getSum = (sectionKey: EvaluationSectionKey) => {
+    const section = evaluationSections.find((entry) => entry.key === sectionKey);
+    if (!section) return 0;
+    return section.items.reduce((total, item) => {
+      const value = getNumericValue(answers, item.id as EvaluationItemId);
+      const scored = item.reverse ? reverseValue(value, item.min, item.max) : value;
+      return total + scored;
     }, 0);
+  };
 
-  const gseTotal = evaluationSections
-    .find((s) => s.key === "gse")!
-    .items.reduce((sum, item) => sum + getValue(item.id), 0);
+  const pssTotal = getSum("pss");
+  const gseTotal = getSum("gse");
 
-  const maasReverse = ["maas1", "maas2", "maas3", "maas5", "maas6"];
-  const maasSum = evaluationSections
-    .find((s) => s.key === "maas")!
-    .items.reduce((sum, item) => {
-      const raw = getValue(item.id);
-      if (!raw) return sum;
-      if (maasReverse.includes(item.id)) {
-        return sum + (7 - raw);
-      }
-      return sum + raw;
-    }, 0);
-  const maasTotal = maasSum / evaluationSections.find((s) => s.key === "maas")!.items.length;
+  const maasSection = evaluationSections.find((entry) => entry.key === "maas");
+  const maasValues =
+    maasSection?.items.map((item) => {
+      const value = getNumericValue(answers, item.id as EvaluationItemId);
+      const scored = item.reverse ? reverseValue(value, item.min, item.max) : value;
+      return scored;
+    }) ?? [];
+  const maasTotal =
+    maasValues.length > 0
+      ? Number((maasValues.reduce((sum, value) => sum + value, 0) / maasValues.length).toFixed(2))
+      : 0;
 
-  const panasItems = evaluationSections.find((s) => s.key === "panas")!.items;
-  const panasPositive = panasItems
-    .slice(0, 5)
-    .reduce((sum, item) => sum + getValue(item.id), 0);
-  const panasNegative = panasItems
-    .slice(5)
-    .reduce((sum, item) => sum + getValue(item.id), 0);
+  const panasSection = evaluationSections.find((entry) => entry.key === "panas");
+  const panasPositive =
+    panasSection?.items
+      .filter((item) => item.subScale === "positive")
+      .reduce((total, item) => total + getNumericValue(answers, item.id as EvaluationItemId), 0) ?? 0;
+  const panasNegative =
+    panasSection?.items
+      .filter((item) => item.subScale === "negative")
+      .reduce((total, item) => total + getNumericValue(answers, item.id as EvaluationItemId), 0) ?? 0;
 
-  const svs = getValue("svs1");
+  const svsSection = evaluationSections.find((entry) => entry.key === "svs");
+  const svsValues =
+    svsSection?.items.map((item) => getNumericValue(answers, item.id as EvaluationItemId)) ?? [];
+  const svs =
+    svsValues.length > 0
+      ? Number((svsValues.reduce((sum, value) => sum + value, 0) / svsValues.length).toFixed(2))
+      : 0;
 
-  return { pssTotal, gseTotal, maasTotal: Number(maasTotal.toFixed(2)), panasPositive, panasNegative, svs };
+  return {
+    pssTotal,
+    gseTotal,
+    maasTotal,
+    panasPositive,
+    panasNegative,
+    svs,
+  };
 }

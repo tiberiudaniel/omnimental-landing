@@ -20,7 +20,8 @@ const db = getDb();
 
 interface FirstScreenProps {
   onNext: () => void;
-  onSubmit?: (text: string) => void;
+  onSubmit?: (text: string) => Promise<void> | void;
+  errorMessage?: string | null;
 }
 
 const PLACEHOLDER_SAMPLE_COUNT = 3;
@@ -50,7 +51,7 @@ const pickRandom = (pool: string[], count: number) => {
   return copy.slice(0, limitCount);
 };
 
-export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
+export default function FirstScreen({ onNext, onSubmit, errorMessage = null }: FirstScreenProps) {
   const { lang, t } = useI18n();
   const welcomeValue = t("firstScreenWelcome");
   const question = t("firstScreenQuestion");
@@ -78,7 +79,6 @@ export default function FirstScreen({ onNext, onSubmit }: FirstScreenProps) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [storedSuggestions, setStoredSuggestions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [placeholderText, setPlaceholderText] = useState(placeholderTemplate);
   const [introPhase, setIntroPhase] = useState<"welcome" | "question">(
     welcomeText ? "welcome" : "question"
   );
@@ -160,29 +160,19 @@ useEffect(() => {
     };
   }, []);
 
-  useEffect(() => {
+  const placeholderText = useMemo(() => {
     if (!storedSuggestions.length) {
-      setPlaceholderText(placeholderTemplate);
-      return;
+      return placeholderTemplate;
     }
-
     const selection = pickRandom(
       storedSuggestions,
       Math.min(PLACEHOLDER_SAMPLE_COUNT, storedSuggestions.length),
     );
     if (!selection.length) {
-      setPlaceholderText(placeholderTemplate);
-      return;
+      return placeholderTemplate;
     }
-
-    setPlaceholderText(`Ex: ${selection.join("; ")}`);
+    return `Ex: ${selection.join("; ")}`;
   }, [placeholderTemplate, storedSuggestions]);
-
-  useEffect(() => {
-    setShowSuggestions(false);
-    setSuggestions([]);
-    setIntroPhase(welcomeText ? "welcome" : "question");
-  }, [lang, welcomeText]);
 
   const persistSuggestion = async (text: string) => {
     try {
@@ -197,10 +187,6 @@ useEffect(() => {
       }
     } catch (err) {
       console.error("addDoc failed:", err);
-    } finally {
-      if (isMountedRef.current) {
-        setIsSubmitting(false);
-      }
     }
   };
 
@@ -211,8 +197,32 @@ useEffect(() => {
 
     setIsSubmitting(true);
     setInput("");
-    onSubmit?.(trimmed);
-    onNext();
+
+    const finish = (shouldAdvance: boolean) => {
+      if (shouldAdvance) {
+        onNext();
+      }
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
+    };
+
+    try {
+      const result = onSubmit?.(trimmed);
+      if (result && typeof (result as Promise<unknown>).then === "function") {
+        (result as Promise<unknown>)
+          .then(() => {
+            finish(true);
+          })
+          .catch(() => {
+            finish(false);
+          });
+      } else {
+        finish(true);
+      }
+    } catch {
+      finish(false);
+    }
 
     void persistSuggestion(trimmed);
   };
@@ -304,6 +314,9 @@ useEffect(() => {
                 {typeof continueLabel === "string" ? continueLabel : ""}
               </button>
             </div>
+            {errorMessage ? (
+              <p className="text-xs text-[#B8000E]">{errorMessage}</p>
+            ) : null}
 
           </div>
         </div>

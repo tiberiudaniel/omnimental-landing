@@ -11,6 +11,9 @@ interface CardOptionProps {
   isSelected?: boolean;
   isRecommended?: boolean;
   recommendedLabel?: string;
+  disabled?: boolean;
+  isLoading?: boolean;
+  loadingLabel?: string;
 }
 
 export default function CardOption({
@@ -20,6 +23,9 @@ export default function CardOption({
   isSelected = false,
   isRecommended = false,
   recommendedLabel,
+  disabled = false,
+  isLoading = false,
+  loadingLabel,
 }: CardOptionProps) {
   const { t } = useI18n();
   const [hovered, setHovered] = useState(false);
@@ -35,29 +41,36 @@ export default function CardOption({
 
   const fallbackTitle = t(type);
   const heading = title ?? (typeof fallbackTitle === "string" ? fallbackTitle : type);
-  const activeState = hovered || isSelected;
+  const activeState = (hovered && !disabled) || isSelected;
+
+  const handleActivate = () => {
+    if (disabled) return;
+    onClick();
+  };
 
   return (
     <div
-      className={`relative w-full max-w-xs cursor-pointer rounded-[12px] border p-8 text-left transition ${
+      className={`relative w-full max-w-xs rounded-[12px] border p-8 text-left transition ${
         activeState
           ? "border-[#E60012] bg-[#F6F2EE]/95 shadow-[0_16px_40px_rgba(0,0,0,0.08)]"
           : "border-[#D8C6B6] bg-white shadow-[0_12px_32px_rgba(0,0,0,0.05)]"
-      }`}
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocus={() => setHovered(true)}
-      onBlur={() => setHovered(false)}
+      } ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+      onClick={handleActivate}
+      onMouseEnter={() => !disabled && setHovered(true)}
+      onMouseLeave={() => !disabled && setHovered(false)}
+      onFocus={() => !disabled && setHovered(true)}
+      onBlur={() => !disabled && setHovered(false)}
       onKeyDown={(event) => {
+        if (disabled) return;
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          onClick();
+          handleActivate();
         }
       }}
       role="button"
-      tabIndex={0}
+      tabIndex={disabled ? -1 : 0}
       aria-pressed={isSelected}
+      aria-disabled={disabled}
     >
       <div className="text-xs font-semibold uppercase tracking-[0.35em] text-[#E60012]">
         {type === "individual" ? "Individual" : "Group"}
@@ -77,6 +90,11 @@ export default function CardOption({
           ✓
         </div>
       )}
+      {isLoading ? (
+        <div className="absolute inset-0 flex items-center justify-center rounded-[12px] bg-white/80 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C]">
+          {loadingLabel ?? "Se salvează..."}
+        </div>
+      ) : null}
     </div>
   );
 }
