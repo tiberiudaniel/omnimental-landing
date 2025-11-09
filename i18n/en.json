@@ -33,7 +33,7 @@
   ],
   "intentCloudSliderLabel": "How intense does this feel right now?",
   "intentSummaryTitle": "Here’s how your 7 picks cluster",
-  "intentSummaryDescription": "The spread below shows where your focus sits before we recommend the next step.",
+  "intentSummaryDescription": "The visual profile below shows how your selections stack before we continue.",
   "intentSummaryIntensityQuestion": "How urgent does it feel to work on these themes?",
   "intentSummaryIntensityLow": "Calm",
   "intentSummaryIntensityHigh": "Very urgent",

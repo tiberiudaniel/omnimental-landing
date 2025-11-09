@@ -83,6 +83,7 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null }: F
     welcomeText ? "welcome" : "question"
   );
   const [isInputHovered, setIsInputHovered] = useState(false);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
   const isMountedRef = useRef(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -239,9 +240,33 @@ useEffect(() => {
   };
 
   const handleSuggestionsToggle = () => {
+    setSelectedSuggestions([]);
     setSuggestions(pullSuggestionBatch());
     setShowSuggestions(true);
   };
+
+  const toggleSuggestionSelection = (value: string) => {
+    setSelectedSuggestions((prev) =>
+      prev.includes(value) ? prev.filter((entry) => entry !== value) : [...prev, value],
+    );
+  };
+
+  const handleSuggestionSubmit = () => {
+    if (selectedSuggestions.length < 2) {
+      return;
+    }
+    const combined = selectedSuggestions.join(". ");
+    handleSubmit(combined);
+    setSelectedSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const suggestionContinueLabel =
+    lang === "ro" ? "Continuă cu selecțiile" : "Continue with selections";
+  const suggestionRequirementLabel =
+    lang === "ro"
+      ? `Selectează încă ${Math.max(0, 2 - selectedSuggestions.length)} opțiune pentru a continua.`
+      : `Select ${Math.max(0, 2 - selectedSuggestions.length)} more option(s) to continue.`;
 
   const handleQuestionComplete = () => {
     if (focusTimerRef.current) {
@@ -344,19 +369,41 @@ useEffect(() => {
               </button>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
-              {suggestions.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => handleSubmit(s)}
-                  className="rounded-[4px] border border-[#D8C6B6] bg-white px-4 py-2 text-sm text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
-                >
-                  {s}
-                </button>
-              ))}
+              {suggestions.map((s) => {
+                const isSelected = selectedSuggestions.includes(s);
+                return (
+                  <button
+                    type="button"
+                    key={s}
+                    onClick={() => toggleSuggestionSelection(s)}
+                    className={`rounded-[8px] border px-4 py-2 text-sm transition ${
+                      isSelected
+                        ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
+                        : "border-[#D8C6B6] bg-white text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+                    }`}
+                    aria-pressed={isSelected}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
             </div>
-            {suggestionHint && (
-              <p className="mt-4 text-xs text-[#2C2C2C]">{suggestionHint}</p>
-            )}
+            <div className="mt-4 flex flex-col gap-2 text-left">
+              {selectedSuggestions.length < 2 && suggestionHint ? (
+                <p className="text-xs text-[#2C2C2C]">{suggestionHint}</p>
+              ) : null}
+              {selectedSuggestions.length < 2 ? (
+                <p className="text-xs text-[#B8000E]">{suggestionRequirementLabel}</p>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleSuggestionSubmit}
+                disabled={selectedSuggestions.length < 2 || isSubmitting}
+                className="inline-flex items-center justify-center rounded-[8px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:cursor-not-allowed disabled:border-[#2C2C2C]/30 disabled:text-[#2C2C2C]/30"
+              >
+                {suggestionContinueLabel}
+              </button>
+            </div>
           </div>
         )}
       </div>

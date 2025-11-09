@@ -1,7 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { Cormorant_Garamond, Bodoni_Moda } from "next/font/google";
+
+const garamondFont = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["600"],
+});
+
+const bodoniFont = Bodoni_Moda({
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
+const animatedFonts = [garamondFont, bodoniFont];
 
 declare global {
   interface Window {
@@ -11,13 +24,22 @@ declare global {
 
 export default function IntroAnimation({ onComplete }: { onComplete: () => void }) {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const completedRef = useRef(false);
+
+  const safeComplete = useCallback(() => {
+    if (completedRef.current) {
+      return;
+    }
+    completedRef.current = true;
+    onComplete();
+  }, [onComplete]);
 
   const wordsList = useMemo(
     () => [
       "claritate",
       "focus",
       "vrei",
-      "alegi",
+      "adaptare",
       "echilibru",
       "stres free",
       "carieră",
@@ -26,15 +48,23 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
       "reziliență",
       "încredere",
       "comunicare",
+      "mindfulness",
       "relații",
+      "alegi",
       "biofeedback",
     ],
     []
   );
 
   useEffect(() => {
-    if (!imageLoaded) return;
-    if (typeof window === "undefined" || !window.gsap) return;
+    const ready = imageLoaded || typeof window === "undefined" || window.gsap;
+    if (!ready) return;
+  }, [imageLoaded]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.gsap) {
+      return;
+    }
 
     const gsap = window.gsap;
     const overlay = document.querySelector(".words-overlay") as HTMLDivElement | null;
@@ -45,22 +75,27 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
         const localOverlay = document.querySelector(".words-overlay") as HTMLDivElement | null;
         if (!localOverlay) return; // ✅ TS now knows it can't be null
 
+        const selectedFont = animatedFonts[Math.floor(Math.random() * animatedFonts.length)];
         const wordElem = document.createElement("div");
-        wordElem.classList.add(
-            "word",
-            "absolute",
-            "text-2xl",
-            "md:text-4xl",
-            "lg:text-5xl",
-            "font-semibold",
-            "text-[#222]",
-            "tracking-wide"
-        );
+        wordElem.className = [
+          "word",
+          "absolute",
+          "text-2xl",
+          "md:text-4xl",
+          "lg:text-5xl",
+          "font-semibold",
+          "text-zinc-600/80",
+          "drop-shadow-[0_2px_6px_rgba(0,0,0,0.2)]",
+          "tracking-wide",
+          "transition-colors",
+        ].join(" ");
+        wordElem.classList.add(selectedFont.className);
 
         wordElem.textContent =
             wordsList[Math.floor(Math.random() * wordsList.length)];
         wordElem.style.left = `${Math.random() * 80 + 10}%`;
         wordElem.style.bottom = `${Math.random() * 10}%`;
+        // font handled via className above
 
         localOverlay.appendChild(wordElem); // ✅ safe now
 
@@ -77,6 +112,11 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
             ease: "power1.out",
             onUpdate: function () {
                 const progress = this.progress();
+                if (progress > 0.3 && progress < 0.7) {
+                  wordElem.style.color = "rgba(28, 25, 23, 0.95)"; // very dark (stone-900)
+                } else {
+                  wordElem.style.color = "rgba(82, 82, 91, 0.8)"; // zinc-600/80
+                }
                 const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.03;
                 const currentY = gsap.getProperty(wordElem, "y") as number;
                 wordElem.style.transform = `translateY(${currentY}px) scale(${scale})`;
@@ -101,7 +141,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
             opacity: 0,
             duration: 1.6,
             ease: "power2.out",
-            onComplete: onComplete,
+            onComplete: safeComplete,
             });
       }, 10000);
 
@@ -109,10 +149,20 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
         clearInterval(interval);
         clearTimeout(timeout);
       };
-    }, 500);
+    }, 100);
 
     return () => clearTimeout(startDelay);
-  }, [onComplete, wordsList, imageLoaded]);
+  }, [safeComplete, wordsList]);
+
+  useEffect(() => {
+    if (!imageLoaded) return;
+    const fallbackTimer = setTimeout(() => {
+      safeComplete();
+    }, 12000);
+    return () => {
+      clearTimeout(fallbackTimer);
+    };
+  }, [imageLoaded, safeComplete]);
 
   return (
     <div className="intro-container fixed inset-0 z-50 flex items-center justify-center bg-[#FDFCF9]/90 backdrop-blur-sm opacity-100">
@@ -128,26 +178,15 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
 
       <div className="words-overlay absolute inset-0 overflow-hidden pointer-events-none" />
 
-      <button
-        className="
-          start-btn 
-          absolute bottom-[37%]
-          px-20 py-7
-          text-2xl font-semibold tracking-wide
-          rounded-2xl
-          bg-gradient-to-b from-[#d9a066] via-[#cc7722] to-[#a55418]
-          text-[#fdfcf9]
-          border border-[#e8d6b1]/40
-          shadow-[0_6px_20px_rgba(0,0,0,0.25)]
-          transition-all duration-300
-          hover:from-[#e0b070] hover:via-[#d27d24] hover:to-[#b15b1c]
-          hover:shadow-[0_8px_30px_rgba(0,0,0,0.35)]
-          active:scale-95
-        "
-        onClick={onComplete}
-      >
-        Start
-      </button>
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none translate-y-14">
+        <button
+          className="pointer-events-auto rounded-[14px] border border-[#2C2C2C] bg-white/95 px-12 py-4 sm:px-16 sm:py-5 text-xl sm:text-2xl font-semibold tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] font-['Courier_Prime',monospace]"
+          onClick={safeComplete}
+          aria-label="Pornește animația"
+        >
+          START
+        </button>
+      </div>
     </div>
   );
 }

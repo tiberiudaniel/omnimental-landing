@@ -1,20 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
-import type { IntentCategory } from "./IntentCloud";
 import type {
   GoalType,
   EmotionalState,
-  FormatPreference,
   BudgetPreference,
   ResolutionSpeed,
 } from "../lib/evaluation";
 
 interface IntentSummaryProps {
-  categories: Array<{ category: IntentCategory | string; count: number }>;
-  maxSelection: number;
   urgency: number;
   onUrgencyChange: (value: number) => void;
   onContinue: () => void;
@@ -39,11 +35,9 @@ interface IntentSummaryProps {
   onLearnFromOthersChange: (value: number) => void;
   scheduleFit: number;
   onScheduleFitChange: (value: number) => void;
-  formatPreference: FormatPreference;
-  onFormatPreferenceChange: (value: FormatPreference) => void;
 }
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
 
 const goalTypeLabels: Record<GoalType, string> = {
   single: "Am o singură temă foarte concretă",
@@ -55,12 +49,6 @@ const emotionalStateLabels: Record<EmotionalState, string> = {
   stable: "Relativ stabilă. Am doar stres normal.",
   fluctuating: "Fluctuează. Uneori mă simt copleșit(ă).",
   unstable: "Foarte instabilă. Simt că abia fac față.",
-};
-
-const formatPreferenceLabels: Record<FormatPreference, string> = {
-  individual: "Mai degrabă sesiuni individuale 1-la-1",
-  group: "Mai degrabă grup online",
-  unsure: "Nu știu sigur, am nevoie de recomandare",
 };
 
 const speedOptions: { value: ResolutionSpeed; fallback: string }[] = [
@@ -76,8 +64,6 @@ const budgetOptions: { value: BudgetPreference; fallback: string }[] = [
 ];
 
 export default function IntentSummary({
-  categories,
-  maxSelection,
   urgency,
   onUrgencyChange,
   onContinue,
@@ -102,8 +88,6 @@ export default function IntentSummary({
   onLearnFromOthersChange,
   scheduleFit,
   onScheduleFitChange,
-  formatPreference,
-  onFormatPreferenceChange,
 }: IntentSummaryProps) {
   const { t, lang } = useI18n();
   const [step, setStep] = useState(0);
@@ -136,27 +120,6 @@ export default function IntentSummary({
     t("intentSummaryTimeSuffix"),
     lang === "ro" ? "ore/săptămână" : "hrs/week",
   );
-  const emptyValue = getString(
-    t("intentSummaryEmpty"),
-    lang === "ro"
-      ? "Selectează câteva opțiuni pentru a vedea analiza."
-      : "Select a few options to unlock the analysis.",
-  );
-
-  const categoryLabelsValue = t("intentCategoryLabels");
-  const categoryLabels =
-    categoryLabelsValue && typeof categoryLabelsValue === "object"
-      ? (categoryLabelsValue as Record<string, string>)
-      : {};
-
-  const sortedCategories = useMemo(
-    () =>
-      [...categories]
-        .filter((entry) => entry.count > 0)
-        .sort((a, b) => b.count - a.count),
-    [categories],
-  );
-
   const progressPercentage = ((step + 1) / TOTAL_STEPS) * 100;
   const stepLabels = [
     lang === "ro"
@@ -166,11 +129,8 @@ export default function IntentSummary({
       ? "Apoi vedem ce resurse practice ai la dispoziție."
       : "Next, we look at the resources you can count on.",
     lang === "ro"
-      ? "Explorăm starea emoțională și confortul tău."
-      : "We check in on how you feel emotionally.",
-    lang === "ro"
-      ? "La final decidem formatul cu cele mai mari șanse."
-      : "Finally, we choose the format with the best odds of success.",
+      ? "Explorăm starea emoțională, confortul și ritmul potrivit."
+      : "We check in on emotional state, comfort, and cadence.",
   ];
 
   const speedOptionsLabels =
@@ -392,17 +352,11 @@ export default function IntentSummary({
                 <span>{lang === "ro" ? "Foarte mult" : "A lot"}</span>
               </div>
             </div>
-          </div>
-        );
-      case 3:
-      default:
-        return (
-          <div className="space-y-6">
             <div>
               <p className="text-sm font-medium text-[#2C2C2C]">
                 {lang === "ro"
                   ? "Cât de ușor îți este să respecți același interval orar în fiecare săptămână?"
-                  : "How easy is it for you to stick to the same time slot every week?"}
+                  : "How easy is it for you to stick to the same weekly time slot?"}
               </p>
               <input
                 type="range"
@@ -418,76 +372,17 @@ export default function IntentSummary({
                 <span>{lang === "ro" ? "Ușor" : "Very easy"}</span>
               </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-[#2C2C2C]">
-                {lang === "ro"
-                  ? "După ce ai citit despre cele două formate, ce ți se potrivește acum?"
-                  : "After reading about both formats, what feels best right now?"}
-              </p>
-              <div className="mt-3 space-y-3">
-                {(Object.keys(formatPreferenceLabels) as FormatPreference[]).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => onFormatPreferenceChange(option)}
-                    className={`w-full rounded-[10px] border px-4 py-3 text-left text-sm ${
-                      formatPreference === option
-                        ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
-                        : "border-[#D8C6B6] text-[#2C2C2C]"
-                    }`}
-                  >
-                    {formatPreferenceLabels[option]}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         );
+      default:
+        return null;
     }
   })();
-
-  const distributionCard = (
-    <div className="rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.08)]">
-      <p className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
-        {lang === "ro" ? "Distribuția alegerilor" : "Your selection mix"}
-      </p>
-      <h3 className="mt-2 text-xl font-semibold text-[#1F1F1F]">
-        {lang === "ro" ? "Unde este încărcarea" : "Where the weight is"}
-      </h3>
-      <div className="mt-4 space-y-4">
-        {sortedCategories.length === 0 ? (
-          <p className="text-sm text-[#2C2C2C]/70">{emptyValue}</p>
-        ) : (
-          sortedCategories.map((entry) => {
-            const percentage = Math.round((entry.count / maxSelection) * 100);
-            const label = categoryLabels[entry.category] ?? entry.category;
-            return (
-              <div key={`${entry.category}-${entry.count}`}>
-                <div className="flex items-center justify-between text-sm font-medium text-[#2C2C2C]">
-                  <span>{label}</span>
-                  <span>
-                    {entry.count}/{maxSelection}
-                  </span>
-                </div>
-                <div className="mt-2 h-2 w-full rounded-full bg-[#E8DDD3]">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#2C2C2C] via-[#C24B17] to-[#E60012]"
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
 
   const stepHeadings = [
     lang === "ro" ? "Despre situația ta acum" : "About your current situation",
     lang === "ro" ? "Resurse și context practic" : "Practical resources",
     lang === "ro" ? "Starea emoțională și confortul" : "Emotional state & comfort",
-    lang === "ro" ? "Program și preferințe de format" : "Schedule & format preference",
   ];
 
   const nextLabel =
@@ -512,30 +407,32 @@ export default function IntentSummary({
   return (
     <section className="bg-[#FDFCF9] px-6 py-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-        <div className="rounded-[16px] border border-[#E4D8CE] bg-white/92 px-8 py-10 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
+        <div className="rounded-[16px] border border-[#E4D8CE] bg-white/92 px-8 py-10 text-left shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
+          <div className="mb-6 flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[#8A7059]">
+              <span>
+                {lang === "ro"
+                  ? `Pasul ${step + 1} din ${TOTAL_STEPS}`
+                  : `Step ${step + 1} of ${TOTAL_STEPS}`}
+              </span>
+              <span className="text-[#2C2C2C]">{Math.round(progressPercentage)}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-[#E9DED3]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#1F1F1F] via-[#A2541A] to-[#E60012] transition-all"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#5C4F45]">{stepLabels[step]}</p>
+          </div>
           <TypewriterText key={title} text={title} speed={90} enableSound />
           {description ? <p className="mt-3 text-sm text-[#2C2C2C]/80">{description}</p> : null}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {distributionCard}
-
+        <div className="flex flex-col gap-6">
           <div className="rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.08)]">
             <div className="mb-4">
-              <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[#A08F82]">
-                <span>
-                  {lang === "ro" ? `Pas ${step + 1} din ${TOTAL_STEPS}` : `Step ${step + 1} of ${TOTAL_STEPS}`}
-                </span>
-                <span>{Math.round(progressPercentage)}%</span>
-              </div>
-              <div className="mt-2 h-2 rounded-full bg-[#F2E8DF]">
-                <div
-                  className="h-full rounded-full bg-[#E60012] transition-all"
-                  style={{ width: `${progressPercentage}%` }}
-                />
-              </div>
-              <p className="mt-3 text-sm text-[#5C4F45]">{stepLabels[step]}</p>
-              <h3 className="mt-1 text-lg font-semibold text-[#2C2C2C]">{stepHeadings[step]}</h3>
+              <h3 className="text-lg font-semibold text-[#2C2C2C]">{stepHeadings[step]}</h3>
             </div>
 
             {stepContent}

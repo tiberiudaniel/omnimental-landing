@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import TypewriterText from "./TypewriterText";
 import CardOption from "./CardOption";
 import { useI18n } from "./I18nProvider";
+import { RecommendationSummary } from "@/components/RecommendationSummary";
+import { buildIndicatorSummary } from "@/lib/indicators";
 import type {
   BudgetPreference,
   ResolutionSpeed,
@@ -11,7 +13,6 @@ import type {
   EmotionalState,
   FormatPreference,
 } from "../lib/evaluation";
-import type { DimensionScores } from "../lib/scoring";
 import { determineLoadLevel, type LoadLevel } from "../lib/loadLevel";
 
 export type RecommendationCardChoice = "individual" | "group";
@@ -20,9 +21,6 @@ type Props = {
   profile: { id: string } | null;
   showAccountPrompt: boolean;
   onAccountRequest: () => void;
-  recommendationText: string;
-  cardsHeadline: string;
-  chooseOptionText: string;
   recommendedPath: RecommendationCardChoice;
   recommendedBadgeLabel?: string;
   onCardSelect: (type: RecommendationCardChoice) => Promise<void> | void;
@@ -46,7 +44,6 @@ type Props = {
   learnFromOthers: number;
   scheduleFit: number;
   formatPreference: FormatPreference;
-  dimensionScores: DimensionScores;
   recommendationReasonKey: string;
 };
 
@@ -73,14 +70,56 @@ const reasonLookup = {
   },
 } as const;
 
+const paceLabel = (lang: string, speed: ResolutionSpeed) => {
+  if (speed === "days") {
+    return lang === "ro" ? "câteva zile" : "a few days";
+  }
+  if (speed === "weeks") {
+    return lang === "ro" ? "câteva săptămâni" : "a few weeks";
+  }
+  return lang === "ro" ? "câteva luni" : "a few months";
+};
+
+const budgetLabel = (lang: string, budget: BudgetPreference) => {
+  if (budget === "low") {
+    return lang === "ro" ? "minim" : "minimal";
+  }
+  if (budget === "medium") {
+    return lang === "ro" ? "mediu" : "medium";
+  }
+  return lang === "ro" ? "maxim" : "maximum";
+};
+
+const buildSummaryMessage = ({
+  lang,
+  mainArea,
+  urgency,
+  pace,
+  budget,
+  themes,
+}: {
+  lang: string;
+  mainArea: string;
+  urgency: number;
+  pace: string;
+  budget: string;
+  themes: string[];
+}) => {
+  const themesText =
+    themes.length > 1
+      ? themes.join(lang === "ro" ? " și " : " & ")
+      : themes[0] ?? (lang === "ro" ? "temele selectate" : "selected themes");
+  if (lang === "ro") {
+    return `Aria principală importantă pentru tine acum este ${mainArea}, simți o urgență de ${urgency}/10 și vrei să lucrezi în ${pace} cu un buget ${budget}, în timp ce temele ${themesText} susțin această direcție.`;
+  }
+  return `Your main focus right now is ${mainArea}; you feel an urgency of ${urgency}/10 and want to work over ${pace} with a ${budget} budget, while ${themesText} support this direction.`;
+};
+
 export function RecommendationStep(props: Props) {
   const {
     profile,
     showAccountPrompt,
     onAccountRequest,
-    recommendationText,
-    cardsHeadline,
-    chooseOptionText,
     recommendedPath,
     recommendedBadgeLabel,
     onCardSelect,
@@ -104,46 +143,15 @@ export function RecommendationStep(props: Props) {
     learnFromOthers,
     scheduleFit,
     formatPreference,
-    dimensionScores,
     recommendationReasonKey,
   } = props;
 
   const { t, lang } = useI18n();
-  const translate = (key: string, fallback: string) => {
-    const value = t(key);
-    return typeof value === "string" ? value : fallback;
-  };
-  const summaryTitle = translate("intentSummaryResultTitle", "Rezumatul tău");
-  const recommendationTitle = translate("intentSummaryResultSubtitle", "Recomandarea mea");
   const loadLevelsValue = t("intentSummaryLoadLevels");
   const loadLevels =
     loadLevelsValue && typeof loadLevelsValue === "object"
       ? (loadLevelsValue as Record<LoadLevel, { label: string; recommendation: string }>)
       : undefined;
-  const primaryCta = translate(
-    "intentSummaryPrimaryCta",
-    lang === "ro" ? "Programează un call de 20 min" : "Book a 20-min call",
-  );
-  const secondaryCta = translate(
-    "intentSummarySecondaryCta",
-    lang === "ro" ? "Vezi detalii program OmniMental" : "See OmniMental program details",
-  );
-  const tertiaryCta = translate(
-    "intentSummaryTertiaryCta",
-    lang === "ro" ? "Prefer sesiuni individuale" : "I prefer individual sessions",
-  );
-  const benefitRow = translate(
-    "intentSummaryBenefitRow",
-    lang === "ro"
-      ? "• plan clar • practici simple • progres măsurat la 3 săptămâni"
-      : "• clear plan • simple practices • progress check at 3 weeks",
-  );
-  const disclaimer = translate(
-    "intentSummaryDisclaimer",
-    lang === "ro"
-      ? "OmniMental este coaching, nu înlocuiește evaluarea medicală."
-      : "OmniMental is coaching, not a medical replacement.",
-  );
 
   const sortedCategories = [...categories]
     .filter((entry) => entry.count > 0)
@@ -152,42 +160,17 @@ export function RecommendationStep(props: Props) {
   const secondaryCategory = sortedCategories[1];
   const primaryLabel = primaryCategory ? categoryLabels[primaryCategory.category] ?? primaryCategory.category : "";
   const secondaryLabel = secondaryCategory ? categoryLabels[secondaryCategory.category] ?? secondaryCategory.category : "";
-
-  const summaryIntro = lang === "ro" ? "Cele mai prezente teme:" : "Leading themes:";
-  const labelJoiner = lang === "ro" ? " și " : " & ";
-  const scoreSummary = primaryLabel
-    ? `${summaryIntro} ${secondaryLabel ? `${primaryLabel}${labelJoiner}${secondaryLabel}` : primaryLabel}`
-    : lang === "ro"
-    ? "Completează selecțiile ca să vezi rezumatul."
-    : "Select a few options to unlock the summary.";
-  const insightFallback = translate(
-    "intentSummaryInsightFallback",
-    lang === "ro"
-      ? "Recalibrează-ți ritmul intern și observă semnalele corpului înainte să apară blocajele."
-      : "Stay close to your inner tempo and notice body cues before friction builds up.",
-  );
-  const insightsValue = t("intentSummaryCategoryInsights");
-  const insights =
-    insightsValue && typeof insightsValue === "object"
-      ? (insightsValue as Record<string, string>)
-      : {};
-  const oneLiner = primaryCategory ? insights[primaryCategory.category] ?? insightFallback : insightFallback;
+  const fallbackTheme = lang === "ro" ? "claritate și echilibru" : "clarity & balance";
+  const summaryThemes =
+    primaryLabel != null && primaryLabel.length > 0
+      ? [primaryLabel, secondaryLabel].filter(
+          (value): value is string => typeof value === "string" && value.length > 0,
+        )
+      : [fallbackTheme];
+  const mainAreaLabel = primaryLabel && primaryLabel.length > 0 ? primaryLabel : fallbackTheme;
 
   const loadLevel = determineLoadLevel(intentUrgency);
   const loadLevelContent = loadLevels?.[loadLevel];
-  const loadLevelLabel =
-    loadLevelContent?.label ??
-    (loadLevel === "high"
-      ? lang === "ro"
-        ? "Nivel de încărcare: Ridicat"
-        : "Load level: High"
-      : loadLevel === "low"
-      ? lang === "ro"
-        ? "Nivel de încărcare: Scăzut"
-        : "Load level: Low"
-      : lang === "ro"
-      ? "Nivel de încărcare: Moderat"
-      : "Load level: Moderate");
 
   const recommendationHeadline =
     recommendedPath === "individual"
@@ -197,6 +180,11 @@ export function RecommendationStep(props: Props) {
       : lang === "ro"
       ? "Recomandare: grupul online OmniMental."
       : "Recommendation: OmniMental group.";
+  const recommendationBodyText =
+    loadLevelContent?.recommendation ??
+    (lang === "ro"
+      ? "Continuă în ritmul tău și caută ghidaj când simți că ritmul devine neclar."
+      : "Keep your current pace and lean on guidance when things feel unclear.");
 
   const primaryReason =
     reasonLookup[recommendationReasonKey as keyof typeof reasonLookup]?.[
@@ -213,194 +201,61 @@ export function RecommendationStep(props: Props) {
       : "The factors below (pace, time, budget) complete the picture.",
   ];
 
-  const formatPreferenceLabel =
-    formatPreference === "individual"
+  const goalTypeText =
+    goalType === "single"
       ? lang === "ro"
-        ? "Prefer individual"
-        : "Prefers individual"
-      : formatPreference === "group"
+        ? "O temă concretă"
+        : "Single focus"
+      : goalType === "few"
       ? lang === "ro"
-        ? "Prefer grup"
-        : "Prefers group"
+        ? "2–3 zone legate"
+        : "2–3 linked areas"
       : lang === "ro"
-      ? "Deschis(ă) la ambele"
-      : "Open to both";
+      ? "Reorganizare amplă"
+      : "Broader re-organization";
 
-  const insightExtras = [
-    `${lang === "ro" ? "Ritm dorit" : "Desired pace"}: ${
-      resolutionSpeed === "days"
-        ? lang === "ro"
-          ? "zile"
-          : "days"
-        : resolutionSpeed === "weeks"
-        ? lang === "ro"
-          ? "săptămâni"
-          : "weeks"
-        : lang === "ro"
-        ? "luni"
-        : "months"
-    }`,
-    `${lang === "ro" ? "Hotărâre" : "Determination"}: ${determination}/5`,
-    `${lang === "ro" ? "Timp săptămânal" : "Weekly time"}: ${timeCommitmentHours}h`,
-    `${lang === "ro" ? "Buget" : "Budget"}: ${
-      budgetPreference === "low"
-        ? lang === "ro"
-          ? "minim"
-          : "minimal"
-        : budgetPreference === "medium"
-        ? lang === "ro"
-          ? "mediu"
-          : "medium"
-        : lang === "ro"
-        ? "maxim"
-        : "maximum"
-    }`,
-    `${lang === "ro" ? "Tip obiectiv" : "Focus type"}: ${
-      goalType === "single"
-        ? lang === "ro"
-          ? "O temă concretă"
-          : "Single focus"
-        : goalType === "few"
-        ? lang === "ro"
-          ? "2–3 zone legate"
-          : "2–3 linked areas"
-        : lang === "ro"
-        ? "Reorganizare amplă"
-        : "Broader re-organization"
-    }`,
-    `${lang === "ro" ? "Stare emoțională" : "Emotional state"}: ${
-      emotionalState === "stable"
-        ? lang === "ro"
-          ? "Relativ stabilă"
-          : "Fairly stable"
-        : emotionalState === "fluctuating"
-        ? lang === "ro"
-          ? "Fluctuantă"
-          : "Fluctuating"
-        : lang === "ro"
-        ? "Foarte instabilă"
-        : "Highly unstable"
-    }`,
-    `${lang === "ro" ? "Preferință declarată" : "Stated preference"}: ${formatPreferenceLabel}`,
-    `${lang === "ro" ? "Confort în grup" : "Group comfort"}: ${groupComfort}/10`,
-    `${lang === "ro" ? "Învăț din alții" : "Learns from others"}: ${learnFromOthers}/10`,
-    `${lang === "ro" ? "Potrivire program" : "Schedule fit"}: ${scheduleFit}/10`,
-  ];
+  const emotionalStateText =
+    emotionalState === "stable"
+      ? lang === "ro"
+        ? "Relativ stabilă"
+        : "Fairly stable"
+      : emotionalState === "fluctuating"
+      ? lang === "ro"
+        ? "Fluctuantă"
+        : "Fluctuating"
+      : lang === "ro"
+      ? "Foarte instabilă"
+      : "Highly unstable";
 
-  const dimensionLabels: Record<keyof DimensionScores, { ro: string; en: string }> = {
-    calm: { ro: "Calm", en: "Calm" },
-    focus: { ro: "Claritate & focus", en: "Clarity & focus" },
-    energy: { ro: "Energie", en: "Energy" },
-    relationships: { ro: "Relații", en: "Relationships" },
-    performance: { ro: "Performanță", en: "Performance" },
-    health: { ro: "Corp & obiceiuri", en: "Body & habits" },
-  };
+  const budgetLevelForSummary: "min" | "medium" | "max" =
+    budgetPreference === "low" ? "min" : budgetPreference === "medium" ? "medium" : "max";
 
-  const dimensionEntries = useMemo(() => {
-    const pairs = Object.entries(dimensionScores) as Array<[keyof DimensionScores, number]>;
-    return pairs.sort((a, b) => b[1] - a[1]);
-  }, [dimensionScores]);
+  const prefersIndividual = formatPreference === "individual";
+  const indicatorSummary = useMemo(() => buildIndicatorSummary(categories), [categories]);
+  const summaryIndicators = indicatorSummary.chart;
 
-  const maxDimensionValue = Math.max(
-    1,
-    ...dimensionEntries.map(([, value]) => value),
-  );
-  const hasDimensionData = dimensionEntries.some(([, value]) => value > 0);
-  const dimensionTitle =
-    lang === "ro" ? "Indicatori principali" : "Key indicators";
-  const dimensionEmpty =
+  const pacePhrase = paceLabel(lang, resolutionSpeed);
+  const budgetPhrase = budgetLabel(lang, budgetPreference);
+  const typewriterMessage =
     lang === "ro"
-      ? "Completează selecțiile pentru a vedea scorurile principale."
-      : "Complete a few answers to see the main scores.";
+      ? "Uite recomandarea mea, luând în calcul situația și dorințele tale."
+      : "Here’s my recommendation, based on your situation and priorities.";
+
+  const summaryMessage = buildSummaryMessage({
+    lang,
+    mainArea: mainAreaLabel,
+    urgency: intentUrgency,
+    pace: pacePhrase,
+    budget: budgetPhrase,
+    themes: summaryThemes,
+  });
 
   return (
     <section className="bg-[#FDFCF9] px-4 py-12">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 lg:flex-row">
-        <div className="flex-1 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.08)]">
-          <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">{loadLevelLabel}</p>
-          <h2 className="mt-2 text-2xl font-semibold text-[#1F1F1F]">{summaryTitle}</h2>
-          <p className="mt-1 text-sm text-[#5C4F45]">{scoreSummary}</p>
-          {primaryLabel ? (
-            <p className="mt-1 text-sm text-[#5C4F45]">
-              {lang === "ro" ? "Aria principală:" : "Primary area:"} <strong>{primaryLabel}</strong>
-            </p>
-          ) : null}
-          <p className="mt-4 text-sm font-semibold uppercase tracking-[0.3em] text-[#A08F82]">
-            {recommendationTitle}
-          </p>
-          <p className="mt-2 text-base font-medium text-[#2C2C2C]">{recommendationHeadline}</p>
-          <p className="mt-1 text-sm italic text-[#5C4F45]">{oneLiner}</p>
-          <p className="mt-3 text-sm text-[#2C2C2C]">
-            {loadLevelContent?.recommendation ??
-              (lang === "ro"
-                ? "Continuă în ritmul tău și caută ghidaj când simți că ritmul devine neclar."
-                : "Keep your current pace and lean on guidance when things feel unclear.")}
-          </p>
-          <ul className="mt-3 space-y-2 text-sm text-[#5C4F45]">
-            {localizedReasons.map((reason) => (
-              <li key={reason}>• {reason}</li>
-            ))}
-          </ul>
-          <div className="mt-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#A08F82]">
-              {dimensionTitle}
-            </p>
-            {hasDimensionData ? (
-              <div className="mt-3 space-y-3">
-                {dimensionEntries.map(([key, value]) => (
-                  <div key={key}>
-                    <div className="flex items-center justify-between text-xs font-semibold text-[#2C2C2C]">
-                      <span>{dimensionLabels[key][lang === "ro" ? "ro" : "en"]}</span>
-                      <span>{value}</span>
-                    </div>
-                    <div className="mt-1 h-2 rounded-full bg-[#F2E8DF]">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-[#2C2C2C] via-[#C24B17] to-[#E60012]"
-                        style={{ width: `${Math.min(100, (value / maxDimensionValue) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-2 text-xs text-[#5C4F45]">{dimensionEmpty}</p>
-            )}
-          </div>
-          <div className="mt-5 grid grid-cols-1 gap-2 text-sm text-[#5C4F45] md:grid-cols-2">
-            {insightExtras.map((item) => (
-              <div key={item} className="rounded-[10px] bg-[#FDF1EF] px-3 py-2 text-xs font-medium text-[#2C2C2C]">
-                {item}
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 flex flex-col gap-3 text-center sm:flex-row sm:justify-start">
-            <button
-              type="button"
-              onClick={onAccountRequest}
-              className="inline-flex w-full max-w-[220px] items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
-            >
-              {primaryCta}
-            </button>
-            <a
-              href="#sessions"
-              className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:text-[#E60012]"
-            >
-              {secondaryCta}
-            </a>
-            <a
-              href="#individual"
-              className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] transition hover:text-[#E60012]"
-            >
-              {tertiaryCta}
-            </a>
-          </div>
-          <p className="mt-3 text-xs text-[#5C4F45]">{benefitRow}</p>
-          <p className="mt-4 text-[11px] text-[#A08F82]">{disclaimer}</p>
-        </div>
-
-        <div className="flex-1 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 text-center shadow-[0_12px_32px_rgba(0,0,0,0.08)]">
+      <div className="mx-auto max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
+        <div className="mx-auto flex max-w-4xl flex-col gap-6 text-center">
           {!profile && showAccountPrompt ? (
-            <div className="mb-6 rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+            <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
               <p className="mb-3">{accountPromptMessage}</p>
               <button
                 type="button"
@@ -411,45 +266,65 @@ export function RecommendationStep(props: Props) {
               </button>
             </div>
           ) : null}
-          {recommendationText ? (
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]">
-              {recommendationText}
-            </p>
-          ) : null}
           <TypewriterText
-            key={`choose-${cardsHeadline || "option"}`}
-            text={cardsHeadline || chooseOptionText}
+            key={`summary-${lang}`}
+            text={typewriterMessage}
             speed={96}
             enableSound
           />
-
-          <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-4 md:flex-row md:gap-6">
+          <div className="mt-2 flex w-full flex-col items-center justify-center gap-6 md:flex-row md:items-stretch md:gap-8">
             {(["individual", "group"] as const).map((type) => (
-              <CardOption
-                key={type}
-                type={type}
-                title={cardLabels[type]}
-                onClick={() => {
-                  void onCardSelect(type);
-                }}
-                isRecommended={recommendedPath === type}
-                recommendedLabel={recommendedBadgeLabel}
-                disabled={isSavingChoice}
-                isLoading={isSavingChoice && savingChoiceType === type}
-                loadingLabel={savingLabel}
-              />
+              <div key={type} className="w-full max-w-sm md:max-w-none">
+                <CardOption
+                  type={type}
+                  title={cardLabels[type]}
+                  onClick={() => {
+                    void onCardSelect(type);
+                  }}
+                  isRecommended={recommendedPath === type}
+                  recommendedLabel={recommendedBadgeLabel}
+                  disabled={isSavingChoice}
+                  isLoading={isSavingChoice && savingChoiceType === type}
+                  loadingLabel={savingLabel}
+                />
+              </div>
             ))}
           </div>
           {isSavingChoice ? (
-            <p className="mt-4 text-xs text-[#2C2C2C]">{savingLabel}</p>
+            <p className="text-xs text-[#2C2C2C]">{savingLabel}</p>
           ) : null}
           {errorMessage ? (
-            <p className="mt-2 text-xs text-[#B8000E]">{errorMessage}</p>
+            <p className="text-xs text-[#B8000E]">{errorMessage}</p>
           ) : null}
+
+          <RecommendationSummary
+            variant="embedded"
+            loadLevel={loadLevel}
+            primaryThemes={summaryThemes}
+            mainArea={mainAreaLabel}
+            mainRecommendationTitle={recommendationHeadline}
+            mainRecommendationText={recommendationBodyText}
+            reasoningBullets={localizedReasons}
+            indicators={summaryIndicators}
+            speed={resolutionSpeed}
+            commitment={determination}
+            weeklyTimeHours={timeCommitmentHours}
+            budgetLevel={budgetLevelForSummary}
+            goalType={goalTypeText}
+            emotionalState={emotionalStateText}
+            prefersIndividual={prefersIndividual}
+            groupComfort={groupComfort}
+            learnsFromOthers={learnFromOthers}
+            programFit={scheduleFit}
+            onBookCall={onAccountRequest}
+            language={lang === "en" ? "en" : "ro"}
+            summaryMessage={summaryMessage}
+          />
         </div>
       </div>
     </section>
   );
+
 }
 
 export default RecommendationStep;

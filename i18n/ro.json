@@ -77,8 +77,8 @@
     { "key": "clarity_meaning", "label": "Vreau să simt că trăiesc cu sens.", "category": "clarity" }
   ],
   "intentCloudSliderLabel": "Cât de intens simți asta acum?",
-  "intentSummaryTitle": "Iată cum se împart cele 7 alegeri",
-  "intentSummaryDescription": "Distribuția de mai jos ne ajută să înțelegem zonele dominante înainte să mergem mai departe.",
+  "intentSummaryTitle": "„Orice salt în rezultate cere un salt în disciplină.”",
+  "intentSummaryDescription": "Profilul vizual de mai jos arată cum se distribuie selecțiile tale înainte să mergem mai departe.",
   "intentSummaryIntensityQuestion": "Cât de urgent simți să lucrezi la aceste teme?",
   "intentSummaryIntensityLow": "Calm",
   "intentSummaryIntensityHigh": "Foarte urgent",

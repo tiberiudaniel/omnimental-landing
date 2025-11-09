@@ -17,14 +17,8 @@ import AccountModal from "../components/AccountModal";
 import IntroAnimation from "../components/IntroAnimation";
 import { useWizardSteps, type Step } from "../components/useWizardSteps";
 import WizardReflection from "../components/WizardReflection";
-import { useWizardData, type IntentCategoryCount } from "../components/useWizardData";
-import type {
-  GoalType,
-  EmotionalState,
-  FormatPreference,
-  ResolutionSpeed,
-  BudgetPreference,
-} from "../lib/evaluation";
+import { useWizardData } from "../components/useWizardData";
+import type { GoalType, EmotionalState, ResolutionSpeed, BudgetPreference } from "../lib/evaluation";
 import { computeDimensionScores } from "../lib/scoring";
 import type { DimensionScores } from "../lib/scoring";
 import { recommendSession, type SessionType } from "../lib/recommendation";
@@ -80,10 +74,9 @@ function PageContent() {
     setBudgetPreference,
     setGoalType,
     setEmotionalState,
-    setGroupComfort,
+  setGroupComfort,
   setLearnFromOthers,
   setScheduleFit,
-  setFormatPreference,
 } = useWizardData({ lang, profileId: profile?.id ?? null });
 
   const [dimensionScores, setDimensionScores] = useState<DimensionScores>(() => ({
@@ -98,8 +91,6 @@ function PageContent() {
   const [recommendationReasonKey, setRecommendationReasonKey] =
     useState<string>("reason_default");
 
-  const chooseOptionText = getTranslationString(t, "chooseOption");
-  const cardsHeadline = getTranslationString(t, "cardsHeadline", chooseOptionText);
   const categoryLabels = useMemo(() => {
     const categoryLabelsValue = t("intentCategoryLabels");
     return categoryLabelsValue && typeof categoryLabelsValue === "object"
@@ -165,7 +156,7 @@ function PageContent() {
   const handleIntentComplete = useCallback(
     (result: IntentCloudResult) => {
       recordIntentSelection(result);
-      navigateToStep("intentSummary");
+      navigateToStep("reflectionSummary");
     },
     [recordIntentSelection, navigateToStep],
   );
@@ -192,7 +183,7 @@ function PageContent() {
       if (!success) {
         console.warn("intent snapshot persisted locally only");
       }
-      navigateToStep("reflectionSummary");
+      navigateToStep("cards");
     },
     [
       intentCategories,
@@ -229,11 +220,6 @@ function PageContent() {
     dismissAccountPrompt();
   };
 
-  const recommendationCopyKey =
-    recommendedPath === "individual"
-      ? "cardsRecommendationIndividual"
-      : "cardsRecommendationGroup";
-  const recommendationText = getTranslationString(t, recommendationCopyKey);
   const savingGenericLabel = lang === "ro" ? "Se salvează..." : "Saving...";
   const savingChoiceLabel = getTranslationString(
     t,
@@ -277,11 +263,19 @@ function PageContent() {
             onComplete={handleIntentComplete}
           />
         );
+      case "reflectionSummary":
+        return (
+          <WizardReflection
+            lines={reflectionSummaryLines}
+            onContinue={() => navigateToStep("intentSummary")}
+            categories={intentCategories}
+            maxSelection={REQUIRED_SELECTIONS}
+            categoryLabels={categoryLabels}
+          />
+        );
       case "intentSummary":
         return (
           <IntentSummaryStep
-            categories={intentCategories}
-            maxSelection={REQUIRED_SELECTIONS}
             onContinue={() => {
               void handleIntentSummaryComplete(intentUrgency);
             }}
@@ -308,22 +302,13 @@ function PageContent() {
             onLearnFromOthersChange={setLearnFromOthers}
             scheduleFit={scheduleFit}
             onScheduleFitChange={setScheduleFit}
-            formatPreference={formatPreference}
-            onFormatPreferenceChange={setFormatPreference}
           />
-        );
-      case "reflectionSummary":
-        return (
-          <WizardReflection lines={reflectionSummaryLines} onContinue={() => navigateToStep("cards")} />
         );
       case "cards":
         return (
           <RecommendationStep
             categories={intentCategories}
             intentUrgency={intentUrgency}
-            recommendationText={recommendationText}
-            cardsHeadline={cardsHeadline}
-            chooseOptionText={chooseOptionText}
             recommendedPath={recommendedPath}
             recommendedBadgeLabel={recommendedBadgeLabel}
             onCardSelect={handleCardSelect}
@@ -351,7 +336,6 @@ function PageContent() {
             learnFromOthers={learnFromOthers}
             scheduleFit={scheduleFit}
             formatPreference={formatPreference}
-            dimensionScores={dimensionScores}
             recommendationReasonKey={recommendationReasonKey}
           />
         );
@@ -447,8 +431,6 @@ function IntentStep({ minSelection, maxSelection, onComplete }: IntentStepProps)
 }
 
 type IntentSummaryStepProps = {
-  categories: IntentCategoryCount[];
-  maxSelection: number;
   onContinue: () => void;
   isSaving: boolean;
   errorMessage: string | null;
@@ -473,13 +455,9 @@ type IntentSummaryStepProps = {
   onLearnFromOthersChange: (value: number) => void;
   scheduleFit: number;
   onScheduleFitChange: (value: number) => void;
-  formatPreference: FormatPreference;
-  onFormatPreferenceChange: (value: FormatPreference) => void;
 };
 
 function IntentSummaryStep({
-  categories,
-  maxSelection,
   onContinue,
   isSaving,
   errorMessage,
@@ -504,13 +482,9 @@ function IntentSummaryStep({
   onLearnFromOthersChange,
   scheduleFit,
   onScheduleFitChange,
-  formatPreference,
-  onFormatPreferenceChange,
 }: IntentSummaryStepProps) {
   return (
     <IntentSummary
-      categories={categories}
-      maxSelection={maxSelection}
       urgency={urgency}
       onUrgencyChange={onUrgencyChange}
       onContinue={onContinue}
@@ -535,8 +509,6 @@ function IntentSummaryStep({
       onLearnFromOthersChange={onLearnFromOthersChange}
       scheduleFit={scheduleFit}
       onScheduleFitChange={onScheduleFitChange}
-      formatPreference={formatPreference}
-      onFormatPreferenceChange={onFormatPreferenceChange}
     />
   );
 }
