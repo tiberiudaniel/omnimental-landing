@@ -226,7 +226,7 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
           <div className="rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-4">
             <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">{personaCtaBody}</p>
             <Link
-              href="/group-info"
+              href="/group"
               className="mt-2 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
             >
               {personaCtaLabel}

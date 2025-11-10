@@ -53,6 +53,35 @@ const DIMENSION_LABELS: Record<DimensionKey, { ro: string; en: string }> = {
   health: { ro: "Obiceiuri & sănătate", en: "Habits & health" },
 };
 
+const RETURN_TO_PROGRESS = "/progress";
+
+type WizardEntryStep = "firstInput" | "reflectionPrompt" | "intent" | "intentSummary" | "cards";
+
+const buildWizardLink = (step: WizardEntryStep, source: string) => ({
+  pathname: "/",
+  query: {
+    step,
+    source,
+    returnTo: RETURN_TO_PROGRESS,
+  },
+});
+
+const buildEvaluationLink = () => ({
+  pathname: "/evaluation",
+  query: {
+    source: "progress",
+    returnTo: RETURN_TO_PROGRESS,
+  },
+});
+
+const buildRecommendationLink = () => ({
+  pathname: "/recommendation",
+  query: {
+    source: "progress",
+    returnTo: RETURN_TO_PROGRESS,
+  },
+});
+
 function resolveString(value: unknown, fallback: string) {
   return typeof value === "string" ? value : fallback;
 }
@@ -365,7 +394,7 @@ function ProgressContent() {
                 </h2>
                 </div>
                 <Link
-                  href="/#intent-cloud"
+                  href={buildWizardLink("firstInput", "progress-intent")}
                   className="text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] hover:text-[#E60012]"
                 >
                   {resolveString(t("progressCTA"), "Actualizează")}
@@ -408,7 +437,7 @@ function ProgressContent() {
                 <div className="space-y-3 text-sm text-[#A08F82]">
                   <p>{resolveString(intentEmpty, "Completează secțiunea Intenții & Cloud.")}</p>
                   <Link
-                    href="/#intent-cloud"
+                    href={buildWizardLink("firstInput", "progress-intent-empty")}
                     className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
                   >
                     {lang === "ro" ? "Actualizează intențiile" : "Update intents"}
@@ -426,7 +455,7 @@ function ProgressContent() {
                 </h2>
                 </div>
                 <Link
-                  href="/#motivation"
+                  href={buildWizardLink("intentSummary", "progress-motivation")}
                   className="text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] hover:text-[#E60012]"
                 >
                   {resolveString(t("progressCTA"), "Actualizează")}
@@ -452,7 +481,7 @@ function ProgressContent() {
                     )}
                   </p>
                   <Link
-                    href="/evaluation"
+                    href={buildWizardLink("intentSummary", "progress-motivation-empty")}
                     className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
                   >
                     {lang === "ro" ? "Mergi la motivație" : "Go to motivation"}
@@ -470,7 +499,7 @@ function ProgressContent() {
                 </h2>
                 </div>
                 <Link
-                  href="/evaluation"
+                  href={buildEvaluationLink()}
                   className="text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] hover:text-[#E60012]"
                 >
                   {resolveString(t("progressViewEvaluation"), "Vezi evaluările")}
@@ -494,7 +523,7 @@ function ProgressContent() {
                     )}
                   </p>
                   <Link
-                    href="/evaluation"
+                    href={buildEvaluationLink()}
                     className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
                   >
                     {lang === "ro" ? "Pornește evaluarea" : "Start the evaluation"}
@@ -538,7 +567,7 @@ function ProgressContent() {
                     )}
                   </p>
                   <Link
-                    href="/recommendation"
+                    href={buildRecommendationLink()}
                     className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
                   >
                     {lang === "ro" ? "Vezi recomandarea" : "View recommendation"}

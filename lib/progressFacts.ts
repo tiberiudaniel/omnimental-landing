@@ -117,17 +117,22 @@ function sanitizeDimensionScores(entry: unknown): DimensionScores | null {
 async function mergeProgressFact(data: Record<string, unknown>) {
   const user = await ensureAuth();
   if (!user) return null;
+  const updatedAt = serverTimestamp();
   const payload = {
     ...data,
-    updatedAt: serverTimestamp(),
+    updatedAt,
   };
+  const profilePayload: Record<string, unknown> = {};
+  Object.entries(payload).forEach(([key, value]) => {
+    profilePayload[`progressFacts.${key}`] = value;
+  });
   const factsRef = doc(getDb(), "userProgressFacts", user.uid);
   const profileRef = doc(getDb(), "userProfiles", user.uid);
   await Promise.all([
     setDoc(factsRef, payload, { merge: true }).catch((error) =>
       console.warn("progress fact primary write failed", error),
     ),
-    setDoc(profileRef, { progressFacts: payload }, { merge: true }),
+    setDoc(profileRef, profilePayload, { merge: true }),
   ]);
   return user.uid;
 }

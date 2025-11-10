@@ -35,20 +35,39 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
         const data = snapshot.exists()
           ? ((snapshot.data().progressFacts as ProgressFact | undefined) ?? null)
           : null;
-        if (data) {
+        const hasIntent = Boolean(data?.intent);
+        const hasMotivation = Boolean(data?.motivation);
+        const hasEvaluation = Boolean(data?.evaluation);
+        const needsBackfill = !data || !hasIntent || !hasMotivation || !hasEvaluation;
+
+        if (!needsBackfill && data) {
           setState({ data, loading: false, error: null });
           backfillRequested.current = false;
           return;
         }
-        setState((prev) => ({ ...prev, loading: true }));
+
+        setState((prev) => ({
+          data: data ?? prev.data,
+          loading: true,
+          error: prev.error,
+        }));
+
         if (!backfillRequested.current) {
           backfillRequested.current = true;
           void backfillProgressFacts(profileId)
             .then((fact) => {
-              setState({ data: fact ?? null, loading: false, error: null });
+              setState((prev) => ({
+                data: fact ?? prev.data,
+                loading: false,
+                error: null,
+              }));
             })
             .catch((error) => {
-              setState({ data: null, loading: false, error });
+              setState((prev) => ({
+                data: prev.data,
+                loading: false,
+                error,
+              }));
             })
             .finally(() => {
               backfillRequested.current = false;

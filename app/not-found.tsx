@@ -19,7 +19,7 @@ export default function NotFound() {
             Înapoi acasă
           </Link>
           <Link
-            href="/group-info"
+            href="/group"
             className="border border-[#D8C6B6] px-5 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition-colors hover:bg-[#F6F2EE]"
           >
             Mental Coaching Group

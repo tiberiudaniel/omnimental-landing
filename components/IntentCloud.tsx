@@ -6,44 +6,37 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
 import { getDb } from "../lib/firebase";
-
-const CATEGORY_KEYS = [
-  "calm",
-  "relationships",
-  "career",
-  "clarity",
-  "boundaries",
-  "selfTrust",
-] as const;
-
-export type IntentCategory = (typeof CATEGORY_KEYS)[number];
+import type { IntentCloudWord, IntentPrimaryCategory } from "@/lib/intentExpressions";
 
 type IntentWord = {
   key: string;
   label: string;
-  category: IntentCategory;
+  category: string;
   size: number;
   shift: number;
 };
 
 export type IntentCloudResult = {
   tags: string[];
-  categories: Array<{ category: IntentCategory; count: number }>;
+  categories: Array<{ category: IntentPrimaryCategory; count: number }>;
+  selectionIds: string[];
 };
 
 type IntentCloudProps = {
   onComplete: (result: IntentCloudResult) => void;
   minSelection?: number;
   maxSelection?: number;
+  words?: IntentCloudWord[];
 };
 
-const DEFAULT_MIN = 3;
-const DEFAULT_MAX = 5;
+const DEFAULT_MIN = 5;
+const DEFAULT_MAX = 7;
 
 export default function IntentCloud({
   onComplete,
   minSelection = DEFAULT_MIN,
   maxSelection = DEFAULT_MAX,
+  words: presetWords,
 }: IntentCloudProps) {
   const { t, lang } = useI18n();
   const db = getDb();
@@ -60,52 +53,56 @@ export default function IntentCloud({
     typeof helperValue === "string" && helperValue.trim().length > 0
       ? helperValue
       : lang === "ro"
-      ? "Alege între 3 și 5 afirmații care descriu cel mai bine starea ta actuală."
-      : "Pick 3 to 5 statements that best describe what you feel right now.";
+      ? "Alege între 5 și 7 afirmații care descriu cel mai bine starea ta actuală."
+      : "Pick 5 to 7 statements that best describe what you feel right now.";
   const buttonLabel = typeof buttonValue === "string" ? buttonValue : "Continuă";
   const progress = Math.min(selected.length / maxSelection, 1);
 
   const words = useMemo<IntentWord[]>(() => {
-    if (!Array.isArray(rawList)) return [];
-    const isCategory = (value: unknown): value is IntentCategory =>
-      typeof value === "string" && CATEGORY_KEYS.includes(value as IntentCategory);
+    const sourceList: IntentCloudWord[] =
+      Array.isArray(presetWords) && presetWords.length > 0
+        ? presetWords
+        : Array.isArray(rawList)
+        ? (rawList
+            .map((item, index) => {
+              if (!item || typeof item !== "object") {
+                return null;
+              }
+              const record = item as Record<string, unknown>;
+              const key =
+                typeof record.key === "string" && record.key.trim().length > 0
+                  ? record.key
+                  : `intent-word-${index}`;
+              const label =
+                typeof record.label === "string" && record.label.trim().length > 0
+                  ? record.label
+                  : "";
+              const category =
+                typeof record.category === "string" && record.category.trim().length > 0
+                  ? (record.category as string)
+                  : "clarity";
+              if (!label) {
+                return null;
+              }
+              return { id: key, label, category };
+            })
+            .filter((entry): entry is IntentCloudWord => entry !== null) as IntentCloudWord[])
+        : [];
 
-    return rawList.flatMap((item, index) => {
-      if (!item || typeof item !== "object") {
-        return [];
-      }
-
-      const record = item as Record<string, unknown>;
-      const key =
-        typeof record.key === "string" && record.key.trim().length > 0
-          ? record.key
-          : `intent-word-${index}`;
-      const label =
-        typeof record.label === "string" && record.label.trim().length > 0
-          ? record.label
-          : "";
-
-      if (!label) {
-        return [];
-      }
-
-      const category = isCategory(record.category) ? record.category : "clarity";
-
-      const hash = Math.abs([...label].reduce((acc, char) => acc + char.charCodeAt(0), index));
+    return sourceList.map((item, index) => {
+      const base = item.label;
+      const hash = Math.abs([...base].reduce((acc, char) => acc + char.charCodeAt(0), index));
       const size = hash % 2;
       const shift = (hash % 9) - 4;
-
-      return [
-        {
-          key,
-          label,
-          category,
-          size,
-          shift,
-        },
-      ];
+      return {
+        key: item.id ?? `${item.label}-${index.toString()}`,
+        label: item.label,
+        category: item.category,
+        size,
+        shift,
+      };
     });
-  }, [rawList]);
+  }, [presetWords, rawList]);
 
   const wordDictionary = useMemo(() => {
     const map: Record<string, IntentWord> = {};
@@ -152,19 +149,19 @@ export default function IntentCloud({
     setError(null);
     const snapshot = [...selectedLabels];
     const categoryCounts = selected.reduce((acc, key) => {
-      const category = wordDictionary[key]?.category ?? "clarity";
+      const category = (wordDictionary[key]?.category ?? "clarity") as IntentPrimaryCategory;
       acc[category] = (acc[category] ?? 0) + 1;
       return acc;
-    }, {} as Record<IntentCategory, number>);
+    }, {} as Record<IntentPrimaryCategory, number>);
 
     const sortedCategories = Object.entries(categoryCounts)
       .map(([category, count]) => ({
-        category: category as IntentCategory,
+        category: category as IntentPrimaryCategory,
         count,
       }))
       .sort((a, b) => b.count - a.count);
 
-    onComplete({ tags: snapshot, categories: sortedCategories });
+    onComplete({ tags: snapshot, categories: sortedCategories, selectionIds: [...selected] });
     void addDoc(collection(db, "userIntentTags"), {
       tags: snapshot,
       categories: sortedCategories,
@@ -190,7 +187,7 @@ export default function IntentCloud({
               {lang === "ro" ? "selectate" : "selected"}
             </span>
             <span>
-              {lang === "ro" ? "Țintă: 3–5" : "Goal: 3–5"}
+              {lang === "ro" ? "Țintă: 5–7" : "Goal: 5–7"}
             </span>
           </div>
           <div className="h-2 w-full rounded-full bg-[#E8DDD3]">

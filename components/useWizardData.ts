@@ -15,6 +15,10 @@ import {
 import type { DimensionScores } from "../lib/scoring";
 import type { SessionType } from "../lib/recommendation";
 import {
+  detectCategoryFromRawInput,
+  type IntentPrimaryCategory,
+} from "../lib/intentExpressions";
+import {
   recordIntentProgressFact,
   recordMotivationProgressFact,
   recordRecommendationProgressFact,
@@ -48,6 +52,11 @@ const sanitizeJournalText = (text: string) => {
   return trimmed.length > MAX_JOURNAL_LENGTH ? trimmed.slice(0, MAX_JOURNAL_LENGTH) : trimmed;
 };
 
+type FirstExpressionMeta = {
+  expressionId?: string;
+  category?: IntentPrimaryCategory;
+};
+
 type UseWizardDataParams = {
   lang: string;
   profileId: string | null;
@@ -69,8 +78,18 @@ type JourneyExtras = {
 
 export function useWizardData({ lang, profileId }: UseWizardDataParams) {
   const [journalEntry, setJournalEntry] = useState("");
+  const [firstIntentExpression, setFirstIntentExpression] = useState<string | null>(null);
+  const [firstIntentCategory, setFirstIntentCategory] = useState<IntentPrimaryCategory | null>(null);
   const [intentTags, setIntentTags] = useState<string[]>([]);
   const [intentCategories, setIntentCategories] = useState<IntentCategoryCount[]>([]);
+  const [intentSelectionIds, setIntentSelectionIds] = useState<string[]>([]);
+  const [intentCategoryScores, setIntentCategoryScores] = useState<Record<IntentPrimaryCategory, number>>({
+    clarity: 0,
+    relationships: 0,
+    stress: 0,
+    confidence: 0,
+    balance: 0,
+  });
   const [intentUrgency, setIntentUrgency] = useState(6);
   const [selectedCard, setSelectedCard] = useState<WizardCardChoice | null>(null);
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);
@@ -100,7 +119,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
   }, []);
 
   const handleFirstInputSubmit = useCallback(
-    async (text: string) => {
+    async (text: string, meta?: FirstExpressionMeta) => {
       const cleanText = sanitizeJournalText(text);
       if (!cleanText) {
         const message =
@@ -113,11 +132,15 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       setJournalEntry(cleanText);
       setSaveError(null);
       try {
+        await ensureAuth();
         await addDoc(collection(db, "userInterests"), {
           text: cleanText,
           lang,
           timestamp: serverTimestamp(),
         });
+        const resolvedCategory = meta?.category ?? detectCategoryFromRawInput(cleanText) ?? null;
+        setFirstIntentCategory(resolvedCategory);
+        setFirstIntentExpression(meta?.expressionId ?? cleanText);
       } catch (error) {
         console.error("journal entry save failed", error);
         setSaveError(GENERIC_SAVE_ERROR);
@@ -128,8 +151,28 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
   );
 
   const handleIntentComplete = useCallback((result: IntentCloudResult) => {
-    setIntentTags(sanitizeTags(result.tags));
-    setIntentCategories(sanitizeCategories(result.categories));
+    const tags = sanitizeTags(result.tags);
+    setIntentTags(tags);
+    setIntentSelectionIds(result.selectionIds ?? []);
+    const categories = sanitizeCategories(
+      result.categories.map((entry) => ({
+        category: entry.category,
+        count: entry.count,
+      })),
+    );
+    setIntentCategories(categories);
+
+    const totals: Record<IntentPrimaryCategory, number> = {
+      clarity: 0,
+      relationships: 0,
+      stress: 0,
+      confidence: 0,
+      balance: 0,
+    };
+    result.categories.forEach((entry) => {
+      totals[entry.category] += entry.count;
+    });
+    setIntentCategoryScores(totals);
   }, []);
 
   const handleIntentSummaryComplete = useCallback(
@@ -141,10 +184,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       const snapshotOwnerId = profileId ?? snapshotAuth?.uid ?? null;
       const tags = sanitizeTags(intentTags);
       const categories = sanitizeCategories(intentCategories);
-      const cloudFocusCount = Math.max(
-        1,
-        Math.min(4, categories.filter((entry) => entry.count > 0).length || 1),
-      );
+      const selectionCount = tags.length;
+      const cloudFocusCount = selectionCount
+        ? Math.min(7, Math.max(5, selectionCount))
+        : 5;
 
       const includeExtras =
         Boolean(extra.dimensionScores) ||
@@ -170,10 +213,14 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       const buildSnapshotPayload = (withExtras: boolean) => {
         const timestamp = serverTimestamp();
         return {
-        tags,
-        categories,
-        urgency,
-        profileId: snapshotOwnerId,
+          tags,
+          categories,
+          urgency,
+          selectionIds: intentSelectionIds,
+          categoryScores: intentCategoryScores,
+          firstExpression: firstIntentExpression ?? null,
+          firstCategory: firstIntentCategory ?? null,
+          profileId: snapshotOwnerId,
           lang,
           evaluation: evaluationAnswerPayload,
           timestamp,
@@ -192,9 +239,9 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       const buildInsightPayload = (snapshotId: string, withExtras: boolean) => {
         const timestamp = serverTimestamp();
         return {
-        snapshotId,
-        evaluation: evaluationAnswerPayload,
-        profileId: snapshotOwnerId,
+          snapshotId,
+          evaluation: evaluationAnswerPayload,
+          profileId: snapshotOwnerId,
           lang,
           timestamp,
           createdAt: timestamp,
@@ -266,6 +313,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
     [
       intentTags,
       intentCategories,
+      intentSelectionIds,
+      intentCategoryScores,
+      firstIntentExpression,
+      firstIntentCategory,
       profileId,
       lang,
       resolutionSpeed,
@@ -304,6 +355,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
         entry: safeEntry,
         tags,
         categorySummary: categories,
+        categoryScores: intentCategoryScores,
+        selectionIds: intentSelectionIds,
+        firstExpression: firstIntentExpression ?? null,
+        firstCategory: firstIntentCategory ?? null,
         urgency: intentUrgency,
         profileId: journeyOwnerId,
         choice: type,
@@ -364,7 +419,19 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
         setJourneySavingChoice(null);
       }
     },
-    [isSavingJourney, journalEntry, intentTags, intentCategories, intentUrgency, profileId, lang],
+    [
+      isSavingJourney,
+      journalEntry,
+      intentTags,
+      intentCategories,
+      intentSelectionIds,
+      intentCategoryScores,
+      intentUrgency,
+      firstIntentExpression,
+      firstIntentCategory,
+      profileId,
+      lang,
+    ],
   );
 
   const dismissAccountPrompt = useCallback(() => {
@@ -373,6 +440,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
 
   return {
     journalEntry,
+    firstIntentExpression,
+    firstIntentCategory,
+    intentSelectionIds,
+    intentCategoryScores,
     intentTags,
     intentCategories,
     intentUrgency,

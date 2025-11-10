@@ -35,19 +35,25 @@ export default function ReflectionScreen({
   }, [lines]);
   const safeCategories = useMemo(() => categories ?? [], [categories]);
   const safeMaxSelection = maxSelection ?? 0;
+  const displayTotal = safeMaxSelection > 0 ? safeMaxSelection : Math.max(1, safeCategories.reduce((sum, entry) => sum + entry.count, 0));
   const safeLabels = categoryLabels ?? {};
   const indicatorSummary = useMemo(() => buildIndicatorSummary(safeCategories), [safeCategories]);
-  const indicatorEntries = INDICATOR_CHART_KEYS.map((key: IndicatorChartKey) => ({
-    key,
-    label: INDICATOR_LABELS[key][isRO ? "ro" : "en"],
-    value: Math.max(0, Math.min(5, indicatorSummary.chart[key] ?? 0)),
-  }));
+  const indicatorEntries = INDICATOR_CHART_KEYS.map((key: IndicatorChartKey) => {
+    const rawCount = indicatorSummary.chart[key] ?? 0;
+    const normalized = Math.max(0, Math.min(5, (rawCount / displayTotal) * 5));
+    return {
+      key,
+      label: INDICATOR_LABELS[key][isRO ? "ro" : "en"],
+      value: normalized,
+      rawCount,
+    };
+  });
   const highlightedThemes = useMemo(
     () =>
       [...safeCategories]
         .filter((entry) => entry.count > 0)
         .sort((a, b) => b.count - a.count)
-        .slice(0, 3),
+        .slice(0, 2),
     [safeCategories],
   );
   const showIndicators = safeCategories.length > 0;
@@ -71,13 +77,15 @@ export default function ReflectionScreen({
               <RadarIndicators data={indicatorEntries} />
               <div className="flex-1 space-y-4">
                 <ul className="grid w-full gap-3 text-sm">
-                  {indicatorEntries.map(({ key, label, value }) => (
+                  {indicatorEntries.map(({ key, label, rawCount }) => (
                     <li
                       key={key}
                       className="flex items-center justify-between rounded-[12px] border border-[#F0E2D4] bg-white px-3 py-2"
                     >
                       <span className="text-[#5C4F45]">{label}</span>
-                      <span className="font-semibold text-[#1F1F1F]">{value}/5</span>
+                      <span className="font-semibold text-[#1F1F1F]">
+                        {rawCount}/{displayTotal}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -96,7 +104,7 @@ export default function ReflectionScreen({
                           >
                             <span>{label}</span>
                             <span className="text-xs uppercase tracking-[0.2em] text-[#A08F82]">
-                              {entry.count}/{safeMaxSelection}
+                              {entry.count}/{displayTotal}
                             </span>
                           </li>
                         );

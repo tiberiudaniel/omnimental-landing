@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
   addDoc,
@@ -14,22 +14,42 @@ import {
 } from "firebase/firestore";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "../components/I18nProvider";
-import { getDb } from "../lib/firebase";
+import { getDb, ensureAuth } from "../lib/firebase";
+import {
+  detectCategoryFromRawInput,
+  getIntentExpressions,
+  intentCategoryLabels,
+  type LocalizedIntentExpression,
+  type IntentPrimaryCategory,
+} from "../lib/intentExpressions";
 
 const db = getDb();
 
+type FirstExpressionMeta = {
+  expressionId?: string;
+  category?: IntentPrimaryCategory;
+};
+
 interface FirstScreenProps {
   onNext: () => void;
-  onSubmit?: (text: string) => Promise<void> | void;
+  onSubmit?: (text: string, meta?: FirstExpressionMeta) => Promise<void> | void;
   errorMessage?: string | null;
 }
 
 const PLACEHOLDER_SAMPLE_COUNT = 3;
 const SUGGESTION_BATCH_MIN = 3;
 const SUGGESTION_BATCH_MAX = 5;
+const SUGGESTION_SELECTION_MAX = 2;
 const SUGGESTION_FETCH_LIMIT = 100;
 const PRIMARY_COLLECTION = "userInterests";
 const FALLBACK_COLLECTIONS = ["usersInterests", "usersinterests", "userSuggestions"];
+const CATEGORY_ORDER: IntentPrimaryCategory[] = [
+  "clarity",
+  "relationships",
+  "stress",
+  "confidence",
+  "balance",
+];
 
 const sanitizeSuggestions = (values: string[]) =>
   Array.from(
@@ -84,9 +104,33 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null }: F
   );
   const [isInputHovered, setIsInputHovered] = useState(false);
   const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
+  const [suggestionSelectionError, setSuggestionSelectionError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const locale = lang === "en" ? "en" : "ro";
+  const expressionLibrary = useMemo(() => getIntentExpressions(locale), [locale]);
+  const categoryLabels = useMemo(() => {
+    const labels = intentCategoryLabels;
+    return {
+      clarity: labels.clarity[locale] ?? labels.clarity.ro,
+      relationships: labels.relationships[locale] ?? labels.relationships.ro,
+      stress: labels.stress[locale] ?? labels.stress.ro,
+      confidence: labels.confidence[locale] ?? labels.confidence.ro,
+      balance: labels.balance[locale] ?? labels.balance.ro,
+    };
+  }, [locale]);
+  const buildPrimaryOptions = useCallback(() => {
+    const options: LocalizedIntentExpression[] = [];
+    CATEGORY_ORDER.forEach((category) => {
+      const items = expressionLibrary.filter((entry) => entry.category === category);
+      if (!items.length) return;
+      const index = Math.floor(Math.random() * items.length);
+      options.push(items[index]);
+    });
+    return options;
+  }, [expressionLibrary]);
+  const [primaryOptions, setPrimaryOptions] = useState<LocalizedIntentExpression[]>(() => buildPrimaryOptions());
 
   const fallbackSuggestions = useMemo(() => {
     const suggestionPool = Array.isArray(suggestionValue) ? suggestionValue : [];
@@ -97,6 +141,10 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null }: F
     storedSuggestions.length > 0 ? storedSuggestions : fallbackSuggestions;
 
 useEffect(() => {
+  void ensureAuth().catch((err) => {
+    console.warn("anonymous auth init failed", err);
+  });
+
   let cancelled = false;
   isMountedRef.current = true;
 
@@ -121,6 +169,7 @@ useEffect(() => {
 
     const fetchSuggestions = async () => {
       try {
+        await ensureAuth();
         const collectionsToQuery = [PRIMARY_COLLECTION, ...FALLBACK_COLLECTIONS];
         const snapshots = await Promise.all(
           collectionsToQuery.map((name) => fetchFromCollection(name))
@@ -177,6 +226,7 @@ useEffect(() => {
 
   const persistSuggestion = async (text: string) => {
     try {
+      await ensureAuth();
       await addDoc(collection(db, PRIMARY_COLLECTION), {
         text,
         timestamp: serverTimestamp(),
@@ -191,13 +241,16 @@ useEffect(() => {
     }
   };
 
-  const handleSubmit = (value?: string) => {
+  const handleSubmit = (value?: string, metadata?: FirstExpressionMeta) => {
     const text = value ?? input;
     const trimmed = text.trim();
     if (!trimmed || isSubmitting) return;
 
     setIsSubmitting(true);
     setInput("");
+    const resolvedMeta: FirstExpressionMeta = metadata ?? {
+      category: detectCategoryFromRawInput(trimmed) ?? undefined,
+    };
 
     const finish = (shouldAdvance: boolean) => {
       if (shouldAdvance) {
@@ -209,7 +262,7 @@ useEffect(() => {
     };
 
     try {
-      const result = onSubmit?.(trimmed);
+      const result = onSubmit?.(trimmed, resolvedMeta);
       if (result && typeof (result as Promise<unknown>).then === "function") {
         (result as Promise<unknown>)
           .then(() => {
@@ -225,7 +278,9 @@ useEffect(() => {
       finish(false);
     }
 
-    void persistSuggestion(trimmed);
+    if (!resolvedMeta?.expressionId) {
+      void persistSuggestion(trimmed);
+    }
   };
 
   const pullSuggestionBatch = () => {
@@ -246,9 +301,21 @@ useEffect(() => {
   };
 
   const toggleSuggestionSelection = (value: string) => {
-    setSelectedSuggestions((prev) =>
-      prev.includes(value) ? prev.filter((entry) => entry !== value) : [...prev, value],
-    );
+    setSuggestionSelectionError(null);
+    setSelectedSuggestions((prev) => {
+      if (prev.includes(value)) {
+        return prev.filter((entry) => entry !== value);
+      }
+      if (prev.length >= SUGGESTION_SELECTION_MAX) {
+        setSuggestionSelectionError(
+          lang === "ro"
+            ? `Poți selecta cel mult ${SUGGESTION_SELECTION_MAX} opțiuni.`
+            : `You can select up to ${SUGGESTION_SELECTION_MAX} options.`,
+        );
+        return prev;
+      }
+      return [...prev, value];
+    });
   };
 
   const handleSuggestionSubmit = () => {
@@ -261,12 +328,32 @@ useEffect(() => {
     setShowSuggestions(false);
   };
 
+  const handlePrimaryOptionSelect = (option: LocalizedIntentExpression) => {
+    setSelectedSuggestions([]);
+    setShowSuggestions(false);
+    handleSubmit(option.label, { expressionId: option.id, category: option.category });
+  };
+
+  const handlePrimaryRefresh = () => {
+    setPrimaryOptions(buildPrimaryOptions());
+  };
+
   const suggestionContinueLabel =
     lang === "ro" ? "Continuă cu selecțiile" : "Continue with selections";
   const suggestionRequirementLabel =
     lang === "ro"
-      ? `Selectează încă ${Math.max(0, 2 - selectedSuggestions.length)} opțiune pentru a continua.`
-      : `Select ${Math.max(0, 2 - selectedSuggestions.length)} more option(s) to continue.`;
+      ? `Selectează încă ${Math.max(
+          0,
+          SUGGESTION_SELECTION_MAX - selectedSuggestions.length,
+        )} opțiune pentru a continua.`
+      : `Select ${Math.max(
+          0,
+          SUGGESTION_SELECTION_MAX - selectedSuggestions.length,
+        )} more option(s) to continue.`;
+  const suggestionMaxLabel =
+    lang === "ro"
+      ? `Poți folosi maximum ${SUGGESTION_SELECTION_MAX} sugestii.`
+      : `You can use up to ${SUGGESTION_SELECTION_MAX} suggestions.`;
 
   const handleQuestionComplete = () => {
     if (focusTimerRef.current) {
@@ -343,6 +430,34 @@ useEffect(() => {
               <p className="text-xs text-[#B8000E]">{errorMessage}</p>
             ) : null}
 
+        </div>
+      </div>
+
+        <div className="mt-6 rounded-[12px] border border-[#E4D8CE] bg-white px-5 py-5">
+          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+            <span>{lang === "ro" ? "Alege rapid" : "Quick pick"}</span>
+            <button
+              type="button"
+              onClick={handlePrimaryRefresh}
+              className="text-[11px] uppercase tracking-[0.25em] text-[#C07963] transition hover:text-[#E60012]"
+            >
+              {lang === "ro" ? "Reîncarcă" : "Refresh"}
+            </button>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {primaryOptions.map((option) => (
+              <button
+                type="button"
+                key={option.id}
+                onClick={() => handlePrimaryOptionSelect(option)}
+                className="flex flex-col gap-1 rounded-[10px] border border-[#D8C6B6] bg-[#FDF8F3] px-4 py-3 text-left transition hover:border-[#E60012] hover:text-[#E60012]"
+              >
+                <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+                  {categoryLabels[option.category]}
+                </span>
+                <span className="text-sm text-[#2C2C2C]">{option.label}</span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -394,6 +509,11 @@ useEffect(() => {
               ) : null}
               {selectedSuggestions.length < 2 ? (
                 <p className="text-xs text-[#B8000E]">{suggestionRequirementLabel}</p>
+              ) : (
+                <p className="text-xs text-[#2C2C2C]">{suggestionMaxLabel}</p>
+              )}
+              {suggestionSelectionError ? (
+                <p className="text-xs text-[#B8000E]">{suggestionSelectionError}</p>
               ) : null}
               <button
                 type="button"

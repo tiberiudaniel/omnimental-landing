@@ -55,7 +55,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
         description:
           "Parcurgi un funnel de performanță în patru niveluri — Awareness, Control, Strategy, Mastery — care transformă reacțiile automate în răspunsuri lucide. Lucrezi live cu tehnici CBT, ACT, NLP, hipnoză, respirație și simulări pentru a crea automatisme de performanță. Energia de grup și responsabilitatea comună te țin în ritm până când focusul, reziliența și deciziile inspirate devin noua normalitate.",
         inlineLink: {
-          href: "/group-info",
+          href: "/group",
           label: "All info",
         },
       },

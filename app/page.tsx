@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import FirstScreen from "../components/FirstScreen";
 import SessionDetails from "../components/SessionDetails";
 import { I18nProvider, useI18n } from "../components/I18nProvider";
@@ -20,12 +21,14 @@ import WizardReflection from "../components/WizardReflection";
 import { useWizardData } from "../components/useWizardData";
 import { WizardProgress } from "../components/WizardProgress";
 import type { GoalType, EmotionalState, ResolutionSpeed, BudgetPreference } from "../lib/evaluation";
+import type { IntentPrimaryCategory } from "../lib/intentExpressions";
 import { computeDimensionScores } from "../lib/scoring";
 import type { DimensionScores } from "../lib/scoring";
 import { recommendSession, type SessionType } from "../lib/recommendation";
+import { generateAdaptiveIntentCloudWords, type IntentCloudWord } from "@/lib/intentExpressions";
 
-const MIN_INTENT_SELECTIONS = 3;
-const MAX_INTENT_SELECTIONS = 5;
+const MIN_INTENT_SELECTIONS = 5;
+const MAX_INTENT_SELECTIONS = 7;
 
 const getTranslationString = (
   translate: (key: string) => unknown,
@@ -43,9 +46,13 @@ function PageContent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [accountModalKey, setAccountModalKey] = useState(0);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const returnTo = searchParams?.get("returnTo");
 
   const {
     journalEntry,
+    firstIntentCategory,
     intentCategories,
     intentUrgency,
     setIntentUrgency,
@@ -93,6 +100,56 @@ function PageContent() {
   const [recommendedPath, setRecommendedPath] = useState<SessionType>("group");
   const [recommendationReasonKey, setRecommendationReasonKey] =
     useState<string>("reason_default");
+  const [cloudWordCount, setCloudWordCount] = useState(25);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const compute = () => {
+      const width = window.innerWidth;
+      if (width < 640) {
+        setCloudWordCount(18);
+      } else if (width < 1024) {
+        setCloudWordCount(22);
+      } else {
+        setCloudWordCount(25);
+      }
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
+
+  const adaptiveCloudWords = useMemo(
+    () =>
+      generateAdaptiveIntentCloudWords({
+        locale: lang === "en" ? "en" : "ro",
+        primaryCategory: firstIntentCategory ?? undefined,
+        total: cloudWordCount,
+      }),
+    [cloudWordCount, firstIntentCategory, lang],
+  );
+
+  const adaptiveCloudKey = useMemo(
+    () => adaptiveCloudWords.map((word) => word.id).join("|"),
+    [adaptiveCloudWords],
+  );
+
+  useEffect(() => {
+    if ((step === "cards" || step === "details") && intentCategories.length === 0) {
+      goToStep("firstInput");
+      return;
+    }
+    if (step === "intentSummary" && intentCategories.length === 0) {
+      goToStep("intent");
+    }
+  }, [goToStep, intentCategories.length, step]);
+
+  const handleReturnToOrigin = useCallback(() => {
+    if (!returnTo) return;
+    router.push(returnTo);
+  }, [returnTo, router]);
 
   const categoryLabels = useMemo(() => {
     const categoryLabelsValue = t("intentCategoryLabels");
@@ -244,6 +301,10 @@ function PageContent() {
     "Salvează-ți progresul și vezi istoricul evaluărilor.",
   );
   const accountPromptButton = getTranslationString(t, "accountPromptButton", "Creează cont");
+  const intentSelectionTotal = useMemo(
+    () => intentCategories.reduce((sum, entry) => sum + entry.count, 0),
+    [intentCategories],
+  );
 
   const stepContent = (() => {
     switch (step) {
@@ -273,6 +334,8 @@ function PageContent() {
             minSelection={MIN_INTENT_SELECTIONS}
             maxSelection={MAX_INTENT_SELECTIONS}
             onComplete={handleIntentComplete}
+            words={adaptiveCloudWords}
+            cloudKey={adaptiveCloudKey}
           />
         );
       case "reflectionSummary":
@@ -281,7 +344,7 @@ function PageContent() {
             lines={reflectionSummaryLines}
             onContinue={() => navigateToStep("intentSummary")}
             categories={intentCategories}
-            maxSelection={MAX_INTENT_SELECTIONS}
+            maxSelection={intentSelectionTotal}
             categoryLabels={categoryLabels}
           />
         );
@@ -353,7 +416,13 @@ function PageContent() {
           />
         );
       case "details":
-        return selectedCard ? <DetailsStep selectedCard={selectedCard} /> : null;
+        return selectedCard ? (
+          <DetailsStep
+            selectedCard={selectedCard}
+            onReturnToOrigin={returnTo ? handleReturnToOrigin : undefined}
+            returnLabel={lang === "ro" ? "Înapoi la progres" : "Back to progress"}
+          />
+        ) : null;
       default:
         return null;
     }
@@ -388,7 +457,9 @@ function PageContent() {
 export default function PageWrapper() {
   return (
     <I18nProvider>
-      <PageContent />
+      <Suspense fallback={null}>
+        <PageContent />
+      </Suspense>
     </I18nProvider>
   );
 }
@@ -410,7 +481,7 @@ function IntroStep({ onDone }: IntroStepProps) {
 }
 
 type FirstInputStepProps = {
-  onSubmit: (text: string) => Promise<void> | void;
+  onSubmit: (text: string, meta?: { expressionId?: string; category?: IntentPrimaryCategory }) => Promise<void> | void;
   onNext: () => void;
   errorMessage: string | null;
   lang: string;
@@ -440,11 +511,19 @@ type IntentStepProps = {
   minSelection: number;
   maxSelection: number;
   onComplete: (result: IntentCloudResult) => void;
+  words?: IntentCloudWord[];
+  cloudKey?: string;
 };
 
-function IntentStep({ minSelection, maxSelection, onComplete }: IntentStepProps) {
+function IntentStep({ minSelection, maxSelection, onComplete, words, cloudKey }: IntentStepProps) {
   return (
-    <IntentCloud minSelection={minSelection} maxSelection={maxSelection} onComplete={onComplete} />
+    <IntentCloud
+      key={cloudKey}
+      minSelection={minSelection}
+      maxSelection={maxSelection}
+      onComplete={onComplete}
+      words={words}
+    />
   );
 }
 
@@ -533,14 +612,27 @@ function IntentSummaryStep({
 
 type DetailsStepProps = {
   selectedCard: "individual" | "group";
+  onReturnToOrigin?: () => void;
+  returnLabel?: string;
 };
 
-function DetailsStep({ selectedCard }: DetailsStepProps) {
+function DetailsStep({ selectedCard, onReturnToOrigin, returnLabel }: DetailsStepProps) {
   return (
     <section className="px-4 pb-16 pt-12">
       <div className="mx-auto flex max-w-5xl flex-col gap-10" id="sessions">
         <SessionDetails type={selectedCard} />
         <SocialProof />
+        {onReturnToOrigin ? (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={onReturnToOrigin}
+              className="rounded-[12px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+            >
+              {returnLabel ?? "Înapoi"}
+            </button>
+          </div>
+        ) : null}
       </div>
     </section>
   );

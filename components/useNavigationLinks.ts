@@ -10,8 +10,8 @@ type NavLinkConfig = {
 };
 
 const NAV_LINK_CONFIG: NavLinkConfig[] = [
-  { href: "/group-info", labelKey: "navProgram", descriptionKey: "navProgramDesc" },
-  { href: "/sessions/individual", labelKey: "navSessions", descriptionKey: "navSessionsDesc" },
+  { href: "/group", labelKey: "navProgram", descriptionKey: "navProgramDesc" },
+  { href: "/individual", labelKey: "navSessions", descriptionKey: "navSessionsDesc" },
   { href: "/evaluation", labelKey: "navEvaluation", descriptionKey: "navEvaluationDesc" },
   { href: "/recommendation", labelKey: "navRecommendation", descriptionKey: "navRecommendationDesc" },
   { href: "/progress", labelKey: "navProgress", descriptionKey: "navProgressDesc" },
