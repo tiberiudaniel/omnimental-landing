@@ -1,43 +1,64 @@
-// lib/firebase.ts
+"use client";
+
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import {
   browserLocalPersistence,
   getAuth,
   setPersistence,
+  signInAnonymously,
   type Auth,
+  onAuthStateChanged,
 } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyAE3Wv-gWo2-aNUWZ_CFMHDhurbaD0ASPA",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "omnimental-landing.vercel.app",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "omnimental-landing",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "omnimental-landing.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "1012216607071",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:1012216607071:web:334d21803fb409cee406ea",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
 
-export function getFirebaseApp() {
-  // initialize once, safe in Next runtime
-  if (!getApps().length) {
-    return initializeApp(firebaseConfig);
+function assertEnv(v: string | undefined, name: string) {
+  if (!v || v === "undefined") {
+    throw new Error(`Missing env ${name}. Set it in .env.local`);
   }
+}
+
+assertEnv(process.env.NEXT_PUBLIC_FIREBASE_API_KEY, "NEXT_PUBLIC_FIREBASE_API_KEY");
+assertEnv(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN");
+assertEnv(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID, "NEXT_PUBLIC_FIREBASE_PROJECT_ID");
+assertEnv(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET");
+assertEnv(
+  process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
+);
+assertEnv(process.env.NEXT_PUBLIC_FIREBASE_APP_ID, "NEXT_PUBLIC_FIREBASE_APP_ID");
+
+if (typeof window !== "undefined") {
+  console.log(
+    "FB cfg",
+    (process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "").slice(0, 6) + "...",
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  );
+}
+
+export function getFirebaseApp() {
+  if (!getApps().length) return initializeApp(firebaseConfig);
   return getApp();
 }
 
 export function getDb() {
-  const app = getFirebaseApp();
-  return getFirestore(app);
+  return getFirestore(getFirebaseApp());
 }
 
 let authInstance: Auth | null = null;
 
 export function getFirebaseAuth() {
-  if (authInstance) {
-    return authInstance;
-  }
-  const app = getFirebaseApp();
-  const auth = getAuth(app);
+  if (authInstance) return authInstance;
+  const auth = getAuth(getFirebaseApp());
   if (typeof window !== "undefined") {
     void setPersistence(auth, browserLocalPersistence).catch((err) => {
       console.warn("Auth persistence setup failed", err);
@@ -45,4 +66,17 @@ export function getFirebaseAuth() {
   }
   authInstance = auth;
   return auth;
+}
+
+export async function ensureAuth() {
+  if (typeof window === "undefined") return null;
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) return auth.currentUser;
+  await signInAnonymously(auth);
+  return auth.currentUser!;
+}
+
+export function onAuthReady(cb: (uid: string) => void) {
+  const auth = getFirebaseAuth();
+  return onAuthStateChanged(auth, (u) => { if (u) cb(u.uid); });
 }

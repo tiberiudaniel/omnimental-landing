@@ -1,0 +1,393 @@
+"use client";
+
+import { useMemo, useRef, useState } from "react";
+import {
+  omniKnowledgeModules,
+  computeOmniKnowledgeScore,
+  type OmniKnowledgeScores,
+} from "@/lib/omniKnowledge";
+import { submitOmniKnowledgeAssessment } from "@/lib/submitEvaluation";
+
+const buildDefaultAnswers = () => {
+  const map: Record<string, number | null> = {};
+  omniKnowledgeModules.forEach((module) => {
+    module.questions.forEach((question) => {
+      map[question.id] = null;
+    });
+  });
+  return map;
+};
+
+const TOTAL_QUESTIONS = omniKnowledgeModules.reduce(
+  (sum, module) => sum + module.questions.length,
+  0,
+);
+
+const MIN_RECOMMENDED_DURATION_MS = 3 * 60 * 1000; // 3 minutes
+
+type Props = {
+  lang: "ro" | "en";
+};
+
+export default function OmniKnowledgeQuiz({ lang }: Props) {
+  const [answers, setAnswers] = useState<Record<string, number | null>>(buildDefaultAnswers);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [lastDurationMs, setLastDurationMs] = useState<number | null>(null);
+  const [flagSuspicious, setFlagSuspicious] = useState(false);
+  const quizStartRef = useRef<number>(Date.now());
+  const score = useMemo(() => computeOmniKnowledgeScore(answers), [answers]);
+  const answeredCount = useMemo(
+    () => Object.values(answers).filter((value) => typeof value === "number").length,
+    [answers],
+  );
+  const completionPercent = Math.round((answeredCount / TOTAL_QUESTIONS) * 100);
+  const allAnswered = answeredCount === TOTAL_QUESTIONS;
+
+  const handleSelect = (id: string, index: number) => {
+    setAnswers((prev) => ({ ...prev, [id]: index }));
+    setMessage(null);
+    setError(null);
+  };
+
+  const resetQuiz = () => {
+    setAnswers(buildDefaultAnswers());
+    setMessage(null);
+    setError(null);
+    setLastDurationMs(null);
+    setFlagSuspicious(false);
+    quizStartRef.current = Date.now();
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!allAnswered) {
+      setError(
+        lang === "ro"
+          ? "Răspunde la toate întrebările înainte de a salva scorul."
+          : "Please answer every question before submitting.",
+      );
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    const now = Date.now();
+    const durationMs = now - quizStartRef.current;
+    const suspicious = durationMs < MIN_RECOMMENDED_DURATION_MS;
+
+    try {
+      const cleaned = Object.entries(answers).reduce<Record<string, number>>((acc, [id, value]) => {
+        if (typeof value === "number") {
+          acc[id] = value;
+        }
+        return acc;
+      }, {});
+      await submitOmniKnowledgeAssessment({
+        lang,
+        score,
+        answers: cleaned,
+        metadata: {
+          completionDurationMs: durationMs,
+          completionDurationSeconds: Math.round(durationMs / 1000),
+          totalQuestions: TOTAL_QUESTIONS,
+          answeredCount,
+          completionPercent,
+          suspiciousSpeed: suspicious,
+          submittedAt: new Date(now).toISOString(),
+          clientUserAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+          timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+        },
+      });
+      setLastDurationMs(durationMs);
+      setFlagSuspicious(suspicious);
+      setMessage(
+        lang === "ro"
+          ? "Scorul Omni-Cunoaștere a fost salvat."
+          : "Omni-Knowledge score saved successfully.",
+      );
+    } catch (submitError) {
+      console.error("OC submit failed", submitError);
+      setError(
+        lang === "ro"
+          ? "Nu am putut salva evaluarea. Încearcă din nou."
+          : "Could not save the quiz. Please retry.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-8">
+      <header className="space-y-2 text-center md:text-left">
+        <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">Omni-Cunoaștere</p>
+        <h2 className="text-2xl font-semibold text-[#1F1F1F]">
+          {lang === "ro"
+            ? "Verifică ce știi despre instrumentele OmniMental"
+            : "Check your knowledge of OmniMental tools"}
+        </h2>
+        <p className="text-sm text-[#4A3A30]">
+          {lang === "ro"
+            ? "6 module × 8 întrebări (aprox. 6–7 minute). Primești feedback imediat și scor pe module."
+            : "6 modules × 8 questions (about 6–7 minutes). Get instant feedback and module scores."}
+        </p>
+        <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+          <span>
+            {answeredCount}/{TOTAL_QUESTIONS}{" "}
+            {lang === "ro" ? "întrebări completate" : "questions answered"}
+          </span>
+          <span>
+            {completionPercent}% {lang === "ro" ? "progres" : "progress"}
+          </span>
+        </div>
+        <KnowledgeSummaryCard score={score} lang={lang} />
+        {lastDurationMs !== null && (
+          <DurationBadge
+            durationMs={lastDurationMs}
+            suspicious={flagSuspicious}
+            lang={lang}
+          />
+        )}
+      </header>
+
+      {error && (
+        <div className="border border-[#E60012] bg-[#FBE9EB] px-4 py-3 text-sm text-[#2C2C2C]">{error}</div>
+      )}
+      {message && (
+        <div className="border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-3 text-sm text-[#1F3C2F]">
+          {message}
+        </div>
+      )}
+
+      <div className="space-y-6 rounded-[16px] border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+          {lang === "ro" ? "Întrebări pe module" : "Module questions"}
+        </h3>
+        <div className="space-y-6">
+          {omniKnowledgeModules.map((module) => (
+            <article
+              key={module.key}
+              className="space-y-4 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-4"
+            >
+              <header className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">Modul</p>
+                  <h4 className="text-base font-semibold text-[#2C2C2C]">{module.title}</h4>
+                </div>
+                <span className="text-xs uppercase tracking-[0.35em] text-[#5C4F45]">
+                  {module.questions.length} itemi
+                </span>
+              </header>
+              <div className="space-y-4">
+                {module.questions.map((question) => {
+                  const selected = answers[question.id];
+                  const showFeedback = typeof selected === "number";
+                  const isCorrect = showFeedback && selected === question.correctIndex;
+                  return (
+                    <div
+                      key={question.id}
+                      className="space-y-2 rounded-[8px] border border-[#F6EDE2] bg-white px-3 py-3 text-sm text-[#2C2C2C]"
+                    >
+                      <p className="font-medium">{question.question}</p>
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {question.options.map((option, index) => {
+                          const active = selected === index;
+                          const correctOption = index === question.correctIndex;
+                          const showState = showFeedback && (active || correctOption);
+                          const baseClass =
+                            "rounded-[8px] border px-3 py-2 text-left text-sm transition focus:outline-none focus:ring-2 focus:ring-[#2C2C2C]";
+                          let stateClass = "border-[#E5D3C4] text-[#2C2C2C] hover:border-[#2C2C2C]";
+                          if (showState) {
+                            stateClass = correctOption
+                              ? "border-[#0F6D45] bg-[#EEF8F2] text-[#0F3B27]"
+                              : "border-[#E60012] bg-[#FBE9EB] text-[#5C0A0A]";
+                          } else if (active) {
+                            stateClass = "border-[#2C2C2C] text-[#2C2C2C]";
+                          }
+                          return (
+                            <button
+                              key={`${question.id}-${index}`}
+                              type="button"
+                              onClick={() => handleSelect(question.id, index)}
+                              className={`${baseClass} ${stateClass}`}
+                            >
+                              <span className="font-semibold">{String.fromCharCode(65 + index)}.</span>{" "}
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {showFeedback && (
+                        <p className="text-xs text-[#5C4F45]">
+                          {isCorrect
+                            ? lang === "ro"
+                              ? "Corect ✓"
+                              : "Correct ✓"
+                            : lang === "ro"
+                            ? `Răspuns corect: ${question.options[question.correctIndex]}`
+                            : `Correct answer: ${question.options[question.correctIndex]}`}
+                          {" • "}
+                          {question.rationale}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving
+              ? lang === "ro"
+                ? "Se salvează..."
+                : "Saving..."
+              : lang === "ro"
+              ? "Salvează scorul"
+              : "Save score"}
+          </button>
+          <button
+            type="button"
+            onClick={resetQuiz}
+            className="inline-flex items-center justify-center rounded-[10px] border border-[#D8C6B6] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] transition hover:bg-[#F6F2EE]"
+          >
+            {lang === "ro" ? "Resetează răspunsurile" : "Reset answers"}
+          </button>
+        </div>
+        <p className="text-xs text-[#5C4F45]">
+          {lang === "ro"
+            ? "Scorul minim recomandat pentru progres rapid: 70%+"
+            : "Recommended mastery threshold: 70%+"}
+        </p>
+      </div>
+
+      <ModuleBreakdown score={score} />
+    </form>
+  );
+}
+
+function KnowledgeSummaryCard({ score, lang }: { score: OmniKnowledgeScores; lang: "ro" | "en" }) {
+  return (
+    <div className="rounded-[16px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-4 text-sm text-[#4A3A30]">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+            {lang === "ro" ? "Punctaj total" : "Total score"}
+          </p>
+          <p className="text-3xl font-semibold text-[#1F1F1F]">
+            {score.percent}
+            <span className="text-base text-[#5C4F45]">% </span>
+            <span className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+              ({score.raw}/{score.max})
+            </span>
+          </p>
+        </div>
+        <div className="space-y-1 text-xs text-[#5C4F45]">
+          <p>
+            {score.percent >= 70
+              ? lang === "ro"
+                ? "Ai o bază solidă; treci la Omni-Abil pentru aplicare."
+                : "Solid base; move to Omni-Abil to practice."
+              : lang === "ro"
+              ? "Revizitează modulele cu scor mai mic pentru consolidare."
+              : "Review low-score modules before moving on."}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModuleBreakdown({ score }: { score: OmniKnowledgeScores }) {
+  return (
+    <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+      <h3 className="text-lg font-semibold text-[#1F1F1F]">Breakdown pe module</h3>
+      <div className="grid gap-4 md:grid-cols-2">
+        {omniKnowledgeModules.map((module) => {
+          const moduleScore = score.breakdown[module.key];
+          const percent = moduleScore?.percent ?? 0;
+          return (
+            <div
+              key={module.key}
+              className="space-y-2 rounded-[10px] border border-[#F5EBE0] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C]"
+            >
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-[#2C2C2C]">{module.title}</p>
+                <span className="text-xs uppercase tracking-[0.3em] text-[#5C4F45]">
+                  {moduleScore ? `${moduleScore.raw}/${moduleScore.max}` : "0"}
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-[#F6F2EE]">
+                <div
+                  className="h-full rounded-full bg-[#2C2C2C]"
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function DurationBadge({
+  durationMs,
+  suspicious,
+  lang,
+}: {
+  durationMs: number;
+  suspicious: boolean;
+  lang: "ro" | "en";
+}) {
+  const durationSeconds = Math.max(1, Math.round(durationMs / 1000));
+  const minutes = Math.floor(durationSeconds / 60);
+  const seconds = durationSeconds % 60;
+  const formatted = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  const tone = suspicious
+    ? {
+        border: "#F9C6C1",
+        bg: "#FFF5F4",
+        text: "#8C2B2F",
+        icon: "⚠️",
+        label: lang === "ro" ? "Completare foarte rapidă" : "Completion too fast",
+        helper:
+          lang === "ro"
+            ? "Verifică dacă răspunsurile reflectă experiența ta (date potențial distorsionate)."
+            : "Double-check the answers; data might be unreliable.",
+      }
+    : {
+        border: "#CBE8D7",
+        bg: "#F3FFF8",
+        text: "#1F3C2F",
+        icon: "⏱️",
+        label: lang === "ro" ? "Durata completării" : "Completion time",
+        helper:
+          lang === "ro"
+            ? "Ritm potrivit pentru răspunsuri reflec­tate."
+            : "Pace looks consistent with reflective answers.",
+      };
+  return (
+    <div
+      className="space-y-1 rounded-[12px] px-4 py-3 text-sm"
+      style={{ border: `1px solid ${tone.border}`, backgroundColor: tone.bg, color: tone.text }}
+    >
+      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em]">
+        <span>{tone.icon}</span>
+        <span>{tone.label}</span>
+      </div>
+      <p className="text-lg font-semibold text-[#1F1F1F]">{formatted} min</p>
+      <p className="text-xs">{tone.helper}</p>
+    </div>
+  );
+}

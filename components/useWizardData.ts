@@ -3,16 +3,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import type { IntentCloudResult } from "./IntentCloud";
-import { getDb } from "../lib/firebase";
+import { getDb, ensureAuth } from "../lib/firebase";
 import {
   type ResolutionSpeed,
   type BudgetPreference,
   type GoalType,
   type EmotionalState,
   type FormatPreference,
+  type EvaluationAnswers,
 } from "../lib/evaluation";
 import type { DimensionScores } from "../lib/scoring";
 import type { SessionType } from "../lib/recommendation";
+import {
+  recordIntentProgressFact,
+  recordMotivationProgressFact,
+} from "../lib/progressFacts";
 
 const db = getDb();
 const MAX_JOURNAL_LENGTH = 1000;
@@ -131,6 +136,8 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       setIntentUrgency(urgency);
       setIsSavingIntentSnapshot(true);
       setSaveError(null);
+      const snapshotAuth = await ensureAuth();
+      const snapshotOwnerId = profileId ?? snapshotAuth?.uid ?? null;
       const tags = sanitizeTags(intentTags);
       const categories = sanitizeCategories(intentCategories);
       const cloudFocusCount = Math.max(
@@ -144,65 +151,62 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
         Boolean(extra.recommendationReasonKey) ||
         typeof extra.algoVersion !== "undefined";
 
-      const buildSnapshotPayload = (withExtras: boolean) => ({
+      const evaluationAnswerPayload: EvaluationAnswers = {
+        urgency,
+        timeHorizon: resolutionSpeed,
+        determination,
+        hoursPerWeek: timeCommitmentHours,
+        budgetLevel: budgetPreference,
+        goalType,
+        emotionalState,
+        groupComfort,
+        learnFromOthers,
+        scheduleFit,
+        formatPreference,
+        cloudFocusCount,
+      };
+
+      const buildSnapshotPayload = (withExtras: boolean) => {
+        const timestamp = serverTimestamp();
+        return {
         tags,
         categories,
         urgency,
-        profileId,
-        lang,
-        evaluation: {
-          urgency,
-          timeHorizon: resolutionSpeed,
-          determination,
-          hoursPerWeek: timeCommitmentHours,
-          budgetLevel: budgetPreference,
-          goalType,
-          emotionalState,
-          groupComfort,
-          learnFromOthers,
-          scheduleFit,
-          formatPreference,
-          cloudFocusCount,
-        },
-        timestamp: serverTimestamp(),
-        ...(withExtras
-          ? {
-              algoVersion: extra.algoVersion ?? 1,
-              dimensionScores: extra.dimensionScores ?? null,
-              recommendation: extra.recommendation ?? null,
-              recommendationReasonKey: extra.recommendationReasonKey ?? null,
-            }
-          : {}),
-      });
+        profileId: snapshotOwnerId,
+          lang,
+          evaluation: evaluationAnswerPayload,
+          timestamp,
+          createdAt: timestamp,
+          ...(withExtras
+            ? {
+                algoVersion: extra.algoVersion ?? 1,
+                dimensionScores: extra.dimensionScores ?? null,
+                recommendation: extra.recommendation ?? null,
+                recommendationReasonKey: extra.recommendationReasonKey ?? null,
+              }
+            : {}),
+        };
+      };
 
-      const buildInsightPayload = (snapshotId: string, withExtras: boolean) => ({
+      const buildInsightPayload = (snapshotId: string, withExtras: boolean) => {
+        const timestamp = serverTimestamp();
+        return {
         snapshotId,
-        evaluation: {
-          urgency,
-          timeHorizon: resolutionSpeed,
-          determination,
-          hoursPerWeek: timeCommitmentHours,
-          budgetLevel: budgetPreference,
-          goalType,
-          emotionalState,
-          groupComfort,
-          learnFromOthers,
-          scheduleFit,
-          formatPreference,
-          cloudFocusCount,
-        },
-        profileId,
-        lang,
-        timestamp: serverTimestamp(),
-        ...(withExtras
-          ? {
-              algoVersion: extra.algoVersion ?? 1,
-              dimensionScores: extra.dimensionScores ?? null,
-              recommendation: extra.recommendation ?? null,
-              recommendationReasonKey: extra.recommendationReasonKey ?? null,
-            }
-          : {}),
-      });
+        evaluation: evaluationAnswerPayload,
+        profileId: snapshotOwnerId,
+          lang,
+          timestamp,
+          createdAt: timestamp,
+          ...(withExtras
+            ? {
+                algoVersion: extra.algoVersion ?? 1,
+                dimensionScores: extra.dimensionScores ?? null,
+                recommendation: extra.recommendation ?? null,
+                recommendationReasonKey: extra.recommendationReasonKey ?? null,
+              }
+            : {}),
+        };
+      };
 
       const attemptSnapshotSave = async (withExtras: boolean) => {
         const snapshotRef = await addDoc(collection(db, "userIntentSnapshots"), buildSnapshotPayload(withExtras));
@@ -215,6 +219,17 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
 
       try {
         await attemptSnapshotSave(includeExtras);
+        void recordIntentProgressFact({
+          tags,
+          categories,
+          urgency,
+          lang,
+        }).catch((progressError) => {
+          console.error("progress fact intent failed", progressError);
+        });
+        void recordMotivationProgressFact(evaluationAnswerPayload).catch((progressError) => {
+          console.error("progress fact motivation failed", progressError);
+        });
         if (!profileId) {
           setShowAccountPrompt(true);
         }
@@ -267,6 +282,8 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       const safeEntry = sanitizeJournalText(journalEntry) ?? "";
       const tags = sanitizeTags(intentTags);
       const categories = sanitizeCategories(intentCategories);
+      const journeyAuth = await ensureAuth();
+      const journeyOwnerId = profileId ?? journeyAuth?.uid ?? null;
       const includeExtras =
         Boolean(extra.recommendedPath) ||
         Boolean(extra.recommendationReasonKey) ||
@@ -278,7 +295,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
         tags,
         categorySummary: categories,
         urgency: intentUrgency,
-        profileId,
+        profileId: journeyOwnerId,
         choice: type,
         lang,
         timestamp: serverTimestamp(),

@@ -11,11 +11,14 @@ import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { getDb } from "../lib/firebase";
 import { useAuth } from "./AuthProvider";
 
+export type AccessTier = "public" | "member" | "persona";
+
 type ProfileRecord = {
   id: string;
   name: string;
   email: string;
   createdAt?: Timestamp;
+  accessTier: AccessTier;
 };
 
 type ProfileContextValue = {
@@ -36,6 +39,7 @@ async function ensureProfileDocument(uid: string, email: string | null | undefin
     name: name?.trim()?.length ? name : email ?? "Utilizator OmniMental",
     email: email ?? "",
     createdAt: Timestamp.now(),
+    accessTier: "public" as const,
   };
   await setDoc(profileRef, payload);
   return payload;
@@ -67,6 +71,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
             name: data.name ?? user.email ?? "Utilizator",
             email: data.email ?? user.email ?? "",
             createdAt: data.createdAt,
+            accessTier: data.accessTier ?? "public",
           });
         }
       } catch (error) {
@@ -76,6 +81,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
             id: user.uid,
             name: user.email ?? "Utilizator",
             email: user.email ?? "",
+            accessTier: "public",
           });
         }
       } finally {
