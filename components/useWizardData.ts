@@ -17,6 +17,7 @@ import type { SessionType } from "../lib/recommendation";
 import {
   recordIntentProgressFact,
   recordMotivationProgressFact,
+  recordRecommendationProgressFact,
 } from "../lib/progressFacts";
 
 const db = getDb();
@@ -230,6 +231,15 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
         void recordMotivationProgressFact(evaluationAnswerPayload).catch((progressError) => {
           console.error("progress fact motivation failed", progressError);
         });
+        if (includeExtras) {
+          void recordRecommendationProgressFact({
+            suggestedPath: extra.recommendation,
+            reasonKey: extra.recommendationReasonKey,
+            dimensionScores: extra.dimensionScores,
+          }).catch((progressError) => {
+            console.error("progress fact recommendation failed", progressError);
+          });
+        }
         if (!profileId) {
           setShowAccountPrompt(true);
         }
@@ -314,6 +324,22 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       try {
         await addDoc(collection(db, "userJourneys"), buildJourneyPayload(includeExtras));
         setSelectedCard(type);
+        if (includeExtras) {
+          void recordRecommendationProgressFact({
+            suggestedPath: extra.recommendedPath,
+            selectedPath: type,
+            reasonKey: extra.recommendationReasonKey,
+            dimensionScores: extra.dimensionScores,
+          }).catch((progressError) => {
+            console.error("progress fact recommendation update failed", progressError);
+          });
+        } else {
+          void recordRecommendationProgressFact({
+            selectedPath: type,
+          }).catch((progressError) => {
+            console.error("progress fact recommendation update failed", progressError);
+          });
+        }
         return true;
       } catch (error) {
         console.error("journey choice save failed", error);
@@ -321,6 +347,11 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           try {
             await addDoc(collection(db, "userJourneys"), buildJourneyPayload(false));
             setSelectedCard(type);
+            void recordRecommendationProgressFact({
+              selectedPath: type,
+            }).catch((progressError) => {
+              console.error("progress fact recommendation fallback failed", progressError);
+            });
             return true;
           } catch (fallbackError) {
             console.error("journey choice fallback save failed", fallbackError);

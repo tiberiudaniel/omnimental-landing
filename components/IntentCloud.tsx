@@ -56,7 +56,12 @@ export default function IntentCloud({
   const rawList = t("intentCloudList");
 
   const title = typeof titleValue === "string" ? titleValue : "";
-  const helper = typeof helperValue === "string" ? helperValue : "";
+  const helper =
+    typeof helperValue === "string" && helperValue.trim().length > 0
+      ? helperValue
+      : lang === "ro"
+      ? "Alege între 3 și 5 afirmații care descriu cel mai bine starea ta actuală."
+      : "Pick 3 to 5 statements that best describe what you feel right now.";
   const buttonLabel = typeof buttonValue === "string" ? buttonValue : "Continuă";
   const progress = Math.min(selected.length / maxSelection, 1);
 
@@ -181,9 +186,12 @@ export default function IntentCloud({
         <div className="mx-auto flex w-full max-w-xl flex-col gap-2">
           <div className="flex items-center justify-between text-xs font-medium text-[#2C2C2C]/70">
             <span>
-              {selected.length}/{maxSelection} selectate
+              {selected.length}/{maxSelection}{" "}
+              {lang === "ro" ? "selectate" : "selected"}
             </span>
-            <span>{Math.round(progress * 100)}%</span>
+            <span>
+              {lang === "ro" ? "Țintă: 3–5" : "Goal: 3–5"}
+            </span>
           </div>
           <div className="h-2 w-full rounded-full bg-[#E8DDD3]">
             <div
@@ -191,6 +199,9 @@ export default function IntentCloud({
               style={{ width: `${progress * 100}%` }}
             />
           </div>
+          <p className="text-right text-[11px] font-semibold uppercase tracking-[0.2em] text-[#A08F82]">
+            {Math.round(progress * 100)}%
+          </p>
         </div>
 
         <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-2 md:gap-3">

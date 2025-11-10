@@ -23,7 +23,10 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
     typeof bodyValue === "string" && bodyValue.trim().length > 0
       ? bodyValue
       : "3–4 pași rapizi. La final primești o recomandare";
-  const buttonLabel = typeof buttonValue === "string" ? buttonValue : "Începe";
+  const buttonLabel =
+    typeof buttonValue === "string" && buttonValue.trim().length > 0
+      ? buttonValue
+      : "Începe mini-evaluarea";
   const bullets =
     Array.isArray(bulletsValue)
       ? bulletsValue.filter(
@@ -54,11 +57,15 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
             </li>
           ))}
         </ul>
-        <div className="space-y-2">
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]">
+            Mini-evaluare gratuită · 3–4 pași · ~2 minute
+          </p>
           <button
             type="button"
             onClick={onStart}
-            className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+            className="inline-flex w-full items-center justify-center rounded-[12px] border border-[#2C2C2C] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:opacity-90 focus:outline-none focus:ring-1 focus:ring-[#E60012] sm:w-auto"
+            style={{ background: "linear-gradient(135deg,#2C2C2C,#C24B17)" }}
           >
             {buttonLabel}
           </button>

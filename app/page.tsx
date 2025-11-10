@@ -18,12 +18,14 @@ import IntroAnimation from "../components/IntroAnimation";
 import { useWizardSteps, type Step } from "../components/useWizardSteps";
 import WizardReflection from "../components/WizardReflection";
 import { useWizardData } from "../components/useWizardData";
+import { WizardProgress } from "../components/WizardProgress";
 import type { GoalType, EmotionalState, ResolutionSpeed, BudgetPreference } from "../lib/evaluation";
 import { computeDimensionScores } from "../lib/scoring";
 import type { DimensionScores } from "../lib/scoring";
 import { recommendSession, type SessionType } from "../lib/recommendation";
 
-const REQUIRED_SELECTIONS = 7;
+const MIN_INTENT_SELECTIONS = 3;
+const MAX_INTENT_SELECTIONS = 5;
 
 const getTranslationString = (
   translate: (key: string) => unknown,
@@ -43,6 +45,7 @@ function PageContent() {
   const [accountModalKey, setAccountModalKey] = useState(0);
 
   const {
+    journalEntry,
     intentCategories,
     intentUrgency,
     setIntentUrgency,
@@ -66,18 +69,18 @@ function PageContent() {
     handleIntentComplete: recordIntentSelection,
     handleIntentSummaryComplete: persistIntentSnapshot,
     handleCardSelect: persistJourneyChoice,
-  dismissAccountPrompt,
-  resetError,
-  setResolutionSpeed,
-  setDetermination,
-  setTimeCommitmentHours,
+    dismissAccountPrompt,
+    resetError,
+    setResolutionSpeed,
+    setDetermination,
+    setTimeCommitmentHours,
     setBudgetPreference,
     setGoalType,
     setEmotionalState,
-  setGroupComfort,
-  setLearnFromOthers,
-  setScheduleFit,
-} = useWizardData({ lang, profileId: profile?.id ?? null });
+    setGroupComfort,
+    setLearnFromOthers,
+    setScheduleFit,
+  } = useWizardData({ lang, profileId: profile?.id ?? null });
 
   const [dimensionScores, setDimensionScores] = useState<DimensionScores>(() => ({
     calm: 0,
@@ -136,8 +139,17 @@ function PageContent() {
         : lang === "ro"
         ? "Există două moduri prin care poți continua."
         : "There are two ways you can continue.";
-    return [introLine, bodyLine];
-  }, [intentCategories, categoryLabels, lang, t]);
+    const lines = [introLine, bodyLine];
+    const trimmedEntry = journalEntry?.trim();
+    if (trimmedEntry && trimmedEntry.length > 0) {
+      lines.push(
+        lang === "ro"
+          ? `Ai menționat că te preocupă: „${trimmedEntry}”.`
+          : `You shared that you're working through: “${trimmedEntry}.”`,
+      );
+    }
+    return lines;
+  }, [intentCategories, categoryLabels, journalEntry, lang, t]);
 
   const navigateToStep = useCallback(
     (nextStep: Step) => {
@@ -258,8 +270,8 @@ function PageContent() {
       case "intent":
         return (
           <IntentStep
-            minSelection={REQUIRED_SELECTIONS}
-            maxSelection={REQUIRED_SELECTIONS}
+            minSelection={MIN_INTENT_SELECTIONS}
+            maxSelection={MAX_INTENT_SELECTIONS}
             onComplete={handleIntentComplete}
           />
         );
@@ -269,7 +281,7 @@ function PageContent() {
             lines={reflectionSummaryLines}
             onContinue={() => navigateToStep("intentSummary")}
             categories={intentCategories}
-            maxSelection={REQUIRED_SELECTIONS}
+            maxSelection={MAX_INTENT_SELECTIONS}
             categoryLabels={categoryLabels}
           />
         );
@@ -337,6 +349,7 @@ function PageContent() {
             scheduleFit={scheduleFit}
             formatPreference={formatPreference}
             recommendationReasonKey={recommendationReasonKey}
+            initialStatement={journalEntry}
           />
         );
       case "details":
@@ -362,7 +375,12 @@ function PageContent() {
         />
       ) : null}
 
-      <main>{stepContent}</main>
+      <main className="px-4 py-8 sm:px-6">
+        {!["preIntro", "intro"].includes(step) && (
+          <WizardProgress currentStep={step} lang={lang === "en" ? "en" : "ro"} />
+        )}
+        <div>{stepContent}</div>
+      </main>
     </div>
   );
 }

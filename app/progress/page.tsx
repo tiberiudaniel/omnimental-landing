@@ -10,6 +10,48 @@ import { I18nProvider, useI18n } from "../../components/I18nProvider";
 import { useProfile } from "../../components/ProfileProvider";
 import { useProgressFacts } from "../../components/useProgressFacts";
 import type { ProgressIntentCategories } from "@/lib/progressFacts";
+import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
+import type { SessionType } from "@/lib/recommendation";
+import type { DimensionScores } from "@/lib/scoring";
+
+const STAGE_LABELS: Record<string, string> = {
+  t0: "Start (0 săpt.)",
+  t1: "3 săptămâni",
+  t2: "6 săptămâni",
+  t3: "9 săptămâni",
+  t4: "12 săptămâni",
+};
+
+const PATH_LABELS: Record<SessionType, { ro: string; en: string }> = {
+  individual: {
+    ro: "Sesiuni individuale 1-la-1",
+    en: "1:1 individual sessions",
+  },
+  group: {
+    ro: "Programul de grup OmniMental",
+    en: "OmniMental group program",
+  },
+};
+
+type DimensionKey = keyof DimensionScores;
+
+const DIMENSION_ORDER: DimensionKey[] = [
+  "calm",
+  "focus",
+  "energy",
+  "relationships",
+  "performance",
+  "health",
+];
+
+const DIMENSION_LABELS: Record<DimensionKey, { ro: string; en: string }> = {
+  calm: { ro: "Calm & reglare", en: "Calm & regulation" },
+  focus: { ro: "Claritate & focus", en: "Clarity & focus" },
+  energy: { ro: "Energie & reziliență", en: "Energy & resilience" },
+  relationships: { ro: "Relații & limite", en: "Relationships & boundaries" },
+  performance: { ro: "Performanță & impact", en: "Performance & impact" },
+  health: { ro: "Obiceiuri & sănătate", en: "Habits & health" },
+};
 
 function resolveString(value: unknown, fallback: string) {
   return typeof value === "string" ? value : fallback;
@@ -75,6 +117,83 @@ function ProgressContent() {
   const motivation = progress?.motivation;
   const evaluation = progress?.evaluation;
   const quests = progress?.quests?.items ?? [];
+  const heroMeta = useMemo(() => {
+    if (!progress?.intent && !progress?.evaluation) return [];
+    const meta: string[] = [];
+    if (progress?.intent) {
+      meta.push(`${lang === "ro" ? "Urgență" : "Urgency"}: ${progress.intent.urgency}/10`);
+    }
+    if (progress?.evaluation) {
+      meta.push(
+        `${lang === "ro" ? "Etapă" : "Stage"}: ${
+          STAGE_LABELS[progress.evaluation.stageValue] ?? progress.evaluation.stageValue
+        }`,
+      );
+    }
+    return meta;
+  }, [lang, progress]);
+
+  const heroDetails = useMemo(() => {
+    const rec = progress?.recommendation;
+    if (!rec) return null;
+    const langKey = lang === "ro" ? "ro" : "en";
+    const recommendedLabel = rec.suggestedPath
+      ? PATH_LABELS[rec.suggestedPath as SessionType]?.[langKey]
+      : rec.selectedPath
+      ? PATH_LABELS[rec.selectedPath as SessionType]?.[langKey]
+      : null;
+    const reasonText = getRecommendationReasonCopy(rec.reasonKey ?? "reason_default", langKey);
+    const dimensionScores = rec.dimensionScores;
+    const topDimensions = dimensionScores
+      ? DIMENSION_ORDER.map((key) => ({
+          key,
+          value: Number(dimensionScores[key]) || 0,
+        }))
+          .filter((entry) => entry.value > 0)
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 3)
+          .map((entry) => DIMENSION_LABELS[entry.key][langKey])
+      : [];
+    if (!recommendedLabel && topDimensions.length === 0 && !reasonText) {
+      return null;
+    }
+    return {
+      recommendedLabel,
+      reasonText,
+      suggestedPath: rec.suggestedPath ?? null,
+      selectedPath: rec.selectedPath ?? null,
+      topDimensions,
+    };
+  }, [lang, progress?.recommendation]);
+
+  const heroSelectionMessage = useMemo(() => {
+    if (!heroDetails) return null;
+    const langKey = lang === "ro" ? "ro" : "en";
+    const selectedLabel =
+      heroDetails.selectedPath && PATH_LABELS[heroDetails.selectedPath as SessionType]?.[langKey];
+    const suggestedLabel =
+      heroDetails.suggestedPath && PATH_LABELS[heroDetails.suggestedPath as SessionType]?.[langKey];
+    if (heroDetails.selectedPath && heroDetails.suggestedPath) {
+      if (heroDetails.selectedPath === heroDetails.suggestedPath) {
+        return lang === "ro"
+          ? "Ai ales exact varianta recomandată."
+          : "You followed the recommended format.";
+      }
+      return lang === "ro"
+        ? `Ai selectat ${selectedLabel ?? "alt format"}, în timp ce recomandarea era ${
+            suggestedLabel ?? "altă direcție"
+          }.`
+        : `You selected ${selectedLabel ?? "another format"} while the recommendation was ${
+            suggestedLabel ?? "different"
+          }.`;
+    }
+    if (heroDetails.selectedPath) {
+      return lang === "ro"
+        ? `Ai ales ${selectedLabel ?? "un format"} pentru a continua.`
+        : `You selected ${selectedLabel ?? "a format"} to continue.`;
+    }
+    return null;
+  }, [heroDetails, lang]);
 
   const formattedCategories = useMemo(() => {
     if (!intent?.categories) return [];
@@ -148,6 +267,11 @@ function ProgressContent() {
             <p className="mt-2 text-sm text-[#4A3A30]">
               {resolveString(noProfileDesc, "Salvează progresul și vezi recomandările personalizate.")}
             </p>
+            <p className="mt-1 text-xs text-[#7A6455]">
+              {lang === "ro"
+                ? "Dacă ai completat deja evaluarea, o conectăm automat după autentificare."
+                : "If you already completed an evaluation, we’ll link it automatically after you sign in."}
+            </p>
             <button
               type="button"
               onClick={() => setAccountModalOpen(true)}
@@ -177,6 +301,48 @@ function ProgressContent() {
               ? subtitle
               : "Fiecare etapă completată se salvează aici pentru ajustări rapide."}
           </p>
+          {heroDetails ? (
+            <section className="mx-auto mt-4 max-w-3xl space-y-3 rounded-[18px] border border-[#E4D8CE] bg-white px-6 py-5 text-center shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[#C07963]">
+                {lang === "ro" ? "Rezumat recomandare" : "Recommendation summary"}
+              </p>
+              {heroDetails.recommendedLabel ? (
+                <h2 className="text-lg font-semibold text-[#2C1F18]">{heroDetails.recommendedLabel}</h2>
+              ) : null}
+              <p className="text-sm leading-relaxed text-[#4A3A30]">{heroDetails.reasonText}</p>
+              {heroSelectionMessage ? (
+                <p className="text-xs text-[#7A6455]">{heroSelectionMessage}</p>
+              ) : null}
+              {heroDetails.topDimensions.length ? (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {heroDetails.topDimensions.map((label, index) => (
+                    <span
+                      key={`${label}-${index.toString()}`}
+                      className="rounded-full border border-[#E4D8CE] bg-[#FFFBF7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5C4F45]"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              {heroMeta.length ? (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {heroMeta.map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full border border-[#F0E6DA] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82]"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          ) : heroMeta.length ? (
+            <section className="mx-auto mt-4 max-w-3xl rounded-[16px] border border-[#E4D8CE] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-[#5C4F45] shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+              {heroMeta.join(" • ")}
+            </section>
+          ) : null}
         </div>
 
         {error ? (
@@ -239,9 +405,15 @@ function ProgressContent() {
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-[#A08F82]">
-                    {resolveString(intentEmpty, "Completează secțiunea Intenții & Cloud.")}
-                </p>
+                <div className="space-y-3 text-sm text-[#A08F82]">
+                  <p>{resolveString(intentEmpty, "Completează secțiunea Intenții & Cloud.")}</p>
+                  <Link
+                    href="/#intent-cloud"
+                    className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                  >
+                    {lang === "ro" ? "Actualizează intențiile" : "Update intents"}
+                  </Link>
+                </div>
               )}
             </section>
 
@@ -272,12 +444,20 @@ function ProgressContent() {
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-[#A08F82]">
-                  {resolveString(
-                    motivationEmpty,
-                    "Completează secțiunea Motivație & Resurse pentru a vedea datele aici.",
-                  )}
-                </p>
+                <div className="space-y-3 text-sm text-[#A08F82]">
+                  <p>
+                    {resolveString(
+                      motivationEmpty,
+                      "Completează secțiunea Motivație & Resurse pentru a vedea datele aici.",
+                    )}
+                  </p>
+                  <Link
+                    href="/evaluation"
+                    className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                  >
+                    {lang === "ro" ? "Mergi la motivație" : "Go to motivation"}
+                  </Link>
+                </div>
               )}
             </section>
 
@@ -306,12 +486,20 @@ function ProgressContent() {
                   <p className="text-xs text-[#A08F82]">{formatTimestamp(evaluation.updatedAt, lang)}</p>
                 </div>
               ) : (
-                <p className="text-sm text-[#A08F82]">
-                  {resolveString(
-                    evaluationEmpty,
-                    "Completează prima evaluare pentru a vedea scorurile aici.",
-                  )}
-                </p>
+                <div className="space-y-3 text-sm text-[#A08F82]">
+                  <p>
+                    {resolveString(
+                      evaluationEmpty,
+                      "Completează prima evaluare pentru a vedea scorurile aici.",
+                    )}
+                  </p>
+                  <Link
+                    href="/evaluation"
+                    className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                  >
+                    {lang === "ro" ? "Pornește evaluarea" : "Start the evaluation"}
+                  </Link>
+                </div>
               )}
             </section>
 
@@ -342,12 +530,20 @@ function ProgressContent() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-[#A08F82]">
-                  {resolveString(
-                    questEmpty,
-                    "Quest-urile apar automat după fiecare evaluare completă.",
-                  )}
-                </p>
+                <div className="space-y-3 text-sm text-[#A08F82]">
+                  <p>
+                    {resolveString(
+                      questEmpty,
+                      "Quest-urile apar automat după fiecare evaluare completă.",
+                    )}
+                  </p>
+                  <Link
+                    href="/recommendation"
+                    className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                  >
+                    {lang === "ro" ? "Vezi recomandarea" : "View recommendation"}
+                  </Link>
+                </div>
               )}
             </section>
           </div>

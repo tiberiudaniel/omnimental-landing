@@ -21,6 +21,8 @@ import type {
 } from "./evaluation";
 import type { OmniKnowledgeScores } from "./omniKnowledge";
 import type { QuestSuggestion } from "./quests";
+import type { SessionType } from "./recommendation";
+import type { DimensionScores } from "./scoring";
 
 export type ProgressIntentCategories = Array<{ category: string; count: number }>;
 
@@ -69,7 +71,48 @@ export type ProgressFact = {
     generatedAt: Date;
     items: Array<QuestSuggestion & { completed?: boolean }>;
   };
+  recommendation?: {
+    suggestedPath?: SessionType | null;
+    reasonKey?: string | null;
+    selectedPath?: SessionType | null;
+    acceptedRecommendation?: boolean | null;
+    dimensionScores?: DimensionScores | null;
+    updatedAt?: Date;
+  };
 };
+
+const DIMENSION_KEYS: Array<keyof DimensionScores> = [
+  "calm",
+  "focus",
+  "energy",
+  "relationships",
+  "performance",
+  "health",
+];
+
+function sanitizeDimensionScores(entry: unknown): DimensionScores | null {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+  const source = entry as Partial<Record<keyof DimensionScores, unknown>>;
+  const baseline: DimensionScores = {
+    calm: 0,
+    focus: 0,
+    energy: 0,
+    relationships: 0,
+    performance: 0,
+    health: 0,
+  };
+  let seen = false;
+  DIMENSION_KEYS.forEach((key) => {
+    const value = Number(source[key]);
+    if (Number.isFinite(value)) {
+      baseline[key] = value;
+      seen = true;
+    }
+  });
+  return seen ? baseline : null;
+}
 
 async function mergeProgressFact(data: Record<string, unknown>) {
   const user = await ensureAuth();
@@ -137,6 +180,77 @@ export async function backfillProgressFacts(profileId: string) {
     typeof answers.stage === "string"
       ? (answers.stage as string)
       : (data.stage as string | undefined) ?? "t0";
+  const snapshotRecommendation =
+    typeof data.recommendation === "string" ? (data.recommendation as SessionType) : null;
+  const snapshotReasonKey =
+    typeof data.recommendationReasonKey === "string"
+      ? (data.recommendationReasonKey as string)
+      : null;
+  const snapshotDimensions = sanitizeDimensionScores(data.dimensionScores);
+
+  let latestJourneyRecommendation:
+    | {
+        suggestedPath?: SessionType | null;
+        selectedPath?: SessionType | null;
+        reasonKey?: string | null;
+        acceptedRecommendation?: boolean | null;
+        dimensionScores?: DimensionScores | null;
+        updatedAt?: Date;
+      }
+    | null = null;
+
+  const journeySnapshot = await getDocs(
+    query(
+      collection(db, "userJourneys"),
+      where("profileId", "==", profileId),
+      orderBy("timestamp", "desc"),
+      limit(1),
+    ),
+  );
+  if (!journeySnapshot.empty) {
+    const journeyData = journeySnapshot.docs[0].data();
+    const suggested =
+      typeof journeyData.recommendedPath === "string"
+        ? (journeyData.recommendedPath as SessionType)
+        : null;
+    const choice =
+      typeof journeyData.choice === "string" ? (journeyData.choice as SessionType) : null;
+    const accepted =
+      typeof journeyData.acceptedRecommendation === "boolean"
+        ? (journeyData.acceptedRecommendation as boolean)
+        : suggested && choice
+        ? suggested === choice
+        : null;
+    const reason =
+      typeof journeyData.recommendationReasonKey === "string"
+        ? (journeyData.recommendationReasonKey as string)
+        : null;
+    latestJourneyRecommendation = {
+      suggestedPath: suggested,
+      selectedPath: choice,
+      reasonKey: reason,
+      acceptedRecommendation: accepted,
+      dimensionScores: sanitizeDimensionScores(journeyData.dimensionScores) ?? snapshotDimensions,
+      updatedAt: journeyData.timestamp,
+    };
+  }
+
+  const recommendationBlock =
+    snapshotRecommendation || latestJourneyRecommendation
+      ? {
+          suggestedPath: latestJourneyRecommendation?.suggestedPath ?? snapshotRecommendation,
+          reasonKey: latestJourneyRecommendation?.reasonKey ?? snapshotReasonKey ?? null,
+          selectedPath: latestJourneyRecommendation?.selectedPath ?? null,
+          acceptedRecommendation:
+            latestJourneyRecommendation?.acceptedRecommendation ??
+            (snapshotRecommendation && latestJourneyRecommendation?.selectedPath
+              ? snapshotRecommendation === latestJourneyRecommendation.selectedPath
+              : null),
+          dimensionScores:
+            latestJourneyRecommendation?.dimensionScores ?? snapshotDimensions ?? null,
+          updatedAt: (latestJourneyRecommendation?.updatedAt ?? data.timestamp) as Date | undefined,
+        }
+      : undefined;
   const fact: ProgressFact = {
     updatedAt: data.timestamp,
     intent: {
@@ -154,6 +268,7 @@ export async function backfillProgressFacts(profileId: string) {
       lang,
       updatedAt: data.timestamp,
     },
+    recommendation: recommendationBlock,
   };
   const factRef = doc(getDb(), "userProgressFacts", profileId);
   const profileRef = doc(getDb(), "userProfiles", profileId);
@@ -214,6 +329,30 @@ export async function recordQuestProgressFact(payload: {
         ...quest,
         completed: false,
       })),
+    },
+  });
+}
+
+export async function recordRecommendationProgressFact(payload: {
+  suggestedPath?: SessionType | null;
+  reasonKey?: string | null;
+  selectedPath?: SessionType | null;
+  acceptedRecommendation?: boolean | null;
+  dimensionScores?: DimensionScores | null;
+}) {
+  return mergeProgressFact({
+    recommendation: {
+      suggestedPath: (payload.suggestedPath as SessionType | null) ?? null,
+      reasonKey: payload.reasonKey ?? null,
+      selectedPath: (payload.selectedPath as SessionType | null) ?? null,
+      acceptedRecommendation:
+        typeof payload.acceptedRecommendation === "boolean"
+          ? payload.acceptedRecommendation
+          : payload.selectedPath && payload.suggestedPath
+          ? payload.selectedPath === payload.suggestedPath
+          : null,
+      dimensionScores: payload.dimensionScores ?? null,
+      updatedAt: serverTimestamp(),
     },
   });
 }

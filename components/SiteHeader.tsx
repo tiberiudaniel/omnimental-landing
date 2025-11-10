@@ -22,6 +22,9 @@ export default function SiteHeader({
   const progressLabelValue = t("headerProgressCta");
   const progressLabel =
     typeof progressLabelValue === "string" ? progressLabelValue : "Progres";
+  const evaluationLabelValue = t("headerEvaluationCta");
+  const evaluationLabel =
+    typeof evaluationLabelValue === "string" ? evaluationLabelValue : "Evaluare";
   const signInLabelValue = t("headerSignIn");
   const signOutLabelValue = t("headerSignOut");
   const signInLabel =
@@ -35,7 +38,13 @@ export default function SiteHeader({
         <Image src="/assets/logo.jpg" alt="OmniMental logo" width={70} height={28} priority />
         <span className="text-xl font-semibold tracking-wide text-neutral-dark">OmniMental</span>
       </Link>
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <Link
+          href="/evaluation"
+          className="rounded-full border border-transparent px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4A3A30] transition hover:text-[#E60012]"
+        >
+          {evaluationLabel}
+        </Link>
         <Link
           href="/progress"
           className="hidden rounded-full border border-[#2C2C2C] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:bg-[#2C2C2C] hover:text-white sm:inline-flex"
@@ -59,7 +68,11 @@ export default function SiteHeader({
                   }
                 }
           }
-          className="rounded-full border border-[#2C2C2C] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:bg-[#2C2C2C] hover:text-white"
+          className={`rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] transition ${
+            user
+              ? "border border-[#2C2C2C] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+              : "border border-transparent bg-[#2C2C2C] text-white hover:opacity-80"
+          }`}
         >
           {user ? signOutLabel : signInLabel}
         </button>

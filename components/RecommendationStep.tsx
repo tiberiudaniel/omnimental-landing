@@ -6,6 +6,7 @@ import CardOption from "./CardOption";
 import { useI18n } from "./I18nProvider";
 import { RecommendationSummary } from "@/components/RecommendationSummary";
 import { buildIndicatorSummary } from "@/lib/indicators";
+import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
 import type {
   BudgetPreference,
   ResolutionSpeed,
@@ -45,30 +46,8 @@ type Props = {
   scheduleFit: number;
   formatPreference: FormatPreference;
   recommendationReasonKey: string;
+  initialStatement?: string | null;
 };
-
-const reasonLookup = {
-  reason_high_urgency: {
-    ro: "Este un context presant, iar progresul rapid cere atenție individuală.",
-    en: "The situation feels urgent, so the fastest progress comes with individual focus.",
-  },
-  reason_relationships: {
-    ro: "Subiectele de relații și limite se lucrează mai eficient într-o sesiune 1-la-1.",
-    en: "Relationship and boundaries themes benefit from a 1:1 container.",
-  },
-  reason_performance_group: {
-    ro: "Tema dominantă este performanța, iar grupul oferă ritm și responsabilitate.",
-    en: "Performance is dominant and the group adds rhythm plus accountability.",
-  },
-  reason_low_urgency: {
-    ro: "Nu e o urgență mare, așa că grupul oferă spațiu sigur și constant.",
-    en: "There’s no high urgency, so the group provides steady support.",
-  },
-  reason_default: {
-    ro: "Ținem cont de urgență, resurse și confort pentru a calibra recomandarea.",
-    en: "We balance urgency, resources, and comfort to tune the recommendation.",
-  },
-} as const;
 
 const paceLabel = (lang: string, speed: ResolutionSpeed) => {
   if (speed === "days") {
@@ -144,6 +123,7 @@ export function RecommendationStep(props: Props) {
     scheduleFit,
     formatPreference,
     recommendationReasonKey,
+    initialStatement,
   } = props;
 
   const { t, lang } = useI18n();
@@ -186,13 +166,10 @@ export function RecommendationStep(props: Props) {
       ? "Continuă în ritmul tău și caută ghidaj când simți că ritmul devine neclar."
       : "Keep your current pace and lean on guidance when things feel unclear.");
 
-  const primaryReason =
-    reasonLookup[recommendationReasonKey as keyof typeof reasonLookup]?.[
-      lang === "ro" ? "ro" : "en"
-    ] ??
-    (lang === "ro"
-      ? "Ținem cont de urgență, resurse și confort pentru a ajusta formatul."
-      : "We balance urgency, resources, and comfort to tailor the plan.");
+  const primaryReason = getRecommendationReasonCopy(
+    recommendationReasonKey,
+    lang === "ro" ? "ro" : "en",
+  );
 
   const localizedReasons = [
     primaryReason,
@@ -272,6 +249,18 @@ export function RecommendationStep(props: Props) {
             speed={96}
             enableSound
           />
+          {initialStatement && initialStatement.trim().length > 0 ? (
+            <p className="text-sm text-[#4A3A30]/80">
+              {lang === "ro"
+                ? `Ai început spunând: „${initialStatement.trim()}”.`
+                : `You opened by sharing: “${initialStatement.trim()}.”`}
+            </p>
+          ) : null}
+          <p className="text-sm text-[#4A3A30]">
+            {lang === "ro"
+              ? "Alege formatul cu care vrei să continui acum."
+              : "Pick the format you want to continue with right now."}
+          </p>
           <div className="mt-2 flex w-full flex-col items-center justify-center gap-6 md:flex-row md:items-stretch md:gap-8">
             {(["individual", "group"] as const).map((type) => (
               <div key={type} className="w-full max-w-sm md:max-w-none">
