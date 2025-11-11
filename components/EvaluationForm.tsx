@@ -15,7 +15,7 @@ import {
 import { useI18n } from "./I18nProvider";
 import { omniKnowledgeModules, computeOmniKnowledgeScore } from "../lib/omniKnowledge";
 import { generateQuestSuggestions, type QuestSuggestion } from "@/lib/quests";
-import { recordEvaluationProgressFact } from "@/lib/progressFacts";
+import { recordEvaluationProgressFact, recordEvaluationSubmitStarted, recordEvaluationSubmitFinished } from "@/lib/progressFacts";
 
 type StepConfig = {
   key: string;
@@ -339,6 +339,7 @@ export default function EvaluationForm({
 
     try {
       setFormState((prev) => ({ ...prev, submitting: true, errors: [] }));
+      void recordEvaluationSubmitStarted(formState.stage, normalizedLang);
 
       const snapshotId = await submitEvaluation(payload);
 
@@ -402,6 +403,7 @@ export default function EvaluationForm({
       }
 
       onSubmitted?.();
+      void recordEvaluationSubmitFinished(formState.stage, normalizedLang, true);
     } catch (error) {
       console.error("evaluation submit failed", error);
 
@@ -431,6 +433,7 @@ export default function EvaluationForm({
       }));
       setPendingCount(newPendingLength);
       setRetryMessage("Evaluarea a fost salvată local și va putea fi retrimisă când conexiunea revine.");
+      void recordEvaluationSubmitFinished(formState.stage, normalizedLang, false);
     }
   };
 

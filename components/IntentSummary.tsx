@@ -35,6 +35,7 @@ interface IntentSummaryProps {
   onLearnFromOthersChange: (value: number) => void;
   scheduleFit: number;
   onScheduleFitChange: (value: number) => void;
+  onAuthRequest?: () => void;
 }
 
 const TOTAL_STEPS = 3;
@@ -88,9 +89,14 @@ export default function IntentSummary({
   onLearnFromOthersChange,
   scheduleFit,
   onScheduleFitChange,
+  onAuthRequest,
 }: IntentSummaryProps) {
   const { t, lang } = useI18n();
   const [step, setStep] = useState(0);
+  const [speedTouched, setSpeedTouched] = useState(false);
+  const [budgetTouched, setBudgetTouched] = useState(false);
+  const [goalTouched, setGoalTouched] = useState(false);
+  const [emotionalTouched, setEmotionalTouched] = useState(false);
 
   const getString = (value: unknown, fallback: string) =>
     typeof value === "string" ? value : fallback;
@@ -173,7 +179,10 @@ export default function IntentSummary({
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => onResolutionSpeedChange(option.value)}
+                    onClick={() => {
+                      onResolutionSpeedChange(option.value);
+                      setSpeedTouched(true);
+                    }}
                     className={`rounded-[10px] border px-3 py-2 text-sm ${
                       resolutionSpeed === option.value
                         ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
@@ -183,6 +192,11 @@ export default function IntentSummary({
                     {speedOptionsLabels?.[option.value] ?? option.fallback}
                   </button>
                 ))}
+              {!speedTouched ? (
+                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[#A08F82]">
+                  {lang === "ro" ? "Selectează o opțiune" : "Select an option"}
+                </p>
+              ) : null}
               </div>
             </div>
             <div>
@@ -249,7 +263,10 @@ export default function IntentSummary({
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => onBudgetPreferenceChange(option.value)}
+                    onClick={() => {
+                      onBudgetPreferenceChange(option.value);
+                      setBudgetTouched(true);
+                    }}
                     className={`rounded-[10px] border px-3 py-2 text-sm ${
                       budgetPreference === option.value
                         ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
@@ -259,6 +276,11 @@ export default function IntentSummary({
                     {budgetOptionsLabels?.[option.value] ?? option.fallback}
                   </button>
                 ))}
+              {!budgetTouched ? (
+                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[#A08F82]">
+                  {lang === "ro" ? "Selectează o opțiune" : "Select an option"}
+                </p>
+              ) : null}
               </div>
             </div>
             <div>
@@ -272,7 +294,10 @@ export default function IntentSummary({
                   <button
                     key={option}
                     type="button"
-                    onClick={() => onGoalTypeChange(option)}
+                    onClick={() => {
+                      onGoalTypeChange(option);
+                      setGoalTouched(true);
+                    }}
                     className={`w-full rounded-[10px] border px-4 py-3 text-left text-sm ${
                       goalType === option
                         ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
@@ -282,6 +307,11 @@ export default function IntentSummary({
                     {goalTypeLabels[option]}
                   </button>
                 ))}
+              {!goalTouched ? (
+                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[#A08F82]">
+                  {lang === "ro" ? "Selectează o opțiune" : "Select an option"}
+                </p>
+              ) : null}
               </div>
             </div>
           </div>
@@ -300,7 +330,10 @@ export default function IntentSummary({
                   <button
                     key={option}
                     type="button"
-                    onClick={() => onEmotionalStateChange(option)}
+                    onClick={() => {
+                      onEmotionalStateChange(option);
+                      setEmotionalTouched(true);
+                    }}
                     className={`w-full rounded-[10px] border px-4 py-3 text-left text-sm ${
                       emotionalState === option
                         ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
@@ -310,6 +343,11 @@ export default function IntentSummary({
                     {emotionalStateLabels[option]}
                   </button>
                 ))}
+              {!emotionalTouched ? (
+                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[#A08F82]">
+                  {lang === "ro" ? "Selectează o opțiune" : "Select an option"}
+                </p>
+              ) : null}
               </div>
             </div>
             <div>
@@ -392,6 +430,13 @@ export default function IntentSummary({
       ? "Pasul următor"
       : "Next";
 
+  const canProceed = (() => {
+    if (step === 0) return speedTouched;
+    if (step === 1) return budgetTouched && goalTouched;
+    if (step === 2) return emotionalTouched;
+    return true;
+  })();
+
   const handleNext = () => {
     if (step === TOTAL_STEPS - 1) {
       onContinue();
@@ -452,14 +497,25 @@ export default function IntentSummary({
               <button
                 type="button"
                 onClick={handleNext}
-                disabled={isSaving}
+                disabled={isSaving || !canProceed}
                 className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {step === TOTAL_STEPS - 1 && isSaving ? savingLabel ?? "Se salvează..." : nextLabel}
               </button>
             </div>
             {errorMessage ? (
-              <p className="mt-3 text-xs text-[#B8000E]">{errorMessage}</p>
+              <div className="mt-3 flex items-center gap-3">
+                <p className="text-xs text-[#B8000E]">{errorMessage}</p>
+                {onAuthRequest && /conect|sign in/i.test(errorMessage) ? (
+                  <button
+                    type="button"
+                    onClick={onAuthRequest}
+                    className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+                  >
+                    {lang === "ro" ? "Autentifică-te" : "Sign in"}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>

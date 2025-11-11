@@ -56,11 +56,24 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
           backfillRequested.current = true;
           void backfillProgressFacts(profileId)
             .then((fact) => {
-              setState((prev) => ({
-                data: fact ?? prev.data,
-                loading: false,
-                error: null,
-              }));
+              setState((prev) => {
+                // Merge partial facts to avoid wiping out existing fields
+                const merged: ProgressFact | null = fact
+                  ? {
+                      ...(prev.data ?? {}),
+                      ...fact,
+                      intent: fact.intent ?? prev.data?.intent,
+                      motivation: fact.motivation ?? prev.data?.motivation,
+                      evaluation: fact.evaluation ?? prev.data?.evaluation,
+                      recommendation: fact.recommendation ?? prev.data?.recommendation,
+                    }
+                  : prev.data ?? null;
+                return {
+                  data: merged,
+                  loading: false,
+                  error: null,
+                };
+              });
             })
             .catch((error) => {
               setState((prev) => ({

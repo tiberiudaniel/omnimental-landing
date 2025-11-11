@@ -70,6 +70,10 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
     label: INDICATOR_LABELS[key][isRO ? "ro" : "en"],
     value: Math.max(0, Math.min(5, indicators[key] ?? 0)),
   }));
+  const topTwoIndicators = indicatorEntries
+    .slice()
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 2);
   const messageParagraphs =
     summaryMessage
       ?.split("\n")
@@ -105,7 +109,7 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
             }))}
           />
           <ul className="grid w-full max-w-sm gap-3 text-left text-sm">
-            {indicatorEntries.map(({ key, label, value }) => (
+            {topTwoIndicators.map(({ key, label, value }) => (
               <li
                 key={key}
                 className="flex items-center justify-between rounded-[12px] border border-[#F0E2D4] bg-white px-3 py-2"

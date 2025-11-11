@@ -35,7 +35,14 @@ export default function SiteHeader({
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 shadow">
       <Link href="/" className="flex items-center gap-3">
-        <Image src="/assets/logo.jpg" alt="OmniMental logo" width={70} height={28} priority />
+        <Image
+          src="/assets/logo.jpg"
+          alt="OmniMental logo"
+          width={70}
+          height={28}
+          priority
+          style={{ height: "auto" }}
+        />
         <span className="text-xl font-semibold tracking-wide text-neutral-dark">OmniMental</span>
       </Link>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -51,6 +58,16 @@ export default function SiteHeader({
         >
           {progressLabel}
         </Link>
+        {/* Auth status pill (dev helper) */}
+        <span
+          title={user?.email ?? user?.uid ?? "guest"}
+          className={`hidden items-center rounded-full border px-2 py-1 text-[10px] uppercase tracking-[0.2em] sm:inline-flex ${
+            user ? "border-emerald-600/40 text-emerald-700" : "border-amber-600/40 text-amber-700"
+          }`}
+        >
+          {user ? (lang === "ro" ? "Autentificat" : "Signed in") : (lang === "ro" ? "Oaspete" : "Guest")}
+        </span>
+
         <button
           type="button"
           onClick={

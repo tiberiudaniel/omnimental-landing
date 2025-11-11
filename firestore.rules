@@ -1,90 +1,68 @@
 rules_version = '2';
 service cloud.firestore {
+  // DEV-optimized rules: keep it simple to validate the flow.
+  // Important: tighten these before production (owner checks, field guards).
   match /databases/{database}/documents {
 
-    function signedIn() {
-      return request.auth != null;
-    }
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
 
-    function isOwner(uid) {
-      return signedIn() && request.auth.uid == uid;
-    }
-
-    function profileMatch() {
-      return signedIn()
-        && request.resource.data.profileId is string
-        && request.resource.data.profileId == request.auth.uid;
-    }
-
-    function langAllowed() {
-      return request.resource.data.lang in ['ro', 'en'];
-    }
-
-    match /userInterests/{doc} {
-      allow read: if signedIn();
-      allow create: if signedIn()
-        && request.resource.data.text is string
-        && request.resource.data.text.size() <= 200;
-    }
-
-    match /signups/{doc} {
-      allow create: if true;
-    }
-
+    // User profile remains owner-scoped even in dev.
     match /userProfiles/{userId} {
       allow read, write: if isOwner(userId);
     }
 
+    // Progress facts attached to a user id.
+    match /userProgressFacts/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Snapshots and journeys: allow any authenticated user to read/write in dev.
+    // Accept either `evaluation` or legacy `answers`, and flexible timestamps.
     match /userIntentSnapshots/{docId} {
-      allow create: if signedIn() && langAllowed()
-        && request.resource.data.answers is map
-        && request.resource.data.createdAt is timestamp
-        && (
-          profileMatch() ||
-          !request.resource.data.keys().hasAny(['profileId']) ||
-          request.resource.data.profileId == null
-        );
-      allow read, update, delete: if signedIn()
-        && (
-          resource.data.profileId == request.auth.uid ||
-          !resource.data.keys().hasAny(['profileId']) ||
-          resource.data.profileId == null
-        );
+      allow read, write: if signedIn();
     }
 
     match /userJourneys/{docId} {
-      allow create: if signedIn() && profileMatch() && langAllowed()
-        && request.resource.data.createdAt is timestamp;
-      allow read, update, delete: if signedIn()
-        && (
-          resource.data.profileId == request.auth.uid ||
-          !resource.data.keys().hasAny(['profileId']) ||
-          resource.data.profileId == null
-        );
+      allow read, write: if signedIn();
     }
 
+    // Assessments: allow read/write for signed-in users in dev.
     match /userAbilityAssessments/{docId} {
-      allow read, write: if signedIn()
-        && request.resource.data.profileId == request.auth.uid;
+      allow read, write: if signedIn();
     }
-
     match /userIntentAssessments/{docId} {
-      allow read, write: if signedIn()
-        && request.resource.data.profileId == request.auth.uid;
+      allow read, write: if signedIn();
     }
-
     match /userKnowledgeAssessments/{docId} {
-      allow read, write: if signedIn()
-        && request.resource.data.profileId == request.auth.uid;
+      allow read, write: if signedIn();
     }
-
     match /userQuestSuggestions/{docId} {
-      allow read, write: if signedIn()
-        && request.resource.data.profileId == request.auth.uid;
+      allow read, write: if signedIn();
     }
 
-    match /userProgressFacts/{userId} {
-      allow read, write: if isOwner(userId);
+    // Suggestions/inputs: relax limits during dev; require auth only.
+    match /userInterests/{doc} {
+      allow read, write: if signedIn();
+    }
+    match /userSuggestions/{docId} {
+      allow read, write: if signedIn();
+    }
+    match /usersInterests/{docId} {
+      allow read, write: if signedIn();
+    }
+    match /usersinterests/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    // Public signups collection can be open.
+    match /signups/{doc} {
+      allow create: if true;
+    }
+
+    // Fallback: deny everything else.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

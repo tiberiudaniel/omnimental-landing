@@ -1,6 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useProfile } from "./ProfileProvider";
+import { useProgressFacts } from "./useProgressFacts";
+import { buildIndicatorSummary, INDICATOR_LABELS, type IndicatorChartKey, type IndicatorChartValues } from "@/lib/indicators";
+import RadarIndicators from "./RadarIndicators";
+import { intentCategoryLabels } from "@/lib/intentExpressions";
 import { computeOmniIntentScore, type OmniIntentAnswers } from "@/lib/omniIntent";
 import { submitOmniIntentAssessment } from "@/lib/submitEvaluation";
 
@@ -49,6 +54,8 @@ type Props = {
 };
 
 export default function OmniIntentForm({ lang }: Props) {
+  const { profile } = useProfile();
+  const { data: progress } = useProgressFacts(profile?.id);
   const [answers, setAnswers] = useState<OmniIntentAnswers>(defaultIntentAnswers);
   const scores = useMemo(() => computeOmniIntentScore(answers), [answers]);
   const [saving, setSaving] = useState(false);
@@ -145,6 +152,58 @@ export default function OmniIntentForm({ lang }: Props) {
             ? "Completează fiecare rubrică (0–10). Scorul final combină Knowledge, Belief, Commitment, Planning și progresul obiectivului."
             : "Set each rubric (0–10). Final score blends Knowledge, Belief, Commitment, Planning, plus goal progress."}
         </p>
+        {progress?.intent ? (
+          <div className="mt-3 grid gap-4 rounded-[16px] border border-[#E4D8CE] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,0,0,0.05)] md:grid-cols-2">
+            <div className="space-y-2 text-left">
+              <p className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+                {lang === "ro" ? "Obiectiv curent" : "Current objective"}
+              </p>
+              {(() => {
+                const categories = progress.intent.categories ?? [];
+                const primary = categories.slice().sort((a,b)=>b.count-a.count)[0];
+                const labels = intentCategoryLabels;
+                const label = primary
+                  ? (labels[primary.category as keyof typeof labels]?.[lang] ?? primary.category)
+                  : (lang === "ro" ? "Nespecificat" : "Unspecified");
+                return (
+                  <h3 className="text-lg font-semibold text-[#1F1F1F]">{label}</h3>
+                );
+              })()}
+              {progress.intent.firstExpression ? (
+                <p className="text-sm text-[#4A3A30]">{progress.intent.firstExpression}</p>
+              ) : null}
+              {Array.isArray(progress.intent.tags) && progress.intent.tags.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {progress.intent.tags.slice(0, 8).map((tag: string) => (
+                    <span key={tag} className="rounded-full border border-[#D8C6B6] px-3 py-1 text-xs text-[#5C4F45]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div className="flex items-center justify-center">
+              {(() => {
+                const categories = progress.intent?.categories ?? [];
+                const { chart } = buildIndicatorSummary(categories);
+                const values: IndicatorChartValues = chart as IndicatorChartValues;
+                const max = Math.max(...Object.values(values));
+                const normalized = (key: IndicatorChartKey) => {
+                  const raw = Number(values[key]) || 0;
+                  if (max <= 0) return 0;
+                  return Math.round(((raw / max) * 5) * 10) / 10;
+                };
+                const langKey = lang === "ro" ? "ro" : "en";
+                const data = (Object.keys(INDICATOR_LABELS) as IndicatorChartKey[]).map((k) => ({
+                  key: k,
+                  label: INDICATOR_LABELS[k][langKey],
+                  value: normalized(k),
+                }));
+                return <RadarIndicators data={data} maxValue={5} />;
+              })()}
+            </div>
+          </div>
+        ) : null}
       </header>
 
       {renderSection("knowledge", FIELD_LABELS.knowledge)}

@@ -302,6 +302,8 @@ export function RecommendationStep(props: Props) {
                 : `You opened by sharing: “${initialStatement.trim()}.”`}
             </p>
           ) : null}
+          {/* Summary sentence placed immediately after the initial statement */}
+          <p className="text-sm text-[#4A3A30]">{summaryMessage}</p>
           <p className="text-sm text-[#4A3A30]">
             {lang === "ro"
               ? "Alege formatul cu care vrei să continui acum."
@@ -353,7 +355,6 @@ export function RecommendationStep(props: Props) {
             programFit={scheduleFit}
             onBookCall={onAccountRequest}
             language={lang === "en" ? "en" : "ro"}
-            summaryMessage={summaryMessage}
           />
           <div className="mt-10 rounded-[18px] border border-[#E4D8CE] bg-[#FFFBF7] px-5 py-5 text-left shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

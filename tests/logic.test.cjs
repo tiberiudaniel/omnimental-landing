@@ -103,3 +103,15 @@ test("recommendSession applies rule hierarchy", () => {
   assert.equal(lowUrgency.recommendedPath, "group");
   assert.equal(lowUrgency.reasonKey, "reason_low_urgency");
 });
+
+test("recommendSession defaults to group when no strong signals", () => {
+  const baseScores = { calm: 0, focus: 0, energy: 0, relationships: 0, performance: 0, health: 0 };
+  const rec = recommendSession({ urgency: 5, primaryCategory: undefined, dimensionScores: baseScores, hasProfile: false });
+  assert.equal(rec.recommendedPath, "group");
+});
+
+test("computeDimensionScores handles empty input and low urgency", () => {
+  const scores = computeDimensionScores([], 2);
+  assert.equal(scores.calm, 0);
+  assert.equal(scores.focus, 0);
+});

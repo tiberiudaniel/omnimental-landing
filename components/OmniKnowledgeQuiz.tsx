@@ -7,6 +7,7 @@ import {
   type OmniKnowledgeScores,
 } from "@/lib/omniKnowledge";
 import { submitOmniKnowledgeAssessment } from "@/lib/submitEvaluation";
+import { recordKnowledgeViewSummary } from "@/lib/progressFacts";
 
 const buildDefaultAnswers = () => {
   const map: Record<string, number | null> = {};
@@ -37,6 +38,7 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
   const [lastDurationMs, setLastDurationMs] = useState<number | null>(null);
   const [flagSuspicious, setFlagSuspicious] = useState(false);
   const quizStartRef = useRef<number>(Date.now());
+  const summaryRef = useRef<HTMLDivElement | null>(null);
   const score = useMemo(() => computeOmniKnowledgeScore(answers), [answers]);
   const answeredCount = useMemo(
     () => Object.values(answers).filter((value) => typeof value === "number").length,
@@ -142,7 +144,9 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
             {completionPercent}% {lang === "ro" ? "progres" : "progress"}
           </span>
         </div>
-        <KnowledgeSummaryCard score={score} lang={lang} />
+        <div ref={summaryRef} id="knowledge-summary">
+          <KnowledgeSummaryCard score={score} lang={lang} />
+        </div>
         {lastDurationMs !== null && (
           <DurationBadge
             durationMs={lastDurationMs}
@@ -262,6 +266,16 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
             className="inline-flex items-center justify-center rounded-[10px] border border-[#D8C6B6] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] transition hover:bg-[#F6F2EE]"
           >
             {lang === "ro" ? "Resetează răspunsurile" : "Reset answers"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+              void recordKnowledgeViewSummary();
+            }}
+            className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+          >
+            {lang === "ro" ? "Vezi punctajul general" : "View overall score"}
           </button>
         </div>
         <p className="text-xs text-[#5C4F45]">

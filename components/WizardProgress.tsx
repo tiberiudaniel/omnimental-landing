@@ -24,9 +24,10 @@ const STEP_MAPPING: Record<Step, number> = {
 type WizardProgressProps = {
   currentStep: Step;
   lang: "ro" | "en";
+  onReset?: () => void;
 };
 
-export function WizardProgress({ currentStep, lang }: WizardProgressProps) {
+export function WizardProgress({ currentStep, lang, onReset }: WizardProgressProps) {
   const activeIndex = STEP_MAPPING[currentStep] ?? -1;
   if (activeIndex < 0) {
     return null;
@@ -88,9 +89,21 @@ export function WizardProgress({ currentStep, lang }: WizardProgressProps) {
             />
           </div>
         </div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] sm:hidden">
-          {lang === "ro" ? "Progres" : "Progress"}
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] sm:hidden">
+            {lang === "ro" ? "Progres" : "Progress"}
+          </p>
+          {onReset ? (
+            <button
+              type="button"
+              onClick={onReset}
+              className="ml-auto text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] underline underline-offset-2 hover:text-[#E60012]"
+              aria-label={lang === "ro" ? "Resetează parcursul" : "Reset journey"}
+            >
+              {lang === "ro" ? "Resetează" : "Reset"}
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   );

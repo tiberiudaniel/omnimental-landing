@@ -64,7 +64,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ro" className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable}`}>
+    <html
+      lang="ro"
+      className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <body className="antialiased">
         <AuthProvider>
           <ProfileProvider>{children}</ProfileProvider>

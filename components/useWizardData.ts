@@ -14,6 +14,7 @@ import {
 } from "../lib/evaluation";
 import type { DimensionScores } from "../lib/scoring";
 import type { SessionType } from "../lib/recommendation";
+import { computeDirectionMotivationIndex, computeOmniIntelScore, type OmniBlock } from "../lib/omniIntel";
 import {
   detectCategoryFromRawInput,
   type IntentPrimaryCategory,
@@ -132,7 +133,17 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       setJournalEntry(cleanText);
       setSaveError(null);
       try {
-        await ensureAuth();
+        const user = await ensureAuth();
+        if (!user) {
+          const message =
+            lang === "ro"
+              ? "Te rugăm să te conectezi pentru a salva și continua."
+              : "Please sign in to save and continue.";
+        setSaveError(message);
+        setShowAccountPrompt(true);
+          // Signal to caller not to advance without throwing to console
+          return false;
+        }
         await addDoc(collection(db, "userInterests"), {
           text: cleanText,
           lang,
@@ -144,7 +155,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       } catch (error) {
         console.error("journal entry save failed", error);
         setSaveError(GENERIC_SAVE_ERROR);
-        throw error;
+        return false;
       }
     },
     [lang],
@@ -212,6 +223,29 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
 
       const buildSnapshotPayload = (withExtras: boolean) => {
         const timestamp = serverTimestamp();
+        const dirMot = computeDirectionMotivationIndex({
+          urgency,
+          determination,
+          hoursPerWeek: timeCommitmentHours,
+        });
+        const knowledgeIndex = 0; // se va actualiza după Kuno
+        const skillsIndex = 0; // se va actualiza după Abil
+        const consistencyIndex = 0; // se va calcula din activitate
+        const omniIntelScore = computeOmniIntelScore({
+          knowledgeIndex,
+          skillsIndex,
+          directionMotivationIndex: dirMot,
+          consistencyIndex,
+        });
+        const omni: OmniBlock = {
+          scope: { goalDescription: null, mainPain: null, idealDay: null, wordCount: null, tags, directionMotivationIndex: dirMot },
+          kuno: { completedTests: 0, totalTestsAvailable: 0, scores: {}, knowledgeIndex },
+          sensei: { unlocked: false, activeQuests: [], completedQuestsCount: 0 },
+          abil: { unlocked: false, exercisesCompletedCount: 0, skillsIndex },
+          intel: { unlocked: false, evaluationsCount: 0, consistencyIndex },
+          omniIntelScore,
+          omniPoints: 0,
+        };
         return {
           tags,
           categories,
@@ -221,8 +255,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           firstExpression: firstIntentExpression ?? null,
           firstCategory: firstIntentCategory ?? null,
           profileId: snapshotOwnerId,
+          ownerUid: snapshotOwnerId,
           lang,
           evaluation: evaluationAnswerPayload,
+          omni,
           timestamp,
           createdAt: timestamp,
           ...(withExtras
@@ -242,6 +278,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           snapshotId,
           evaluation: evaluationAnswerPayload,
           profileId: snapshotOwnerId,
+          ownerUid: snapshotOwnerId,
           lang,
           timestamp,
           createdAt: timestamp,
@@ -272,10 +309,12 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           categories,
           urgency,
           lang,
-        }).catch((progressError) => {
+          firstExpression: firstIntentExpression ?? null,
+          firstCategory: firstIntentCategory ?? null,
+        }, snapshotOwnerId).catch((progressError) => {
           console.error("progress fact intent failed", progressError);
         });
-        void recordMotivationProgressFact(evaluationAnswerPayload).catch((progressError) => {
+        void recordMotivationProgressFact(evaluationAnswerPayload, snapshotOwnerId).catch((progressError) => {
           console.error("progress fact motivation failed", progressError);
         });
         if (includeExtras) {

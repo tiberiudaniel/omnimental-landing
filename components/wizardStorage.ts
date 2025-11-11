@@ -43,3 +43,14 @@ export const writeWizardState = (update: Partial<StoredWizardState>) => {
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 };
+
+export const clearWizardState = () => {
+  if (!isBrowser()) {
+    return;
+  }
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // noop
+  }
+};

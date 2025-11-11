@@ -173,7 +173,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
         priority
         className="background object-cover opacity-60 transition-opacity duration-700"
         style={{ filter: "sepia(0.4) hue-rotate(20deg) saturate(1.2)" }}
-        onLoadingComplete={() => setImageLoaded(true)}
+        onLoad={() => setImageLoaded(true)}
       />
 
       <div className="words-overlay absolute inset-0 overflow-hidden pointer-events-none" />

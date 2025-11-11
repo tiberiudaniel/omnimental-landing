@@ -72,11 +72,35 @@ export async function ensureAuth() {
   if (typeof window === "undefined") return null;
   const auth = getFirebaseAuth();
   if (auth.currentUser) return auth.currentUser;
-  await signInAnonymously(auth);
-  return auth.currentUser!;
+  try {
+    await signInAnonymously(auth);
+    return auth.currentUser ?? null;
+  } catch (err: unknown) {
+    // Handle cases where anonymous sign-in is disabled in Firebase console
+    const code = (err as { code?: string })?.code ?? "";
+    if (code === "auth/admin-restricted-operation") {
+      console.warn("Anonymous auth disabled by project policy; proceeding unauthenticated");
+      return null;
+    }
+    console.warn("ensureAuth failed", err);
+    return null;
+  }
 }
 
 export function onAuthReady(cb: (uid: string) => void) {
   const auth = getFirebaseAuth();
   return onAuthStateChanged(auth, (u) => { if (u) cb(u.uid); });
+}
+// === ensure auto anonymous auth ===
+if (typeof window !== "undefined") {
+  const auth = getFirebaseAuth();
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      signInAnonymously(auth).catch((err) => {
+        console.error("Anonymous sign-in failed:", err);
+      });
+    } else {
+      console.log("Signed in as:", user.uid);
+    }
+  });
 }

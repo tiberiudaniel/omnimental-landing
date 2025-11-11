@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { recordEvaluationTabChange } from "@/lib/progressFacts";
+import ProgressSummary from "../../components/ProgressSummary";
+import ProgressStageCard from "../../components/ProgressStageCard";
 import SiteHeader from "../../components/SiteHeader";
 import MenuOverlay from "../../components/MenuOverlay";
 import AccountModal from "../../components/AccountModal";
@@ -9,8 +13,13 @@ import { useNavigationLinks } from "../../components/useNavigationLinks";
 import { I18nProvider, useI18n } from "../../components/I18nProvider";
 import { useProfile } from "../../components/ProfileProvider";
 import { useProgressFacts } from "../../components/useProgressFacts";
+import { useEvaluationTimeline } from "../../components/useEvaluationTimeline";
+import ProgressSparkline from "../../components/ProgressSparkline";
 import type { ProgressIntentCategories } from "@/lib/progressFacts";
 import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
+import Toast from "../../components/Toast";
+import { backfillProgressFacts } from "@/lib/progressFacts";
+import { omniKnowledgeModules } from "@/lib/omniKnowledge";
 import type { SessionType } from "@/lib/recommendation";
 import type { DimensionScores } from "@/lib/scoring";
 
@@ -114,12 +123,17 @@ function formatCategories(
 }
 
 function ProgressContent() {
+  const router = useRouter();
   const { t, lang } = useI18n();
   const { profile } = useProfile();
+  const isParticipant = Boolean(profile?.id);
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [resyncing, setResyncing] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const navLinks = useNavigationLinks();
   const { data: progress, loading, error } = useProgressFacts(profile?.id);
+  const { entries: evalTimeline } = useEvaluationTimeline();
 
   const title = t("progressTitle");
   const subtitle = t("progressSubtitle");
@@ -194,6 +208,34 @@ function ProgressContent() {
       topDimensions,
     };
   }, [lang, progress?.recommendation]);
+
+  // Compute a coarse global load label from intent urgency
+  const globalLoadLabel = useMemo(() => {
+    const u = Number(progress?.intent?.urgency ?? 0);
+    if (u >= 7) return lang === "ro" ? "Ridicat" : "High";
+    if (u >= 4) return lang === "ro" ? "Moderat" : "Moderate";
+    return lang === "ro" ? "Scăzut" : "Low";
+  }, [lang, progress?.intent?.urgency]);
+
+  const omniIntelScore = Number((progress as any)?.omni?.omniIntelScore ?? NaN);
+  const omniLevel = useMemo(() => {
+    const s = Math.round(omniIntelScore);
+    if (!Number.isFinite(s)) return null;
+    if (s >= 75) return lang === "ro" ? "Sensei" : "Sensei";
+    if (s >= 50) return lang === "ro" ? "Adept" : "Adept";
+    if (s >= 25) return lang === "ro" ? "Pathfinder" : "Pathfinder";
+    return lang === "ro" ? "Explorer" : "Explorer";
+  }, [lang, omniIntelScore]);
+
+  const sparkValues = useMemo(() => {
+    // Map MAAS (mindful awareness) totals to a 0–10 scale for a simple trend
+    if (!evalTimeline || evalTimeline.length === 0) return [] as number[];
+    return evalTimeline.map((e) => {
+      const maas = Number(e.scores?.maasTotal ?? 0);
+      const normalized = Math.max(0, Math.min(10, (maas / 6) * 10));
+      return Math.round(normalized * 10) / 10;
+    });
+  }, [evalTimeline]);
 
   const heroSelectionMessage = useMemo(() => {
     if (!heroDetails) return null;
@@ -320,6 +362,91 @@ function ProgressContent() {
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <AccountModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
       <main className="px-4 py-12 md:px-8">
+        {/* Top summary row */}
+        <div className="mx-auto mb-6 max-w-5xl">
+          <ProgressSummary
+            urgency={progress?.intent?.urgency ?? null}
+            stage={progress?.evaluation?.stageValue ?? null}
+            globalLoad={globalLoadLabel}
+            updatedAt={progress?.updatedAt ? formatTimestamp(progress.updatedAt as unknown as { toDate?: () => Date }, lang) : null}
+            omniIntelScore={Number.isFinite(omniIntelScore) ? omniIntelScore : null}
+            omniLevel={omniLevel}
+          />
+        </div>
+
+        {/* 2x2 grid of stages on desktop */}
+        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Stage 1: Intent */}
+          <ProgressStageCard
+            title={resolveString(intentTitle, "Intenții & Cloud")}
+            subtitle={intent ? (lang === "ro" ? "Complet" : "Complete") : (lang === "ro" ? "Începe sau reia selecția" : "Start or resume selection")}
+            percent={(intent?.tags?.length ? Math.min(100, Math.round((intent.tags.length / 7) * 100)) : 0)}
+            status={intent ? "complete" : "stale"}
+            ctaLabel={lang === "ro" ? "Reia clarificarea" : "Clarify now"}
+            onAction={() => {
+              const link = buildWizardLink("intent", "progress-intent-card");
+              router.push({ pathname: link.pathname, query: link.query } as unknown as string);
+            }}
+          />
+
+          {/* Stage 2: Motivation */}
+          <ProgressStageCard
+            title={resolveString(motivationTitle, "Motivație & Resurse")}
+            subtitle={motivation ? (lang === "ro" ? "Actualizat" : "Updated") : (lang === "ro" ? "Adaugă resurse" : "Add resources")}
+            percent={(() => {
+              const m = motivation;
+              if (!m) return 0;
+              const answers = [
+                m.urgency,
+                m.determination,
+                m.hoursPerWeek,
+                m.budgetLevel,
+                m.goalType,
+                m.emotionalState,
+                m.groupComfort,
+                m.learnFromOthers,
+                m.scheduleFit,
+                m.formatPreference,
+              ];
+              const total = answers.length;
+              const filled = answers.filter((v) => v !== undefined && v !== null).length;
+              return Math.round((filled / total) * 100);
+            })()}
+            status={motivation ? "inProgress" : "stale"}
+            ctaLabel={lang === "ro" ? "Adaugă resurse" : "Add resources"}
+            onAction={() => {
+              const link = buildWizardLink("intentSummary", "progress-motivation-card");
+              router.push({ pathname: link.pathname, query: link.query } as unknown as string);
+            }}
+          />
+
+          {/* Stage 3: Evaluations */}
+          <ProgressStageCard
+            title={resolveString(evaluationTitle, "Evaluări Omni-Intel")}
+            subtitle={evaluation ? (lang === "ro" ? "Există măsurători" : "Measurements found") : (lang === "ro" ? "Completează o evaluare" : "Complete an evaluation")}
+            percent={evaluation ? 100 : 0}
+            status={evaluation ? "inProgress" : "stale"}
+            ctaLabel={lang === "ro" ? "Deschide evaluările" : "Open evaluations"}
+            onAction={() => {
+              router.push({ pathname: "/evaluation", query: { tab: "oi", source: "progress" } } as unknown as string);
+            }}
+          />
+
+          {/* Stage 4: Quests */}
+          <ProgressStageCard
+            title={resolveString(questTitle, "Quest-uri")}
+            subtitle={(progress?.quests?.items?.length ?? 0) > 0 ? (lang === "ro" ? "Active" : "Active") : (lang === "ro" ? "Vor apărea după evaluare" : "Will appear after evaluation")}
+            percent={(progress?.quests?.items?.length ?? 0) > 0 ? 50 : 0}
+            status={(progress?.quests?.items?.length ?? 0) > 0 ? "inProgress" : "stale"}
+            ctaLabel={lang === "ro" ? "Vezi quest-uri" : "View quests"}
+            onAction={() => {
+              const link = buildRecommendationLink();
+              router.push({ pathname: link.pathname, query: link.query } as unknown as string);
+            }}
+            locked={!Boolean((progress as any)?.omni?.sensei?.unlocked)}
+            lockHint={lang === "ro" ? "Se activează după Kuno" : "Unlocks after Kuno"}
+          />
+        </div>
         <div className="mx-auto flex max-w-5xl flex-col gap-4 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">OmniMental Progress</p>
           <h1 className="text-3xl font-semibold text-[#2C1F18]">
@@ -342,6 +469,11 @@ function ProgressContent() {
               {heroSelectionMessage ? (
                 <p className="text-xs text-[#7A6455]">{heroSelectionMessage}</p>
               ) : null}
+              {sparkValues.length > 1 ? (
+                <div className="mx-auto mt-2 flex w-full max-w-xs items-center justify-center">
+                  <ProgressSparkline values={sparkValues} />
+                </div>
+              ) : null}
               {heroDetails.topDimensions.length ? (
                 <div className="flex flex-wrap justify-center gap-2">
                   {heroDetails.topDimensions.map((label, index) => (
@@ -354,6 +486,44 @@ function ProgressContent() {
                   ))}
                 </div>
               ) : null}
+              <div className="mt-2 flex justify-center">
+                <button
+                  type="button"
+                  disabled={resyncing}
+                  onClick={async () => {
+                    if (!profile?.id) return;
+                    try {
+                      setResyncing(true);
+                      const fact = await backfillProgressFacts(profile.id);
+                      setToastMessage(
+                        lang === "ro"
+                          ? fact
+                            ? "Datele au fost resincronizate."
+                            : "Nu am găsit date recente pentru resincronizare."
+                          : fact
+                          ? "Data was resynchronized."
+                          : "No recent data found to resync.",
+                      );
+                    } catch (e) {
+                      console.warn("progress resync failed", e);
+                      setToastMessage(
+                        lang === "ro" ? "A apărut o eroare la resincronizare." : "Resynchronization failed.",
+                      );
+                    } finally {
+                      setResyncing(false);
+                    }
+                  }}
+                  className="rounded-[10px] border border-[#A08F82] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#4A3A30] hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
+                >
+                  {resyncing
+                    ? lang === "ro"
+                      ? "Sincronizare..."
+                      : "Syncing..."
+                    : lang === "ro"
+                    ? "Resincronizează"
+                    : "Resync now"}
+                </button>
+              </div>
               {heroMeta.length ? (
                 <div className="flex flex-wrap justify-center gap-2">
                   {heroMeta.map((item) => (
@@ -437,11 +607,49 @@ function ProgressContent() {
                 <div className="space-y-3 text-sm text-[#A08F82]">
                   <p>{resolveString(intentEmpty, "Completează secțiunea Intenții & Cloud.")}</p>
                   <Link
-                    href={buildWizardLink("firstInput", "progress-intent-empty")}
+                    href={buildWizardLink("intent", "progress-intent-empty")}
                     className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
                   >
                     {lang === "ro" ? "Actualizează intențiile" : "Update intents"}
                   </Link>
+                  <div>
+                    <button
+                      type="button"
+                      disabled={resyncing}
+                      onClick={async () => {
+                        if (!profile?.id) return;
+                        try {
+                          setResyncing(true);
+                          const fact = await backfillProgressFacts(profile.id);
+                          setToastMessage(
+                            lang === "ro"
+                              ? fact
+                                ? "Datele au fost resincronizate."
+                                : "Nu am găsit date recente pentru resincronizare."
+                              : fact
+                              ? "Data was resynchronized."
+                              : "No recent data found to resync.",
+                          );
+                        } catch (e) {
+                          console.warn("progress resync failed", e);
+                          setToastMessage(
+                            lang === "ro" ? "A apărut o eroare la resincronizare." : "Resynchronization failed.",
+                          );
+                        } finally {
+                          setResyncing(false);
+                        }
+                      }}
+                      className="ml-2 rounded-[10px] border border-[#A08F82] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#4A3A30] hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
+                    >
+                      {resyncing
+                        ? lang === "ro"
+                          ? "Sincronizare..."
+                          : "Syncing..."
+                        : lang === "ro"
+                        ? "Resincronizează"
+                        : "Resync now"}
+                    </button>
+                  </div>
                 </div>
               )}
             </section>
@@ -486,6 +694,44 @@ function ProgressContent() {
                   >
                     {lang === "ro" ? "Mergi la motivație" : "Go to motivation"}
                   </Link>
+                  <div>
+                    <button
+                      type="button"
+                      disabled={resyncing}
+                      onClick={async () => {
+                        if (!profile?.id) return;
+                        try {
+                          setResyncing(true);
+                          const fact = await backfillProgressFacts(profile.id);
+                          setToastMessage(
+                            lang === "ro"
+                              ? fact
+                                ? "Datele au fost resincronizate."
+                                : "Nu am găsit date recente pentru resincronizare."
+                              : fact
+                              ? "Data was resynchronized."
+                              : "No recent data found to resync.",
+                          );
+                        } catch (e) {
+                          console.warn("progress resync failed", e);
+                          setToastMessage(
+                            lang === "ro" ? "A apărut o eroare la resincronizare." : "Resynchronization failed.",
+                          );
+                        } finally {
+                          setResyncing(false);
+                        }
+                      }}
+                      className="ml-2 rounded-[10px] border border-[#A08F82] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#4A3A30] hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
+                    >
+                      {resyncing
+                        ? lang === "ro"
+                          ? "Sincronizare..."
+                          : "Syncing..."
+                        : lang === "ro"
+                        ? "Resincronizează"
+                        : "Resync now"}
+                    </button>
+                  </div>
                 </div>
               )}
             </section>
@@ -494,16 +740,32 @@ function ProgressContent() {
               <header className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">Etapa 3</p>
-                <h2 className="text-xl font-semibold text-[#1F1F1F]">
+                  <h2 className="text-xl font-semibold text-[#1F1F1F]">
                   {resolveString(evaluationTitle, "Evaluări Omni-Intel")}
-                </h2>
+                  </h2>
                 </div>
-                <Link
-                  href={buildEvaluationLink()}
-                  className="text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] hover:text-[#E60012]"
-                >
-                  {resolveString(t("progressViewEvaluation"), "Vezi evaluările")}
-                </Link>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href={{ pathname: "/evaluation", query: { tab: "os", source: "progress" } }}
+                    onClick={() => { void recordEvaluationTabChange("os"); }}
+                    className="text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] hover:text-[#E60012]"
+                  >
+                    Omni-Scop
+                  </Link>
+                  <Link
+                    href={{ pathname: "/evaluation", query: { tab: "oa", source: "progress" } }}
+                    onClick={() => { void recordEvaluationTabChange("oa"); }}
+                    className="text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] hover:text-[#E60012]"
+                  >
+                    Omni-Abil
+                  </Link>
+                  <Link
+                    href={buildEvaluationLink()}
+                    className="text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] hover:text-[#E60012]"
+                  >
+                    {resolveString(t("progressViewEvaluation"), "Vezi evaluările")}
+                  </Link>
+                </div>
               </header>
               {evaluation ? (
                 <div className="space-y-3">
@@ -513,6 +775,28 @@ function ProgressContent() {
                     ))}
                   </div>
                   <p className="text-xs text-[#A08F82]">{formatTimestamp(evaluation.updatedAt, lang)}</p>
+                  {evaluation.knowledge ? (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">Omni-Cunoaștere</p>
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {Object.entries(evaluation.knowledge.breakdown || {}).map(([key, val]) => {
+                          const percent = Math.round((val?.percent ?? 0));
+                          const label = (omniKnowledgeModules.find((m) => m.key === key)?.title) || key;
+                          return (
+                            <div key={key} className="rounded-[10px] border border-[#F0E6DA] bg-[#FFFBF7] px-3 py-2">
+                              <div className="flex items-center justify-between text-xs text-[#5C4F45]">
+                                <span>{label}</span>
+                                <span>{percent}%</span>
+                              </div>
+                              <div className="mt-1 h-1.5 w-full rounded-full bg-[#F6F2EE]">
+                                <div className="h-full rounded-full bg-[#2C2C2C]" style={{ width: `${percent}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <div className="space-y-3 text-sm text-[#A08F82]">
@@ -578,6 +862,9 @@ function ProgressContent() {
           </div>
         )}
       </main>
+      {toastMessage ? (
+        <Toast message={toastMessage} okLabel={lang === "ro" ? "OK" : "OK"} onClose={() => setToastMessage(null)} />
+      ) : null}
     </div>
   );
 }

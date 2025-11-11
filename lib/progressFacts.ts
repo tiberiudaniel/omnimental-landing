@@ -23,6 +23,8 @@ import type { OmniKnowledgeScores } from "./omniKnowledge";
 import type { QuestSuggestion } from "./quests";
 import type { SessionType } from "./recommendation";
 import type { DimensionScores } from "./scoring";
+import type { OmniBlock } from "./omniIntel";
+import { computeDirectionMotivationIndex, computeOmniIntelScore } from "./omniIntel";
 
 export type ProgressIntentCategories = Array<{ category: string; count: number }>;
 
@@ -57,6 +59,8 @@ export type ProgressFact = {
     categories: ProgressIntentCategories;
     urgency: number;
     lang: string;
+    firstExpression?: string | null;
+    firstCategory?: string | null;
     updatedAt?: Date;
   };
   motivation?: ProgressMotivationPayload & { updatedAt?: Date };
@@ -79,6 +83,7 @@ export type ProgressFact = {
     dimensionScores?: DimensionScores | null;
     updatedAt?: Date;
   };
+  omni?: OmniBlock;
 };
 
 const DIMENSION_KEYS: Array<keyof DimensionScores> = [
@@ -114,8 +119,10 @@ function sanitizeDimensionScores(entry: unknown): DimensionScores | null {
   return seen ? baseline : null;
 }
 
-async function mergeProgressFact(data: Record<string, unknown>) {
-  const user = await ensureAuth();
+async function mergeProgressFact(data: Record<string, unknown>, ownerId?: string | null) {
+  // Allow explicit owner override (e.g., when wizard has a known profileId).
+  // Falls back to the currently authenticated user.
+  const user = ownerId ? { uid: ownerId } : await ensureAuth();
   if (!user) return null;
   const updatedAt = serverTimestamp();
   const payload = {
@@ -139,16 +146,27 @@ async function mergeProgressFact(data: Record<string, unknown>) {
 
 export async function backfillProgressFacts(profileId: string) {
   const auth = await ensureAuth();
-  if (!auth || auth.uid !== profileId) return null;
   const db = getDb();
+  const effectiveId = profileId || auth?.uid || null;
+  if (!effectiveId) return null;
   let latestSnapshot = await getDocs(
     query(
       collection(db, "userIntentSnapshots"),
-      where("profileId", "==", profileId),
+      where("profileId", "==", effectiveId),
       orderBy("timestamp", "desc"),
       limit(1),
     ),
   );
+  if (latestSnapshot.empty) {
+    latestSnapshot = await getDocs(
+      query(
+        collection(db, "userIntentSnapshots"),
+        where("ownerUid", "==", profileId),
+        orderBy("timestamp", "desc"),
+        limit(1),
+      ),
+    );
+  }
   if (latestSnapshot.empty) {
     latestSnapshot = await getDocs(
       query(
@@ -170,7 +188,14 @@ export async function backfillProgressFacts(profileId: string) {
     : [];
   const urgency = typeof data.urgency === "number" ? data.urgency : 0;
   const lang = typeof data.lang === "string" ? data.lang : "ro";
+  const firstExpression = typeof (data as Record<string, unknown>).firstExpression === "string"
+    ? (data as Record<string, string>).firstExpression
+    : null;
+  const firstCategory = typeof (data as Record<string, unknown>).firstCategory === "string"
+    ? (data as Record<string, string>).firstCategory
+    : null;
   const evaluationAnswers = (data.evaluation ?? null) as ProgressMotivationPayload | null;
+  const omniFromSnapshot = (data.omni ?? null) as OmniBlock | null;
   const answers = (data.answers ?? {}) as Record<string, unknown>;
   const scores = (answers.scores as EvaluationScoreTotals | undefined) ?? {
     pssTotal: 0,
@@ -263,6 +288,8 @@ export async function backfillProgressFacts(profileId: string) {
       categories,
       urgency,
       lang,
+      firstExpression,
+      firstCategory,
       updatedAt: data.timestamp,
     },
     motivation: evaluationAnswers ?? undefined,
@@ -274,39 +301,142 @@ export async function backfillProgressFacts(profileId: string) {
       updatedAt: data.timestamp,
     },
     recommendation: recommendationBlock,
+    omni: (() => {
+      if (omniFromSnapshot) return omniFromSnapshot;
+      // Minimal backfilled Omni when snapshot doesn't have it
+      const dirMot = computeDirectionMotivationIndex({
+        urgency,
+        determination: evaluationAnswers?.determination ?? 3,
+        hoursPerWeek: evaluationAnswers?.hoursPerWeek ?? 0,
+      });
+      const knowledgeIndex = typeof (knowledge as any)?.percent === "number" ? (knowledge as any).percent : 0;
+      const skillsIndex = 0;
+      const consistencyIndex = 0;
+      const omniIntelScore = computeOmniIntelScore({
+        knowledgeIndex,
+        skillsIndex,
+        directionMotivationIndex: dirMot,
+        consistencyIndex,
+      });
+      return {
+        scope: { goalDescription: null, mainPain: null, idealDay: null, wordCount: null, tags, directionMotivationIndex: dirMot },
+        kuno: { completedTests: 0, totalTestsAvailable: 0, scores: {}, knowledgeIndex },
+        sensei: { unlocked: false, activeQuests: [], completedQuestsCount: 0 },
+        abil: { unlocked: false, exercisesCompletedCount: 0, skillsIndex },
+        intel: { unlocked: false, evaluationsCount: 0, consistencyIndex },
+        omniIntelScore,
+        omniPoints: 0,
+      } as OmniBlock;
+    })(),
   };
-  const factRef = doc(getDb(), "userProgressFacts", profileId);
-  const profileRef = doc(getDb(), "userProfiles", profileId);
+  const factRef = doc(getDb(), "userProgressFacts", effectiveId);
+  const profileRef = doc(getDb(), "userProfiles", effectiveId);
   await Promise.all([
     setDoc(factRef, fact, { merge: true }).catch((error) =>
       console.warn("progress fact backfill primary write failed", error),
     ),
     setDoc(profileRef, { progressFacts: fact }, { merge: true }),
   ]);
+  try {
+    // Simple dev log to confirm backfill ran and what it found
+    // Note: latestSnapshot.size reflects the last query result set
+    console.log("Backfill completed for", effectiveId, "snapshot count", latestSnapshot.size);
+  } catch {}
   return fact;
 }
 
-export async function recordIntentProgressFact(payload: {
+// Lightweight tracking helpers for UI analytics
+export async function recordEvaluationTabChange(tabKey: string) {
+  try {
+    await mergeProgressFact({ evaluationTab: { key: tabKey, updatedAt: serverTimestamp() } });
+  } catch (e) {
+    console.warn("recordEvaluationTabChange failed", e);
+  }
+}
+
+export async function recordKnowledgeViewSummary() {
+  try {
+    await mergeProgressFact({ knowledgeSummaryViewed: { at: serverTimestamp() } });
+  } catch (e) {
+    console.warn("recordKnowledgeViewSummary failed", e);
+  }
+}
+
+export async function recordWizardReset() {
+  try {
+    await mergeProgressFact({ wizardReset: { at: serverTimestamp() } });
+  } catch (e) {
+    console.warn("recordWizardReset failed", e);
+  }
+}
+
+export async function recordWizardResetCanceled() {
+  try {
+    await mergeProgressFact({ wizardResetCanceled: { at: serverTimestamp() } });
+  } catch (e) {
+    console.warn("recordWizardResetCanceled failed", e);
+  }
+}
+
+export async function recordWizardResetNoticeDismissed() {
+  try {
+    await mergeProgressFact({ wizardResetNoticeDismissed: { at: serverTimestamp() } });
+  } catch (e) {
+    console.warn("recordWizardResetNoticeDismissed failed", e);
+  }
+}
+
+export async function recordEvaluationSubmitStarted(stage: string, lang: string) {
+  try {
+    await mergeProgressFact({ evaluationSubmit: { stage, lang, status: "started", at: serverTimestamp() } });
+  } catch (e) {
+    console.warn("recordEvaluationSubmitStarted failed", e);
+  }
+}
+
+export async function recordEvaluationSubmitFinished(stage: string, lang: string, ok: boolean) {
+  try {
+    await mergeProgressFact({ evaluationSubmit: { stage, lang, status: ok ? "ok" : "failed", at: serverTimestamp() } });
+  } catch (e) {
+    console.warn("recordEvaluationSubmitFinished failed", e);
+  }
+}
+
+export async function recordIntentProgressFact(
+  payload: {
   tags: string[];
   categories: ProgressIntentCategories;
   urgency: number;
   lang: string;
-}) {
-  return mergeProgressFact({
-    intent: {
-      ...payload,
-      updatedAt: serverTimestamp(),
+  firstExpression?: string | null;
+  firstCategory?: string | null;
+  },
+  profileId?: string | null,
+) {
+  return mergeProgressFact(
+    {
+      intent: {
+        ...payload,
+        updatedAt: serverTimestamp(),
+      },
     },
-  });
+    profileId,
+  );
 }
 
-export async function recordMotivationProgressFact(payload: ProgressMotivationPayload) {
-  return mergeProgressFact({
-    motivation: {
-      ...payload,
-      updatedAt: serverTimestamp(),
+export async function recordMotivationProgressFact(
+  payload: ProgressMotivationPayload,
+  profileId?: string | null,
+) {
+  return mergeProgressFact(
+    {
+      motivation: {
+        ...payload,
+        updatedAt: serverTimestamp(),
+      },
     },
-  });
+    profileId,
+  );
 }
 
 export async function recordEvaluationProgressFact(payload: {

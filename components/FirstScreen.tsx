@@ -32,8 +32,9 @@ type FirstExpressionMeta = {
 
 interface FirstScreenProps {
   onNext: () => void;
-  onSubmit?: (text: string, meta?: FirstExpressionMeta) => Promise<void> | void;
+  onSubmit?: (text: string, meta?: FirstExpressionMeta) => Promise<void | boolean> | void | boolean;
   errorMessage?: string | null;
+  onAuthRequest?: () => void;
 }
 
 const PLACEHOLDER_SAMPLE_COUNT = 3;
@@ -71,7 +72,7 @@ const pickRandom = (pool: string[], count: number) => {
   return copy.slice(0, limitCount);
 };
 
-export default function FirstScreen({ onNext, onSubmit, errorMessage = null }: FirstScreenProps) {
+export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onAuthRequest }: FirstScreenProps) {
   const { lang, t } = useI18n();
   const welcomeValue = t("firstScreenWelcome");
   const question = t("firstScreenQuestion");
@@ -130,7 +131,18 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null }: F
     });
     return options;
   }, [expressionLibrary]);
-  const [primaryOptions, setPrimaryOptions] = useState<LocalizedIntentExpression[]>(() => buildPrimaryOptions());
+  // Avoid SSR/CSR hydration mismatch: don't randomize on the server.
+  // Start empty, then populate on the client after hydration.
+  const [primaryOptions, setPrimaryOptions] = useState<LocalizedIntentExpression[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+  useEffect(() => {
+    if (!isHydrated) return;
+    setPrimaryOptions(buildPrimaryOptions());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHydrated, buildPrimaryOptions]);
 
   const fallbackSuggestions = useMemo(() => {
     const suggestionPool = Array.isArray(suggestionValue) ? suggestionValue : [];
@@ -211,7 +223,8 @@ useEffect(() => {
   }, []);
 
   const placeholderText = useMemo(() => {
-    if (!storedSuggestions.length) {
+    // Defer randomization until after hydration to avoid SSR/CSR mismatch
+    if (!isHydrated || !storedSuggestions.length) {
       return placeholderTemplate;
     }
     const selection = pickRandom(
@@ -222,7 +235,7 @@ useEffect(() => {
       return placeholderTemplate;
     }
     return `Ex: ${selection.join("; ")}`;
-  }, [placeholderTemplate, storedSuggestions]);
+  }, [isHydrated, placeholderTemplate, storedSuggestions]);
 
   const persistSuggestion = async (text: string) => {
     try {
@@ -265,14 +278,18 @@ useEffect(() => {
       const result = onSubmit?.(trimmed, resolvedMeta);
       if (result && typeof (result as Promise<unknown>).then === "function") {
         (result as Promise<unknown>)
-          .then(() => {
-            finish(true);
+          .then((value) => {
+            // If handler returns false, do not advance
+            const ok = value !== false;
+            finish(ok);
           })
           .catch(() => {
             finish(false);
           });
       } else {
-        finish(true);
+        // Non-promise handler: assume truthy return means success
+        const ok = typeof result === "boolean" ? result : true;
+        finish(ok);
       }
     } catch {
       finish(false);
@@ -427,7 +444,18 @@ useEffect(() => {
               </button>
             </div>
             {errorMessage ? (
-              <p className="text-xs text-[#B8000E]">{errorMessage}</p>
+              <div className="flex items-center gap-3">
+                <p className="text-xs text-[#B8000E]">{errorMessage}</p>
+                {onAuthRequest && /conect|sign in/i.test(errorMessage) ? (
+                  <button
+                    type="button"
+                    onClick={onAuthRequest}
+                    className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+                  >
+                    {lang === "ro" ? "Autentifică-te" : "Sign in"}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
 
         </div>

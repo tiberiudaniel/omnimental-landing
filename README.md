@@ -27,6 +27,13 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - `components/WizardProgress.tsx` renders the responsive milestone header + linear progress bar on every step beyond the intro animation.
 - `components/RecommendationStep.tsx` now ends with a follow-up CTA (“Email me the recap”) that reuses `components/CTAButton` and writes to the `signups` collection.
 
+### Local Dev TLS (next/font)
+
+- If Turbopack logs TLS errors fetching Google Fonts, we enable system CA usage via `experimental.turbopackUseSystemTlsCerts: true` in `next.config.ts`.
+- Alternatively, set the env var when starting dev:
+  - Windows: `set NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 && npm run dev`
+  - WSL/Linux/macOS: `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 npm run dev`
+
 ### QA Checklist
 
 1. Fill the wizard, refresh, and confirm inputs persist.

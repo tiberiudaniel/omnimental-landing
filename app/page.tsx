@@ -20,11 +20,15 @@ import { useWizardSteps, type Step } from "../components/useWizardSteps";
 import WizardReflection from "../components/WizardReflection";
 import { useWizardData } from "../components/useWizardData";
 import { WizardProgress } from "../components/WizardProgress";
+import { clearWizardState } from "../components/wizardStorage";
+import Toast from "../components/Toast";
+import { recordWizardReset, recordWizardResetCanceled, recordWizardResetNoticeDismissed } from "../lib/progressFacts";
 import type { GoalType, EmotionalState, ResolutionSpeed, BudgetPreference } from "../lib/evaluation";
 import type { IntentPrimaryCategory } from "../lib/intentExpressions";
 import { computeDimensionScores } from "../lib/scoring";
 import type { DimensionScores } from "../lib/scoring";
 import { recommendSession, type SessionType } from "../lib/recommendation";
+// duplicate import cleanup
 import { generateAdaptiveIntentCloudWords, type IntentCloudWord } from "@/lib/intentExpressions";
 
 const MIN_INTENT_SELECTIONS = 5;
@@ -250,7 +254,8 @@ function PageContent() {
         recommendationReasonKey: recommendation.reasonKey,
       });
       if (!success) {
-        console.warn("intent snapshot persisted locally only");
+        console.warn("intent snapshot could not be persisted; staying on summary");
+        return;
       }
       navigateToStep("cards");
     },
@@ -272,7 +277,8 @@ function PageContent() {
         dimensionScores,
       });
       if (!success) {
-        console.warn("journey choice stored locally only");
+        console.warn("journey choice could not be persisted; staying on recommendation");
+        return;
       }
       navigateToStep("details");
     },
@@ -288,6 +294,13 @@ function PageContent() {
     setAccountModalOpen(false);
     dismissAccountPrompt();
   };
+
+  // Auto-open account modal when the funnel requires authentication
+  useEffect(() => {
+    if (showAccountPrompt && !accountModalOpen) {
+      openAccountModal();
+    }
+  }, [accountModalOpen, showAccountPrompt]);
 
   const savingGenericLabel = lang === "ro" ? "Se salvează..." : "Saving...";
   const savingChoiceLabel = getTranslationString(
@@ -314,12 +327,47 @@ function PageContent() {
         return <IntroStep onDone={() => navigateToStep("firstInput")} />;
       case "firstInput":
         return (
-          <FirstInputStep
-            onSubmit={submitFirstInput}
-            onNext={() => navigateToStep("reflectionPrompt")}
-            errorMessage={saveError}
-            lang={lang}
-          />
+          <>
+            <div className="mx-auto mb-3 max-w-4xl text-right">
+              <button
+                type="button"
+                className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] underline underline-offset-2 hover:text-[#E60012]"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    const confirmed = window.confirm(
+                      lang === "ro"
+                        ? "Vrei să o iei de la capăt?"
+                        : "Do you want to start over?",
+                    );
+                    if (!confirmed) {
+                      void recordWizardResetCanceled();
+                      return;
+                    }
+                  }
+                  try {
+                    clearWizardState();
+                  } catch {}
+                  void recordWizardReset();
+                  if (typeof window !== "undefined") {
+                    const params = new URLSearchParams(searchParams?.toString() ?? "");
+                    params.set("step", "preIntro");
+                    params.set("reset", "1");
+                    const qs = params.toString();
+                    window.location.assign(qs ? `/?${qs}` : "/");
+                  }
+                }}
+              >
+                {lang === "ro" ? "Resetează parcursul" : "Reset journey"}
+              </button>
+            </div>
+            <FirstInputStep
+              onSubmit={submitFirstInput}
+              onNext={() => navigateToStep("reflectionPrompt")}
+              errorMessage={saveError}
+              lang={lang}
+              onAuthRequest={openAccountModal}
+            />
+          </>
         );
       case "reflectionPrompt":
         return (
@@ -377,6 +425,7 @@ function PageContent() {
             onLearnFromOthersChange={setLearnFromOthers}
             scheduleFit={scheduleFit}
             onScheduleFitChange={setScheduleFit}
+            onAuthRequest={openAccountModal}
           />
         );
       case "cards":
@@ -445,8 +494,48 @@ function PageContent() {
       ) : null}
 
       <main className="px-4 py-8 sm:px-6">
+        {searchParams?.get("reset") === "1" ? (
+          <Toast
+            message={getTranslationString(t, "toastResetMessage", lang === "ro" ? "Parcursul a fost resetat." : "Your journey was reset.")}
+            okLabel={getTranslationString(t, "toastOk", "OK")}
+            onClose={() => {
+              void recordWizardResetNoticeDismissed();
+              const params = new URLSearchParams(searchParams?.toString() ?? "");
+              params.delete("reset");
+              const qs = params.toString();
+              router.replace(qs ? `/?${qs}` : "/", { scroll: false });
+            }}
+          />
+        ) : null}
         {!["preIntro", "intro"].includes(step) && (
-          <WizardProgress currentStep={step} lang={lang === "en" ? "en" : "ro"} />
+          <WizardProgress
+            currentStep={step}
+            lang={lang === "en" ? "en" : "ro"}
+            onReset={() => {
+              if (typeof window !== "undefined") {
+                const confirmed = window.confirm(
+                  lang === "ro"
+                    ? "Sigur vrei să resetezi parcursul?"
+                    : "Are you sure you want to reset your journey?",
+                );
+                if (!confirmed) {
+                  void recordWizardResetCanceled();
+                  return;
+                }
+              }
+              try {
+                clearWizardState();
+              } catch {}
+              void recordWizardReset();
+              if (typeof window !== "undefined") {
+                const params = new URLSearchParams(searchParams?.toString() ?? "");
+                params.set("step", "preIntro");
+                params.set("reset", "1");
+                const qs = params.toString();
+                window.location.assign(qs ? `/?${qs}` : "/");
+              }
+            }}
+          />
         )}
         <div>{stepContent}</div>
       </main>
@@ -481,19 +570,24 @@ function IntroStep({ onDone }: IntroStepProps) {
 }
 
 type FirstInputStepProps = {
-  onSubmit: (text: string, meta?: { expressionId?: string; category?: IntentPrimaryCategory }) => Promise<void> | void;
+  onSubmit: (
+    text: string,
+    meta?: { expressionId?: string; category?: IntentPrimaryCategory },
+  ) => Promise<void | boolean> | void | boolean;
   onNext: () => void;
   errorMessage: string | null;
   lang: string;
+  onAuthRequest: () => void;
 };
 
-function FirstInputStep({ onSubmit, onNext, errorMessage, lang }: FirstInputStepProps) {
+function FirstInputStep({ onSubmit, onNext, errorMessage, lang, onAuthRequest }: FirstInputStepProps) {
   return (
     <FirstScreen
       key={`first-screen-${lang}`}
       onSubmit={onSubmit}
       onNext={onNext}
       errorMessage={errorMessage}
+      onAuthRequest={onAuthRequest}
     />
   );
 }

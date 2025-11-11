@@ -61,6 +61,9 @@ export function useWizardSteps(initialStep: Step = "preIntro") {
     }
     const stored = readWizardState();
     if (stored?.step && isStep(stored.step)) {
+      // We intentionally restore the step after hydration to avoid SSR/CSR mismatch.
+      // This mirrors a subscription-style update and runs only once.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalStep(stored.step as Step);
     }
   }, []);
