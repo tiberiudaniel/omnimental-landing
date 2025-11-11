@@ -521,7 +521,97 @@ function PageContent() {
             }}
           />
         )}
-        <div>{stepContent}</div>
+        {step === "firstInput" ? (
+          <div className="mx-auto mb-3 max-w-4xl text-right">
+            <button
+              type="button"
+              className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] underline underline-offset-2 hover:text-[#E60012]"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  const confirmed = window.confirm(
+                    lang === "ro"
+                      ? "Vrei să o iei de la capăt?"
+                      : "Do you want to start over?",
+                  );
+                  if (!confirmed) {
+                    void recordWizardResetCanceled();
+                    return;
+                  }
+                }
+                try {
+                  clearWizardState();
+                } catch {}
+                void recordWizardReset();
+                if (typeof window !== "undefined") {
+                  const params = new URLSearchParams(searchParams?.toString() ?? "");
+                  params.set("step", "preIntro");
+                  params.set("reset", "1");
+                  const qs = params.toString();
+                  window.location.assign(qs ? `/?${qs}` : "/");
+                }
+              }}
+            >
+              {lang === "ro" ? "Resetează parcursul" : "Reset journey"}
+            </button>
+          </div>
+        ) : null}
+        <WizardRouter
+          step={step}
+          lang={lang}
+          navigateToStep={navigateToStep}
+          onFirstInputSubmit={submitFirstInput}
+          onAuthRequest={openAccountModal}
+          firstInputError={saveError}
+          reflectionPromptLines={reflectionOneLines}
+          reflectionSummaryLines={reflectionSummaryLines}
+          intentCategories={intentCategories}
+          intentSelectionTotal={intentSelectionTotal}
+          categoryLabels={categoryLabels}
+          minSelection={MIN_INTENT_SELECTIONS}
+          maxSelection={MAX_INTENT_SELECTIONS}
+          words={adaptiveCloudWords}
+          cloudKey={adaptiveCloudKey}
+          onIntentComplete={handleIntentComplete}
+          isSavingIntent={isSavingIntentSnapshot}
+          saveError={saveError}
+          savingLabel={savingGenericLabel}
+          urgency={intentUrgency}
+          setUrgency={setIntentUrgency}
+          resolutionSpeed={resolutionSpeed}
+          setResolutionSpeed={setResolutionSpeed}
+          determination={determination}
+          setDetermination={setDetermination}
+          timeCommitmentHours={timeCommitmentHours}
+          setTimeCommitmentHours={setTimeCommitmentHours}
+          budgetPreference={budgetPreference}
+          setBudgetPreference={setBudgetPreference}
+          goalType={goalType}
+          setGoalType={setGoalType}
+          emotionalState={emotionalState}
+          setEmotionalState={setEmotionalState}
+          groupComfort={groupComfort}
+          setGroupComfort={setGroupComfort}
+          learnFromOthers={learnFromOthers}
+          setLearnFromOthers={setLearnFromOthers}
+          scheduleFit={scheduleFit}
+          setScheduleFit={setScheduleFit}
+          onIntentSummaryContinue={() => void handleIntentSummaryComplete(intentUrgency)}
+          profile={profile}
+          showAccountPrompt={showAccountPrompt}
+          onAccountRequestCards={openAccountModal}
+          recommendedPath={recommendedPath}
+          recommendedBadgeLabel={recommendedBadgeLabel}
+          onCardSelect={handleCardSelect}
+          isSavingChoice={isSavingJourney}
+          savingChoiceType={journeySavingChoice}
+          cardsSavingLabel={savingChoiceLabel}
+          recommendationReasonKey={recommendationReasonKey}
+          journalEntry={journalEntry}
+          formatPreference={formatPreference}
+          selectedCard={selectedCard}
+          onReturnToOrigin={returnTo ? handleReturnToOrigin : undefined}
+          returnLabel={lang === "ro" ? "Înapoi la progres" : "Back to progress"}
+        />
       </main>
     </div>
   );
