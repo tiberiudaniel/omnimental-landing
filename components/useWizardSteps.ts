@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { readWizardState, writeWizardState } from "./wizardStorage";
 
 export type Step =
   | "preIntro"
@@ -34,6 +35,7 @@ export function useWizardSteps(initialStep: Step = "preIntro") {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialParamStep = searchParams?.get("step");
+  const hasQueryStepRef = useRef(isStep(initialParamStep));
   const [localStep, setLocalStep] = useState<Step>(
     isStep(initialParamStep) ? (initialParamStep as Step) : initialStep,
   );
@@ -52,6 +54,20 @@ export function useWizardSteps(initialStep: Step = "preIntro") {
     },
     [router, searchParams],
   );
+
+  useEffect(() => {
+    if (hasQueryStepRef.current) {
+      return;
+    }
+    const stored = readWizardState();
+    if (stored?.step && isStep(stored.step)) {
+      setLocalStep(stored.step as Step);
+    }
+  }, []);
+
+  useEffect(() => {
+    writeWizardState({ step });
+  }, [step]);
 
   return { step, goToStep };
 }

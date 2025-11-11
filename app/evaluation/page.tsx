@@ -14,26 +14,11 @@ import OmniIntentForm from "../../components/OmniIntentForm";
 import OmniKnowledgeQuiz from "../../components/OmniKnowledgeQuiz";
 
 const TAB_ITEMS = [
-  {
-    key: "oi",
-    label: "Omni-Intel",
-    description: "Stare integrativă",
-  },
-  {
-    key: "oc",
-    label: "Omni-Cuno",
-    description: "Cunoaștere & concepte",
-  },
-  {
-    key: "oa",
-    label: "Omni-Abil",
-    description: "Abilități practice",
-  },
-  {
-    key: "os",
-    label: "Omni-Scop",
-    description: "Scop & intenție",
-  },
+  { key: "os", label: "Omni-Scop", description: "Scop & intenție" },
+  { key: "oc", label: "Omni-Cuno", description: "Cunoaștere & concepte" },
+  { key: "ose", label: "Omni-Sensei", description: "Mentorat & ghidaj" },
+  { key: "oa", label: "Omni-Abil", description: "Abilități practice" },
+  { key: "oi", label: "Omni-Intel", description: "Stare integrativă" },
 ] as const;
 
 function LockedModuleCard({ title, description }: { title: string; description: string }) {
@@ -54,27 +39,39 @@ function EvaluationContent() {
   const { profile } = useProfile();
   const { lang } = useI18n();
   const normalizedLang: "ro" | "en" = lang === "en" ? "en" : "ro";
-  const [activeTab, setActiveTab] = useState<(typeof TAB_ITEMS)[number]["key"]>("oi");
+  const [activeTab, setActiveTab] = useState<(typeof TAB_ITEMS)[number]["key"]>(TAB_ITEMS[0].key);
   const accessTier = profile?.accessTier ?? "member"; // default to member access during development
   const isMember = accessTier !== "public";
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case "oi": {
-        return (
-          <>
-            <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-10 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px]">
-              <EvaluationForm mode="intelOnly" onSubmitted={() => setActiveTab("oc")} />
-            </div>
-            <EvaluationTrend />
-          </>
+      case "os":
+        return isMember ? (
+          <div className="rounded-[16px] border border-[#D8C6B6] bg-white/95 px-8 py-8 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
+            <OmniIntentForm lang={normalizedLang} />
+          </div>
+        ) : (
+          <LockedModuleCard
+            title={lang === "ro" ? "Omni-Scop" : "Omni-Intent"}
+            description={
+              lang === "ro"
+                ? "Disponibil doar membrilor programului."
+                : "Available for members of the program."
+            }
+          />
         );
-      }
       case "oc":
         return (
           <div className="rounded-[16px] border border-[#D8C6B6] bg-white/95 px-8 py-8 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
             <OmniKnowledgeQuiz lang={normalizedLang} />
           </div>
+        );
+      case "ose":
+        return (
+          <LockedModuleCard
+            title="Omni-Sensei"
+            description="Modulul de mentorat ghidat este în curs de activare. Va deveni activ în versiunea următoare."
+          />
         );
       case "oa":
         return isMember ? (
@@ -91,21 +88,16 @@ function EvaluationContent() {
             }
           />
         );
-      case "os":
-        return isMember ? (
-          <div className="rounded-[16px] border border-[#D8C6B6] bg-white/95 px-8 py-8 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
-            <OmniIntentForm lang={normalizedLang} />
-          </div>
-        ) : (
-          <LockedModuleCard
-            title={lang === "ro" ? "Omni-Scop" : "Omni-Intent"}
-            description={
-              lang === "ro"
-                ? "Disponibil doar membrilor programului."
-                : "Available for members of the program."
-            }
-          />
+      case "oi": {
+        return (
+          <>
+            <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-10 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px]">
+              <EvaluationForm mode="intelOnly" onSubmitted={() => setActiveTab("oc")} />
+            </div>
+            <EvaluationTrend />
+          </>
         );
+      }
       default:
         return null;
     }
