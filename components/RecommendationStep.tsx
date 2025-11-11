@@ -7,6 +7,7 @@ import { useI18n } from "./I18nProvider";
 import { RecommendationSummary } from "@/components/RecommendationSummary";
 import { buildIndicatorSummary } from "@/lib/indicators";
 import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
+import CTAButton from "./CTAButton";
 import type {
   BudgetPreference,
   ResolutionSpeed,
@@ -127,6 +128,10 @@ export function RecommendationStep(props: Props) {
   } = props;
 
   const { t, lang } = useI18n();
+  const getCopy = (key: string, fallback: string) => {
+    const value = t(key);
+    return typeof value === "string" ? value : fallback;
+  };
   const loadLevelsValue = t("intentSummaryLoadLevels");
   const loadLevels =
     loadLevelsValue && typeof loadLevelsValue === "object"
@@ -227,6 +232,47 @@ export function RecommendationStep(props: Props) {
     themes: summaryThemes,
   });
 
+  const followUpTitle = getCopy(
+    "recommendationFollowUpTitle",
+    lang === "ro" ? "Primește rezumatul pe email" : "Get the recap via email",
+  );
+  const followUpBody = getCopy(
+    "recommendationFollowUpBody",
+    lang === "ro"
+      ? "Îți trimitem recomandarea și un micro-plan pentru următoarele 24h."
+      : "We’ll send the recommendation plus a micro plan for the next 24h.",
+  );
+  const followUpButton = getCopy(
+    "recommendationFollowUpButton",
+    lang === "ro" ? "Trimite-mi rezumatul" : "Email me the recap",
+  );
+  const followUpHint = getCopy(
+    "recommendationFollowUpHint",
+    lang === "ro"
+      ? "Un singur email. Poți răspunde oricând."
+      : "One email only. Reply whenever you need.",
+  );
+  const followUpDialogTitle = getCopy(
+    "recommendationFollowUpDialogTitle",
+    lang === "ro" ? "Trimite rezumatul pe email" : "Send me the recap",
+  );
+  const followUpDialogDescription = getCopy(
+    "recommendationFollowUpDialogDescription",
+    lang === "ro"
+      ? "Primești rezumatul, indicatorii și următorii pași în câteva minute."
+      : "Get the summary, indicators, and next steps in minutes.",
+  );
+  const followUpSuccess = getCopy(
+    "recommendationFollowUpSuccess",
+    lang === "ro"
+      ? "Gata. Rezumatul ajunge în inbox imediat."
+      : "Done. The recap is already on its way.",
+  );
+  const followUpSubmit = getCopy(
+    "recommendationFollowUpSubmit",
+    lang === "ro" ? "Trimite rezumatul" : "Send recap",
+  );
+
   return (
     <section className="bg-[#FDFCF9] px-4 py-12">
       <div className="mx-auto max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
@@ -309,6 +355,24 @@ export function RecommendationStep(props: Props) {
             language={lang === "en" ? "en" : "ro"}
             summaryMessage={summaryMessage}
           />
+          <div className="mt-10 rounded-[18px] border border-[#E4D8CE] bg-[#FFFBF7] px-5 py-5 text-left shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-base font-semibold text-[#2C2C2C]">{followUpTitle}</p>
+                <p className="mt-1 text-sm text-[#4A3A30]/80">{followUpBody}</p>
+              </div>
+              <CTAButton
+                text={followUpButton}
+                dialogTitle={followUpDialogTitle}
+                dialogDescription={followUpDialogDescription}
+                successMessage={followUpSuccess}
+                submitLabel={followUpSubmit}
+              />
+            </div>
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">
+              {followUpHint}
+            </p>
+          </div>
         </div>
       </div>
     </section>

@@ -20,6 +20,19 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Wizard Funnel Notes
+
+- The onboarding wizard persists its state (journal entry, cloud selections, evaluation answers, and current step) in `localStorage` via `components/wizardStorage.ts`.
+- `useWizardData` + `useWizardSteps` hydrate from storage on mount and write back after each change; storage clears automatically after a journey choice is saved.
+- `components/WizardProgress.tsx` renders the responsive milestone header + linear progress bar on every step beyond the intro animation.
+- `components/RecommendationStep.tsx` now ends with a follow-up CTA (“Email me the recap”) that reuses `components/CTAButton` and writes to the `signups` collection.
+
+### QA Checklist
+
+1. Fill the wizard, refresh, and confirm inputs persist.
+2. Complete the flow and check `localStorage.getItem("omnimental_wizard_state_v1")` is `null`.
+3. Submit the recap CTA and verify the new entry in Firestore.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
