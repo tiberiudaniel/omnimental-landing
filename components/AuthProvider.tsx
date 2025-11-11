@@ -72,7 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn("Failed to parse stored auth context", error);
       }
     }
-    let email = stored?.email ?? null;
+    const url = new URL(window.location.href);
+    const emailFromUrl = url.searchParams.get("auth_email");
+    let email = emailFromUrl ?? stored?.email ?? null;
     if (!email) {
       const promptValue = window.prompt("Introduce emailul folosit pentru autentificare");
       email = promptValue ? promptValue.trim() : null;
@@ -88,7 +90,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else {
             window.localStorage.removeItem(KEEP_SIGNED_IN_KEY);
           }
-          window.history.replaceState({}, document.title, window.location.pathname);
+          // Clean up query params (remove auth_email and oob params)
+          try {
+            const clean = new URL(window.location.origin + window.location.pathname);
+            window.history.replaceState({}, document.title, clean.toString());
+          } catch {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
         })
         .catch((error) => {
           console.error("Email link sign-in failed", error);
@@ -127,13 +135,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSendingLink(true);
     try {
       const auth = getFirebaseAuth();
+      const base =
+        process.env.NEXT_PUBLIC_FIREBASE_AUTH_CONTINUE_URL ??
+        (typeof window !== "undefined" ? window.location.origin : undefined) ??
+        "http://localhost:3000";
+      // Append email to the continue URL so cross-device flows don't rely on prompt
+      let continueUrl = base;
+      try {
+        const u = new URL(base);
+        u.searchParams.set("auth_email", trimmed);
+        continueUrl = u.toString();
+      } catch {
+        // fall back to base if URL parsing fails
+      }
       const actionCodeSettings = {
-        url:
-          process.env.NEXT_PUBLIC_FIREBASE_AUTH_CONTINUE_URL ??
-          (typeof window !== "undefined" ? window.location.origin : undefined) ??
-          "http://localhost:3000",
+        url: continueUrl,
         handleCodeInApp: true,
-      };
+      } as const;
       await sendSignInLinkToEmail(auth, trimmed, actionCodeSettings);
       if (typeof window !== "undefined") {
         const payload: StoredAuthContext = { email: trimmed, remember };

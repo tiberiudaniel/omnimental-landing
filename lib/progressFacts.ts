@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   setDoc,
   where,
+  increment,
 } from "firebase/firestore";
 import { ensureAuth, getDb } from "./firebase";
 import type {
@@ -25,6 +26,11 @@ import type { SessionType } from "./recommendation";
 import type { DimensionScores } from "./scoring";
 import type { OmniBlock } from "./omniIntel";
 import { computeDirectionMotivationIndex, computeOmniIntelScore } from "./omniIntel";
+
+// Allow nested partials for OmniBlock patches
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
 
 export type ProgressIntentCategories = Array<{ category: string; count: number }>;
 
@@ -309,9 +315,12 @@ export async function backfillProgressFacts(profileId: string) {
         determination: evaluationAnswers?.determination ?? 3,
         hoursPerWeek: evaluationAnswers?.hoursPerWeek ?? 0,
       });
-      const knowledgeIndex = typeof (knowledge as any)?.percent === "number" ? (knowledge as any).percent : 0;
+  type MaybeKnowledge = { percent?: number } | null | undefined;
+  const knowledgePercent = (knowledge as MaybeKnowledge)?.percent;
+  const knowledgeIndex = typeof knowledgePercent === "number" ? knowledgePercent : 0;
       const skillsIndex = 0;
-      const consistencyIndex = 0;
+      // Simple fallback consistency: if we have any evaluation/snapshot, set small non-zero
+      const consistencyIndex = (answers && Object.keys(answers).length > 0) || tags.length > 0 ? 10 : 0;
       const omniIntelScore = computeOmniIntelScore({
         knowledgeIndex,
         skillsIndex,
@@ -465,6 +474,11 @@ export async function recordQuestProgressFact(payload: {
         completed: false,
       })),
     },
+    omni: {
+      sensei: {
+        unlocked: true,
+      },
+    },
   });
 }
 
@@ -488,6 +502,58 @@ export async function recordRecommendationProgressFact(payload: {
           : null,
       dimensionScores: payload.dimensionScores ?? null,
       updatedAt: serverTimestamp(),
+    },
+  });
+}
+
+// Patch partial Omni block (deep merge). Useful to update knowledgeIndex/skills/unlocks.
+export async function recordOmniPatch(patch: DeepPartial<OmniBlock>) {
+  return mergeProgressFact({
+    omni: patch,
+  });
+}
+
+// Record a simple ability practice event and bump skills counters.
+export async function recordAbilityPracticeFact(payload: { exercise: string }) {
+  // For dev: bump exercisesCompletedCount and skillsIndex heuristically
+  return mergeProgressFact({
+    abilityLog: {
+      lastExercise: payload.exercise,
+      updatedAt: serverTimestamp(),
+    },
+    omni: {
+      abil: {
+        // increment counters; in dev we also bump skillsIndex by +3 (capped in UI/backfill)
+        exercisesCompletedCount: increment(1) as unknown as number,
+        skillsIndex: increment(3) as unknown as number,
+        unlocked: true,
+      },
+    },
+  });
+}
+
+// Mark a quest completion: increments completed count and unlocks Abil.
+export async function recordQuestCompletion() {
+  return mergeProgressFact({
+    omni: {
+      sensei: {
+        completedQuestsCount: increment(1) as unknown as number,
+      },
+      abil: {
+        unlocked: true,
+      },
+    },
+  });
+}
+
+// Ping consistency (active day) and bump consistencyIndex heuristically.
+export async function recordConsistencyPing() {
+  return mergeProgressFact({
+    omni: {
+      intel: {
+        evaluationsCount: increment(0) as unknown as number,
+        consistencyIndex: increment(2) as unknown as number,
+      },
     },
   });
 }

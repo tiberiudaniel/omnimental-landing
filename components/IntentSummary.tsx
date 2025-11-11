@@ -3,6 +3,7 @@
 import { useState } from "react";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
+import { getString as i18nGetString } from "@/lib/i18nGetString";
 import type {
   GoalType,
   EmotionalState,
@@ -100,30 +101,31 @@ export default function IntentSummary({
 
   const getString = (value: unknown, fallback: string) =>
     typeof value === "string" ? value : fallback;
+  const getText = (key: string, fallback: string) => i18nGetString(t, key, fallback);
 
-  const title = getString(
-    t("intentSummaryTitle"),
+  const title = getText(
+    "intentSummaryTitle",
     lang === "ro" ? "Analiza preferințelor tale" : "Your evaluation summary",
   );
-  const description = getString(
-    t("intentSummaryDescription"),
+  const description = getText(
+    "intentSummaryDescription",
     lang === "ro"
       ? "În câțiva pași aflăm ce ți se potrivește mai bine acum."
       : "A few guided steps to understand what fits you best.",
   );
-  const urgencyQuestion = getString(
-    t("intentSummaryIntensityQuestion"),
+  const urgencyQuestion = getText(
+    "intentSummaryIntensityQuestion",
     lang === "ro"
       ? "Cât de urgent simți să lucrezi la aceste teme?"
       : "How urgent does it feel to work on these themes?",
   );
-  const urgencyLow = getString(t("intentSummaryIntensityLow"), lang === "ro" ? "Mai calm" : "Calm");
-  const urgencyHigh = getString(
-    t("intentSummaryIntensityHigh"),
+  const urgencyLow = getText("intentSummaryIntensityLow", lang === "ro" ? "Mai calm" : "Calm");
+  const urgencyHigh = getText(
+    "intentSummaryIntensityHigh",
     lang === "ro" ? "Foarte urgent" : "Very urgent",
   );
-  const timeSuffix = getString(
-    t("intentSummaryTimeSuffix"),
+  const timeSuffix = getText(
+    "intentSummaryTimeSuffix",
     lang === "ro" ? "ore/săptămână" : "hrs/week",
   );
   const progressPercentage = ((step + 1) / TOTAL_STEPS) * 100;
@@ -167,8 +169,8 @@ export default function IntentSummary({
             </div>
             <div>
               <p className="text-sm font-medium text-[#2C2C2C]">
-                {getString(
-                  t("intentSummarySpeedQuestion"),
+                {getText(
+                  "intentSummarySpeedQuestion",
                   lang === "ro"
                     ? "Cât de repede vrei să simți mai multă liniște?"
                     : "How quickly do you want to feel more regulated?",
@@ -229,8 +231,8 @@ export default function IntentSummary({
           <div className="space-y-6">
             <div>
               <p className="text-sm font-medium text-[#2C2C2C]">
-                {getString(
-                  t("intentSummaryTimeQuestion"),
+                {getText(
+                  "intentSummaryTimeQuestion",
                   lang === "ro"
                     ? "Cât timp pe săptămână poți investi în mod realist?"
                     : "How much weekly time can you realistically invest?",
@@ -251,8 +253,8 @@ export default function IntentSummary({
             </div>
             <div>
               <p className="text-sm font-medium text-[#2C2C2C]">
-                {getString(
-                  t("intentSummaryBudgetQuestion"),
+                {getText(
+                  "intentSummaryBudgetQuestion",
                   lang === "ro"
                     ? "Ce buget este realist pentru această temă?"
                     : "What budget feels realistic for this goal?",

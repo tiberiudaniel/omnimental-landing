@@ -16,6 +16,19 @@ export default function AccountModal({ open, onClose }: AccountModalProps) {
   const [rememberMe, setRememberMe] = useState(true);
   const [status, setStatus] = useState<"idle" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
+  // Resolve i18n strings early to avoid TDZ issues in handlers
+  const eyebrow = t("accountModalEyebrow");
+  const heading = t("accountModalHeading");
+  const description = t("accountModalDescription");
+  const emailLabel = t("accountModalEmail");
+  const skipLabel = t("accountModalSkip");
+  const submitLabel = t("accountModalSubmit");
+  const savingLabel = t("accountModalSaving");
+  const placeholderEmail = t("accountModalEmailPlaceholder");
+  const errorMessageFallback = t("accountModalError");
+  const rememberLabel = t("accountModalRememberLabel");
+  const successTitle = t("accountModalSuccessTitle");
+  const successBody = t("accountModalSuccessBody");
 
   if (!open) {
     return null;
@@ -32,24 +45,11 @@ export default function AccountModal({ open, onClose }: AccountModalProps) {
     } catch (err) {
       const fallback =
         typeof errorMessageFallback === "string"
-          ? errorMessageFallback
+          ? (errorMessageFallback as string)
           : "Nu am reușit să trimitem linkul de autentificare.";
       setError(err instanceof Error ? err.message : fallback);
     }
   };
-
-  const eyebrow = t("accountModalEyebrow");
-  const heading = t("accountModalHeading");
-  const description = t("accountModalDescription");
-  const emailLabel = t("accountModalEmail");
-  const skipLabel = t("accountModalSkip");
-  const submitLabel = t("accountModalSubmit");
-  const savingLabel = t("accountModalSaving");
-  const placeholderEmail = t("accountModalEmailPlaceholder");
-  const errorMessageFallback = t("accountModalError");
-  const rememberLabel = t("accountModalRememberLabel");
-  const successTitle = t("accountModalSuccessTitle");
-  const successBody = t("accountModalSuccessBody");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">

@@ -1,24 +1,20 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+## Development
 
-First, run the development server:
+1) Environment
+- Enable Firebase Auth: Email link (passwordless)
+- Add app origin to Firebase Auth “Authorized domains”
+- `.env.local` must include Firebase config and:
+  - `NEXT_PUBLIC_FIREBASE_AUTH_CONTINUE_URL` = app origin (e.g. http://localhost:3000)
 
+2) Install & run
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open http://localhost:3000 to view the app.
 
 ## Wizard Funnel Notes
 
@@ -40,6 +36,14 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 2. Complete the flow and check `localStorage.getItem("omnimental_wizard_state_v1")` is `null`.
 3. Submit the recap CTA and verify the new entry in Firestore.
 
+## Scripts
+
+- `npm run dev` — start development
+- `npm run build` — production build
+- `npm start` — run production build
+- `npm run lint` — lint project
+- `npm run test:logic` — run logic tests (scoring/recommendation/consistency)
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
@@ -51,6 +55,14 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1) Create a Vercel project from this repo
+2) Add Environment Variables (NEXT_PUBLIC_* Firebase + NEXT_PUBLIC_FIREBASE_AUTH_CONTINUE_URL)
+3) Publish Firestore rules (firestore.rules) in Firebase Console
+4) Deploy main branch
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+CLI alternative:
+```bash
+vercel link
+vercel env pull .env.local
+vercel --prod
+```

@@ -17,28 +17,34 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
-    // Snapshots and journeys: allow any authenticated user to read/write in dev.
+    // Snapshots and journeys: owner-only access. Allow create if profileId matches auth uid.
     // Accept either `evaluation` or legacy `answers`, and flexible timestamps.
     match /userIntentSnapshots/{docId} {
-      allow read, write: if signedIn();
+      allow create: if signedIn() && request.resource.data.profileId == request.auth.uid;
+      allow read, update, delete: if signedIn() && resource.data.profileId == request.auth.uid;
     }
 
     match /userJourneys/{docId} {
-      allow read, write: if signedIn();
+      allow create: if signedIn() && request.resource.data.profileId == request.auth.uid;
+      allow read, update, delete: if signedIn() && resource.data.profileId == request.auth.uid;
     }
 
     // Assessments: allow read/write for signed-in users in dev.
     match /userAbilityAssessments/{docId} {
-      allow read, write: if signedIn();
+      allow create: if signedIn() && request.resource.data.profileId == request.auth.uid;
+      allow read, update, delete: if signedIn() && resource.data.profileId == request.auth.uid;
     }
     match /userIntentAssessments/{docId} {
-      allow read, write: if signedIn();
+      allow create: if signedIn() && request.resource.data.profileId == request.auth.uid;
+      allow read, update, delete: if signedIn() && resource.data.profileId == request.auth.uid;
     }
     match /userKnowledgeAssessments/{docId} {
-      allow read, write: if signedIn();
+      allow create: if signedIn() && request.resource.data.profileId == request.auth.uid;
+      allow read, update, delete: if signedIn() && resource.data.profileId == request.auth.uid;
     }
     match /userQuestSuggestions/{docId} {
-      allow read, write: if signedIn();
+      allow create: if signedIn() && request.resource.data.profileId == request.auth.uid;
+      allow read, update, delete: if signedIn() && resource.data.profileId == request.auth.uid;
     }
 
     // Suggestions/inputs: relax limits during dev; require auth only.
@@ -55,8 +61,11 @@ service cloud.firestore {
       allow read, write: if signedIn();
     }
 
-    // Public signups collection can be open.
+    // Public signups and unsubscribes can be open.
     match /signups/{doc} {
+      allow create: if true;
+    }
+    match /emailUnsubscribes/{doc} {
       allow create: if true;
     }
 

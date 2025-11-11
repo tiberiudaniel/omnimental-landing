@@ -2,6 +2,7 @@
 
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
+import { getString } from "@/lib/i18nGetString";
 
 interface JourneyIntroProps {
   onStart: () => void;
@@ -9,26 +10,11 @@ interface JourneyIntroProps {
 
 export default function JourneyIntro({ onStart }: JourneyIntroProps) {
   const { t } = useI18n();
-  const titleValue = t("journeyIntroTitle");
-  const bodyValue = t("journeyIntroBody");
-  const buttonValue = t("journeyIntroButton");
+  const title = getString(t, "journeyIntroTitle", "Antrenează-ți mintea. Începe mini-evaluarea ta.");
+  const body = getString(t, "journeyIntroBody", "3–4 pași rapizi. La final primești o recomandare");
+  const buttonLabel = getString(t, "journeyIntroButton", "Începe mini-evaluarea");
   const bulletsValue = t("journeyIntroBullets");
-  const microcopyValue = t("journeyIntroMicrocopy");
-
-  const title =
-    typeof titleValue === "string" && titleValue.trim().length > 0
-      ? titleValue
-      : "Antrenează-ți mintea. Începe mini-evaluarea ta.";
-  const body =
-    typeof bodyValue === "string" && bodyValue.trim().length > 0
-      ? bodyValue
-      : "3–4 pași rapizi. La final primești o recomandare";
-  const buttonLabel =
-    typeof buttonValue === "string" && buttonValue.trim().length > 0
-      ? buttonValue
-      : "Începe mini-evaluarea";
-  const bullets =
-    Array.isArray(bulletsValue)
+  const bullets = Array.isArray(bulletsValue)
       ? bulletsValue.filter(
           (entry): entry is string => typeof entry === "string" && entry.trim().length > 0,
         )
@@ -37,10 +23,7 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
           "Recomandare personalizată, nu generalități",
           "Fără spam. Poți ieși oricând",
         ];
-  const microcopy =
-    typeof microcopyValue === "string" && microcopyValue.trim().length > 0
-      ? microcopyValue
-      : "Este simplu și durează doar 2 minute.";
+  const microcopy = getString(t, "journeyIntroMicrocopy", "Este simplu și durează doar 2 minute.");
 
   return (
     <section id="intro" className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">

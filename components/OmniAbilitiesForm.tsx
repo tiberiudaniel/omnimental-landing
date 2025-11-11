@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { computeOmniAbilities, type OmniAbilityLevels } from "@/lib/omniAbilities";
 import { submitOmniAbilitiesAssessment } from "@/lib/submitEvaluation";
+import { recordAbilityPracticeFact, recordOmniPatch } from "@/lib/progressFacts";
 
 const levelLabels = ["0", "1", "2", "3"];
 
@@ -63,6 +64,10 @@ export default function OmniAbilitiesForm({ lang }: Props) {
         },
         inputs: levels,
       });
+      // Dev: bump skillsIndex minimally and mark Abil unlocked
+      try {
+        await recordOmniPatch({ abil: { unlocked: true } });
+      } catch {}
       setMessage(
         lang === "ro"
           ? "Scorul Omni-Abilități a fost salvat."
@@ -129,6 +134,32 @@ export default function OmniAbilitiesForm({ lang }: Props) {
             </label>
           ))}
         </div>
+      </section>
+
+      {/* Minimal practice logger (dev): marks one practice and bumps skillsIndex */}
+      <section className="space-y-3 rounded-[16px] border border-[#E4D8CE] bg-[#FFFBF7] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <p className="text-sm font-semibold text-[#1F1F1F]">
+          {lang === "ro" ? "Practică rapidă" : "Quick practice"}
+        </p>
+        <p className="text-xs text-[#5C4F45]">
+          {lang === "ro"
+            ? "Marchează un exercițiu finalizat (ex. micro‑pauză 2’)."
+            : "Mark one completed exercise (e.g., 2’ micro‑break)."}
+        </p>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await recordAbilityPracticeFact({ exercise: "quick-log" });
+              setMessage(lang === "ro" ? "Exercițiul a fost marcat." : "Practice logged.");
+            } catch {
+              setMessage(lang === "ro" ? "Nu am putut marca." : "Could not log.");
+            }
+          }}
+          className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+        >
+          {lang === "ro" ? "Marchează exercițiu" : "Log practice"}
+        </button>
       </section>
 
       <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">

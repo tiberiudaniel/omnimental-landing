@@ -12,6 +12,9 @@ const { computeDimensionScores } = loadTsModule(
 const { recommendSession } = loadTsModule(
   path.resolve(__dirname, "../lib/recommendation.ts"),
 );
+const { computeConsistencyIndexFromDates } = loadTsModule(
+  path.resolve(__dirname, "../lib/omniIntel.ts"),
+);
 
 test("computeOmniKnowledgeScore returns perfect score when all answers correct", () => {
   const answers = {};
@@ -114,4 +117,15 @@ test("computeDimensionScores handles empty input and low urgency", () => {
   const scores = computeDimensionScores([], 2);
   assert.equal(scores.calm, 0);
   assert.equal(scores.focus, 0);
+});
+
+test("computeConsistencyIndexFromDates computes distinct days ratio over 14 days", () => {
+  const now = new Date();
+  const days = (n) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000);
+  const dates = [days(0), days(1), days(1), days(2), days(10), days(20)];
+  const score = computeConsistencyIndexFromDates(dates);
+  // days within last 14: 0,1,2,10 => 4 distinct; 4/14 ~= 28.6% -> rounds near 29
+  if (!(score >= 25 && score <= 35)) {
+    throw new Error(`unexpected consistency score ${score}`);
+  }
 });

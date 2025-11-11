@@ -31,6 +31,8 @@ export default function SiteHeader({
     typeof signInLabelValue === "string" ? signInLabelValue : "Conectează-te";
   const signOutLabel =
     typeof signOutLabelValue === "string" ? signOutLabelValue : "Deconectează-te";
+  const unsubscribeLabelValue = t("headerUnsubscribe");
+  const unsubscribeLabel = typeof unsubscribeLabelValue === "string" ? unsubscribeLabelValue : (lang === "ro" ? "Dezabonare" : "Unsubscribe");
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 shadow">
@@ -57,6 +59,12 @@ export default function SiteHeader({
           className="hidden rounded-full border border-[#2C2C2C] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:bg-[#2C2C2C] hover:text-white sm:inline-flex"
         >
           {progressLabel}
+        </Link>
+        <Link
+          href="/unsubscribe"
+          className="rounded-full border border-transparent px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#A08F82] transition hover:text-[#E60012]"
+        >
+          {unsubscribeLabel}
         </Link>
         {/* Auth status pill (dev helper) */}
         <span

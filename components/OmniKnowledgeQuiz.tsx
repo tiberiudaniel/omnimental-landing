@@ -7,7 +7,7 @@ import {
   type OmniKnowledgeScores,
 } from "@/lib/omniKnowledge";
 import { submitOmniKnowledgeAssessment } from "@/lib/submitEvaluation";
-import { recordKnowledgeViewSummary } from "@/lib/progressFacts";
+import { recordKnowledgeViewSummary, recordOmniPatch } from "@/lib/progressFacts";
 
 const buildDefaultAnswers = () => {
   const map: Record<string, number | null> = {};
@@ -104,6 +104,14 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
       });
       setLastDurationMs(durationMs);
       setFlagSuspicious(suspicious);
+      // Patch Omni: knowledgeIndex + mark at least one test completed
+      try {
+        await recordOmniPatch({
+          kuno: { knowledgeIndex: score.percent, completedTests: 1 },
+        });
+      } catch (patchErr) {
+        console.warn("omni patch (knowledgeIndex) failed", patchErr);
+      }
       setMessage(
         lang === "ro"
           ? "Scorul Omni-Cunoaștere a fost salvat."

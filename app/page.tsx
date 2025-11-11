@@ -30,6 +30,8 @@ import type { DimensionScores } from "../lib/scoring";
 import { recommendSession, type SessionType } from "../lib/recommendation";
 // duplicate import cleanup
 import { generateAdaptiveIntentCloudWords, type IntentCloudWord } from "@/lib/intentExpressions";
+import { useWindowWidth } from "@/lib/useWindowSize";
+import { getString as i18nGetString } from "@/lib/i18nGetString";
 
 const MIN_INTENT_SELECTIONS = 5;
 const MAX_INTENT_SELECTIONS = 7;
@@ -104,26 +106,13 @@ function PageContent() {
   const [recommendedPath, setRecommendedPath] = useState<SessionType>("group");
   const [recommendationReasonKey, setRecommendationReasonKey] =
     useState<string>("reason_default");
-  const [cloudWordCount, setCloudWordCount] = useState(25);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const compute = () => {
-      const width = window.innerWidth;
-      if (width < 640) {
-        setCloudWordCount(18);
-      } else if (width < 1024) {
-        setCloudWordCount(22);
-      } else {
-        setCloudWordCount(25);
-      }
-    };
-    compute();
-    window.addEventListener("resize", compute);
-    return () => window.removeEventListener("resize", compute);
-  }, []);
+  const viewportWidth = useWindowWidth();
+  const cloudWordCount = useMemo(() => {
+    if (viewportWidth === 0) return 25;
+    if (viewportWidth < 640) return 18;
+    if (viewportWidth < 1024) return 22;
+    return 25;
+  }, [viewportWidth]);
 
   const adaptiveCloudWords = useMemo(
     () =>
@@ -224,7 +213,7 @@ function PageContent() {
   );
 
   const navLinks = useNavigationLinks();
-  const getLabel = (key: string) => getTranslationString(t, key, key);
+  const getLabel = (key: string) => i18nGetString(t, key, key);
 
   const handleIntentComplete = useCallback(
     (result: IntentCloudResult) => {
@@ -295,12 +284,7 @@ function PageContent() {
     dismissAccountPrompt();
   };
 
-  // Auto-open account modal when the funnel requires authentication
-  useEffect(() => {
-    if (showAccountPrompt && !accountModalOpen) {
-      openAccountModal();
-    }
-  }, [accountModalOpen, showAccountPrompt]);
+  // Render-driven open: the modal will be open if either explicit state is true
 
   const savingGenericLabel = lang === "ro" ? "Se salvează..." : "Saving...";
   const savingChoiceLabel = getTranslationString(
@@ -485,10 +469,10 @@ function PageContent() {
         onAuthRequest={openAccountModal}
       />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-      {accountModalOpen ? (
+      {accountModalOpen || showAccountPrompt ? (
         <AccountModal
           key={accountModalKey}
-          open={accountModalOpen}
+          open={accountModalOpen || showAccountPrompt}
           onClose={handleAccountDismiss}
         />
       ) : null}
@@ -646,6 +630,7 @@ type IntentSummaryStepProps = {
   onLearnFromOthersChange: (value: number) => void;
   scheduleFit: number;
   onScheduleFitChange: (value: number) => void;
+  onAuthRequest: () => void;
 };
 
 function IntentSummaryStep({
@@ -673,6 +658,7 @@ function IntentSummaryStep({
   onLearnFromOthersChange,
   scheduleFit,
   onScheduleFitChange,
+  onAuthRequest,
 }: IntentSummaryStepProps) {
   return (
     <IntentSummary
@@ -700,6 +686,7 @@ function IntentSummaryStep({
       onLearnFromOthersChange={onLearnFromOthersChange}
       scheduleFit={scheduleFit}
       onScheduleFitChange={onScheduleFitChange}
+      onAuthRequest={onAuthRequest}
     />
   );
 }

@@ -131,18 +131,14 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
     });
     return options;
   }, [expressionLibrary]);
-  // Avoid SSR/CSR hydration mismatch: don't randomize on the server.
-  // Start empty, then populate on the client after hydration.
-  const [primaryOptions, setPrimaryOptions] = useState<LocalizedIntentExpression[]>([]);
-  const [isHydrated, setIsHydrated] = useState(false);
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-  useEffect(() => {
-    if (!isHydrated) return;
-    setPrimaryOptions(buildPrimaryOptions());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHydrated, buildPrimaryOptions]);
+  // Evită mismatch SSR/CSR: generează aleator doar pe client
+  const [primaryNonce, setPrimaryNonce] = useState(0);
+  const isClient = typeof window !== "undefined";
+  const primaryOptions = useMemo(() => {
+    // Touch refresh counter to intentionally re-run when it changes
+    void primaryNonce;
+    return isClient ? buildPrimaryOptions() : [];
+  }, [isClient, buildPrimaryOptions, primaryNonce]);
 
   const fallbackSuggestions = useMemo(() => {
     const suggestionPool = Array.isArray(suggestionValue) ? suggestionValue : [];
@@ -179,7 +175,7 @@ useEffect(() => {
       }
     };
 
-    const fetchSuggestions = async () => {
+  const fetchSuggestions = async () => {
       try {
         await ensureAuth();
         const collectionsToQuery = [PRIMARY_COLLECTION, ...FALLBACK_COLLECTIONS];
@@ -223,8 +219,8 @@ useEffect(() => {
   }, []);
 
   const placeholderText = useMemo(() => {
-    // Defer randomization until after hydration to avoid SSR/CSR mismatch
-    if (!isHydrated || !storedSuggestions.length) {
+    // Evită randomness în SSR: doar pe client folosim sugestii aleatorii
+    if (!isClient || !storedSuggestions.length) {
       return placeholderTemplate;
     }
     const selection = pickRandom(
@@ -235,7 +231,7 @@ useEffect(() => {
       return placeholderTemplate;
     }
     return `Ex: ${selection.join("; ")}`;
-  }, [isHydrated, placeholderTemplate, storedSuggestions]);
+  }, [isClient, placeholderTemplate, storedSuggestions]);
 
   const persistSuggestion = async (text: string) => {
     try {
@@ -352,7 +348,7 @@ useEffect(() => {
   };
 
   const handlePrimaryRefresh = () => {
-    setPrimaryOptions(buildPrimaryOptions());
+    setPrimaryNonce((n) => n + 1);
   };
 
   const suggestionContinueLabel =

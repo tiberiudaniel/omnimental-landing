@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { recordEvaluationTabChange } from "@/lib/progressFacts";
@@ -15,11 +15,17 @@ import { useProfile } from "../../components/ProfileProvider";
 import { useProgressFacts } from "../../components/useProgressFacts";
 import { useEvaluationTimeline } from "../../components/useEvaluationTimeline";
 import ProgressSparkline from "../../components/ProgressSparkline";
-import type { ProgressIntentCategories } from "@/lib/progressFacts";
+import ProgressTrends from "../../components/ProgressTrends";
+import LatestEntries from "../../components/LatestEntries";
+import type { ProgressIntentCategories, ProgressFact } from "@/lib/progressFacts";
 import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
 import Toast from "../../components/Toast";
-import { backfillProgressFacts } from "@/lib/progressFacts";
+import { backfillProgressFacts, recordQuestCompletion } from "@/lib/progressFacts";
 import { omniKnowledgeModules } from "@/lib/omniKnowledge";
+import { computeOmniIntelScore, computeConsistencyIndexFromDates } from "@/lib/omniIntel";
+import { recordOmniPatch } from "@/lib/progressFacts";
+import StickyMiniSummary from "../../components/StickyMiniSummary";
+import NextBestStep from "../../components/NextBestStep";
 import type { SessionType } from "@/lib/recommendation";
 import type { DimensionScores } from "@/lib/scoring";
 
@@ -61,6 +67,12 @@ const DIMENSION_LABELS: Record<DimensionKey, { ro: string; en: string }> = {
   performance: { ro: "Performanță & impact", en: "Performance & impact" },
   health: { ro: "Obiceiuri & sănătate", en: "Habits & health" },
 };
+
+function deriveSenseiUnlocked(p?: ProgressFact | null) {
+  const kunoCompleted = Number(p?.omni?.kuno?.completedTests ?? 0) >= 1;
+  const explicit = Boolean(p?.omni?.sensei?.unlocked);
+  return explicit || kunoCompleted;
+}
 
 const RETURN_TO_PROGRESS = "/progress";
 
@@ -126,7 +138,6 @@ function ProgressContent() {
   const router = useRouter();
   const { t, lang } = useI18n();
   const { profile } = useProfile();
-  const isParticipant = Boolean(profile?.id);
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [resyncing, setResyncing] = useState(false);
@@ -217,7 +228,21 @@ function ProgressContent() {
     return lang === "ro" ? "Scăzut" : "Low";
   }, [lang, progress?.intent?.urgency]);
 
-  const omniIntelScore = Number((progress as any)?.omni?.omniIntelScore ?? NaN);
+  const omniIntelScore = useMemo(() => {
+    const raw = Number(progress?.omni?.omniIntelScore ?? NaN);
+    if (Number.isFinite(raw)) return raw;
+    const k = Number(progress?.omni?.kuno?.knowledgeIndex ?? NaN);
+    const s = Number(progress?.omni?.abil?.skillsIndex ?? NaN);
+    const d = Number(progress?.omni?.scope?.directionMotivationIndex ?? NaN);
+    const c = Number(progress?.omni?.intel?.consistencyIndex ?? NaN);
+    if ([k, s, d, c].some((v) => Number.isNaN(v))) return NaN;
+    return computeOmniIntelScore({
+      knowledgeIndex: k,
+      skillsIndex: s,
+      directionMotivationIndex: d,
+      consistencyIndex: c,
+    });
+  }, [progress?.omni]);
   const omniLevel = useMemo(() => {
     const s = Math.round(omniIntelScore);
     if (!Number.isFinite(s)) return null;
@@ -226,6 +251,22 @@ function ProgressContent() {
     if (s >= 25) return lang === "ro" ? "Pathfinder" : "Pathfinder";
     return lang === "ro" ? "Explorer" : "Explorer";
   }, [lang, omniIntelScore]);
+
+  // Derive and patch consistency index from evaluation timeline (distinct active days / 14)
+  useEffect(() => {
+    const dates = (evalTimeline ?? []).map((e) => e.createdAt).filter((d): d is Date => d instanceof Date);
+    if (!dates.length) return;
+    const consistency = computeConsistencyIndexFromDates(dates);
+    const existing = Number(progress?.omni?.intel?.consistencyIndex ?? NaN);
+    const needsPatch = !Number.isFinite(existing) || Math.abs(consistency - existing) >= 2;
+    if (!needsPatch) return;
+    // Recompute OmniIntel with new consistency if other indices exist
+    const k = Number(progress?.omni?.kuno?.knowledgeIndex ?? 0);
+    const s = Number(progress?.omni?.abil?.skillsIndex ?? 0);
+    const d = Number(progress?.omni?.scope?.directionMotivationIndex ?? 0);
+    const omni = computeOmniIntelScore({ knowledgeIndex: k, skillsIndex: s, directionMotivationIndex: d, consistencyIndex: consistency });
+    void recordOmniPatch({ intel: { consistencyIndex: consistency }, omniIntelScore: omni }).catch(() => {});
+  }, [evalTimeline, progress?.omni]);
 
   const sparkValues = useMemo(() => {
     // Map MAAS (mindful awareness) totals to a 0–10 scale for a simple trend
@@ -236,6 +277,17 @@ function ProgressContent() {
       return Math.round(normalized * 10) / 10;
     });
   }, [evalTimeline]);
+
+  const distributionData = useMemo(() => {
+    if (!intent?.categories || intent.categories.length === 0)
+      return [] as { label: string; value: number }[];
+    const total = intent.categories.reduce((sum, c) => sum + c.count, 0) || 1;
+    const sorted = intent.categories.slice().sort((a, b) => b.count - a.count);
+    return sorted.slice(0, 3).map((c) => ({
+      label: categoryLabels[c.category] ?? c.category,
+      value: Math.round((c.count / total) * 100),
+    }));
+  }, [categoryLabels, intent?.categories]);
 
   const heroSelectionMessage = useMemo(() => {
     if (!heroDetails) return null;
@@ -362,22 +414,57 @@ function ProgressContent() {
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <AccountModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
       <main className="px-4 py-12 md:px-8">
+        <div className="sticky top-14 z-10">
+          <StickyMiniSummary
+            omniIntelScore={Number.isFinite(omniIntelScore) ? omniIntelScore : null}
+            omniLevel={omniLevel ?? null}
+            lang={lang === "en" ? "en" : "ro"}
+          />
+          <NextBestStep
+            progress={progress ?? undefined}
+            lang={lang === "en" ? "en" : "ro"}
+            onGoToKuno={() => {
+              void recordEvaluationTabChange("oc");
+              const qs = new URLSearchParams({ tab: "oc", source: "progress" }).toString();
+              router.push(`/evaluation?${qs}`);
+            }}
+            onGoToSensei={() => {
+              const qs = new URLSearchParams({ tab: "ose", source: "progress" }).toString();
+              router.push(`/evaluation?${qs}`);
+            }}
+            onGoToAbil={() => {
+              void recordEvaluationTabChange("oa");
+              const qs = new URLSearchParams({ tab: "oa", source: "progress" }).toString();
+              router.push(`/evaluation?${qs}`);
+            }}
+            onGoToIntel={() => {
+              void recordEvaluationTabChange("oi");
+              const qs = new URLSearchParams({ tab: "oi", source: "progress" }).toString();
+              router.push(`/evaluation?${qs}`);
+            }}
+          />
+        </div>
         {/* Top summary row */}
         <div className="mx-auto mb-6 max-w-5xl">
           <ProgressSummary
             urgency={progress?.intent?.urgency ?? null}
             stage={progress?.evaluation?.stageValue ?? null}
             globalLoad={globalLoadLabel}
-            updatedAt={progress?.updatedAt ? formatTimestamp(progress.updatedAt as unknown as { toDate?: () => Date }, lang) : null}
+            updatedAt={progress?.updatedAt ? formatTimestamp(progress.updatedAt, lang) : null}
             omniIntelScore={Number.isFinite(omniIntelScore) ? omniIntelScore : null}
             omniLevel={omniLevel}
           />
         </div>
 
+        {/* Trends + Distribution + Latest entries */}
+        <ProgressTrends lang={lang === "en" ? "en" : "ro"} sparkValues={sparkValues} distribution={distributionData} />
+        <LatestEntries lang={lang === "en" ? "en" : "ro"} quests={quests as unknown as Array<{ title?: string }>} evaluationsCount={evalTimeline?.length ?? 0} />
+
         {/* 2x2 grid of stages on desktop */}
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2">
           {/* Stage 1: Intent */}
           <ProgressStageCard
+            icon="🎯"
             title={resolveString(intentTitle, "Intenții & Cloud")}
             subtitle={intent ? (lang === "ro" ? "Complet" : "Complete") : (lang === "ro" ? "Începe sau reia selecția" : "Start or resume selection")}
             percent={(intent?.tags?.length ? Math.min(100, Math.round((intent.tags.length / 7) * 100)) : 0)}
@@ -385,12 +472,14 @@ function ProgressContent() {
             ctaLabel={lang === "ro" ? "Reia clarificarea" : "Clarify now"}
             onAction={() => {
               const link = buildWizardLink("intent", "progress-intent-card");
-              router.push({ pathname: link.pathname, query: link.query } as unknown as string);
+              const qs = new URLSearchParams(link.query as Record<string, string>).toString();
+              router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
             }}
           />
 
           {/* Stage 2: Motivation */}
           <ProgressStageCard
+            icon="🧭"
             title={resolveString(motivationTitle, "Motivație & Resurse")}
             subtitle={motivation ? (lang === "ro" ? "Actualizat" : "Updated") : (lang === "ro" ? "Adaugă resurse" : "Add resources")}
             percent={(() => {
@@ -416,24 +505,28 @@ function ProgressContent() {
             ctaLabel={lang === "ro" ? "Adaugă resurse" : "Add resources"}
             onAction={() => {
               const link = buildWizardLink("intentSummary", "progress-motivation-card");
-              router.push({ pathname: link.pathname, query: link.query } as unknown as string);
+              const qs = new URLSearchParams(link.query as Record<string, string>).toString();
+              router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
             }}
           />
 
           {/* Stage 3: Evaluations */}
           <ProgressStageCard
+            icon="🧠"
             title={resolveString(evaluationTitle, "Evaluări Omni-Intel")}
             subtitle={evaluation ? (lang === "ro" ? "Există măsurători" : "Measurements found") : (lang === "ro" ? "Completează o evaluare" : "Complete an evaluation")}
             percent={evaluation ? 100 : 0}
             status={evaluation ? "inProgress" : "stale"}
             ctaLabel={lang === "ro" ? "Deschide evaluările" : "Open evaluations"}
             onAction={() => {
-              router.push({ pathname: "/evaluation", query: { tab: "oi", source: "progress" } } as unknown as string);
+              const qs = new URLSearchParams({ tab: "oi", source: "progress" }).toString();
+              router.push(`/evaluation?${qs}`);
             }}
           />
 
           {/* Stage 4: Quests */}
           <ProgressStageCard
+            icon="🧩"
             title={resolveString(questTitle, "Quest-uri")}
             subtitle={(progress?.quests?.items?.length ?? 0) > 0 ? (lang === "ro" ? "Active" : "Active") : (lang === "ro" ? "Vor apărea după evaluare" : "Will appear after evaluation")}
             percent={(progress?.quests?.items?.length ?? 0) > 0 ? 50 : 0}
@@ -441,9 +534,10 @@ function ProgressContent() {
             ctaLabel={lang === "ro" ? "Vezi quest-uri" : "View quests"}
             onAction={() => {
               const link = buildRecommendationLink();
-              router.push({ pathname: link.pathname, query: link.query } as unknown as string);
+              const qs = new URLSearchParams(link.query as Record<string, string>).toString();
+              router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
             }}
-            locked={!Boolean((progress as any)?.omni?.sensei?.unlocked)}
+            locked={!deriveSenseiUnlocked(progress)}
             lockHint={lang === "ro" ? "Se activează după Kuno" : "Unlocks after Kuno"}
           />
         </div>
@@ -549,6 +643,42 @@ function ProgressContent() {
             Nu am putut sincroniza datele din cloud. Încearcă să reîmprospătezi sau să salvezi o nouă evaluare.
           </div>
         ) : null}
+
+        {/* Dev helper: mark one quest as completed to unlock Abil */}
+        <section className="mx-auto mt-6 max-w-5xl">
+          <div className="rounded-[12px] border border-dashed border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-center text-xs text-[#5C4F45]">
+            <p className="mb-2 font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+              {lang === "ro" ? "Acțiuni rapide (dev)" : "Quick actions (dev)"}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await recordQuestCompletion();
+                    setToastMessage(
+                      lang === "ro"
+                        ? "Am marcat un quest ca finalizat. Abil este deblocat."
+                        : "Marked one quest completed. Abil unlocked.",
+                    );
+                  } catch {
+                    setToastMessage(
+                      lang === "ro" ? "Nu am putut marca finalizarea." : "Could not mark completion.",
+                    );
+                  }
+                }}
+                className="rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+              >
+                {lang === "ro" ? "Finalizează un quest" : "Complete a quest"}
+              </button>
+              <span className="rounded-full border border-[#F0E6DA] bg-white px-2 py-1 text-[11px] uppercase tracking-[0.25em] text-[#7A6455]">
+                {lang === "ro"
+                  ? `Abil: ${progress?.omni?.abil?.unlocked ? "deblocat" : "blocat"}`
+                  : `Abil: ${progress?.omni?.abil?.unlocked ? "unlocked" : "locked"}`}
+              </span>
+            </div>
+          </div>
+        </section>
         {loading ? (
           <div className="mx-auto mt-10 max-w-4xl rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 text-center text-sm text-[#4A3A30] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
             Se încarcă progresul…

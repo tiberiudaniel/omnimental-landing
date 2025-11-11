@@ -64,3 +64,19 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+// Compute a simple consistency index from distinct active days over the last 14 days.
+export function computeConsistencyIndexFromDates(dates: Date[]): number {
+  if (!dates || dates.length === 0) return 0;
+  const now = new Date();
+  const start = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const days = new Set<string>();
+  for (const d of dates) {
+    if (!(d instanceof Date) || Number.isNaN(d.getTime())) continue;
+    if (d < start) continue;
+    const key = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+    days.add(key);
+  }
+  const count = days.size;
+  const ratio = Math.max(0, Math.min(1, count / 14));
+  return Math.round(ratio * 100);
+}

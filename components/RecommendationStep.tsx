@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import TypewriterText from "./TypewriterText";
 import CardOption from "./CardOption";
 import { useI18n } from "./I18nProvider";
+import { getString } from "@/lib/i18nGetString";
 import { RecommendationSummary } from "@/components/RecommendationSummary";
 import { buildIndicatorSummary } from "@/lib/indicators";
 import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
@@ -128,10 +129,7 @@ export function RecommendationStep(props: Props) {
   } = props;
 
   const { t, lang } = useI18n();
-  const getCopy = (key: string, fallback: string) => {
-    const value = t(key);
-    return typeof value === "string" ? value : fallback;
-  };
+  const getCopy = (key: string, fallback: string) => getString(t, key, fallback);
   const loadLevelsValue = t("intentSummaryLoadLevels");
   const loadLevels =
     loadLevelsValue && typeof loadLevelsValue === "object"
@@ -157,14 +155,9 @@ export function RecommendationStep(props: Props) {
   const loadLevel = determineLoadLevel(intentUrgency);
   const loadLevelContent = loadLevels?.[loadLevel];
 
-  const recommendationHeadline =
-    recommendedPath === "individual"
-      ? lang === "ro"
-        ? "Recomandare: sesiuni individuale 1-la-1."
-        : "Recommendation: individual sessions."
-      : lang === "ro"
-      ? "Recomandare: grupul online OmniMental."
-      : "Recommendation: OmniMental group.";
+  const recommendationHeadline = recommendedPath === "individual"
+    ? getCopy("recommendationHeadlineIndividual", lang === "ro" ? "Recomandare: sesiuni individuale 1-la-1." : "Recommendation: individual sessions.")
+    : getCopy("recommendationHeadlineGroup", lang === "ro" ? "Recomandare: grupul online OmniMental." : "Recommendation: OmniMental group.");
   const recommendationBodyText =
     loadLevelContent?.recommendation ??
     (lang === "ro"
@@ -178,9 +171,12 @@ export function RecommendationStep(props: Props) {
 
   const localizedReasons = [
     primaryReason,
-    lang === "ro"
-      ? "Datele de mai jos (ritm, timp, buget) completează imaginea."
-      : "The factors below (pace, time, budget) complete the picture.",
+    getCopy(
+      "recommendationFactorsNote",
+      lang === "ro"
+        ? "Datele de mai jos (ritm, timp, buget) completează imaginea."
+        : "The factors below (pace, time, budget) complete the picture.",
+    ),
   ];
 
   const goalTypeText =
