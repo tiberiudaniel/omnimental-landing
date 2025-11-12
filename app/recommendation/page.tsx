@@ -14,6 +14,7 @@ import { useProgressFacts } from "../../components/useProgressFacts";
 import { computeDimensionScores, type IntentCategorySummary } from "@/lib/scoring";
 import { recommendSession } from "@/lib/recommendation";
 import { readRecommendationCache } from "@/lib/recommendationCache";
+import { recordCtaClicked } from "@/lib/progressFacts";
 import DemoUserSwitcher from "../../components/DemoUserSwitcher";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -62,7 +63,7 @@ function RecommendationContent() {
       {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
       {search?.get("demo") ? (
         <div className="mx-auto mt-3 w-full max-w-4xl px-4">
-          <span className="inline-flex items-center rounded-full bg-[#7A6455] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">Demo</span>
+          <span className="inline-flex items-center rounded-full bg-[#7A6455] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">{s("badgeDemo", "Demo")}</span>
         </div>
       ) : null}
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
@@ -130,14 +131,14 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier 
   if (loading) {
     return (
       <div className="mx-auto mt-10 max-w-4xl rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 text-center text-sm text-[#4A3A30] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
-        Se încarcă recomandarea ta personalizată…
+        {s("recommendationLoading", "Se încarcă recomandarea ta personalizată…")}
       </div>
     );
   }
   if (error) {
     return (
       <div className="mx-auto mt-10 max-w-4xl rounded-[16px] border border-[#F4C7C3] bg-[#FFF5F4] px-6 py-6 text-center text-sm text-[#8C2B2F] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
-        Nu am putut încărca recomandarea. Încearcă din nou.
+        {s("recommendationLoadError", "Nu am putut încărca recomandarea. Încearcă din nou.")}
       </div>
     );
   }
@@ -233,6 +234,7 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier 
             <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">{memberCtaBody}</p>
             <Link
               href="/contact"
+              onClick={() => { void recordCtaClicked("book_call"); }}
               className="mt-2 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
             >
               {memberCtaLabel}

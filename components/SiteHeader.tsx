@@ -112,7 +112,7 @@ export default function SiteHeader({
         <span title={user?.email ?? user?.uid ?? "guest"} className="hidden md:inline opacity-70">
           {shortUser}
         </span>
-        <div className="ml-0 flex items-center gap-0.5 text-[11px]">
+        <div className="ml-0 flex items-center gap-0.5 text-[11px] shrink-0">
           <button
             type="button"
             onClick={() => setLang("ro")}
@@ -152,7 +152,7 @@ export default function SiteHeader({
           </Link>
         )}
         {!wizardMode && (
-          <nav className="flex items-center justify-center gap-2 md:gap-3">
+          <nav className="flex items-center gap-x-4 md:gap-x-6 mt-0 md:mt-[2px] justify-center">
           <Link
             href="/antrenament"
             className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${

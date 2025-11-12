@@ -12,6 +12,9 @@ const { computeDimensionScores } = loadTsModule(
 const { recommendSession } = loadTsModule(
   path.resolve(__dirname, "../lib/recommendation.ts"),
 );
+const { buildIndicatorSummary } = loadTsModule(
+  path.resolve(__dirname, "../lib/indicators.ts"),
+);
 const { computeConsistencyIndexFromDates } = loadTsModule(
   path.resolve(__dirname, "../lib/omniIntel.ts"),
 );
@@ -111,6 +114,24 @@ test("recommendSession defaults to group when no strong signals", () => {
   const baseScores = { calm: 0, focus: 0, energy: 0, relationships: 0, performance: 0, health: 0 };
   const rec = recommendSession({ urgency: 5, primaryCategory: undefined, dimensionScores: baseScores, hasProfile: false });
   assert.equal(rec.recommendedPath, "group");
+});
+
+test("buildIndicatorSummary maps categories to chart and normalized shares", () => {
+  const categories = [
+    { category: "clarity", count: 3 },
+    { category: "relationships", count: 2 },
+    { category: "stress", count: 1 },
+    { category: "energy", count: 4 },
+  ];
+  const { chart, shares } = buildIndicatorSummary(categories);
+  // Counts are mapped: clarity->focus, relationships->relationships, stress->calm, energy->energy
+  assert.equal(chart.clarity, 3); // focus is displayed as clarity in chart
+  assert.equal(chart.relationships, 2);
+  assert.equal(chart.calm, 1);
+  assert.equal(chart.energy, 4);
+  // Shares normalized to ~1 (allow small float tolerance)
+  const totalShare = shares.clarity + shares.relationships + shares.calm + shares.energy + shares.performance;
+  assert.ok(totalShare > 0.99 && totalShare < 1.01);
 });
 
 test("computeDimensionScores handles empty input and low urgency", () => {

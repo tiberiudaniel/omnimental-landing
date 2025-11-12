@@ -31,7 +31,7 @@ import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
 import Toast from "../../components/Toast";
 import { JournalDrawer } from "../../components/journal/JournalDrawer";
 import DemoUserSwitcher from "../../components/DemoUserSwitcher";
-import { backfillProgressFacts, recordQuestCompletion } from "@/lib/progressFacts";
+import { backfillProgressFacts, recordQuestCompletion, recordCtaClicked } from "@/lib/progressFacts";
 import { omniKnowledgeModules } from "@/lib/omniKnowledge";
 import { computeOmniIntelScore, computeConsistencyIndexFromDates } from "@/lib/omniIntel";
 import { getGlobalLoadLabel, getOmniLevel, normalizeMaas, metricDescriptions } from "@/lib/progressMapping";
@@ -140,6 +140,11 @@ function formatCategories(
     }));
 }
 
+const tString = (t: (k: string) => unknown, key: string, fallback: string) => {
+  const v = t(key);
+  return typeof v === "string" && v !== key ? (v as string) : fallback;
+};
+
 function ProgressContent() {
   const router = useRouter();
   const { t, lang } = useI18n();
@@ -174,6 +179,7 @@ function ProgressContent() {
   // Deep-link: open=journal opens the Journal drawer if allowed
   useEffect(() => {
     if (search?.get("open") === "journal" && (profile?.selection === "individual" || profile?.selection === "group")) {
+      void recordCtaClicked("open_journal");
       setJournalOpen(true);
     }
   }, [profile?.selection, search]);
@@ -426,13 +432,16 @@ function ProgressContent() {
       {progress && progress.intent && progress.evaluation ? (
         <div className="mx-auto mt-3 w-full max-w-5xl px-4">
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[#E4D8CE] bg-white px-3 py-2 text-[13px] text-[#2C2C2C] shadow-sm">
-            <span className="opacity-80">{lang === "ro" ? "Vrei să actualizezi evaluarea?" : "Want to update your evaluation?"}</span>
+            <span className="opacity-80">{tString(t, "evaluation.continue", lang === "ro" ? "Vrei să actualizezi evaluarea?" : "Want to update your evaluation?")}</span>
             <button
               type="button"
-              onClick={() => router.push("/wizard?resume=1")}
+              onClick={() => {
+                void recordCtaClicked("re_evaluate");
+                router.push("/wizard?resume=1");
+              }}
               className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
             >
-              {lang === "ro" ? "Re‑evaluează" : "Re‑evaluate"}
+              {tString(t, "evaluation.continue", lang === "ro" ? "Re‑evaluează" : "Re‑evaluate")}
             </button>
           </div>
         </div>
@@ -475,7 +484,7 @@ function ProgressContent() {
         {isDemo ? (
           <div className="mx-auto mb-2 max-w-5xl px-1">
             <span className="inline-flex items-center rounded-full bg-[#7A6455] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">
-              Demo
+              {tString(t, "badge.demo", "Demo")}
             </span>
           </div>
         ) : null}
@@ -991,15 +1000,15 @@ function ProgressContent() {
               ) : (
                 <div className="space-y-3 text-sm text-[#A08F82]">
                   <p>
-                    {lang === "ro"
+                    {tString(t, "progress.questsComingSoon", lang === "ro"
                       ? "În curând: exerciții practice ghidate. Vor apărea după prima evaluare."
-                      : "Coming soon: guided practice quests. They will appear after your first evaluation."}
+                      : "Coming soon: guided practice quests. They will appear after your first evaluation.")}
                   </p>
                   <Link
                     href={buildRecommendationLink()}
                     className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
                   >
-                    {lang === "ro" ? "Vezi recomandarea" : "View recommendation"}
+                    {tString(t, "progress.recommendation", lang === "ro" ? "Vezi recomandarea" : "View recommendation")}
                   </Link>
                 </div>
               )}

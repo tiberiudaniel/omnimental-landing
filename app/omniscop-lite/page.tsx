@@ -4,7 +4,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { useI18n } from "@/components/I18nProvider";
 import { getDemoProgressFacts } from "@/lib/demoData";
 import { RecommendationSummary } from "@/components/RecommendationSummary";
-import { INDICATOR_CHART_KEYS, type IndicatorChartValues } from "@/lib/indicators";
+import { type IndicatorChartValues } from "@/lib/indicators";
 
 export default function OmniScopLitePage() {
   const { lang } = useI18n();

@@ -99,6 +99,7 @@ export default function IntentSummary({
   const [budgetTouched, setBudgetTouched] = useState(false);
   const [goalTouched, setGoalTouched] = useState(false);
   const [emotionalTouched, setEmotionalTouched] = useState(false);
+  const [nextBusy, setNextBusy] = useState(false);
 
   const getString = (value: unknown, fallback: string) =>
     typeof value === "string" ? value : fallback;
@@ -441,6 +442,9 @@ export default function IntentSummary({
   })();
 
   const handleNext = () => {
+    if (nextBusy) return;
+    setNextBusy(true);
+    setTimeout(() => setNextBusy(false), 700);
     if (step === TOTAL_STEPS - 1) {
       onContinue();
     } else {
@@ -500,7 +504,7 @@ export default function IntentSummary({
               <button
                 type="button"
                 onClick={handleNext}
-                disabled={isSaving || !canProceed}
+                disabled={isSaving || !canProceed || nextBusy}
                 className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {step === TOTAL_STEPS - 1 && isSaving ? savingLabel ?? "Se salvează..." : nextLabel}

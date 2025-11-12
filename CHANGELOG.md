@@ -45,6 +45,16 @@ Upgrade Notes
 2) Publică Firestore rules (profil + facts owner-scoped) și asigură Anonymous Auth activ pentru oaspeți.
 3) Verifică redirecturile: `/wizard`, `/omniscop`, `/choose`, `/progress?open=journal`.
 
+2025-11-12 — Release Prep (staging/production)
+
+Summary
+- Build și lint OK. Gating + wizard + demo stabile. Suspense aplicat pentru toate paginile cu `useSearchParams`.
+
+Release Notes
+- Env: în producție setați `NEXT_PUBLIC_ENABLE_DEMOS=0` (pe dev rămâne `1`).
+- Rules: publicați `firestore.rules` actualizat (selection/path validat) și confirmați permissiunile.
+- QA: rutele principale funcționează cu guarduri (selection=none) și resume wizard.
+
 
 2025-11-12 — Rebrand “Evaluare” → “Antrenament” + Omni Path
 

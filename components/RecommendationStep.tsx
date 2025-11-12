@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import TypewriterText from "./TypewriterText";
 import CardOption from "./CardOption";
 import { useI18n } from "./I18nProvider";
@@ -10,6 +10,12 @@ import { buildIndicatorSummary, INDICATOR_CHART_KEYS } from "@/lib/indicators";
 import { CATEGORY_LABELS } from "@/lib/categoryLabels";
 import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
 import CTAButton from "./CTAButton";
+import { useProfile } from "./ProfileProvider";
+import { useProgressFacts } from "./useProgressFacts";
+import { recordRecommendationProgressFact } from "@/lib/progressFacts";
+import { areWritesDisabled } from "@/lib/firebase";
+import { serverTimestamp } from "firebase/firestore";
+import Toast from "./Toast";
 import type {
   BudgetPreference,
   ResolutionSpeed,
@@ -18,6 +24,7 @@ import type {
   FormatPreference,
 } from "../lib/evaluation";
 import { determineLoadLevel, type LoadLevel } from "../lib/loadLevel";
+import type { DimensionScores } from "@/lib/scoring";
 
 export type RecommendationCardChoice = "individual" | "group";
 
@@ -28,7 +35,7 @@ type Props = {
     reasonKey: string;
     badgeLabel?: string;
     formatPreference?: "online" | "hybrid";
-    dimensionScores: Record<string, number>;
+    dimensionScores?: DimensionScores;
     algoVersion: string;
   };
   profile: { id: string } | null;
@@ -59,6 +66,9 @@ type Props = {
   formatPreference: FormatPreference;
   recommendationReasonKey: string;
   initialStatement?: string | null;
+  // New wiring props
+  dimensionScores?: DimensionScores;
+  algoVersion?: string;
 };
 
 const paceLabel = (lang: string, speed: ResolutionSpeed) => {
@@ -140,6 +150,9 @@ export function RecommendationStep(props: Props) {
   } = props;
 
   const { t, lang } = useI18n();
+  const { profile: currentProfile } = useProfile();
+  const { data: progressFacts } = useProgressFacts(currentProfile?.id);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const getCopy = (key: string, fallback: string) => getString(t, key, fallback);
   // Prefer unified recommendation object when provided
   const effectiveRecommendedPath = recommendation?.path ?? recommendedPathProp;
@@ -341,21 +354,49 @@ export function RecommendationStep(props: Props) {
               : "Pick the format you want to continue with right now."}
           </p>
           <div className="mt-2 flex w-full flex-col items-center justify-center gap-6 md:flex-row md:items-stretch md:gap-8">
-            {(["individual", "group"] as const).map((type) => (
-              <div key={type} className="w-full max-w-sm md:max-w-none">
-                <CardOption
-                  type={type}
-                  title={cardLabels[type]}
-                  onClick={() => {
-                    void onCardSelect(type);
-                  }}
-                  isRecommended={effectiveRecommendedPath === type}
-                  recommendedLabel={effectiveBadge}
-                  disabled={isSavingChoice}
-                  isLoading={isSavingChoice && savingChoiceType === type}
-                  loadingLabel={savingLabel}
-                />
-              </div>
+          {(["individual", "group"] as const).map((type) => (
+            <div key={type} className="w-full max-w-sm md:max-w-none">
+                  <CardOption
+                    type={type}
+                    title={cardLabels[type]}
+                    onClick={() => {
+                      const algo = props.algoVersion ?? "v1.2";
+                    const dim: DimensionScores | undefined = recommendation?.dimensionScores ?? props.dimensionScores ?? undefined;
+                    const fmt = recommendation?.formatPreference ?? props.formatPreference ?? undefined;
+                      if (!areWritesDisabled()) {
+                        void recordRecommendationProgressFact({
+                          path: type,
+                          reasonKey: effectiveReasonKey,
+                          selectedPath: type,
+                          dimensionScores: dim ?? null,
+                          algoVersion: algo,
+                          formatPreference: (fmt as string | null) ?? null,
+                          badgeLabel: effectiveBadge ?? null,
+                          selectedAt: serverTimestamp(),
+                        });
+                        setToastMessage(
+                          typeof t("recommendation.choiceSaved") === "string"
+                            ? (t("recommendation.choiceSaved") as string)
+                            : lang === "ro"
+                            ? "Alegerea a fost salvată."
+                            : "Your choice has been saved.",
+                        );
+                      } else {
+                        console.info("Writes disabled in development");
+                        setToastMessage(
+                          lang === "ro" ? "Mod demo: alegerea a fost reținută local." : "Demo mode: choice noted locally.",
+                        );
+                      }
+                      void onCardSelect(type);
+                    }}
+                isRecommended={effectiveRecommendedPath === type}
+                recommendedLabel={effectiveBadge}
+                isSelected={progressFacts?.recommendation?.selectedPath === type}
+                disabled={isSavingChoice}
+                isLoading={isSavingChoice && savingChoiceType === type}
+                loadingLabel={savingLabel}
+              />
+            </div>
             ))}
           </div>
           {isSavingChoice ? (
@@ -414,6 +455,11 @@ export function RecommendationStep(props: Props) {
           </div>
         </div>
       </div>
+      {toastMessage ? (
+        <div className="pointer-events-none fixed left-0 right-0 bottom-4 z-50 mx-auto max-w-sm px-3">
+          <Toast message={toastMessage} okLabel="OK" onClose={() => setToastMessage(null)} />
+        </div>
+      ) : null}
     </section>
   );
 

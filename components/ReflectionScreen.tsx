@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
+import { getString } from "@/lib/i18nGetString";
 import RadarIndicators from "./RadarIndicators";
 import {
   buildIndicatorSummary,
@@ -27,9 +28,11 @@ export default function ReflectionScreen({
   maxSelection,
   categoryLabels,
 }: ReflectionScreenProps) {
-  const { lang } = useI18n();
+  const { t, lang } = useI18n();
   const isRO = lang !== "en";
-  const buttonLabel = isRO ? "Continuă" : "Continue";
+  const buttonLabel = getString(t, "wizard.continue", isRO ? "Continuă" : "Continue");
+  const guardRef = useRef<{ busy: boolean; ts: number } | null>(null);
+  const [busy, setBusy] = useState(false);
   const primaryLine = useMemo(() => {
     const cleaned = lines.find((line) => line && line.trim().length > 0);
     return cleaned ?? "";
@@ -92,10 +95,10 @@ export default function ReflectionScreen({
         {showIndicators ? (
           <div className="mt-10 text-left">
             <p className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
-              {isRO ? "Indicatori principali" : "Key indicators"}
+              {getString(t, "wizard.keyIndicators", isRO ? "Indicatori principali" : "Key indicators")}
             </p>
             <h3 className="mt-2 text-xl font-semibold text-[#1F1F1F]">
-              {isRO ? "Profilul selecțiilor tale" : "Your selection profile"}
+              {getString(t, "wizard.selectionProfile", isRO ? "Profilul selecțiilor tale" : "Your selection profile")}
             </h3>
             <div className="mt-6 flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:gap-10">
               <RadarIndicators data={indicatorEntries} maxValue={1} size="sm" />
@@ -115,7 +118,7 @@ export default function ReflectionScreen({
                 </ul>
                 <div className="rounded-[12px] border border-[#F5E7DA] bg-[#FFFBF7] px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
-                    {isRO ? "Teme evidențiate" : "Highlighted themes"}
+                    {getString(t, "wizard.highlightedThemes", isRO ? "Teme evidențiate" : "Highlighted themes")}
                   </p>
                   {highlightedThemes.length > 0 ? (
                     <ul className="mt-2 space-y-1 text-sm text-[#2C2C2C]">
@@ -135,7 +138,7 @@ export default function ReflectionScreen({
                       })}
                     </ul>
                   ) : (
-                    <p className="mt-2 text-sm text-[#2C2C2C]/70">{emptyIndicatorsText}</p>
+                    <p className="mt-2 text-sm text-[#2C2C2C]/70">{getString(t, "wizard.selectFew", emptyIndicatorsText)}</p>
                   )}
                   {topReflection ? (
                     <div className="mt-3 rounded-[10px] border border-[#F0E6DA] bg-white px-3 py-2 text-[13px] text-[#2C2C2C]">
@@ -150,10 +153,21 @@ export default function ReflectionScreen({
 
         <button
           type="button"
-          onClick={onContinue}
+          onClick={() => {
+            const now = Date.now();
+            if (guardRef.current?.busy && now - (guardRef.current.ts || 0) < 700) return;
+            guardRef.current = { busy: true, ts: now };
+            setBusy(true);
+            setTimeout(() => {
+              setBusy(false);
+              if (guardRef.current) guardRef.current.busy = false;
+            }, 700);
+            onContinue();
+          }}
+          disabled={busy}
           className="mt-10 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
         >
-          {buttonLabel}
+          {busy ? (isRO ? "Se procesează…" : "Processing…") : buttonLabel}
         </button>
       </div>
     </section>

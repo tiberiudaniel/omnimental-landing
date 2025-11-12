@@ -562,14 +562,21 @@ export async function recordRecommendationProgressFact(payload: {
   suggestedPath?: SessionType | null;
   reasonKey?: string | null;
   selectedPath?: SessionType | null;
+  // allow 'path' for convenience
+  path?: SessionType | null;
   acceptedRecommendation?: boolean | null;
   dimensionScores?: DimensionScores | null;
+  // extended metadata
+  algoVersion?: string | number | null;
+  formatPreference?: string | null;
+  badgeLabel?: string | null;
+  selectedAt?: unknown;
 }) {
   return mergeProgressFact({
     recommendation: {
       suggestedPath: (payload.suggestedPath as SessionType | null) ?? null,
       reasonKey: payload.reasonKey ?? null,
-      selectedPath: (payload.selectedPath as SessionType | null) ?? null,
+      selectedPath: (payload.selectedPath as SessionType | null) ?? (payload.path as SessionType | null) ?? null,
       acceptedRecommendation:
         typeof payload.acceptedRecommendation === "boolean"
           ? payload.acceptedRecommendation
@@ -577,8 +584,12 @@ export async function recordRecommendationProgressFact(payload: {
           ? payload.selectedPath === payload.suggestedPath
           : null,
       dimensionScores: payload.dimensionScores ?? null,
+      // extended metadata passthrough
+      ...(typeof payload.algoVersion !== "undefined" ? { algoVersion: payload.algoVersion } : {}),
+      ...(typeof payload.formatPreference !== "undefined" ? { formatPreference: payload.formatPreference } : {}),
+      ...(typeof payload.badgeLabel !== "undefined" ? { badgeLabel: payload.badgeLabel } : {}),
       // stamp when a selection is made
-      ...(payload.selectedPath ? { selectedAt: serverTimestamp() } : {}),
+      ...((payload.selectedPath || payload.path) ? { selectedAt: serverTimestamp() } : {}),
       updatedAt: serverTimestamp(),
     },
   });

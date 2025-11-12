@@ -6,15 +6,22 @@ service cloud.firestore {
 
     function signedIn() { return request.auth != null; }
     function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function isValidSessionType(v) { return v == null || v == 'individual' || v == 'group'; }
+    function isValidSelection(v) { return v == null || v == 'none' || v == 'individual' || v == 'group'; }
 
     // User profile remains owner-scoped even in dev.
     match /userProfiles/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidSelection(request.resource.data.selection);
     }
 
     // Progress facts attached to a user id.
     match /userProgressFacts/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) &&
+        // If recommendation block is present, enforce allowed path values
+        isValidSessionType(request.resource.data.recommendation.selectedPath) &&
+        isValidSessionType(request.resource.data.recommendation.suggestedPath);
     }
 
     // Snapshots and journeys: owner-only access. Allow create if profileId matches auth uid.
