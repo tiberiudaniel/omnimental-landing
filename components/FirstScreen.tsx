@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "../components/I18nProvider";
-import { getDb, ensureAuth } from "../lib/firebase";
+import { getDb, ensureAuth, areWritesDisabled } from "../lib/firebase";
 import {
   detectCategoryFromRawInput,
   getIntentExpressions,
@@ -236,10 +236,12 @@ useEffect(() => {
   const persistSuggestion = async (text: string) => {
     try {
       await ensureAuth();
-      await addDoc(collection(db, PRIMARY_COLLECTION), {
-        text,
-        timestamp: serverTimestamp(),
-      });
+      if (!areWritesDisabled()) {
+        await addDoc(collection(db, PRIMARY_COLLECTION), {
+          text,
+          timestamp: serverTimestamp(),
+        });
+      }
       if (isMountedRef.current) {
         setStoredSuggestions((prev) =>
           sanitizeSuggestions([text, ...prev]).slice(0, SUGGESTION_FETCH_LIMIT)

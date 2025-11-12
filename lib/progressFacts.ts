@@ -12,7 +12,7 @@ import {
   where,
   increment,
 } from "firebase/firestore";
-import { ensureAuth, getDb } from "./firebase";
+import { ensureAuth, getDb, areWritesDisabled } from "./firebase";
 import type {
   BudgetPreference,
   EmotionalState,
@@ -26,6 +26,15 @@ import type { SessionType } from "./recommendation";
 import type { DimensionScores } from "./scoring";
 import type { OmniBlock } from "./omniIntel";
 import { computeDirectionMotivationIndex, computeOmniIntelScore } from "./omniIntel";
+
+// Basic write throttling to avoid rapid-fire writes that can trigger Firestore backoff
+let writeQueue: Promise<unknown> = Promise.resolve();
+let lastWriteTs = 0;
+let lastSignature: string | null = null;
+let lastSigTs = 0;
+const MIN_WRITE_INTERVAL_MS = 800; // cooldown between merged writes
+const DEDUPE_WINDOW_MS = 1500; // skip identical merges within this window
+let suppressUntilTs = 0; // when set due to quota, skip writes until this time
 
 // Allow nested partials for OmniBlock patches
 type DeepPartial<T> = {
@@ -126,6 +135,13 @@ function sanitizeDimensionScores(entry: unknown): DimensionScores | null {
 }
 
 async function mergeProgressFact(data: Record<string, unknown>, ownerId?: string | null) {
+  if (areWritesDisabled()) {
+    return null;
+  }
+  const now0 = Date.now();
+  if (now0 < suppressUntilTs) {
+    return null;
+  }
   // Allow explicit owner override (e.g., when wizard has a known profileId).
   // Falls back to the currently authenticated user.
   const user = ownerId ? { uid: ownerId } : await ensureAuth();
@@ -141,12 +157,52 @@ async function mergeProgressFact(data: Record<string, unknown>, ownerId?: string
   });
   const factsRef = doc(getDb(), "userProgressFacts", user.uid);
   const profileRef = doc(getDb(), "userProfiles", user.uid);
-  await Promise.all([
-    setDoc(factsRef, payload, { merge: true }).catch((error) =>
-      console.warn("progress fact primary write failed", error),
-    ),
-    setDoc(profileRef, profilePayload, { merge: true }),
-  ]);
+
+  // Enqueue the write and enforce a minimal interval to reduce retry/backoff scenarios
+  writeQueue = writeQueue.then(async () => {
+    const now = Date.now();
+    const since = now - lastWriteTs;
+    // Try to dedupe identical merges for a short window
+    let signature: string | null = null;
+    try {
+      signature = JSON.stringify(data);
+    } catch {
+      signature = null;
+    }
+    if (signature && lastSignature === signature && now - lastSigTs < DEDUPE_WINDOW_MS) {
+      // Skip redundant write
+      lastWriteTs = now; // still advance to avoid backlog
+      return;
+    }
+    if (since < MIN_WRITE_INTERVAL_MS) {
+      await new Promise((r) => setTimeout(r, MIN_WRITE_INTERVAL_MS - since));
+    }
+    try {
+      await Promise.all([
+        setDoc(factsRef, payload, { merge: true }).catch((error) => {
+          const code = (error && (error.code || error.name)) || "unknown";
+          console.warn("progress fact primary write failed", code, error);
+          if (String(code).includes("resource-exhausted")) {
+            suppressUntilTs = Date.now() + 5 * 60 * 1000; // back off 5 minutes
+          }
+        }),
+        setDoc(profileRef, profilePayload, { merge: true }).catch((error) => {
+          const code = (error && (error.code || error.name)) || "unknown";
+          console.warn("profile progress mirror write failed", code, error);
+          if (String(code).includes("resource-exhausted")) {
+            suppressUntilTs = Date.now() + 5 * 60 * 1000;
+          }
+        }),
+      ]);
+    } finally {
+      lastWriteTs = Date.now();
+      if (signature) {
+        lastSignature = signature;
+        lastSigTs = lastWriteTs;
+      }
+    }
+  });
+  await writeQueue;
   return user.uid;
 }
 

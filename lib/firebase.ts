@@ -1,7 +1,7 @@
 "use client";
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, setLogLevel } from "firebase/firestore";
 import {
   browserLocalPersistence,
   getAuth,
@@ -54,6 +54,15 @@ export function getDb() {
   return getFirestore(getFirebaseApp());
 }
 
+export function areWritesDisabled(): boolean {
+  try {
+    const flag = (process.env.NEXT_PUBLIC_DISABLE_PROGRESS_WRITES || "").toLowerCase();
+    return flag === "1" || flag === "true" || flag === "yes";
+  } catch {
+    return false;
+  }
+}
+
 let authInstance: Auth | null = null;
 
 export function getFirebaseAuth() {
@@ -93,6 +102,14 @@ export function onAuthReady(cb: (uid: string) => void) {
 }
 // === ensure auto anonymous auth ===
 if (typeof window !== "undefined") {
+  // Optional: allow silencing noisy Firestore logs during development
+  try {
+    const lvl = (process.env.NEXT_PUBLIC_FIREBASE_LOG_LEVEL || "").toLowerCase();
+    if (lvl === "error" || lvl === "silent") {
+      // valid values: 'debug' | 'error' | 'silent'
+      setLogLevel(lvl as "debug" | "error" | "silent");
+    }
+  } catch {}
   const auth = getFirebaseAuth();
   onAuthStateChanged(auth, (user) => {
     if (!user) {

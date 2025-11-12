@@ -29,6 +29,22 @@ body {
     "Segoe UI", sans-serif;
 }
 
+/* Typography utilities (3–4 sizes unified across the app) */
+@layer utilities {
+  .t-title-sm {
+    @apply text-sm font-semibold;
+  }
+  .t-label-xs {
+    @apply text-[10px] uppercase tracking-[0.25em];
+  }
+  .t-value-base {
+    @apply text-base;
+  }
+  .t-value-xl {
+    @apply text-xl;
+  }
+}
+
 html {
   scroll-behavior: smooth;
 }

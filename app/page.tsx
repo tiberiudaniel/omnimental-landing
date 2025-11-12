@@ -2,36 +2,32 @@
 
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import FirstScreen from "../components/FirstScreen";
-import SessionDetails from "../components/SessionDetails";
+// removed unused local step components
 import { I18nProvider, useI18n } from "../components/I18nProvider";
-import SocialProof from "../components/SocialProof";
 import SiteHeader from "../components/SiteHeader";
 import MenuOverlay from "../components/MenuOverlay";
-import IntentCloud, { type IntentCloudResult } from "../components/IntentCloud";
+import type { IntentCloudResult } from "../components/IntentCloud";
 import { useNavigationLinks } from "../components/useNavigationLinks";
-import JourneyIntro from "../components/JourneyIntro";
-import IntentSummary from "../components/IntentSummary";
-import RecommendationStep from "../components/RecommendationStep";
 import { useProfile } from "../components/ProfileProvider";
 import AccountModal from "../components/AccountModal";
-import IntroAnimation from "../components/IntroAnimation";
 import { useWizardSteps, type Step } from "../components/useWizardSteps";
-import WizardReflection from "../components/WizardReflection";
 import { useWizardData } from "../components/useWizardData";
 import { WizardProgress } from "../components/WizardProgress";
+import WizardRouter from "../components/WizardRouter";
 import { clearWizardState } from "../components/wizardStorage";
 import Toast from "../components/Toast";
 import { recordWizardReset, recordWizardResetCanceled, recordWizardResetNoticeDismissed } from "../lib/progressFacts";
-import type { GoalType, EmotionalState, ResolutionSpeed, BudgetPreference } from "../lib/evaluation";
-import type { IntentPrimaryCategory } from "../lib/intentExpressions";
+// Types imported previously for local step wrappers; no longer needed here
+// import type { GoalType, EmotionalState, ResolutionSpeed, BudgetPreference } from "../lib/evaluation";
+// import type { IntentPrimaryCategory } from "../lib/intentExpressions";
 import { computeDimensionScores } from "../lib/scoring";
 import type { DimensionScores } from "../lib/scoring";
 import { recommendSession, type SessionType } from "../lib/recommendation";
+import { saveRecommendationCache, readRecommendationCache, updateSelectedPath } from "@/lib/recommendationCache";
 // duplicate import cleanup
-import { generateAdaptiveIntentCloudWords, type IntentCloudWord } from "@/lib/intentExpressions";
+import { generateAdaptiveIntentCloudWords } from "@/lib/intentExpressions";
 import { useWindowWidth } from "@/lib/useWindowSize";
-import { getString as i18nGetString } from "@/lib/i18nGetString";
+// import { getString as i18nGetString } from "@/lib/i18nGetString";
 
 const MIN_INTENT_SELECTIONS = 5;
 const MAX_INTENT_SELECTIONS = 7;
@@ -213,7 +209,6 @@ function PageContent() {
   );
 
   const navLinks = useNavigationLinks();
-  const getLabel = (key: string) => i18nGetString(t, key, key);
 
   const handleIntentComplete = useCallback(
     (result: IntentCloudResult) => {
@@ -236,6 +231,15 @@ function PageContent() {
       });
       setRecommendedPath(recommendation.recommendedPath);
       setRecommendationReasonKey(recommendation.reasonKey);
+      // Persist locally so /recommendation can restore even for guests
+      try {
+        saveRecommendationCache({
+          intent: { categories: intentCategories, urgency },
+          recommendation: { path: recommendation.recommendedPath, reasonKey: recommendation.reasonKey },
+          dimensionScores: scores,
+          timestamp: Date.now(),
+        });
+      } catch {}
       const success = await persistIntentSnapshot(urgency, {
         dimensionScores: scores,
         algoVersion: 1,
@@ -269,6 +273,13 @@ function PageContent() {
         console.warn("journey choice could not be persisted; staying on recommendation");
         return;
       }
+      try {
+        // Update local cache so /recommendation reflects chosen path for guests
+        const cached = readRecommendationCache();
+        if (cached) {
+          updateSelectedPath(type);
+        }
+      } catch {}
       navigateToStep("details");
     },
     [dimensionScores, navigateToStep, persistJourneyChoice, recommendationReasonKey, recommendedPath],
@@ -292,174 +303,13 @@ function PageContent() {
     "cardsSavingChoiceLabel",
     lang === "ro" ? "Se salvează alegerea..." : "Saving your choice...",
   );
-  const accountPromptMessage = getTranslationString(
-    t,
-    "accountPromptMessage",
-    "Salvează-ți progresul și vezi istoricul evaluărilor.",
-  );
-  const accountPromptButton = getTranslationString(t, "accountPromptButton", "Creează cont");
+  // account prompt handled inside Recommendation/Wizard components
   const intentSelectionTotal = useMemo(
     () => intentCategories.reduce((sum, entry) => sum + entry.count, 0),
     [intentCategories],
   );
 
-  const stepContent = (() => {
-    switch (step) {
-      case "preIntro":
-        return <PreIntroStep onDone={() => navigateToStep("intro")} />;
-      case "intro":
-        return <IntroStep onDone={() => navigateToStep("firstInput")} />;
-      case "firstInput":
-        return (
-          <>
-            <div className="mx-auto mb-3 max-w-4xl text-right">
-              <button
-                type="button"
-                className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] underline underline-offset-2 hover:text-[#E60012]"
-                onClick={() => {
-                  if (typeof window !== "undefined") {
-                    const confirmed = window.confirm(
-                      lang === "ro"
-                        ? "Vrei să o iei de la capăt?"
-                        : "Do you want to start over?",
-                    );
-                    if (!confirmed) {
-                      void recordWizardResetCanceled();
-                      return;
-                    }
-                  }
-                  try {
-                    clearWizardState();
-                  } catch {}
-                  void recordWizardReset();
-                  if (typeof window !== "undefined") {
-                    const params = new URLSearchParams(searchParams?.toString() ?? "");
-                    params.set("step", "preIntro");
-                    params.set("reset", "1");
-                    const qs = params.toString();
-                    window.location.assign(qs ? `/?${qs}` : "/");
-                  }
-                }}
-              >
-                {lang === "ro" ? "Resetează parcursul" : "Reset journey"}
-              </button>
-            </div>
-            <FirstInputStep
-              onSubmit={submitFirstInput}
-              onNext={() => navigateToStep("reflectionPrompt")}
-              errorMessage={saveError}
-              lang={lang}
-              onAuthRequest={openAccountModal}
-            />
-          </>
-        );
-      case "reflectionPrompt":
-        return (
-          <ReflectionPromptStep
-            lines={reflectionOneLines}
-            onContinue={() => navigateToStep("intent")}
-          />
-        );
-      case "intent":
-        return (
-          <IntentStep
-            minSelection={MIN_INTENT_SELECTIONS}
-            maxSelection={MAX_INTENT_SELECTIONS}
-            onComplete={handleIntentComplete}
-            words={adaptiveCloudWords}
-            cloudKey={adaptiveCloudKey}
-          />
-        );
-      case "reflectionSummary":
-        return (
-          <WizardReflection
-            lines={reflectionSummaryLines}
-            onContinue={() => navigateToStep("intentSummary")}
-            categories={intentCategories}
-            maxSelection={intentSelectionTotal}
-            categoryLabels={categoryLabels}
-          />
-        );
-      case "intentSummary":
-        return (
-          <IntentSummaryStep
-            onContinue={() => {
-              void handleIntentSummaryComplete(intentUrgency);
-            }}
-            isSaving={isSavingIntentSnapshot}
-            errorMessage={saveError}
-            savingLabel={savingGenericLabel}
-            urgency={intentUrgency}
-            onUrgencyChange={setIntentUrgency}
-            resolutionSpeed={resolutionSpeed}
-            onResolutionSpeedChange={setResolutionSpeed}
-            determination={determination}
-            onDeterminationChange={setDetermination}
-            timeCommitmentHours={timeCommitmentHours}
-            onTimeCommitmentChange={setTimeCommitmentHours}
-            budgetPreference={budgetPreference}
-            onBudgetPreferenceChange={setBudgetPreference}
-            goalType={goalType}
-            onGoalTypeChange={setGoalType}
-            emotionalState={emotionalState}
-            onEmotionalStateChange={setEmotionalState}
-            groupComfort={groupComfort}
-            onGroupComfortChange={setGroupComfort}
-            learnFromOthers={learnFromOthers}
-            onLearnFromOthersChange={setLearnFromOthers}
-            scheduleFit={scheduleFit}
-            onScheduleFitChange={setScheduleFit}
-            onAuthRequest={openAccountModal}
-          />
-        );
-      case "cards":
-        return (
-          <RecommendationStep
-            categories={intentCategories}
-            intentUrgency={intentUrgency}
-            recommendedPath={recommendedPath}
-            recommendedBadgeLabel={recommendedBadgeLabel}
-            onCardSelect={handleCardSelect}
-            accountPromptMessage={accountPromptMessage}
-            accountPromptButton={accountPromptButton}
-            cardLabels={{
-              individual: getLabel("individual"),
-              group: getLabel("group"),
-            }}
-            isSavingChoice={isSavingJourney}
-            savingChoiceType={journeySavingChoice}
-            errorMessage={saveError}
-            savingLabel={savingChoiceLabel}
-            profile={profile}
-            showAccountPrompt={showAccountPrompt}
-            onAccountRequest={openAccountModal}
-            categoryLabels={categoryLabels}
-            resolutionSpeed={resolutionSpeed}
-            determination={determination}
-            timeCommitmentHours={timeCommitmentHours}
-            budgetPreference={budgetPreference}
-            goalType={goalType}
-            emotionalState={emotionalState}
-            groupComfort={groupComfort}
-            learnFromOthers={learnFromOthers}
-            scheduleFit={scheduleFit}
-            formatPreference={formatPreference}
-            recommendationReasonKey={recommendationReasonKey}
-            initialStatement={journalEntry}
-          />
-        );
-      case "details":
-        return selectedCard ? (
-          <DetailsStep
-            selectedCard={selectedCard}
-            onReturnToOrigin={returnTo ? handleReturnToOrigin : undefined}
-            returnLabel={lang === "ro" ? "Înapoi la progres" : "Back to progress"}
-          />
-        ) : null;
-      default:
-        return null;
-    }
-  })();
+  // Legacy stepContent rendering removed; WizardRouter handles routing.
 
   return (
     <div className="bg-bgLight min-h-screen">
@@ -624,187 +474,5 @@ export default function PageWrapper() {
         <PageContent />
       </Suspense>
     </I18nProvider>
-  );
-}
-
-type PreIntroStepProps = {
-  onDone: () => void;
-};
-
-function PreIntroStep({ onDone }: PreIntroStepProps) {
-  return <IntroAnimation onComplete={onDone} />;
-}
-
-type IntroStepProps = {
-  onDone: () => void;
-};
-
-function IntroStep({ onDone }: IntroStepProps) {
-  return <JourneyIntro onStart={onDone} />;
-}
-
-type FirstInputStepProps = {
-  onSubmit: (
-    text: string,
-    meta?: { expressionId?: string; category?: IntentPrimaryCategory },
-  ) => Promise<void | boolean> | void | boolean;
-  onNext: () => void;
-  errorMessage: string | null;
-  lang: string;
-  onAuthRequest: () => void;
-};
-
-function FirstInputStep({ onSubmit, onNext, errorMessage, lang, onAuthRequest }: FirstInputStepProps) {
-  return (
-    <FirstScreen
-      key={`first-screen-${lang}`}
-      onSubmit={onSubmit}
-      onNext={onNext}
-      errorMessage={errorMessage}
-      onAuthRequest={onAuthRequest}
-    />
-  );
-}
-
-type ReflectionPromptStepProps = {
-  lines: string[];
-  onContinue: () => void;
-};
-
-function ReflectionPromptStep({ lines, onContinue }: ReflectionPromptStepProps) {
-  return <WizardReflection lines={lines} onContinue={onContinue} />;
-}
-
-type IntentStepProps = {
-  minSelection: number;
-  maxSelection: number;
-  onComplete: (result: IntentCloudResult) => void;
-  words?: IntentCloudWord[];
-  cloudKey?: string;
-};
-
-function IntentStep({ minSelection, maxSelection, onComplete, words, cloudKey }: IntentStepProps) {
-  return (
-    <IntentCloud
-      key={cloudKey}
-      minSelection={minSelection}
-      maxSelection={maxSelection}
-      onComplete={onComplete}
-      words={words}
-    />
-  );
-}
-
-type IntentSummaryStepProps = {
-  onContinue: () => void;
-  isSaving: boolean;
-  errorMessage: string | null;
-  savingLabel: string;
-  urgency: number;
-  onUrgencyChange: (value: number) => void;
-  resolutionSpeed: ResolutionSpeed;
-  onResolutionSpeedChange: (value: ResolutionSpeed) => void;
-  determination: number;
-  onDeterminationChange: (value: number) => void;
-  timeCommitmentHours: number;
-  onTimeCommitmentChange: (value: number) => void;
-  budgetPreference: BudgetPreference;
-  onBudgetPreferenceChange: (value: BudgetPreference) => void;
-  goalType: GoalType;
-  onGoalTypeChange: (value: GoalType) => void;
-  emotionalState: EmotionalState;
-  onEmotionalStateChange: (value: EmotionalState) => void;
-  groupComfort: number;
-  onGroupComfortChange: (value: number) => void;
-  learnFromOthers: number;
-  onLearnFromOthersChange: (value: number) => void;
-  scheduleFit: number;
-  onScheduleFitChange: (value: number) => void;
-  onAuthRequest: () => void;
-};
-
-function IntentSummaryStep({
-  onContinue,
-  isSaving,
-  errorMessage,
-  savingLabel,
-  urgency,
-  onUrgencyChange,
-  resolutionSpeed,
-  onResolutionSpeedChange,
-  determination,
-  onDeterminationChange,
-  timeCommitmentHours,
-  onTimeCommitmentChange,
-  budgetPreference,
-  onBudgetPreferenceChange,
-  goalType,
-  onGoalTypeChange,
-  emotionalState,
-  onEmotionalStateChange,
-  groupComfort,
-  onGroupComfortChange,
-  learnFromOthers,
-  onLearnFromOthersChange,
-  scheduleFit,
-  onScheduleFitChange,
-  onAuthRequest,
-}: IntentSummaryStepProps) {
-  return (
-    <IntentSummary
-      urgency={urgency}
-      onUrgencyChange={onUrgencyChange}
-      onContinue={onContinue}
-      isSaving={isSaving}
-      errorMessage={errorMessage}
-      savingLabel={savingLabel}
-      resolutionSpeed={resolutionSpeed}
-      onResolutionSpeedChange={onResolutionSpeedChange}
-      determination={determination}
-      onDeterminationChange={onDeterminationChange}
-      timeCommitmentHours={timeCommitmentHours}
-      onTimeCommitmentChange={onTimeCommitmentChange}
-      budgetPreference={budgetPreference}
-      onBudgetPreferenceChange={onBudgetPreferenceChange}
-      goalType={goalType}
-      onGoalTypeChange={onGoalTypeChange}
-      emotionalState={emotionalState}
-      onEmotionalStateChange={onEmotionalStateChange}
-      groupComfort={groupComfort}
-      onGroupComfortChange={onGroupComfortChange}
-      learnFromOthers={learnFromOthers}
-      onLearnFromOthersChange={onLearnFromOthersChange}
-      scheduleFit={scheduleFit}
-      onScheduleFitChange={onScheduleFitChange}
-      onAuthRequest={onAuthRequest}
-    />
-  );
-}
-
-type DetailsStepProps = {
-  selectedCard: "individual" | "group";
-  onReturnToOrigin?: () => void;
-  returnLabel?: string;
-};
-
-function DetailsStep({ selectedCard, onReturnToOrigin, returnLabel }: DetailsStepProps) {
-  return (
-    <section className="px-4 pb-16 pt-12">
-      <div className="mx-auto flex max-w-5xl flex-col gap-10" id="sessions">
-        <SessionDetails type={selectedCard} />
-        <SocialProof />
-        {onReturnToOrigin ? (
-          <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={onReturnToOrigin}
-              className="rounded-[12px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
-            >
-              {returnLabel ?? "Înapoi"}
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </section>
   );
 }

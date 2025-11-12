@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import SiteHeader from "../../components/SiteHeader";
 import MenuOverlay from "../../components/MenuOverlay";
 import AccountModal from "../../components/AccountModal";
@@ -11,6 +12,7 @@ import { useProfile } from "../../components/ProfileProvider";
 import { useProgressFacts } from "../../components/useProgressFacts";
 import { computeDimensionScores, type IntentCategorySummary } from "@/lib/scoring";
 import { recommendSession } from "@/lib/recommendation";
+import { readRecommendationCache } from "@/lib/recommendationCache";
 
 const STAGE_LABELS: Record<string, string> = {
   t0: "Start (0 săpt.)",
@@ -54,7 +56,7 @@ function RecommendationContent() {
           <p className="text-sm text-[#4A3A30]">{pageSubtitle}</p>
         </div>
         {showPublicView ? (
-          <PublicRecommendationView t={t} lang={lang} />
+          <PublicOrCachedView t={t} lang={lang} />
         ) : (
           <MemberRecommendationView
             profileName={profile?.name ?? "Membru OmniMental"}
@@ -83,7 +85,7 @@ function PublicRecommendationView({ t, lang }: { t: (key: string) => unknown; la
       <p className="text-sm text-[#4A3A30]">{body}</p>
       <div className="flex flex-col items-center gap-3">
         <Link
-          href="/evaluation"
+          href="/antrenament"
           className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
         >
           {ctaLabel}
@@ -106,6 +108,7 @@ type MemberViewProps = {
 };
 
 function MemberRecommendationView({ profileName, progress, loading, error, tier, t }: MemberViewProps) {
+  const router = useRouter();
   if (loading) {
     return (
       <div className="mx-auto mt-10 max-w-4xl rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 text-center text-sm text-[#4A3A30] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
@@ -196,9 +199,18 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
             </p>
             <h2 className="text-2xl font-semibold text-[#1F1F1F]">{profileName}</h2>
           </div>
-          <span className="rounded-full border border-[#D8C6B6] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#5C4F45]">
-            {badgeLabel}
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => router.refresh()}
+              className="rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+            >
+              {resolveString(t("recommendationRefresh"), "Resincronizează")}
+            </button>
+            <span className="rounded-full border border-[#D8C6B6] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#5C4F45]">
+              {badgeLabel}
+            </span>
+          </div>
         </header>
         <div className="space-y-3 rounded-[16px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-4">
           <h3 className="text-lg font-semibold text-[#1F1F1F]">{pathTitle}</h3>
@@ -287,5 +299,35 @@ export default function RecommendationPage() {
     <I18nProvider>
       <RecommendationContent />
     </I18nProvider>
+  );
+}
+function PublicOrCachedView({ t, lang }: { t: (key: string) => unknown; lang: string }) {
+  const cached = readRecommendationCache();
+  if (!cached) {
+    return <PublicRecommendationView t={t} lang={lang} />;
+  }
+  const title = resolveString(t("recommendationCachedTitle"), "Recomandarea ta salvată");
+  const label = cached.recommendation.path === "individual" ? (lang === "ro" ? "Ședințe individuale" : "Individual sessions") : (lang === "ro" ? "Grup OmniMental" : "OmniMental group");
+  const reason = resolveString(t(`recommendationReason_${cached.recommendation.reasonKey}`), cached.recommendation.reasonKey);
+  const selectionNote = cached.selectedPath
+    ? (cached.selectedPath === "individual"
+        ? (lang === "ro" ? "Ai ales sesiuni individuale." : "You chose individual sessions.")
+        : (lang === "ro" ? "Ai ales programul de grup." : "You chose the group program."))
+    : null;
+  return (
+    <section className="mx-auto mt-10 max-w-3xl space-y-4 rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-8 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
+      <h2 className="text-2xl font-semibold text-[#1F1F1F]">{title}</h2>
+      <p className="text-sm text-[#4A3A30]">{lang === "ro" ? "Bazată pe ultimele selecții făcute în aplicație." : "Based on your latest selections in the app."}</p>
+      <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3">
+        <p className="text-xs uppercase tracking-[0.3em] text-[#C07963]">{lang === "ro" ? "Recomandare" : "Recommendation"}</p>
+        <h3 className="text-lg font-semibold text-[#1F1F1F]">{label}</h3>
+        <p className="text-sm text-[#5C4F45]">{reason}</p>
+        {selectionNote ? <p className="text-xs text-[#7A6455]">{selectionNote}</p> : null}
+      </div>
+      <div className="flex items-center justify-center gap-3">
+        <Link href={cached.selectedPath === "group" ? "/group-info" : "/sessions/individual"} className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white">{lang === "ro" ? "Vezi opțiunile" : "See options"}</Link>
+        <Link href="/" className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white">{lang === "ro" ? "Refă clarificarea" : "Refine again"}</Link>
+      </div>
+    </section>
   );
 }

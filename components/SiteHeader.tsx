@@ -17,14 +17,43 @@ export default function SiteHeader({
   onAuthRequest,
 }: SiteHeaderProps) {
   const { lang, setLang, t } = useI18n();
-  const { user, signOutUser } = useAuth();
+  const { user, signOutUser, linkSentTo } = useAuth();
+  const isLoggedIn = Boolean(user && !user.isAnonymous);
+  const shortUser = (() => {
+    let email = "";
+    if (isLoggedIn) {
+      // Prefer user.email, fall back to providerData email, then last sent link
+      email = user?.email || "";
+      if (!email && Array.isArray(user?.providerData)) {
+        for (const p of user.providerData) {
+          if (p?.email) {
+            email = p.email;
+            break;
+          }
+        }
+      }
+      if (!email && typeof linkSentTo === "string" && linkSentTo.length > 0) {
+        email = linkSentTo;
+      }
+      if (!email && typeof window !== "undefined") {
+        try {
+          const raw = window.localStorage.getItem("omnimental_auth_email");
+          if (raw) {
+            const parsed = JSON.parse(raw) as { email?: string };
+            if (parsed?.email) email = parsed.email;
+          }
+        } catch {}
+      }
+    }
+    if (email) return email.slice(0, 5);
+    return lang === "ro" ? "Oaspete" : "Guest";
+  })();
   const availableLocales = ["ro", "en"] as const;
   const progressLabelValue = t("headerProgressCta");
   const progressLabel =
     typeof progressLabelValue === "string" ? progressLabelValue : "Progres";
-  const evaluationLabelValue = t("headerEvaluationCta");
-  const evaluationLabel =
-    typeof evaluationLabelValue === "string" ? evaluationLabelValue : "Evaluare";
+  const evalLabelValue = t("navAntrenament");
+  const evaluationLabel = typeof evalLabelValue === "string" ? evalLabelValue : (lang === "ro" ? "Antrenament" : "Training");
   const signInLabelValue = t("headerSignIn");
   const signOutLabelValue = t("headerSignOut");
   const signInLabel =
@@ -49,7 +78,7 @@ export default function SiteHeader({
       </Link>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Link
-          href="/evaluation"
+          href="/antrenament"
           className="rounded-full border border-transparent px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4A3A30] transition hover:text-[#E60012]"
         >
           {evaluationLabel}
@@ -58,7 +87,13 @@ export default function SiteHeader({
           href="/progress"
           className="hidden rounded-full border border-[#2C2C2C] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:bg-[#2C2C2C] hover:text-white sm:inline-flex"
         >
-          {progressLabel}
+          {typeof t("navProgres") === "string" ? (t("navProgres") as string) : progressLabel}
+        </Link>
+        <Link
+          href="/recommendation"
+          className="hidden rounded-full border border-transparent px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4A3A30] transition hover:text-[#E60012] sm:inline-flex"
+        >
+          {typeof t("navRecommendation") === "string" ? (t("navRecommendation") as string) : (lang === "ro" ? "Recomandare" : "Recommendation")}
         </Link>
         <Link
           href="/unsubscribe"
@@ -66,41 +101,44 @@ export default function SiteHeader({
         >
           {unsubscribeLabel}
         </Link>
-        {/* Auth status pill (dev helper) */}
+        {/* Auth status pill */}
         <span
           title={user?.email ?? user?.uid ?? "guest"}
           className={`hidden items-center rounded-full border px-2 py-1 text-[10px] uppercase tracking-[0.2em] sm:inline-flex ${
             user ? "border-emerald-600/40 text-emerald-700" : "border-amber-600/40 text-amber-700"
           }`}
         >
-          {user ? (lang === "ro" ? "Autentificat" : "Signed in") : (lang === "ro" ? "Oaspete" : "Guest")}
+          {shortUser}
         </span>
 
-        <button
-          type="button"
-          onClick={
-            user
-              ? () => {
-                  void signOutUser().catch((error) => {
-                    console.error("sign-out failed", error);
-                  });
-                }
-              : () => {
-                  if (onAuthRequest) {
-                    onAuthRequest();
-                  } else if (typeof window !== "undefined") {
-                    window.location.href = "/progress";
+        {/* Auth chip styled like RO/EN group */}
+        <div className="flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 p-1 text-[10px] font-semibold text-neutral-dark uppercase tracking-[0.2em]">
+          <button
+            type="button"
+            onClick={
+              isLoggedIn
+                ? () => {
+                    void signOutUser().catch((error) => {
+                      console.error("sign-out failed", error);
+                    });
                   }
-                }
-          }
-          className={`rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] transition ${
-            user
-              ? "border border-[#2C2C2C] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
-              : "border border-transparent bg-[#2C2C2C] text-white hover:opacity-80"
-          }`}
-        >
-          {user ? signOutLabel : signInLabel}
-        </button>
+                : () => {
+                    if (onAuthRequest) {
+                      onAuthRequest();
+                    } else if (typeof window !== "undefined") {
+                      window.location.href = "/progress";
+                    }
+                  }
+            }
+            className={`rounded-full px-2.5 py-1 transition ${
+              isLoggedIn ? "bg-white text-primary shadow-sm" : "text-primary/70 hover:text-primary"
+            }`}
+            aria-pressed={isLoggedIn}
+            title={isLoggedIn ? (typeof signOutLabel === "string" ? (signOutLabel as string) : "Sign out") : (typeof signInLabel === "string" ? (signInLabel as string) : "Sign in")}
+          >
+            {isLoggedIn ? (typeof signOutLabel === "string" ? signOutLabel : "Deconectează-te") : (typeof signInLabel === "string" ? signInLabel : "Conectează-te")}
+          </button>
+        </div>
         <div className="flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 p-1 text-[10px] font-semibold text-neutral-dark">
           {availableLocales.map((locale) => (
             <button

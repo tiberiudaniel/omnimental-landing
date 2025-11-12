@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import type { IntentCloudResult } from "./IntentCloud";
-import { getDb, ensureAuth } from "../lib/firebase";
+import { getDb, ensureAuth, areWritesDisabled } from "../lib/firebase";
 import {
   type ResolutionSpeed,
   type BudgetPreference,
@@ -144,11 +144,13 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           // Signal to caller not to advance without throwing to console
           return false;
         }
-        await addDoc(collection(db, "userInterests"), {
-          text: cleanText,
-          lang,
-          timestamp: serverTimestamp(),
-        });
+        if (!areWritesDisabled()) {
+          await addDoc(collection(db, "userInterests"), {
+            text: cleanText,
+            lang,
+            timestamp: serverTimestamp(),
+          });
+        }
         const resolvedCategory = meta?.category ?? detectCategoryFromRawInput(cleanText) ?? null;
         setFirstIntentCategory(resolvedCategory);
         setFirstIntentExpression(meta?.expressionId ?? cleanText);
@@ -294,6 +296,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       };
 
       const attemptSnapshotSave = async (withExtras: boolean) => {
+        if (areWritesDisabled()) return;
         const snapshotRef = await addDoc(collection(db, "userIntentSnapshots"), buildSnapshotPayload(withExtras));
         try {
           await addDoc(collection(db, "userIntentInsights"), buildInsightPayload(snapshotRef.id, withExtras));
@@ -416,7 +419,9 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       });
 
       try {
-        await addDoc(collection(db, "userJourneys"), buildJourneyPayload(includeExtras));
+        if (!areWritesDisabled()) {
+          await addDoc(collection(db, "userJourneys"), buildJourneyPayload(includeExtras));
+        }
         setSelectedCard(type);
         if (includeExtras) {
           void recordRecommendationProgressFact({

@@ -10,8 +10,9 @@ interface AccountModalProps {
 }
 
 export default function AccountModal({ open, onClose }: AccountModalProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { sendMagicLink, sendingLink, linkSentTo } = useAuth();
+  const [lastEmail, setLastEmail] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [status, setStatus] = useState<"idle" | "sent">("idle");
@@ -40,6 +41,7 @@ export default function AccountModal({ open, onClose }: AccountModalProps) {
     try {
       await sendMagicLink(email, rememberMe);
       setStatus("sent");
+      setLastEmail(email);
       setEmail("");
       setRememberMe(true);
     } catch (err) {
@@ -83,6 +85,29 @@ export default function AccountModal({ open, onClose }: AccountModalProps) {
                   {linkSentTo}
                 </p>
               ) : null}
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                disabled={sendingLink || !lastEmail}
+                onClick={async () => {
+                  try {
+                    if (lastEmail) {
+                      await sendMagicLink(lastEmail, true);
+                    }
+                  } catch {}
+                }}
+                className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
+              >
+                {lang === "ro" ? "Trimite din nou" : "Resend"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatus("idle")}
+                className="inline-flex items-center justify-center rounded-[10px] border border-[#D8C6B6] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#2C2C2C] hover:text-[#E60012]"
+              >
+                {lang === "ro" ? "Schimbă email" : "Change email"}
+              </button>
             </div>
             <button
               type="button"

@@ -3,7 +3,6 @@
 import ProgressStageCard from "./ProgressStageCard";
 
 export type StageCardConfig = {
-  icon: string;
   title: string;
   subtitle: string;
   percent: number;
@@ -18,9 +17,8 @@ export default function ProgressStagesSection({ stages }: { stages: StageCardCon
   return (
     <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2">
       {stages.map((s, idx) => (
-        <ProgressStageCard key={`${s.title}-${idx}`} icon={s.icon} title={s.title} subtitle={s.subtitle} percent={s.percent} status={s.status} ctaLabel={s.ctaLabel} onAction={s.onAction} locked={s.locked} lockHint={s.lockHint} />
+        <ProgressStageCard key={`${s.title}-${idx}`} title={s.title} subtitle={s.subtitle} percent={s.percent} status={s.status} ctaLabel={s.ctaLabel} onAction={s.onAction} locked={s.locked} lockHint={s.lockHint} />
       ))}
     </div>
   );
 }
-

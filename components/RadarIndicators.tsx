@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React from "react"; // default import kept for explicit React namespace if needed
 import type { IndicatorChartKey } from "@/lib/indicators";
 
 type RadarDataPoint = {
@@ -12,6 +12,7 @@ type RadarDataPoint = {
 type RadarIndicatorsProps = {
   data: RadarDataPoint[];
   maxValue?: number;
+  size?: "sm" | "md" | "lg";
 };
 
 const WEDGE_COLORS: Record<IndicatorChartKey, string> = {
@@ -25,15 +26,15 @@ const WEDGE_COLORS: Record<IndicatorChartKey, string> = {
 
 const clampValue = (value: number, max: number) => Math.max(0, Math.min(max, value));
 
-export function RadarIndicators({ data, maxValue = 5 }: RadarIndicatorsProps) {
+export function RadarIndicators({ data, maxValue = 5, size = "md" }: RadarIndicatorsProps) {
   const normalized = data.map((point) => ({
     ...point,
     value: clampValue(point.value, maxValue),
     color: WEDGE_COLORS[point.key],
   }));
 
-  const size = 320;
-  const center = size / 2;
+  const base = size === "sm" ? 220 : size === "lg" ? 360 : 320;
+  const center = base / 2;
   const radius = center - 24;
   const total = normalized.length;
   const step = (Math.PI * 2) / total;
@@ -53,8 +54,8 @@ export function RadarIndicators({ data, maxValue = 5 }: RadarIndicatorsProps) {
         cy={center}
         r={ringRadius}
         fill="none"
-        stroke="rgba(44, 44, 44, 0.08)"
-        strokeWidth={1}
+        stroke="rgba(44, 44, 44, 0.12)"
+        strokeWidth={1.5}
       />
     );
   });
@@ -69,8 +70,8 @@ export function RadarIndicators({ data, maxValue = 5 }: RadarIndicatorsProps) {
         y1={center}
         x2={x}
         y2={y}
-        stroke="rgba(44, 44, 44, 0.12)"
-        strokeWidth={1}
+        stroke="rgba(44, 44, 44, 0.2)"
+        strokeWidth={1.25}
       />
     );
   });
@@ -123,18 +124,20 @@ export function RadarIndicators({ data, maxValue = 5 }: RadarIndicatorsProps) {
 
   return (
     <svg
-      viewBox={`0 0 ${size} ${size}`}
-      className="mx-auto h-72 w-72 max-w-full"
+      viewBox={`0 0 ${base} ${base}`}
+      className="mx-auto max-w-full"
       role="img"
       aria-label="Radar chart with key indicators"
     >
       <defs>
-        <filter id="radarShadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="rgba(0,0,0,0.15)" />
+        <filter id="radarShadow" x="-50%" y="-50%" width="220%" height="220%">
+          <feDropShadow dx="0" dy="8" stdDeviation="10" floodColor="rgba(0,0,0,0.25)"/>
         </filter>
       </defs>
+      {/* Inner card frame to match other cards */}
+      <rect x="8" y="8" width={base - 16} height={base - 16} rx="14" ry="14" fill="#FFFFFF" stroke="rgba(44,44,44,0.06)" />
       <g filter="url(#radarShadow)">
-        <circle cx={center} cy={center} r={radius} fill="rgba(255,255,255,0.8)" />
+        <circle cx={center} cy={center} r={radius} fill="rgba(255,255,255,0.9)" />
         {rings}
         {axes}
         {wedges}

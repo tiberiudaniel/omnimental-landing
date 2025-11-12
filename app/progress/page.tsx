@@ -4,10 +4,10 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { recordEvaluationTabChange } from "@/lib/progressFacts";
-import ProgressSummary from "../../components/ProgressSummary";
-import ProgressStagesSection, { type StageCardConfig } from "../../components/ProgressStagesSection";
+// Removed stage cards grid; switching to motivation summary card next to radar
 import ProgressHeaderSection from "../../components/ProgressHeaderSection";
 import ProgressEvaluationSection from "../../components/ProgressEvaluationSection";
+import MotivationResourcesCard from "../../components/MotivationResourcesCard";
 import ProgressThemesSection from "../../components/ProgressThemesSection";
 import SiteHeader from "../../components/SiteHeader";
 import ProgressNoProfileState from "../../components/ProgressNoProfileState";
@@ -18,10 +18,12 @@ import { I18nProvider, useI18n } from "../../components/I18nProvider";
 import { useProfile } from "../../components/ProfileProvider";
 import { useProgressFacts } from "../../components/useProgressFacts";
 import { useEvaluationTimeline } from "../../components/useEvaluationTimeline";
-import ProgressSparkline from "../../components/ProgressSparkline";
-import ProgressTrends from "../../components/ProgressTrends";
+// removed unused imports: ProgressSparkline, ProgressTrends
+import MicroMetricRow from "../../components/MicroMetricRow";
 import LatestEntries from "../../components/LatestEntries";
-import type { ProgressIntentCategories, ProgressFact } from "@/lib/progressFacts";
+import OmniPathRow from "../../components/OmniPathRow";
+import type { ProgressIntentCategories } from "@/lib/progressFacts";
+import { buildIndicatorSummary, type IndicatorChartValues } from "@/lib/indicators";
 import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
 import Toast from "../../components/Toast";
 import { backfillProgressFacts, recordQuestCompletion } from "@/lib/progressFacts";
@@ -29,7 +31,6 @@ import { omniKnowledgeModules } from "@/lib/omniKnowledge";
 import { computeOmniIntelScore, computeConsistencyIndexFromDates } from "@/lib/omniIntel";
 import { getGlobalLoadLabel, getOmniLevel, normalizeMaas, metricDescriptions } from "@/lib/progressMapping";
 import { recordOmniPatch } from "@/lib/progressFacts";
-import StickyMiniSummary from "../../components/StickyMiniSummary";
 import NextBestStep from "../../components/NextBestStep";
 import type { SessionType } from "@/lib/recommendation";
 import type { DimensionScores } from "@/lib/scoring";
@@ -73,11 +74,7 @@ const DIMENSION_LABELS: Record<DimensionKey, { ro: string; en: string }> = {
   health: { ro: "Obiceiuri & sănătate", en: "Habits & health" },
 };
 
-function deriveSenseiUnlocked(p?: ProgressFact | null) {
-  const kunoCompleted = Number(p?.omni?.kuno?.completedTests ?? 0) >= 1;
-  const explicit = Boolean(p?.omni?.sensei?.unlocked);
-  return explicit || kunoCompleted;
-}
+// deriveSenseiUnlocked removed (no longer needed after stage cards refactor)
 
 const RETURN_TO_PROGRESS = "/progress";
 
@@ -170,7 +167,6 @@ function ProgressContent() {
   const motivationTitle = t("progressMotivationTitle");
   const motivationEmpty = t("progressMotivationEmpty");
   const questTitle = t("progressQuestTitle");
-  const questEmpty = t("progressQuestEmpty");
 
   const intent = progress?.intent;
   const motivation = progress?.motivation;
@@ -266,16 +262,13 @@ function ProgressContent() {
     return evalTimeline.map((e) => normalizeMaas(Number(e.scores?.maasTotal ?? 0)));
   }, [evalTimeline]);
 
-  const distributionData = useMemo(() => {
-    if (!intent?.categories || intent.categories.length === 0)
-      return [] as { label: string; value: number }[];
-    const total = intent.categories.reduce((sum, c) => sum + c.count, 0) || 1;
-    const sorted = intent.categories.slice().sort((a, b) => b.count - a.count);
-    return sorted.slice(0, 3).map((c) => ({
-      label: categoryLabels[c.category] ?? c.category,
-      value: Math.round((c.count / total) * 100),
-    }));
-  }, [categoryLabels, intent?.categories]);
+  const radarChart: IndicatorChartValues = useMemo(() => {
+    if (!intent?.categories || intent.categories.length === 0) {
+      return { clarity: 0, relationships: 0, calm: 0, energy: 0, performance: 0, bodyHabits: 0 };
+    }
+    const { chart } = buildIndicatorSummary(intent.categories);
+    return chart;
+  }, [intent?.categories]);
 
   const heroSelectionMessage = useMemo(() => {
     if (!heroDetails) return null;
@@ -310,6 +303,7 @@ function ProgressContent() {
     if (!intent?.categories) return [];
     return formatCategories(intent.categories, categoryLabels);
   }, [intent, categoryLabels]);
+  const categoryChips = useMemo(() => formattedCategories.map((c) => c.label), [formattedCategories]);
 
   const motivationRows = useMemo(() => {
     if (!motivation) return [];
@@ -381,11 +375,12 @@ function ProgressContent() {
   }
 
   return (
-    <div className="bg-bgLight min-h-screen">
+    <div className="min-h-screen bg-[#FAF7F2]">
       <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => setAccountModalOpen(true)} />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <AccountModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
       <main className="px-4 py-12 md:px-8">
+        <OmniPathRow lang={lang === "en" ? "en" : "ro"} progress={progress ?? undefined} />
         <ProgressHeaderSection
           lang={lang === "en" ? "en" : "ro"}
           progress={progress ?? undefined}
@@ -401,112 +396,93 @@ function ProgressContent() {
             goToKuno: () => {
               void recordEvaluationTabChange("oc");
               const qs = new URLSearchParams({ tab: "oc", source: "progress" }).toString();
-              router.push(`/evaluation?${qs}`);
+              router.push(`/antrenament?${qs}`);
             },
             goToSensei: () => {
               const qs = new URLSearchParams({ tab: "ose", source: "progress" }).toString();
-              router.push(`/evaluation?${qs}`);
+              router.push(`/antrenament?${qs}`);
             },
             goToAbil: () => {
               void recordEvaluationTabChange("oa");
               const qs = new URLSearchParams({ tab: "oa", source: "progress" }).toString();
-              router.push(`/evaluation?${qs}`);
+              router.push(`/antrenament?${qs}`);
             },
             goToIntel: () => {
               void recordEvaluationTabChange("oi");
               const qs = new URLSearchParams({ tab: "oi", source: "progress" }).toString();
-              router.push(`/evaluation?${qs}`);
+              router.push(`/antrenament?${qs}`);
             },
+            onAuthRequest: () => setAccountModalOpen(true),
           }}
         />
 
-        <ProgressEvaluationSection
-          lang={lang === "en" ? "en" : "ro"}
-          sparkValues={sparkValues}
-          distribution={distributionData}
-          latest={{ quests: quests as unknown as Array<{ title?: string }>, evaluationsCount: evalTimeline?.length ?? 0 }}
-        />
-
-        {/* 2x2 grid of stages on desktop */}
-        <ProgressStagesSection
-          stages={((): StageCardConfig[] => {
-            const intentPercent = intent?.tags?.length ? Math.min(100, Math.round((intent.tags.length / 7) * 100)) : 0;
-            const motivationPercent = (() => {
-              const m = motivation;
-              if (!m) return 0;
-              const answers = [
-                m.urgency,
-                m.determination,
-                m.hoursPerWeek,
-                m.budgetLevel,
-                m.goalType,
-                m.emotionalState,
-                m.groupComfort,
-                m.learnFromOthers,
-                m.scheduleFit,
-                m.formatPreference,
-              ];
-              const total = answers.length;
-              const filled = answers.filter((v) => v !== undefined && v !== null).length;
-              return Math.round((filled / total) * 100);
-            })();
-            return [
-              {
-                icon: "🎯",
-                title: resolveString(intentTitle, "Intenții & Cloud"),
-                subtitle: intent ? (lang === "ro" ? "Complet" : "Complete") : (lang === "ro" ? "Începe sau reia selecția" : "Start or resume selection"),
-                percent: intentPercent,
-                status: intent ? "complete" : "stale",
-                ctaLabel: lang === "ro" ? "Reia clarificarea" : "Clarify now",
-                onAction: () => {
-                  const link = buildWizardLink("intent", "progress-intent-card");
-                  const qs = new URLSearchParams(link.query as Record<string, string>).toString();
-                  router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
+        <div className="mx-auto mt-2 grid max-w-5xl grid-cols-1 gap-3 md:grid-cols-12">
+          <div className="space-y-3 md:col-span-9">
+            {/* Next step placed above Radar/Trends as requested */}
+            <div>
+              <NextBestStep
+                  progress={progress ?? undefined}
+                  lang={lang === "en" ? "en" : "ro"}
+                  className=""
+                  onGoToKuno={() => {
+                    void recordEvaluationTabChange("oc");
+                    const qs = new URLSearchParams({ tab: "oc", source: "progress" }).toString();
+                    router.push(`/antrenament?${qs}`);
+                  }}
+                  onGoToSensei={() => {
+                    const qs = new URLSearchParams({ tab: "ose", source: "progress" }).toString();
+                    router.push(`/antrenament?${qs}`);
+                  }}
+                  onGoToAbil={() => {
+                    void recordEvaluationTabChange("oa");
+                    const qs = new URLSearchParams({ tab: "oa", source: "progress" }).toString();
+                    router.push(`/antrenament?${qs}`);
+                  }}
+                  onGoToIntel={() => {
+                    void recordEvaluationTabChange("oi");
+                    const qs = new URLSearchParams({ tab: "oi", source: "progress" }).toString();
+                    router.push(`/antrenament?${qs}`);
+                  }}
+                />
+            </div>
+            <ProgressEvaluationSection
+              lang={lang === "en" ? "en" : "ro"}
+              sparkValues={sparkValues}
+              radarChart={radarChart}
+              categoryChips={categoryChips}
+              onRefineThemes={() => {
+                const link = buildWizardLink("intent", "progress-refine-themes");
+                const qs = new URLSearchParams(link.query as Record<string, string>).toString();
+                router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
+              }}
+            />
+            <MicroMetricRow
+              items={[
+                {
+                  label: lang === "ro" ? "Consistență (14 zile)" : "Consistency (14d)",
+                  value: `${Math.round(((evalTimeline?.length ?? 0) > 0 ? Math.max(1, Math.round((computeConsistencyIndexFromDates((evalTimeline ?? []).map(e => e.createdAt as Date).filter(Boolean)) / 100) * 14)) : 0))} zile`,
+                  hint: lang === "ro" ? "zile active distincte" : "distinct active days",
                 },
-              },
-              {
-                icon: "🧭",
-                title: resolveString(motivationTitle, "Motivație & Resurse"),
-                subtitle: motivation ? (lang === "ro" ? "Actualizat" : "Updated") : (lang === "ro" ? "Adaugă resurse" : "Add resources"),
-                percent: motivationPercent,
-                status: motivation ? "inProgress" : "stale",
-                ctaLabel: lang === "ro" ? "Adaugă resurse" : "Add resources",
-                onAction: () => {
-                  const link = buildWizardLink("intentSummary", "progress-motivation-card");
-                  const qs = new URLSearchParams(link.query as Record<string, string>).toString();
-                  router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
+                {
+                  label: lang === "ro" ? "Evaluări" : "Evaluations",
+                  value: evalTimeline?.length ?? 0,
                 },
-              },
-              {
-                icon: "🧠",
-                title: resolveString(evaluationTitle, "Evaluări Omni-Intel"),
-                subtitle: evaluation ? (lang === "ro" ? "Există măsurători" : "Measurements found") : (lang === "ro" ? "Completează o evaluare" : "Complete an evaluation"),
-                percent: evaluation ? 100 : 0,
-                status: evaluation ? "inProgress" : "stale",
-                ctaLabel: lang === "ro" ? "Deschide evaluările" : "Open evaluations",
-                onAction: () => {
-                  const qs = new URLSearchParams({ tab: "oi", source: "progress" }).toString();
-                  router.push(`/evaluation?${qs}`);
-                },
-              },
-              {
-                icon: "🧩",
-                title: resolveString(questTitle, "Quest-uri"),
-                subtitle: (progress?.quests?.items?.length ?? 0) > 0 ? (lang === "ro" ? "Active" : "Active") : (lang === "ro" ? "Vor apărea după evaluare" : "Will appear after evaluation"),
-                percent: (progress?.quests?.items?.length ?? 0) > 0 ? 50 : 0,
-                status: (progress?.quests?.items?.length ?? 0) > 0 ? "inProgress" : "stale",
-                ctaLabel: lang === "ro" ? "Vezi quest-uri" : "View quests",
-                onAction: () => {
-                  const link = buildRecommendationLink();
-                  const qs = new URLSearchParams(link.query as Record<string, string>).toString();
-                  router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
-                },
-                locked: !deriveSenseiUnlocked(progress),
-                lockHint: lang === "ro" ? "Se activează după Kuno" : "Unlocks after Kuno",
-              },
-            ];
-          })()}
-        />
+              ]}
+            />
+          </div>
+          <div className="space-y-3 md:col-span-3">
+            <MotivationResourcesCard
+              lang={lang === "en" ? "en" : "ro"}
+              motivation={motivation ?? undefined}
+              onEdit={() => {
+                const link = buildWizardLink("intentSummary", "progress-motivation-edit");
+                const qs = new URLSearchParams(link.query as Record<string, string>).toString();
+                router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
+              }}
+            />
+            <LatestEntries compact lang={lang === "en" ? "en" : "ro"} quests={quests as unknown as Array<{ title?: string }>} evaluationsCount={evalTimeline?.length ?? 0} />
+          </div>
+        </div>
         <ProgressThemesSection
           lang={lang === "en" ? "en" : "ro"}
           heading={{

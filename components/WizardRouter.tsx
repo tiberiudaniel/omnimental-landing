@@ -6,8 +6,10 @@ import WizardReflection from "./WizardReflection";
 import IntentCloud, { type IntentCloudResult } from "./IntentCloud";
 import IntentSummary from "./IntentSummary";
 import RecommendationStep from "./RecommendationStep";
+import { useI18n } from "./I18nProvider";
+import { getString as i18nGetString } from "@/lib/i18nGetString";
 import SessionDetails from "./SessionDetails";
-import type { IntentPrimaryCategory } from "@/lib/intentExpressions";
+import type { IntentPrimaryCategory, IntentCloudWord } from "@/lib/intentExpressions";
 import type { ResolutionSpeed, BudgetPreference, GoalType, EmotionalState, FormatPreference } from "@/lib/evaluation";
 
 export type Step =
@@ -43,7 +45,7 @@ type Props = {
   // Intent cloud
   minSelection: number;
   maxSelection: number;
-  words?: Array<{ id: string; label: string; category: string; weight?: number }>;
+  words?: IntentCloudWord[];
   cloudKey?: string;
   onIntentComplete: (result: IntentCloudResult) => void;
 
@@ -79,7 +81,7 @@ type Props = {
   onAccountRequestCards: () => void;
   recommendedPath: "individual" | "group";
   recommendedBadgeLabel?: string;
-  onCardSelect: (type: "individual" | "group") => Promise<void | boolean> | void | boolean;
+  onCardSelect: (type: "individual" | "group") => void | Promise<void>;
   isSavingChoice: boolean;
   savingChoiceType: "individual" | "group" | null;
   cardsSavingLabel: string;
@@ -95,6 +97,7 @@ type Props = {
 };
 
 export default function WizardRouter(props: Props) {
+  const { t } = useI18n();
   const {
     step,
     lang,
@@ -105,7 +108,7 @@ export default function WizardRouter(props: Props) {
     reflectionPromptLines,
     reflectionSummaryLines,
     intentCategories,
-    intentSelectionTotal,
+    // intentSelectionTotal not used in this router; kept in parent
     categoryLabels,
     minSelection,
     maxSelection,
@@ -225,7 +228,9 @@ export default function WizardRouter(props: Props) {
           intentUrgency={urgency}
           recommendedPath={recommendedPath}
           onCardSelect={onCardSelect}
-          cardLabels={{ individual: "", group: "" }}
+          cardLabels={{ individual: i18nGetString(t, "cardIndividualLabel", "Individual"), group: i18nGetString(t, "cardGroupLabel", "Group") }}
+          accountPromptMessage={i18nGetString(t, "accountPromptMessage", "Salvează-ți progresul și vezi istoricul evaluărilor.")}
+          accountPromptButton={i18nGetString(t, "accountPromptButton", "Creează cont")}
           isSavingChoice={isSavingChoice}
           savingChoiceType={savingChoiceType}
           errorMessage={saveError}
@@ -278,4 +283,3 @@ function IntroAnimation({ onComplete }: { onComplete: () => void }) {
   // Imported at top-level as JourneyIntro covers intro content, preIntro uses this placeholder
   return <JourneyIntro onStart={onComplete} />;
 }
-

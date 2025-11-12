@@ -1,24 +1,24 @@
 "use client";
 
 import ProgressTrends from "./ProgressTrends";
-import LatestEntries from "./LatestEntries";
+import type { IndicatorChartValues } from "@/lib/indicators";
 
 type Props = {
   lang: "ro" | "en";
   sparkValues: number[];
-  distribution: Array<{ label: string; value: number }>;
-  latest: {
-    quests: Array<{ title?: string }>;
-    evaluationsCount: number;
-  };
+  radarChart: IndicatorChartValues;
+  categoryChips: string[];
+  onRefineThemes: () => void;
 };
 
-export default function ProgressEvaluationSection({ lang, sparkValues, distribution, latest }: Props) {
+export default function ProgressEvaluationSection({ lang, sparkValues, radarChart, categoryChips, onRefineThemes }: Props) {
   return (
-    <>
-      <ProgressTrends lang={lang} sparkValues={sparkValues} distribution={distribution} />
-      <LatestEntries lang={lang} quests={latest.quests} evaluationsCount={latest.evaluationsCount} />
-    </>
+    <ProgressTrends
+      lang={lang}
+      sparkValues={sparkValues}
+      radarChart={radarChart}
+      categoryChips={categoryChips}
+      onRefineThemes={onRefineThemes}
+    />
   );
 }
-

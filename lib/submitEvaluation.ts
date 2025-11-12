@@ -1,7 +1,7 @@
 "use client";
 
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { getDb, ensureAuth } from "@/lib/firebase";
+import { getDb, ensureAuth, areWritesDisabled } from "@/lib/firebase";
 import { recordQuestProgressFact } from "./progressFacts";
 import type { OmniKnowledgeScores } from "./omniKnowledge";
 import type { QuestSuggestion } from "./quests";
@@ -17,6 +17,9 @@ export async function submitEvaluation(payload: EvalPayload) {
   if (!user) throw new Error("Auth not available on server. Call from client component.");
   const db = getDb();
   const timestamp = serverTimestamp();
+  if (areWritesDisabled()) {
+    return `local-${Date.now()}`;
+  }
   const ref = await addDoc(collection(db, "userIntentSnapshots"), {
     profileId: user.uid, // necesar pentru reguli
     lang: payload.lang,
@@ -41,6 +44,7 @@ export async function submitOmniAbilitiesAssessment(payload: OmniAbilitySubmissi
   if (!user) throw new Error("Auth not available on server. Call from client component.");
   const db = getDb();
   const timestamp = serverTimestamp();
+  if (areWritesDisabled()) return;
   await addDoc(collection(db, "userAbilityAssessments"), {
     profileId: user.uid,
     lang: payload.lang,
@@ -69,6 +73,7 @@ export async function submitOmniIntentAssessment(payload: OmniIntentSubmission) 
   if (!user) throw new Error("Auth not available on server. Call from client component.");
   const db = getDb();
   const timestamp = serverTimestamp();
+  if (areWritesDisabled()) return;
   await addDoc(collection(db, "userIntentAssessments"), {
     profileId: user.uid,
     lang: payload.lang,
@@ -101,6 +106,7 @@ export async function submitOmniKnowledgeAssessment(payload: OmniKnowledgeSubmis
   if (!user) throw new Error("Auth not available on server. Call from client component.");
   const db = getDb();
   const timestamp = serverTimestamp();
+  if (areWritesDisabled()) return;
   await addDoc(collection(db, "userKnowledgeAssessments"), {
     profileId: user.uid,
     lang: payload.lang,
@@ -125,6 +131,10 @@ export async function saveQuestSuggestions(payload: QuestSuggestionPayload) {
   if (!user) throw new Error("Auth not available on server. Call from client component.");
   const db = getDb();
   const timestamp = serverTimestamp();
+  if (areWritesDisabled()) {
+    await recordQuestProgressFact({ quests: payload.quests });
+    return;
+  }
   await addDoc(collection(db, "userQuestSuggestions"), {
     profileId: user.uid,
     lang: payload.lang,
