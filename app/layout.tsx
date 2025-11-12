@@ -3,7 +3,11 @@ import { Geist, Geist_Mono, Roboto } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../components/AuthProvider";
 import { ProfileProvider } from "../components/ProfileProvider";
+import { I18nProvider } from "../components/I18nProvider";
+import QueryLangSync from "../components/QueryLangSync";
+import { Suspense } from "react";
 import Script from "next/script";
+import SiteFooter from "../components/SiteFooter";
 
 // Font setup
 const geistSans = Geist({
@@ -71,7 +75,14 @@ export default function RootLayout({
     >
       <body className="antialiased">
         <AuthProvider>
-          <ProfileProvider>{children}</ProfileProvider>
+          <ProfileProvider>
+            <I18nProvider>
+              <Suspense fallback={null}>
+                <QueryLangSync />
+              </Suspense>
+              {children}
+            </I18nProvider>
+          </ProfileProvider>
         </AuthProvider>
 
         {/* GSAP loaded after page interactive for safety */}
@@ -79,6 +90,7 @@ export default function RootLayout({
           src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
           strategy="afterInteractive"
         />
+        <SiteFooter />
       </body>
     </html>
   );

@@ -25,7 +25,24 @@ const I18nContext = createContext<I18nContextType>({
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = useState<Lang>("ro");
   const translations = useMemo<Translations>(() => (lang === "ro" ? ro : en), [lang]);
-  const t = (key: string) => translations[key] ?? key;
+  const t = (key: string) => {
+    // Support dot-path lookup (e.g., "antrenamentTabHelp.os")
+    try {
+      if (!key || typeof key !== "string") return key;
+      const segments = key.split(".");
+      let cur: unknown = translations;
+      for (const seg of segments) {
+        if (cur && typeof cur === "object" && seg in (cur as Record<string, unknown>)) {
+          cur = (cur as Record<string, unknown>)[seg];
+        } else {
+          return key;
+        }
+      }
+      return cur ?? key;
+    } catch {
+      return key;
+    }
+  };
 
   useEffect(() => {
     if (typeof document !== "undefined") {

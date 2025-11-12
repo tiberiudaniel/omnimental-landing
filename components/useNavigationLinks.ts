@@ -1,6 +1,6 @@
 "use client";
 
-import { useI18n } from "./I18nProvider";
+import { useTStrings } from "./useTStrings";
 import type { NavLink } from "./MenuOverlay";
 
 type NavLinkConfig = {
@@ -19,15 +19,12 @@ const NAV_LINK_CONFIG: NavLinkConfig[] = [
   { href: "mailto:hello@omnimental.ro", labelKey: "navContact", descriptionKey: "navContactDesc" },
 ];
 
-const resolveString = (value: unknown, fallback: string) =>
-  typeof value === "string" ? value : fallback;
-
 export function useNavigationLinks(): NavLink[] {
-  const { t } = useI18n();
+  const { s } = useTStrings();
 
   return NAV_LINK_CONFIG.map(({ href, labelKey, descriptionKey }) => ({
     href,
-    label: resolveString(t(labelKey), labelKey),
-    description: descriptionKey ? resolveString(t(descriptionKey), descriptionKey) : undefined,
+    label: s(labelKey, labelKey),
+    description: descriptionKey ? s(descriptionKey, descriptionKey) : undefined,
   }));
 }

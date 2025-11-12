@@ -3,7 +3,7 @@
 import { useState } from "react";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
-import { getString as i18nGetString } from "@/lib/i18nGetString";
+import { useTStrings } from "./useTStrings";
 import type {
   GoalType,
   EmotionalState,
@@ -93,6 +93,7 @@ export default function IntentSummary({
   onAuthRequest,
 }: IntentSummaryProps) {
   const { t, lang } = useI18n();
+  const { s } = useTStrings();
   const [step, setStep] = useState(0);
   const [speedTouched, setSpeedTouched] = useState(false);
   const [budgetTouched, setBudgetTouched] = useState(false);
@@ -101,7 +102,7 @@ export default function IntentSummary({
 
   const getString = (value: unknown, fallback: string) =>
     typeof value === "string" ? value : fallback;
-  const getText = (key: string, fallback: string) => i18nGetString(t, key, fallback);
+  const getText = (key: string, fallback: string) => s(key, fallback);
 
   const title = getText(
     "intentSummaryTitle",

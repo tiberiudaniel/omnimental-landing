@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { Suspense, useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { recordEvaluationTabChange } from "@/lib/progressFacts";
 // Removed stage cards grid; switching to motivation summary card next to radar
 import ProgressHeaderSection from "../../components/ProgressHeaderSection";
-import ProgressEvaluationSection from "../../components/ProgressEvaluationSection";
+// ProgressEvaluationSection no longer used after layout swap
+import ProgressTrendsLeft from "../../components/ProgressTrendsLeft";
+import ThemeDistributionCard from "../../components/ThemeDistributionCard";
 import MotivationResourcesCard from "../../components/MotivationResourcesCard";
 import ProgressThemesSection from "../../components/ProgressThemesSection";
 import SiteHeader from "../../components/SiteHeader";
@@ -14,18 +16,21 @@ import ProgressNoProfileState from "../../components/ProgressNoProfileState";
 import MenuOverlay from "../../components/MenuOverlay";
 import AccountModal from "../../components/AccountModal";
 import { useNavigationLinks } from "../../components/useNavigationLinks";
-import { I18nProvider, useI18n } from "../../components/I18nProvider";
+import { useI18n } from "../../components/I18nProvider";
+import { useTStrings } from "../../components/useTStrings";
 import { useProfile } from "../../components/ProfileProvider";
 import { useProgressFacts } from "../../components/useProgressFacts";
 import { useEvaluationTimeline } from "../../components/useEvaluationTimeline";
 // removed unused imports: ProgressSparkline, ProgressTrends
 import MicroMetricRow from "../../components/MicroMetricRow";
 import LatestEntries from "../../components/LatestEntries";
-import OmniPathRow from "../../components/OmniPathRow";
+import OmniPathInline from "../../components/OmniPathInline";
 import type { ProgressIntentCategories } from "@/lib/progressFacts";
-import { buildIndicatorSummary, type IndicatorChartValues } from "@/lib/indicators";
+import { buildIndicatorSummary, INDICATOR_LABELS, type IndicatorChartValues } from "@/lib/indicators";
 import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
 import Toast from "../../components/Toast";
+import { JournalDrawer } from "../../components/journal/JournalDrawer";
+import DemoUserSwitcher from "../../components/DemoUserSwitcher";
 import { backfillProgressFacts, recordQuestCompletion } from "@/lib/progressFacts";
 import { omniKnowledgeModules } from "@/lib/omniKnowledge";
 import { computeOmniIntelScore, computeConsistencyIndexFromDates } from "@/lib/omniIntel";
@@ -34,6 +39,7 @@ import { recordOmniPatch } from "@/lib/progressFacts";
 import NextBestStep from "../../components/NextBestStep";
 import type { SessionType } from "@/lib/recommendation";
 import type { DimensionScores } from "@/lib/scoring";
+import { getDemoProgressFacts } from "@/lib/demoData";
 
 const STAGE_LABELS: Record<string, string> = {
   t0: "Start (0 săpt.)",
@@ -90,7 +96,7 @@ const buildWizardLink = (step: WizardEntryStep, source: string) => ({
 });
 
 const buildEvaluationLink = () => ({
-  pathname: "/evaluation",
+  pathname: "/antrenament",
   query: {
     source: "progress",
     returnTo: RETURN_TO_PROGRESS,
@@ -105,9 +111,7 @@ const buildRecommendationLink = () => ({
   },
 });
 
-function resolveString(value: unknown, fallback: string) {
-  return typeof value === "string" ? value : fallback;
-}
+// i18n lookups are handled by useTStrings.s; local resolveString no longer used
 
 function formatTimestamp(value: unknown, locale: string) {
   if (!value || typeof (value as { toDate?: () => Date }).toDate !== "function") return "-";
@@ -139,20 +143,42 @@ function formatCategories(
 function ProgressContent() {
   const router = useRouter();
   const { t, lang } = useI18n();
+  const search = useSearchParams();
+  const demoParam = search?.get("demo");
+  const isDemo = Boolean(demoParam);
+  const demoVariant: 1 | 2 | 3 = (demoParam === "2" ? 2 : demoParam === "3" ? 3 : 1);
+  const { s } = useTStrings();
   const { profile } = useProfile();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [resyncing, setResyncing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const navLinks = useNavigationLinks();
-  const { data: progress, loading, error } = useProgressFacts(profile?.id);
-  const { entries: evalTimeline } = useEvaluationTimeline();
+  const { data: progressData, loading, error } = useProgressFacts(isDemo ? null : profile?.id);
+  const [journalOpen, setJournalOpen] = useState(false);
+  const { entries: hookTimeline } = useEvaluationTimeline();
+  // Build demo timeline (21+ days) and select source before any usage below
+  const demoTimeline = useMemo(() => {
+    if (!isDemo) return [] as Array<{ createdAt: Date; scores: { maasTotal: number } }>;
+    const now = Date.now();
+    const entries: Array<{ createdAt: Date; scores: { maasTotal: number } }> = [];
+    for (let i = 0; i < 12; i += 1) {
+      const d = new Date(now - (i * 2 + 1) * 24 * 60 * 60 * 1000); // ~every 2 days, ~3+ weeks
+      const maas = 60 + Math.round(10 * Math.sin(i / 2)) + (i % 3 === 0 ? 6 : 0);
+      entries.push({ createdAt: d, scores: { maasTotal: Math.max(40, Math.min(90, maas)) } });
+    }
+    return entries.reverse();
+  }, [isDemo]);
+  const evalTimeline = isDemo ? demoTimeline : hookTimeline;
 
-  const title = t("progressTitle");
-  const subtitle = t("progressSubtitle");
-  const noProfileTitle = t("progressNoProfileTitle");
-  const noProfileDesc = t("progressNoProfileDesc");
-  const createAccountLabel = t("progressCreateAccount");
+  // Deep-link: open=journal opens the Journal drawer if allowed
+  useEffect(() => {
+    if (search?.get("open") === "journal" && (profile?.selection === "individual" || profile?.selection === "group")) {
+      setJournalOpen(true);
+    }
+  }, [profile?.selection, search]);
+
+  // Title/subtitle and no-profile strings are in components; derive only when needed
   const categoryLabels = useMemo(() => {
     const value = t("intentCategoryLabels");
     if (value && typeof value === "object") {
@@ -160,14 +186,9 @@ function ProgressContent() {
     }
     return {};
   }, [t]);
-  const intentTitle = t("progressIntentTitle");
-  const intentEmpty = t("progressIntentEmpty");
-  const evaluationTitle = t("progressEvaluationCardTitle");
-  const evaluationEmpty = t("progressEvaluationEmpty");
-  const motivationTitle = t("progressMotivationTitle");
-  const motivationEmpty = t("progressMotivationEmpty");
-  const questTitle = t("progressQuestTitle");
+  // Titles and empties are pulled inline where used via s()
 
+  const progress = isDemo ? getDemoProgressFacts(lang === "en" ? "en" : "ro", demoVariant) : progressData ?? null;
   const intent = progress?.intent;
   const motivation = progress?.motivation;
   const evaluation = progress?.evaluation;
@@ -259,16 +280,25 @@ function ProgressContent() {
 
   const sparkValues = useMemo(() => {
     if (!evalTimeline || evalTimeline.length === 0) return [] as number[];
-    return evalTimeline.map((e) => normalizeMaas(Number(e.scores?.maasTotal ?? 0)));
+    return evalTimeline.map((e: { scores?: { maasTotal?: number } }) => normalizeMaas(Number(e?.scores?.maasTotal ?? 0)));
   }, [evalTimeline]);
 
-  const radarChart: IndicatorChartValues = useMemo(() => {
+  const radarShares: IndicatorChartValues = useMemo(() => {
     if (!intent?.categories || intent.categories.length === 0) {
-      return { clarity: 0, relationships: 0, calm: 0, energy: 0, performance: 0, bodyHabits: 0 };
+      return { clarity: 0, relationships: 0, calm: 0, energy: 0, performance: 0 };
     }
-    const { chart } = buildIndicatorSummary(intent.categories);
-    return chart;
+    const { shares } = buildIndicatorSummary(intent.categories);
+    return shares;
   }, [intent?.categories]);
+
+  // Small index tiles for the main grid right column (where Trend used to be)
+  const clarityIndex = useMemo(() => Math.round(Math.max(0, Math.min(5, (radarShares?.clarity ?? 0) * 5))), [radarShares]);
+  const calmIndex = useMemo(() => Math.round(Math.max(0, Math.min(5, (radarShares?.calm ?? 0) * 5))), [radarShares]);
+  const vitalityIndex = useMemo(() => Math.round(Math.max(0, Math.min(5, (radarShares?.energy ?? 0) * 5))), [radarShares]);
+  const omniIntelLabel = useMemo(() => {
+    const v = Number.isFinite(omniIntelScore) ? Math.round(Number(omniIntelScore)) : null;
+    return v != null ? `${v}/100` : (lang === "ro" ? "—" : "—");
+  }, [lang, omniIntelScore]);
 
   const heroSelectionMessage = useMemo(() => {
     if (!heroDetails) return null;
@@ -304,6 +334,20 @@ function ProgressContent() {
     return formatCategories(intent.categories, categoryLabels);
   }, [intent, categoryLabels]);
   const categoryChips = useMemo(() => formattedCategories.map((c) => c.label), [formattedCategories]);
+  // Precompute primary theme percent label from radarChart (reuse existing values)
+  const primaryThemePercentLabel = useMemo(() => {
+    try {
+      const values = Object.values(radarShares ?? {});
+      if (!values.length) return null;
+      const best = Math.max(...values.map((v) => Number(v ?? 0)));
+      const raw = Math.max(0, Math.min(100, Math.round(best * 100)));
+      const low = Math.floor(raw / 10) * 10;
+      const high = Math.min(100, low + 10);
+      return `${low}\u2013${high}%`;
+    } catch {
+      return null;
+    }
+  }, [radarShares]);
 
   const motivationRows = useMemo(() => {
     if (!motivation) return [];
@@ -358,16 +402,18 @@ function ProgressContent() {
     return rows;
   }, [evaluation]);
 
-  if (!profile?.id) {
+  if (!isDemo && !profile?.id) {
     return (
       <div className="bg-bgLight min-h-screen">
         <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => setAccountModalOpen(true)} />
+        {/* Dev-only: quick switch between demo variants */}
+        {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
         <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
         <AccountModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
-        <ProgressNoProfileState
-          title={resolveString(noProfileTitle, lang === "ro" ? "Creează-ți contul" : "Create your account")}
-          description={resolveString(noProfileDesc, lang === "ro" ? "Salvează progresul și vezi recomandările personalizate." : "Save progress and see personalized recommendations.")}
-          actionLabel={typeof createAccountLabel === "string" ? (createAccountLabel as string) : (lang === "ro" ? "Creează cont" : "Create account")}
+          <ProgressNoProfileState
+          title={s("progressCreateAccountTitle", lang === "ro" ? "Creează-ți contul" : "Create your account")}
+          description={s("progressCreateAccountDesc", lang === "ro" ? "Salvează progresul și vezi recomandările personalizate." : "Save progress and see personalized recommendations.")}
+          actionLabel={s("headerSignIn", lang === "ro" ? "Creează cont" : "Create account")}
           onAction={() => setAccountModalOpen(true)}
         />
       </div>
@@ -376,86 +422,126 @@ function ProgressContent() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
-      <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => setAccountModalOpen(true)} />
+      <SiteHeader compact showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => setAccountModalOpen(true)} />
+      {progress && progress.intent && progress.evaluation ? (
+        <div className="mx-auto mt-3 w-full max-w-5xl px-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[#E4D8CE] bg-white px-3 py-2 text-[13px] text-[#2C2C2C] shadow-sm">
+            <span className="opacity-80">{lang === "ro" ? "Vrei să actualizezi evaluarea?" : "Want to update your evaluation?"}</span>
+            <button
+              type="button"
+              onClick={() => router.push("/wizard?resume=1")}
+              className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+            >
+              {lang === "ro" ? "Re‑evaluează" : "Re‑evaluate"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {/* Dev-only: quick switch between demo variants */}
+      {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <AccountModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
-      <main className="px-4 py-12 md:px-8">
-        <OmniPathRow lang={lang === "en" ? "en" : "ro"} progress={progress ?? undefined} />
-        <ProgressHeaderSection
-          lang={lang === "en" ? "en" : "ro"}
-          progress={progress ?? undefined}
-          omniIntelScore={Number.isFinite(omniIntelScore) ? omniIntelScore : null}
-          omniLevel={omniLevel ?? null}
-          summary={{
-            urgency: progress?.intent?.urgency ?? null,
-            stage: progress?.evaluation?.stageValue ?? null,
-            globalLoad: globalLoadLabel,
-            updatedAt: progress?.updatedAt ? formatTimestamp(progress.updatedAt, lang) : null,
-          }}
-          actions={{
-            goToKuno: () => {
+      <main className="px-4 py-6 md:px-8">
+        {/* Next step at the very top, now includes inline OmniPath buttons */}
+        <section className="mx-auto mt-0.5 w-full max-w-5xl">
+          <NextBestStep
+            progress={progress ?? undefined}
+            lang={lang === "en" ? "en" : "ro"}
+            className="rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-3 shadow-[0_10px_22px_rgba(0,0,0,0.06)] md:py-4"
+            onGoToKuno={() => {
               void recordEvaluationTabChange("oc");
               const qs = new URLSearchParams({ tab: "oc", source: "progress" }).toString();
               router.push(`/antrenament?${qs}`);
-            },
-            goToSensei: () => {
+            }}
+            onGoToSensei={() => {
               const qs = new URLSearchParams({ tab: "ose", source: "progress" }).toString();
               router.push(`/antrenament?${qs}`);
-            },
-            goToAbil: () => {
+            }}
+            onGoToAbil={() => {
               void recordEvaluationTabChange("oa");
               const qs = new URLSearchParams({ tab: "oa", source: "progress" }).toString();
               router.push(`/antrenament?${qs}`);
-            },
-            goToIntel: () => {
+            }}
+            onGoToIntel={() => {
               void recordEvaluationTabChange("oi");
               const qs = new URLSearchParams({ tab: "oi", source: "progress" }).toString();
               router.push(`/antrenament?${qs}`);
-            },
-            onAuthRequest: () => setAccountModalOpen(true),
-          }}
-        />
+            }}
+          >
+            <OmniPathInline lang={lang === "en" ? "en" : "ro"} progress={progress ?? undefined} />
+          </NextBestStep>
+        </section>
 
-        <div className="mx-auto mt-2 grid max-w-5xl grid-cols-1 gap-3 md:grid-cols-12">
-          <div className="space-y-3 md:col-span-9">
-            {/* Next step placed above Radar/Trends as requested */}
-            <div>
-              <NextBestStep
-                  progress={progress ?? undefined}
-                  lang={lang === "en" ? "en" : "ro"}
-                  className=""
-                  onGoToKuno={() => {
-                    void recordEvaluationTabChange("oc");
-                    const qs = new URLSearchParams({ tab: "oc", source: "progress" }).toString();
-                    router.push(`/antrenament?${qs}`);
-                  }}
-                  onGoToSensei={() => {
-                    const qs = new URLSearchParams({ tab: "ose", source: "progress" }).toString();
-                    router.push(`/antrenament?${qs}`);
-                  }}
-                  onGoToAbil={() => {
-                    void recordEvaluationTabChange("oa");
-                    const qs = new URLSearchParams({ tab: "oa", source: "progress" }).toString();
-                    router.push(`/antrenament?${qs}`);
-                  }}
-                  onGoToIntel={() => {
-                    void recordEvaluationTabChange("oi");
-                    const qs = new URLSearchParams({ tab: "oi", source: "progress" }).toString();
-                    router.push(`/antrenament?${qs}`);
-                  }}
-                />
-            </div>
-            <ProgressEvaluationSection
-              lang={lang === "en" ? "en" : "ro"}
-              sparkValues={sparkValues}
-              radarChart={radarChart}
-              categoryChips={categoryChips}
-              onRefineThemes={() => {
-                const link = buildWizardLink("intent", "progress-refine-themes");
-                const qs = new URLSearchParams(link.query as Record<string, string>).toString();
-                router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
-              }}
-            />
+        {isDemo ? (
+          <div className="mx-auto mb-2 max-w-5xl px-1">
+            <span className="inline-flex items-center rounded-full bg-[#7A6455] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">
+              Demo
+            </span>
+          </div>
+        ) : null}
+
+        <div className="mx-auto mt-2 grid max-w-5xl grid-cols-1 gap-2 md:grid-cols-12">
+          <div className="space-y-2 md:col-span-8">
+            {/* Main row: Theme Distribution (left) + Index Squares (right) */}
+            <section className="mx-auto mb-6 max-w-5xl">
+              <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-3">
+                <div className="md:col-span-2">
+                  <ThemeDistributionCard
+                    lang={lang === "en" ? "en" : "ro"}
+                    radarShares={radarShares}
+                    categoryChips={categoryChips}
+                    onRefineThemes={() => {
+                      const link = buildWizardLink("intent", "progress-refine-themes");
+                      const qs = new URLSearchParams(link.query as Record<string, string>).toString();
+                      router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
+                    }}
+                    primaryPercentLabel={primaryThemePercentLabel}
+                  />
+                </div>
+                <div>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Clarity */}
+                      <div className="min-h-[128px] rounded-[14px] bg-[#7A6455] px-4 py-4 text-center text-white shadow-[0_10px_22px_rgba(0,0,0,0.08)]">
+                        <div className="text-[10px] uppercase tracking-[0.28em] opacity-85">
+                          {lang === "ro" ? "Indice Claritate" : "Clarity Index"}
+                        </div>
+                        <div className="mt-2 text-3xl font-semibold">{clarityIndex}</div>
+                      </div>
+                      {/* Calm */}
+                      <div className="min-h-[128px] rounded-[14px] bg-[#7A6455] px-4 py-4 text-center text-white shadow-[0_10px_22px_rgba(0,0,0,0.08)]">
+                        <div className="text-[10px] uppercase tracking-[0.28em] opacity-85">
+                          {lang === "ro" ? "Indice Calm" : "Calm Index"}
+                        </div>
+                        <div className="mt-2 text-3xl font-semibold">{calmIndex}</div>
+                      </div>
+                      {/* Vitality */}
+                      <div className="min-h-[128px] rounded-[14px] bg-[#7A6455] px-4 py-4 text-center text-white shadow-[0_10px_22px_rgba(0,0,0,0.08)]">
+                        <div className="text-[10px] uppercase tracking-[0.28em] opacity-85">
+                          {lang === "ro" ? "Indice Vitalitate" : "Vitality Index"}
+                        </div>
+                        <div className="mt-2 text-3xl font-semibold">{vitalityIndex}</div>
+                      </div>
+                      {/* OmniIntel */}
+                      <div className="min-h-[128px] rounded-[14px] bg-[#7A6455] px-4 py-4 text-center text-white shadow-[0_10px_22px_rgba(0,0,0,0.08)]">
+                        <div className="text-[10px] uppercase tracking-[0.28em] opacity-85">OmniIntel</div>
+                        <div className="mt-2 text-3xl font-semibold">{omniIntelLabel}</div>
+                      </div>
+                    </div>
+                    {/* Motivation & Resources moved under tiles */}
+                    <MotivationResourcesCard
+                      lang={lang === "en" ? "en" : "ro"}
+                      motivation={motivation ?? undefined}
+                      onEdit={() => {
+                        const link = buildWizardLink("intentSummary", "progress-motivation-edit");
+                        const qs = new URLSearchParams(link.query as Record<string, string>).toString();
+                        router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
             <MicroMetricRow
               items={[
                 {
@@ -470,27 +556,97 @@ function ProgressContent() {
               ]}
             />
           </div>
-          <div className="space-y-3 md:col-span-3">
-            <MotivationResourcesCard
+          <div className="space-y-3 md:col-span-4">
+            {/* Move Trend card into the sidebar (replaces Motivation at the top) */}
+            <ProgressTrendsLeft lang={lang === "en" ? "en" : "ro"} sparkValues={sparkValues} />
+            <LatestEntries compact lang={lang === "en" ? "en" : "ro"} quests={quests as unknown as Array<{ title?: string }>} evaluationsCount={evalTimeline?.length ?? 0} />
+            {/* Minimal analytics box (text signals) */}
+            {(() => {
+              type TextIndicators = Record<string, { count: number; hits: string[] }>;
+              type Analytics = { lastTokens?: string[]; textIndicators?: TextIndicators };
+              const analytics = (progress as (null | undefined | { analytics?: Analytics }))?.analytics;
+              const tokens: string[] | undefined = analytics?.lastTokens;
+              const textIndicators: TextIndicators | undefined = analytics?.textIndicators;
+              if (!tokens && !textIndicators) return null;
+              const labelFor = (key: string) => {
+                const k = (key === "focus" ? "clarity" : key) as "clarity" | "relationships" | "calm" | "energy" | "performance";
+                const entry = INDICATOR_LABELS[k];
+                if (!entry) return key;
+                return (lang === "ro" ? entry.ro : entry.en) as string;
+              };
+              return (
+                <section className="rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-3 text-sm text-[#2C2C2C]">
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">{lang === "ro" ? "Cuvinte-cheie recente" : "Recent keywords"}</p>
+                  {Array.isArray(tokens) && tokens.length ? (
+                    <p className="mt-1 text-[12px] text-[#5C4F45]">{tokens.slice(0, 8).join(", ")}</p>
+                  ) : null}
+                  {textIndicators ? (
+                    <div className="mt-2 space-y-1">
+                      {Object.entries(textIndicators)
+                        .slice(0, 3)
+                        .map(([key, v]) => (
+                          <div key={key} className="flex items-center justify-between text-[12px]">
+                            <span className="text-[#7A6455]">{labelFor(key)}</span>
+                            <span className="font-semibold text-[#1F1F1F]">
+                              {v.count}
+                              {Array.isArray(v.hits) && v.hits.length ? (
+                                <span className="ml-2 text-[11px] font-normal text-[#7A6455]">{v.hits.slice(0, 3).join(", ")}</span>
+                              ) : null}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  ) : null}
+                </section>
+              );
+            })()}
+          </div>
+          {/* Move metrics header (indices) below the Trend row */}
+          <div className="md:col-span-12">
+            <ProgressHeaderSection
               lang={lang === "en" ? "en" : "ro"}
-              motivation={motivation ?? undefined}
-              onEdit={() => {
-                const link = buildWizardLink("intentSummary", "progress-motivation-edit");
-                const qs = new URLSearchParams(link.query as Record<string, string>).toString();
-                router.push(qs ? `${link.pathname}?${qs}` : link.pathname);
+              progress={progress ?? undefined}
+              omniIntelScore={Number.isFinite(omniIntelScore) ? omniIntelScore : null}
+              omniLevel={omniLevel ?? null}
+              summary={{
+                urgency: progress?.intent?.urgency ?? null,
+                stage: progress?.evaluation?.stageValue ?? null,
+                globalLoad: globalLoadLabel,
+                updatedAt: progress?.updatedAt ? formatTimestamp(progress.updatedAt, lang) : null,
+              }}
+              actions={{
+                goToKuno: () => {
+                  void recordEvaluationTabChange("oc");
+                  const qs = new URLSearchParams({ tab: "oc", source: "progress" }).toString();
+                  router.push(`/antrenament?${qs}`);
+                },
+                goToSensei: () => {
+                  const qs = new URLSearchParams({ tab: "ose", source: "progress" }).toString();
+                  router.push(`/antrenament?${qs}`);
+                },
+                goToAbil: () => {
+                  void recordEvaluationTabChange("oa");
+                  const qs = new URLSearchParams({ tab: "oa", source: "progress" }).toString();
+                  router.push(`/antrenament?${qs}`);
+                },
+                goToIntel: () => {
+                  void recordEvaluationTabChange("oi");
+                  const qs = new URLSearchParams({ tab: "oi", source: "progress" }).toString();
+                  router.push(`/antrenament?${qs}`);
+                },
+                onAuthRequest: () => setAccountModalOpen(true),
               }}
             />
-            <LatestEntries compact lang={lang === "en" ? "en" : "ro"} quests={quests as unknown as Array<{ title?: string }>} evaluationsCount={evalTimeline?.length ?? 0} />
           </div>
         </div>
-        <ProgressThemesSection
+            <ProgressThemesSection
           lang={lang === "en" ? "en" : "ro"}
           heading={{
-            title: typeof title === "string" ? title : "Progresul tău",
-            subtitle:
-              typeof subtitle === "string"
-                ? subtitle
-                : "Fiecare etapă completată se salvează aici pentru ajustări rapide.",
+            title: s("progressHeadingTitle", "Progresul tău"),
+            subtitle: s(
+              "progressHeadingSubtitle",
+              "Fiecare etapă completată se salvează aici pentru ajustări rapide.",
+            ),
           }}
           details={heroDetails}
           selectionMessage={heroSelectionMessage}
@@ -565,23 +721,23 @@ function ProgressContent() {
         </section>
         {loading ? (
           <div className="mx-auto mt-10 max-w-4xl rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 text-center text-sm text-[#4A3A30] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
-            Se încarcă progresul…
+            {s("progressLoading", lang === "ro" ? "Se încarcă progresul…" : "Loading progress…")}
           </div>
         ) : (
           <div className="mx-auto mt-10 flex max-w-5xl flex-col gap-8">
             <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
               <header className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">Etapa 1</p>
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">{s("progressStage1", "Etapa 1")}</p>
                 <h2 className="text-xl font-semibold text-[#1F1F1F]">
-                  {resolveString(intentTitle, "Intenții & Cloud")}
+                  {s("progressIntentTitle", "Intenții & Cloud")}
                 </h2>
                 </div>
                 <Link
                   href={buildWizardLink("firstInput", "progress-intent")}
                   className="text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] hover:text-[#E60012]"
                 >
-                  {resolveString(t("progressCTA"), "Actualizează")}
+                    {s("progressCTA", "Actualizează")}
                 </Link>
               </header>
               {intent ? (
@@ -594,10 +750,7 @@ function ProgressContent() {
                     ))}
                     {intent.tags.length === 0 ? (
                       <p className="text-sm text-[#A08F82]">
-                        {resolveString(
-                          t("progressTagsLabel"),
-                          "Alege câteva teme pentru a popula secțiunea.",
-                        )}
+                        {s("progressTagsLabel", "Alege câteva teme pentru a popula secțiunea.")}
                       </p>
                     ) : null}
                   </div>
@@ -613,13 +766,12 @@ function ProgressContent() {
                     ))}
                   </div>
                   <p className="text-xs text-[#A08F82]">
-                    {`${resolveString(t("progressUrgencyLabel"), "Intensitate")}: ${intent.urgency}/10`} ·{" "}
-                    {formatTimestamp(intent.updatedAt, lang)}
+                    {`${s("progressUrgencyLabel", "Intensitate")}: ${intent.urgency}/10`} · {formatTimestamp(intent.updatedAt, lang)}
                   </p>
                 </>
               ) : (
                 <div className="space-y-3 text-sm text-[#A08F82]">
-                  <p>{resolveString(intentEmpty, "Completează secțiunea Intenții & Cloud.")}</p>
+                  <p>{s("progressIntentEmpty", "Completează secțiunea Intenții & Cloud.")}</p>
                   <Link
                     href={buildWizardLink("intent", "progress-intent-empty")}
                     className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
@@ -671,16 +823,14 @@ function ProgressContent() {
             <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
               <header className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">Etapa 2</p>
-                <h2 className="text-xl font-semibold text-[#1F1F1F]">
-                  {resolveString(motivationTitle, "Motivație & Resurse")}
-                </h2>
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">{s("progressStage2", "Etapa 2")}</p>
+                <h2 className="text-xl font-semibold text-[#1F1F1F]">{s("progressMotivationTitle", "Motivație & Resurse")}</h2>
                 </div>
                 <Link
                   href={buildWizardLink("intentSummary", "progress-motivation")}
                   className="text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] hover:text-[#E60012]"
                 >
-                  {resolveString(t("progressCTA"), "Actualizează")}
+                  {s("progressCTA", "Actualizează")}
                 </Link>
               </header>
               {motivation ? (
@@ -696,12 +846,7 @@ function ProgressContent() {
                 </div>
               ) : (
                 <div className="space-y-3 text-sm text-[#A08F82]">
-                  <p>
-                    {resolveString(
-                      motivationEmpty,
-                      "Completează secțiunea Motivație & Resurse pentru a vedea datele aici.",
-                    )}
-                  </p>
+                  <p>{s("progressMotivationEmpty", "Completează secțiunea Motivație & Resurse pentru a vedea datele aici.")}</p>
                   <Link
                     href={buildWizardLink("intentSummary", "progress-motivation-empty")}
                     className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
@@ -738,12 +883,8 @@ function ProgressContent() {
                       className="ml-2 rounded-[10px] border border-[#A08F82] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#4A3A30] hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
                     >
                       {resyncing
-                        ? lang === "ro"
-                          ? "Sincronizare..."
-                          : "Syncing..."
-                        : lang === "ro"
-                        ? "Resincronizează"
-                        : "Resync now"}
+                        ? s("progressResyncing", lang === "ro" ? "Sincronizare..." : "Syncing...")
+                        : s("progressResync", lang === "ro" ? "Resincronizează" : "Resync now")}
                     </button>
                   </div>
                 </div>
@@ -753,10 +894,8 @@ function ProgressContent() {
             <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
               <header className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">Etapa 3</p>
-                  <h2 className="text-xl font-semibold text-[#1F1F1F]">
-                  {resolveString(evaluationTitle, "Evaluări Omni-Intel")}
-                  </h2>
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">{s("progressStage3", "Etapa 3")}</p>
+                <h2 className="text-xl font-semibold text-[#1F1F1F]">{s("progressEvaluationCardTitle", "Evaluări Omni-Intel")}</h2>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Link
@@ -777,7 +916,7 @@ function ProgressContent() {
                     href={buildEvaluationLink()}
                     className="text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C] hover:text-[#E60012]"
                   >
-                    {resolveString(t("progressViewEvaluation"), "Vezi evaluările")}
+                    {s("progressViewEvaluation", "Vezi evaluările")}
                   </Link>
                 </div>
               </header>
@@ -814,12 +953,7 @@ function ProgressContent() {
                 </div>
               ) : (
                 <div className="space-y-3 text-sm text-[#A08F82]">
-                  <p>
-                    {resolveString(
-                      evaluationEmpty,
-                      "Completează prima evaluare pentru a vedea scorurile aici.",
-                    )}
-                  </p>
+                  <p>{s("progressEvaluationEmpty", "Completează prima evaluare pentru a vedea scorurile aici.")}</p>
                   <Link
                     href={buildEvaluationLink()}
                     className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
@@ -833,10 +967,8 @@ function ProgressContent() {
             <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
               <header className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">Etapa 4</p>
-                <h2 className="text-xl font-semibold text-[#1F1F1F]">
-                  {resolveString(questTitle, "Quest-uri generate")}
-                </h2>
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">{s("progressStage4", "Etapa 4")}</p>
+                <h2 className="text-xl font-semibold text-[#1F1F1F]">{s("progressQuestTitle", "Quest-uri generate")}</h2>
                 </div>
               </header>
               {quests.length ? (
@@ -878,6 +1010,9 @@ function ProgressContent() {
       {toastMessage ? (
         <Toast message={toastMessage} okLabel={lang === "ro" ? "OK" : "OK"} onClose={() => setToastMessage(null)} />
       ) : null}
+      {(profile?.selection === "individual" || profile?.selection === "group") && profile?.id ? (
+        <JournalDrawer open={journalOpen} onOpenChange={setJournalOpen} userId={profile.id} />
+      ) : null}
     </div>
   );
 }
@@ -904,8 +1039,8 @@ function EvalRow({ label, value, lang }: { label: string; value: string; lang: "
 
 export default function ProgressPage() {
   return (
-    <I18nProvider>
+    <Suspense fallback={null}>
       <ProgressContent />
-    </I18nProvider>
+    </Suspense>
   );
 }

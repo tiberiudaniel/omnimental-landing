@@ -22,6 +22,7 @@ import { getFirebaseAuth } from "../lib/firebase";
 const AUTH_EMAIL_STORAGE_KEY = "omnimental_auth_email";
 const KEEP_SIGNED_IN_KEY = "omnimental_keep_signed_in_until";
 const KEEP_SIGNED_IN_DURATION_MS = 10 * 24 * 60 * 60 * 1000; // 10 days
+const QUOTA_HOLD_KEY = "omnimental_auth_quota_hold_until";
 
 type StoredAuthContext = {
   email: string;
@@ -35,6 +36,8 @@ type AuthContextValue = {
   linkSentTo?: string;
   sendMagicLink: (email: string, remember: boolean) => Promise<void>;
   signOutUser: () => Promise<void>;
+  authNotice: { message: string } | null;
+  clearAuthNotice: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -44,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [sendingLink, setSendingLink] = useState(false);
   const [linkSentTo, setLinkSentTo] = useState<string | undefined>(undefined);
+  const [authNotice, setAuthNotice] = useState<{ message: string } | null>(null);
   const pendingRememberRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -98,8 +102,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
+          const code = (error as { code?: string })?.code ?? "";
           console.error("Email link sign-in failed", error);
+          if (typeof window !== "undefined" && code === "auth/invalid-action-code") {
+            // Clear stored email to avoid loops. Toast is handled on /auth page.
+            try { window.localStorage.removeItem(AUTH_EMAIL_STORAGE_KEY); } catch {}
+          }
         });
     }
   }, []);
@@ -132,6 +141,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!trimmed) {
       throw new Error("Email is required");
     }
+    // Quota hold guard: if previous quota-exceeded set a hold, surface message and skip
+    if (typeof window !== "undefined") {
+      try {
+        const hold = Number(window.localStorage.getItem(QUOTA_HOLD_KEY) || "0");
+        if (Number.isFinite(hold) && Date.now() < hold) {
+          const ro = "Ai atins limita zilnică pentru linkuri de autentificare. Te rugăm să încerci mai târziu sau să folosești modul oaspete.";
+          const en = "Daily quota for sign-in links has been reached. Please try later or use guest mode.";
+          setAuthNotice({ message: navigator.language?.startsWith("ro") ? ro : en });
+          return;
+        }
+      } catch {}
+    }
     setSendingLink(true);
     try {
       const auth = getFirebaseAuth();
@@ -139,14 +160,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         process.env.NEXT_PUBLIC_FIREBASE_AUTH_CONTINUE_URL ??
         (typeof window !== "undefined" ? window.location.origin : undefined) ??
         "http://localhost:3000";
-      // Append email to the continue URL so cross-device flows don't rely on prompt
+      // Build continue URL to dedicated handler: /auth
       let continueUrl = base;
       try {
         const u = new URL(base);
+        // If no explicit path, route to /auth
+        if (!u.pathname || u.pathname === "/") {
+          u.pathname = "/auth";
+        }
         u.searchParams.set("auth_email", trimmed);
         continueUrl = u.toString();
       } catch {
-        // fall back to base if URL parsing fails
+        // best-effort fallback
+        continueUrl = base.replace(/\/?$/, "/auth");
+        try {
+          const u = new URL(continueUrl);
+          u.searchParams.set("auth_email", trimmed);
+          continueUrl = u.toString();
+        } catch {}
       }
       const actionCodeSettings = {
         url: continueUrl,
@@ -158,6 +189,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.localStorage.setItem(AUTH_EMAIL_STORAGE_KEY, JSON.stringify(payload));
       }
       setLinkSentTo(trimmed);
+    } catch (error) {
+      const code = (error as { code?: string })?.code ?? "";
+      if (typeof window !== "undefined" && code === "auth/quota-exceeded") {
+        try {
+          // Set a hold for ~12h to avoid spamming
+          const holdUntil = Date.now() + 12 * 60 * 60 * 1000;
+          window.localStorage.setItem(QUOTA_HOLD_KEY, String(holdUntil));
+        } catch {}
+        const ro = "Ai atins limita zilnică pentru linkuri de autentificare. Încearcă mai târziu sau folosește modul oaspete.";
+        const en = "Daily quota for sign-in links reached. Please try later or use guest mode.";
+        setAuthNotice({ message: navigator.language?.startsWith("ro") ? ro : en });
+      } else {
+        console.error("sendMagicLink failed", error);
+        const ro = "Nu am putut trimite linkul. Încearcă mai târziu.";
+        const en = "Could not send the sign-in link. Please try later.";
+        setAuthNotice({ message: navigator.language?.startsWith("ro") ? ro : en });
+      }
     } finally {
       setSendingLink(false);
     }
@@ -172,6 +220,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLinkSentTo(undefined);
   }, []);
 
+  const clearAuthNotice = useCallback(() => setAuthNotice(null), []);
+
   const value = useMemo(
     () => ({
       user,
@@ -180,8 +230,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       linkSentTo,
       sendMagicLink,
       signOutUser,
+      authNotice,
+      clearAuthNotice,
     }),
-    [linkSentTo, loading, sendMagicLink, sendingLink, signOutUser, user],
+    [authNotice, clearAuthNotice, linkSentTo, loading, sendMagicLink, sendingLink, signOutUser, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

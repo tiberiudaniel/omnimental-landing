@@ -69,7 +69,7 @@ export default function OmniPathRow({ lang: _langProp, progress }: Props) {
   );
 
   return (
-    <div className="mx-auto mb-3 max-w-5xl">
+    <div className="mx-auto mb-2 max-w-5xl">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {Card({
           title: Label.scope,

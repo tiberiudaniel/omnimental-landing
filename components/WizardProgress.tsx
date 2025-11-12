@@ -25,9 +25,10 @@ type WizardProgressProps = {
   currentStep: Step;
   lang: "ro" | "en";
   onReset?: () => void;
+  onExit?: () => void;
 };
 
-export function WizardProgress({ currentStep, lang, onReset }: WizardProgressProps) {
+export function WizardProgress({ currentStep, lang, onReset, onExit }: WizardProgressProps) {
   const activeIndex = STEP_MAPPING[currentStep] ?? -1;
   if (activeIndex < 0) {
     return null;
@@ -93,16 +94,27 @@ export function WizardProgress({ currentStep, lang, onReset }: WizardProgressPro
           <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] sm:hidden">
             {lang === "ro" ? "Progres" : "Progress"}
           </p>
-          {onReset ? (
-            <button
-              type="button"
-              onClick={onReset}
-              className="ml-auto text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] underline underline-offset-2 hover:text-[#E60012]"
-              aria-label={lang === "ro" ? "Resetează parcursul" : "Reset journey"}
-            >
-              {lang === "ro" ? "Resetează" : "Reset"}
-            </button>
-          ) : null}
+          <div className="ml-auto flex items-center gap-3">
+            {onExit ? (
+              <button
+                type="button"
+                onClick={onExit}
+                className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] underline underline-offset-2 hover:text-[#E60012]"
+              >
+                {lang === "ro" ? "Părăsește wizardul" : "Exit wizard"}
+              </button>
+            ) : null}
+            {onReset ? (
+              <button
+                type="button"
+                onClick={onReset}
+                className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] underline underline-offset-2 hover:text-[#E60012]"
+                aria-label={lang === "ro" ? "Resetează parcursul" : "Reset journey"}
+              >
+                {lang === "ro" ? "Resetează" : "Reset"}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

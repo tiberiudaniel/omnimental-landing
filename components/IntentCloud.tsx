@@ -7,6 +7,7 @@ import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
 import { getDb } from "../lib/firebase";
 import type { IntentCloudWord, IntentPrimaryCategory } from "@/lib/intentExpressions";
+import { INTENT_MIN_SELECTION, INTENT_MAX_SELECTION, computeCategoryCounts, type IntentSelectionWord } from "@/lib/intentSelection";
 
 type IntentWord = {
   key: string;
@@ -29,8 +30,8 @@ type IntentCloudProps = {
   words?: IntentCloudWord[];
 };
 
-const DEFAULT_MIN = 5;
-const DEFAULT_MAX = 7;
+const DEFAULT_MIN = INTENT_MIN_SELECTION;
+const DEFAULT_MAX = INTENT_MAX_SELECTION;
 
 export default function IntentCloud({
   onComplete,
@@ -42,6 +43,7 @@ export default function IntentCloud({
   const db = getDb();
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const titleValue = t("intentCloudTitle");
   const helperValue = t("intentCloudHelper");
@@ -130,6 +132,7 @@ export default function IntentCloud({
   };
 
   const handleContinue = async () => {
+    if (submitting) return;
     if (selected.length < minSelection || selected.length > maxSelection) {
       const rangeText =
         minSelection === maxSelection
@@ -147,19 +150,13 @@ export default function IntentCloud({
       return;
     }
     setError(null);
+    setSubmitting(true);
     const snapshot = [...selectedLabels];
-    const categoryCounts = selected.reduce((acc, key) => {
-      const category = (wordDictionary[key]?.category ?? "clarity") as IntentPrimaryCategory;
-      acc[category] = (acc[category] ?? 0) + 1;
-      return acc;
-    }, {} as Record<IntentPrimaryCategory, number>);
-
-    const sortedCategories = Object.entries(categoryCounts)
-      .map(([category, count]) => ({
-        category: category as IntentPrimaryCategory,
-        count,
-      }))
-      .sort((a, b) => b.count - a.count);
+    const selectionWords: Record<string, IntentSelectionWord> = Object.fromEntries(
+      words.map((w) => [w.key, { id: w.key, label: w.label, category: w.category }]),
+    );
+    const { categories } = computeCategoryCounts(selectionWords, selected);
+    const sortedCategories = categories.map((c) => ({ category: c.category as IntentPrimaryCategory, count: c.count }));
 
     onComplete({ tags: snapshot, categories: sortedCategories, selectionIds: [...selected] });
     void addDoc(collection(db, "userIntentTags"), {
@@ -167,9 +164,14 @@ export default function IntentCloud({
       categories: sortedCategories,
       lang,
       timestamp: serverTimestamp(),
-    }).catch((err) => {
-      console.error("intent cloud save failed", err);
-    });
+    })
+      .catch((err) => {
+        console.error("intent cloud save failed", err);
+      })
+      .finally(() => {
+        // small debounce to prevent double-advance
+        setTimeout(() => setSubmitting(false), 600);
+      });
   };
 
   return (
@@ -235,11 +237,11 @@ export default function IntentCloud({
           onClick={handleContinue}
           disabled={
             selected.length < minSelection ||
-            selected.length > maxSelection
+            selected.length > maxSelection || submitting
           }
           className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {buttonLabel}
+          {submitting ? (lang === "ro" ? "Se procesează…" : "Processing…") : buttonLabel}
         </button>
           {error && (
             <p className="text-sm text-[#E60012]">{error}</p>

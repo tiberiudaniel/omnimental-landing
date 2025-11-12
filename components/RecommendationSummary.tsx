@@ -19,6 +19,9 @@ export interface RecommendationSummaryProps {
   loadLevel: LoadLevel;
   mainArea: string;
   indicators: Record<IndicatorChartKey, number>;
+  // Optional: raw counts for each indicator and the total selected, to render as count/total in list
+  indicatorCounts?: Partial<Record<IndicatorChartKey, number>>;
+  selectionTotal?: number;
   onBookCall: () => void;
   variant?: SummaryVariant;
   className?: string;
@@ -51,6 +54,8 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
     loadLevel,
     mainArea,
     indicators,
+    indicatorCounts,
+    selectionTotal,
     onBookCall,
     variant = "card",
     className,
@@ -65,15 +70,32 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
       ? "w-full max-w-3xl rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.08)] space-y-6 text-[#2C2C2C]"
       : "w-full space-y-6 text-[#2C2C2C]";
   const containerClass = [containerBaseClass, className].filter(Boolean).join(" ");
+  const inferredMax = (() => {
+    const vals = INDICATOR_CHART_KEYS.map((k) => Number(indicators[k] ?? 0));
+    return Math.max(...vals) <= 1 ? 1 : 5;
+  })();
   const indicatorEntries = INDICATOR_CHART_KEYS.map((key) => ({
     key,
     label: INDICATOR_LABELS[key][isRO ? "ro" : "en"],
-    value: Math.max(0, Math.min(5, indicators[key] ?? 0)),
+    value: Math.max(0, Math.min(inferredMax, Number(indicators[key] ?? 0))),
   }));
   const topTwoIndicators = indicatorEntries
     .slice()
     .sort((a, b) => b.value - a.value)
     .slice(0, 2);
+  const toDisplayOnFive = (v: number) => {
+    if (inferredMax === 1) {
+      const scaled = Math.round(Math.max(0, Math.min(1, v)) * 5);
+      return scaled;
+    }
+    // already on 0..5 scale
+    return Math.round(Math.max(0, Math.min(5, v)));
+  };
+  const countFor = (key: IndicatorChartKey): number | null => {
+    const raw = indicatorCounts?.[key];
+    return typeof raw === "number" && Number.isFinite(raw) ? raw : null;
+  };
+  const hasCounts = typeof selectionTotal === "number" && selectionTotal > 0 && indicatorCounts != null;
   const messageParagraphs =
     summaryMessage
       ?.split("\n")
@@ -107,6 +129,7 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
               label,
               value,
             }))}
+            maxValue={inferredMax}
           />
           <ul className="grid w-full max-w-sm gap-3 text-left text-sm">
             {topTwoIndicators.map(({ key, label, value }) => (
@@ -115,7 +138,11 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
                 className="flex items-center justify-between rounded-[12px] border border-[#F0E2D4] bg-white px-3 py-2"
               >
                 <span className="text-[#5C4F45]">{label}</span>
-                <span className="font-semibold text-[#1F1F1F]">{value}/5</span>
+                {hasCounts ? (
+                  <span className="font-semibold text-[#1F1F1F]">{countFor(key) ?? 0}/{selectionTotal}</span>
+                ) : (
+                  <span className="font-semibold text-[#1F1F1F]">{toDisplayOnFive(value)}/5</span>
+                )}
               </li>
             ))}
           </ul>

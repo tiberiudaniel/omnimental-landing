@@ -1,0 +1,24 @@
+{
+  "indicators": {
+    "calm": {
+      "tokens": ["stres", "anxiet", "panic", "relax", "calm", "coplesit", "presiune"],
+      "synonyms": ["tensiune", "neliniste"]
+    },
+    "focus": {
+      "tokens": ["clar", "direct", "deciz", "focus", "blocat", "viziune", "alege"],
+      "synonyms": ["hotarare", "prioritizare"]
+    },
+    "relationships": {
+      "tokens": ["relat", "limita", "partener", "singur", "comunic", "vinovat", "neinteles", "incredere"],
+      "synonyms": ["granite", "apropiere"]
+    },
+    "energy": {
+      "tokens": ["energ", "obos", "somn", "dorm", "echilibru", "obicei", "stil", "sanat"],
+      "synonyms": ["vitalitate", "odihna"]
+    },
+    "performance": {
+      "tokens": ["product", "obiectiv", "tinta", "perform", "motiva", "curaj", "eficac", "progres"],
+      "synonyms": ["rezultat", "randament"]
+    }
+  }
+}

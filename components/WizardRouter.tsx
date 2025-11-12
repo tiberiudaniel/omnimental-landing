@@ -1,13 +1,15 @@
 "use client";
 
 import JourneyIntro from "./JourneyIntro";
+import Link from "next/link";
 import FirstScreen from "./FirstScreen";
 import WizardReflection from "./WizardReflection";
+import { useProfile } from "./ProfileProvider";
 import IntentCloud, { type IntentCloudResult } from "./IntentCloud";
 import IntentSummary from "./IntentSummary";
 import RecommendationStep from "./RecommendationStep";
-import { useI18n } from "./I18nProvider";
-import { getString as i18nGetString } from "@/lib/i18nGetString";
+import { useTStrings } from "./useTStrings";
+import { recordEvaluationTabChange } from "@/lib/progressFacts";
 import SessionDetails from "./SessionDetails";
 import type { IntentPrimaryCategory, IntentCloudWord } from "@/lib/intentExpressions";
 import type { ResolutionSpeed, BudgetPreference, GoalType, EmotionalState, FormatPreference } from "@/lib/evaluation";
@@ -89,6 +91,9 @@ type Props = {
   journalEntry: string;
   // preferences used in recommendation summary
   formatPreference: FormatPreference;
+  // unified recommendation extras
+  dimensionScores: { calm: number; focus: number; energy: number; relationships: number; performance: number; health: number };
+  algoVersion?: number;
 
   // Details step
   selectedCard: "individual" | "group" | null;
@@ -97,7 +102,9 @@ type Props = {
 };
 
 export default function WizardRouter(props: Props) {
-  const { t } = useI18n();
+  const { s } = useTStrings();
+  // Use hooks at the top to respect the Rules of Hooks
+  const profileCtx = useProfile();
   const {
     step,
     lang,
@@ -151,6 +158,8 @@ export default function WizardRouter(props: Props) {
     recommendationReasonKey,
     journalEntry,
     formatPreference,
+    dimensionScores,
+    algoVersion,
     selectedCard,
     onReturnToOrigin,
     returnLabel,
@@ -183,14 +192,44 @@ export default function WizardRouter(props: Props) {
           words={words}
         />
       );
-    case "reflectionSummary":
-      return (
-        <WizardReflection
-          lines={reflectionSummaryLines}
-          onContinue={() => navigateToStep("intentSummary")}>
-          {/* Additional summary info can be passed via props if needed */}
-        </WizardReflection>
+    case "reflectionSummary": {
+      const canJournal = Boolean(
+        profileCtx?.profile?.id &&
+          (profileCtx.profile.selection === "individual" || profileCtx.profile.selection === "group"),
       );
+      return (
+        <div className="relative">
+          <WizardReflection
+            lines={reflectionSummaryLines}
+            onContinue={() => navigateToStep("intentSummary")}
+            categories={intentCategories}
+            maxSelection={maxSelection}
+            categoryLabels={categoryLabels}
+          />
+          {/* Mobile FAB: Journal only if selection allows; else prompts account/choice */}
+          <div className="pointer-events-none fixed bottom-4 right-4 z-40 block sm:hidden">
+            <button
+              type="button"
+              onClick={() => {
+                if (canJournal) {
+                  if (typeof window !== "undefined") {
+                    const url = new URL(window.location.origin + "/progress");
+                    url.searchParams.set("open", "journal");
+                    window.location.assign(url.pathname + url.search);
+                  }
+                } else {
+                  onAccountRequestCards();
+                }
+              }}
+              className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#2C2C2C] bg-white text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] shadow-md"
+              aria-label="Journal"
+            >
+              J
+            </button>
+          </div>
+        </div>
+      );
+    }
     case "intentSummary":
       return (
         <IntentSummary
@@ -221,16 +260,24 @@ export default function WizardRouter(props: Props) {
           onAuthRequest={onAuthRequest}
         />
       );
-    case "cards":
+    case "cards": {
+      const recommendation = {
+        path: recommendedPath,
+        reasonKey: recommendationReasonKey,
+        badgeLabel: recommendedBadgeLabel,
+        // formatPreference mapping not available; leave undefined for now
+        dimensionScores,
+        algoVersion: String(algoVersion ?? 1),
+      } as const;
       return (
         <RecommendationStep
           categories={intentCategories}
           intentUrgency={urgency}
           recommendedPath={recommendedPath}
           onCardSelect={onCardSelect}
-          cardLabels={{ individual: i18nGetString(t, "cardIndividualLabel", "Individual"), group: i18nGetString(t, "cardGroupLabel", "Group") }}
-          accountPromptMessage={i18nGetString(t, "accountPromptMessage", "Salvează-ți progresul și vezi istoricul evaluărilor.")}
-          accountPromptButton={i18nGetString(t, "accountPromptButton", "Creează cont")}
+          cardLabels={{ individual: s("cardIndividualLabel", "Individual"), group: s("cardGroupLabel", "Group") }}
+          accountPromptMessage={s("accountPromptMessage", "Salvează-ți progresul și vezi istoricul evaluărilor.")}
+          accountPromptButton={s("accountPromptButton", "Creează cont")}
           isSavingChoice={isSavingChoice}
           savingChoiceType={savingChoiceType}
           errorMessage={saveError}
@@ -252,13 +299,40 @@ export default function WizardRouter(props: Props) {
           recommendationReasonKey={recommendationReasonKey}
           initialStatement={journalEntry}
           recommendedBadgeLabel={recommendedBadgeLabel}
+          recommendation={recommendation}
         />
       );
+    }
     case "details":
       return selectedCard ? (
         <section className="px-4 pb-16 pt-12">
-          <div className="mx-auto flex max-w-5xl flex-col gap-10" id="sessions">
+          <div className="mx-auto flex max-w-5xl flex-col gap-8" id="sessions">
             <SessionDetails type={selectedCard} />
+
+            {/* Clear next-step CTAs to continue the journey */}
+            <div className="rounded-[14px] border border-[#F0E6DA] bg-[#FFFBF7] px-6 py-5 shadow-[0_8px_22px_rgba(0,0,0,0.05)]">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.35em] text-[#C07963]">
+                {s("wizardNextStepEyebrow", "Pasul următor")}
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href={{ pathname: "/antrenament", query: { tab: "os", source: "wizard" } }}
+                  onClick={() => {
+                    void recordEvaluationTabChange("os");
+                  }}
+                  className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] bg-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:opacity-90"
+                >
+                  {s("wizardCtaGoTraining", "Fă un antrenament complet")}
+                </Link>
+                <Link
+                  href="/progress"
+                  className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                >
+                  {s("wizardCtaGoDashboard", "Vezi tabloul tău de bord")}
+                </Link>
+              </div>
+            </div>
+
             {onReturnToOrigin ? (
               <div className="flex justify-center">
                 <button
@@ -266,7 +340,7 @@ export default function WizardRouter(props: Props) {
                   onClick={onReturnToOrigin}
                   className="rounded-[12px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
                 >
-                  {returnLabel ?? "Înapoi"}
+                  {returnLabel ?? s("wizardBack", "Înapoi")}
                 </button>
               </div>
             ) : null}

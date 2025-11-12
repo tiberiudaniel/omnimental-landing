@@ -1,6 +1,8 @@
 "use client";
 
 import type { IndicatorSourceKey } from "./indicators";
+import roDb from "@/data/expressions_db.ro.json" assert { type: "json" };
+import enDb from "@/data/expressions_db.en.json" assert { type: "json" };
 
 export type Locale = "ro" | "en";
 
@@ -129,6 +131,53 @@ export const intentExpressions: IntentExpression[] = Object.entries(BASE_EXPRESS
 );
 
 export function getIntentExpressions(locale: Locale = "ro"): LocalizedIntentExpression[] {
+  // Prefer JSON dataset for RO/EN if available (authoritative content), fallback to base list
+  if (locale === "ro") {
+    const mapRoToPrimary: Record<string, IntentPrimaryCategory | undefined> = {
+      claritate: "clarity",
+      relatii: "relationships",
+      stres: "stress",
+      incredere: "confidence",
+      echilibru: "balance",
+    };
+    const records: LocalizedIntentExpression[] = [];
+    for (const [cat, items] of Object.entries(roDb as Record<string, string[]>)) {
+      const primary = mapRoToPrimary[cat];
+      if (!primary) continue;
+      const indicator = CATEGORY_METADATA[primary].indicator;
+      for (const text of items) {
+        const id = `${primary}_${text.toLowerCase().replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "").slice(0, 48)}`;
+        records.push({
+          id,
+          category: primary,
+          indicator,
+          text: { ro: text, en: text },
+          label: text,
+        });
+      }
+    }
+    return records;
+  }
+  if (locale === "en") {
+    const records: LocalizedIntentExpression[] = [];
+    const allowed = ["clarity", "relationships", "stress", "confidence", "balance"] as const;
+    for (const [primary, items] of Object.entries(enDb as Record<string, string[]>)) {
+      if (!allowed.includes(primary as typeof allowed[number])) continue;
+      const cat = primary as IntentPrimaryCategory;
+      const indicator = CATEGORY_METADATA[cat].indicator;
+      for (const text of items) {
+        const id = `${cat}_${text.toLowerCase().replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "").slice(0, 48)}`;
+        records.push({
+          id,
+          category: cat,
+          indicator,
+          text: { ro: text, en: text },
+          label: text,
+        });
+      }
+    }
+    return records;
+  }
   return intentExpressions.map((expression) => ({
     ...expression,
     label: expression.text[locale] ?? expression.text.ro,

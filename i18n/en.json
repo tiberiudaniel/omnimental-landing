@@ -385,5 +385,119 @@
   "recommendationReason_performance_group": "Performance focus + calm balance suit the group",
   "recommendationReason_low_urgency": "Lower urgency → group format is efficient",
   "recommendationReason_default": "Group structure offers the best clarity/support ratio",
-  "recommendationReasonFallback": "Keep evaluating to refine this reason"
+  "recommendationReasonFallback": "Keep evaluating to refine this reason",
+  "antrenamentTabHelp": {
+    "os": "Clarify what concerns you now and why it matters. This focuses your direction and motivation for the next steps.",
+    "oc": "Complete objective scales (stress, presence, energy, etc.). You get scores that calibrate recommendations and progress.",
+    "ose": "Receive short, tailored quests/challenges. They build cadence and practical continuity.",
+    "oa": "Practice concrete skills (regulation, clarity, habits). Log completions to see impact over time.",
+    "oi": "See the integrative view: scores, trends, and level. From here you adjust your direction with confidence."
+  },
+  "antrenamentTabWhat": {
+    "os": [
+      "Short journal about your main theme",
+      "Select themes (tags) and a primary category",
+      "Set intensity/urgency"
+    ],
+    "oc": [
+      "Validated scales (e.g., stress, presence, energy)",
+      "Knowledge quiz for your focus areas",
+      "Get scores and strengths/improvement signals"
+    ],
+    "ose": [
+      "Mini tasks (quests) tailored to your inputs",
+      "Brief rationale for why each task helps",
+      "Gentle accountability (cadence, follow‑up)"
+    ],
+    "oa": [
+      "Practical exercises for regulation/clarity",
+      "Small habits easy to integrate",
+      "Log completions to see progress"
+    ],
+    "oi": [
+      "Integrative summary of scores",
+      "Trends and OmniIntel level",
+      "Adjusted recommendations based on data"
+    ]
+  },
+  "progressLoading": "Loading progress…",
+  "progressStage1": "Stage 1",
+  "progressStage2": "Stage 2",
+  "progressStage3": "Stage 3",
+  "progressStage4": "Stage 4",
+  "progressResync": "Resync now",
+  "progressResyncing": "Syncing...",
+  "journal": {
+    "title": "Personal journal",
+    "relatedPrefix": "Related to:",
+    "suggestionsTitle": "Suggestions from what you completed:",
+    "status": {
+      "autosave": "Auto-saves.",
+      "loading": "Loading…",
+      "saving": "Saving…",
+      "saved": "Saved"
+    },
+    "badge": { "active": "Journal active" },
+    "action": { "close": "Hide panel", "open": "Show journal" },
+    "tabs": {
+      "scop_intentie": {
+        "label": "Goal & intent",
+        "placeholder": "What do you want to be different for you in 4–6 weeks?\nWhy does this matter to you now?"
+      },
+      "motivatie_resurse": {
+        "label": "Motivation & resources",
+        "placeholder": "Why is this worth the effort for you?\nWhat resources (time, people, habits, money) do you already have and can use better?"
+      },
+      "plan_recomandari": {
+        "label": "Plan & recommendations",
+        "placeholder": "Write the main recommendation and 3–5 concrete steps.\nExample: what will you do in the next 72 hours?"
+      },
+      "observatii_evaluare": {
+        "label": "Observations from evaluation",
+        "placeholder": "Briefly rewrite what you observed from your answers.\nWhat seems most important now?"
+      },
+      "note_libere": {
+        "label": "Free notes",
+        "placeholder": "Ideas, insights, things you want to remember later."
+      }
+    }
+  },
+  "eval": {
+    "pss": {
+      "items": [
+        "Stress and pressure felt recently",
+        "Difficulty controlling things",
+        "Responsibilities feel overwhelming",
+        "I often feel tense",
+        "I worry frequently"
+      ]
+    },
+    "gse": { "items": [
+      "I can find solutions when problems arise",
+      "I trust I can reach my goals",
+      "I cope well under pressure",
+      "I learn quickly from mistakes",
+      "I adapt my plan effectively"
+    ]},
+    "maas": { "items": [
+      "I notice what I feel",
+      "I notice what happens in my body",
+      "I am present in my activities",
+      "I realize when I'm distracted",
+      "I can reconnect to the present moment"
+    ]},
+    "panasPos": { "items": [
+      "Energetic", "Enthusiastic", "Inspired", "Determined", "Alert"
+    ]},
+    "panasNeg": { "items": [
+      "Irritable", "Anxious", "Down", "Tense", "Impatient"
+    ]},
+    "svs": { "items": [
+      "I feel full of vitality",
+      "I have energy for what matters",
+      "I feel alive and engaged",
+      "I can mobilize quickly",
+      "I generally feel in good shape"
+    ]}
+  }
 }

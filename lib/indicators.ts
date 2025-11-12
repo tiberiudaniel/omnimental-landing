@@ -4,7 +4,6 @@ export const INDICATOR_CHART_KEYS = [
   "calm",
   "energy",
   "performance",
-  "bodyHabits",
 ] as const;
 
 export type IndicatorChartKey = (typeof INDICATOR_CHART_KEYS)[number];
@@ -15,7 +14,6 @@ export const INDICATOR_LABELS: Record<IndicatorChartKey, { ro: string; en: strin
   calm: { ro: "Calm", en: "Calm" },
   energy: { ro: "Energie", en: "Energy" },
   performance: { ro: "Performanță", en: "Performance" },
-  bodyHabits: { ro: "Corp & obiceiuri", en: "Body & habits" },
 };
 
 export const INDICATOR_SOURCE_KEYS = [
@@ -24,7 +22,6 @@ export const INDICATOR_SOURCE_KEYS = [
   "energy",
   "relationships",
   "performance",
-  "bodyHabits",
 ] as const;
 
 export type IndicatorSourceKey = (typeof INDICATOR_SOURCE_KEYS)[number];
@@ -51,6 +48,10 @@ export const intentCategoryToIndicator: Record<string, IndicatorSourceKey | unde
   focus: "focus",
   productivity: "focus",
   clarity: "focus",
+  // Primary cloud categories (ensure core mapping)
+  // relationships is mapped below
+  confidence: "performance",
+  balance: "energy",
   clarity_focus: "focus",
   clarity_need: "focus",
   clarity_true_want: "focus",
@@ -81,9 +82,9 @@ export const intentCategoryToIndicator: Record<string, IndicatorSourceKey | unde
   career_pressure: "performance",
   career_boss: "performance",
 
-  health: "bodyHabits",
-  habits: "bodyHabits",
-  lifestyle: "bodyHabits",
+  health: "energy",
+  habits: "energy",
+  lifestyle: "energy",
 };
 
 const createEmptySourceCounts = (): IndicatorSourceCounts => ({
@@ -92,7 +93,6 @@ const createEmptySourceCounts = (): IndicatorSourceCounts => ({
   energy: 0,
   relationships: 0,
   performance: 0,
-  bodyHabits: 0,
 });
 
 export function computeIndicatorSourceCounts(
@@ -115,12 +115,27 @@ export function mapSourcesToChart(counts: IndicatorSourceCounts): IndicatorChart
     calm: counts.calm,
     energy: counts.energy,
     performance: counts.performance,
-    bodyHabits: counts.bodyHabits,
+  };
+}
+
+export function mapSourcesToShares(counts: IndicatorSourceCounts): IndicatorChartValues {
+  const total = counts.calm + counts.focus + counts.energy + counts.relationships + counts.performance;
+  if (!total) {
+    return { clarity: 0, relationships: 0, calm: 0, energy: 0, performance: 0 };
+  }
+  const share = (v: number) => Math.max(0, Math.min(1, v / total));
+  return {
+    clarity: share(counts.focus),
+    relationships: share(counts.relationships),
+    calm: share(counts.calm),
+    energy: share(counts.energy),
+    performance: share(counts.performance),
   };
 }
 
 export function buildIndicatorSummary(categories: Array<{ category: string; count: number }>) {
   const sourceCounts = computeIndicatorSourceCounts(categories);
-  const chart = mapSourcesToChart(sourceCounts);
-  return { sourceCounts, chart };
+  const chart = mapSourcesToChart(sourceCounts); // counts (legacy)
+  const shares = mapSourcesToShares(sourceCounts); // shares in [0..1]
+  return { sourceCounts, chart, shares };
 }

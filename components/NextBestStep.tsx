@@ -21,9 +21,10 @@ type Props = {
   onGoToAbil: () => void;
   onGoToIntel: () => void;
   className?: string;
+  children?: React.ReactNode;
 };
 
-export default function NextBestStep({ progress, lang, onGoToKuno, onGoToSensei, onGoToAbil, onGoToIntel, className }: Props) {
+export default function NextBestStep({ progress, lang, onGoToKuno, onGoToSensei, onGoToAbil, onGoToIntel, className, children }: Props) {
   const { label, action } = useMemo(() => {
     const kunoCompleted = Number(progress?.omni?.kuno?.completedTests ?? 0) >= 1;
     const senseiUnlocked = Boolean(progress?.omni?.sensei?.unlocked) || kunoCompleted;
@@ -60,20 +61,24 @@ export default function NextBestStep({ progress, lang, onGoToKuno, onGoToSensei,
     } as const;
   }, [lang, onGoToAbil, onGoToIntel, onGoToKuno, onGoToSensei, progress]);
 
+  const hasChildren = Boolean(children);
   return (
-    <div className={`mb-2 w-full rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-3 py-2 text-sm text-[#2C2C2C] shadow-[0_6px_14px_rgba(0,0,0,0.05)] ${className ?? ""}`}>
-      <div className="flex h-full items-center justify-between gap-1.5">
-        <p className="t-label-xs font-semibold text-[#C07963]">
+    <div className={`mb-2 w-full rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] ${hasChildren ? "px-4 py-3" : "px-3"} text-sm text-[#2C2C2C] shadow-[0_6px_14px_rgba(0,0,0,0.05)] ${className ?? ""}`}>
+      <div className={`flex items-center justify-between gap-2 ${hasChildren ? "mb-2" : "h-12"}`}>
+        <p className="text-[12px] font-semibold uppercase tracking-[0.3em] text-[#C07963]">
           {lang === "ro" ? "Pasul următor" : "Next step"}
         </p>
         <button
           type="button"
           onClick={action}
-          className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-2 py-[2px] text-[9px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+          className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
         >
           {label}
         </button>
       </div>
+      {hasChildren ? (
+        <div className="mt-1">{children}</div>
+      ) : null}
     </div>
   );
 }

@@ -6,7 +6,8 @@ import CardOption from "./CardOption";
 import { useI18n } from "./I18nProvider";
 import { getString } from "@/lib/i18nGetString";
 import { RecommendationSummary } from "@/components/RecommendationSummary";
-import { buildIndicatorSummary } from "@/lib/indicators";
+import { buildIndicatorSummary, INDICATOR_CHART_KEYS } from "@/lib/indicators";
+import { CATEGORY_LABELS } from "@/lib/categoryLabels";
 import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
 import CTAButton from "./CTAButton";
 import type {
@@ -21,6 +22,15 @@ import { determineLoadLevel, type LoadLevel } from "../lib/loadLevel";
 export type RecommendationCardChoice = "individual" | "group";
 
 type Props = {
+  // unified recommendation object (preferred)
+  recommendation?: {
+    path: "group" | "individual";
+    reasonKey: string;
+    badgeLabel?: string;
+    formatPreference?: "online" | "hybrid";
+    dimensionScores: Record<string, number>;
+    algoVersion: string;
+  };
   profile: { id: string } | null;
   showAccountPrompt: boolean;
   onAccountRequest: () => void;
@@ -98,11 +108,12 @@ const buildSummaryMessage = ({
 
 export function RecommendationStep(props: Props) {
   const {
+    recommendation,
     profile,
     showAccountPrompt,
     onAccountRequest,
-    recommendedPath,
-    recommendedBadgeLabel,
+    recommendedPath: recommendedPathProp,
+    recommendedBadgeLabel: recommendedBadgeLabelProp,
     onCardSelect,
     accountPromptMessage,
     accountPromptButton,
@@ -124,12 +135,16 @@ export function RecommendationStep(props: Props) {
     learnFromOthers,
     scheduleFit,
     formatPreference,
-    recommendationReasonKey,
+    recommendationReasonKey: recommendationReasonKeyProp,
     initialStatement,
   } = props;
 
   const { t, lang } = useI18n();
   const getCopy = (key: string, fallback: string) => getString(t, key, fallback);
+  // Prefer unified recommendation object when provided
+  const effectiveRecommendedPath = recommendation?.path ?? recommendedPathProp;
+  const effectiveReasonKey = recommendation?.reasonKey ?? recommendationReasonKeyProp;
+  const effectiveBadge = recommendation?.badgeLabel ?? recommendedBadgeLabelProp;
   const loadLevelsValue = t("intentSummaryLoadLevels");
   const loadLevels =
     loadLevelsValue && typeof loadLevelsValue === "object"
@@ -155,7 +170,7 @@ export function RecommendationStep(props: Props) {
   const loadLevel = determineLoadLevel(intentUrgency);
   const loadLevelContent = loadLevels?.[loadLevel];
 
-  const recommendationHeadline = recommendedPath === "individual"
+  const recommendationHeadline = effectiveRecommendedPath === "individual"
     ? getCopy("recommendationHeadlineIndividual", lang === "ro" ? "Recomandare: sesiuni individuale 1-la-1." : "Recommendation: individual sessions.")
     : getCopy("recommendationHeadlineGroup", lang === "ro" ? "Recomandare: grupul online OmniMental." : "Recommendation: OmniMental group.");
   const recommendationBodyText =
@@ -165,7 +180,7 @@ export function RecommendationStep(props: Props) {
       : "Keep your current pace and lean on guidance when things feel unclear.");
 
   const primaryReason = getRecommendationReasonCopy(
-    recommendationReasonKey,
+    effectiveReasonKey,
     lang === "ro" ? "ro" : "en",
   );
 
@@ -210,7 +225,27 @@ export function RecommendationStep(props: Props) {
 
   const prefersIndividual = formatPreference === "individual";
   const indicatorSummary = useMemo(() => buildIndicatorSummary(categories), [categories]);
-  const summaryIndicators = indicatorSummary.chart;
+  const summaryIndicators = indicatorSummary.shares;
+  const summaryCounts = indicatorSummary.chart;
+  const selectionTotal = useMemo(() => categories.reduce((s, e) => s + (Number(e.count) || 0), 0), [categories]);
+  const topReflection = useMemo(() => {
+    const pairs = INDICATOR_CHART_KEYS.map((k) => [k, Number(summaryIndicators[k] ?? 0)] as const);
+    pairs.sort((a, b) => b[1] - a[1]);
+    const top = pairs[0]?.[0];
+    if (!top) return null;
+    const mapToRoKey: Record<string, keyof typeof CATEGORY_LABELS> = {
+      clarity: "claritate",
+      relationships: "relatii",
+      calm: "stres",
+      energy: "echilibru",
+      performance: "incredere",
+    };
+    const roKey = mapToRoKey[top];
+    const item = roKey ? CATEGORY_LABELS[roKey] : undefined;
+    if (!item) return null;
+    const copy = lang === "ro" ? item.reflection?.ro : item.reflection?.en;
+    return copy ?? null;
+  }, [lang, summaryIndicators]);
 
   const pacePhrase = paceLabel(lang, resolutionSpeed);
   const budgetPhrase = budgetLabel(lang, budgetPreference);
@@ -314,8 +349,8 @@ export function RecommendationStep(props: Props) {
                   onClick={() => {
                     void onCardSelect(type);
                   }}
-                  isRecommended={recommendedPath === type}
-                  recommendedLabel={recommendedBadgeLabel}
+                  isRecommended={effectiveRecommendedPath === type}
+                  recommendedLabel={effectiveBadge}
                   disabled={isSavingChoice}
                   isLoading={isSavingChoice && savingChoiceType === type}
                   loadingLabel={savingLabel}
@@ -339,6 +374,8 @@ export function RecommendationStep(props: Props) {
             mainRecommendationText={recommendationBodyText}
             reasoningBullets={localizedReasons}
             indicators={summaryIndicators}
+            indicatorCounts={summaryCounts}
+            selectionTotal={selectionTotal}
             speed={resolutionSpeed}
             commitment={determination}
             weeklyTimeHours={timeCommitmentHours}
@@ -352,6 +389,11 @@ export function RecommendationStep(props: Props) {
             onBookCall={onAccountRequest}
             language={lang === "en" ? "en" : "ro"}
           />
+          {topReflection ? (
+            <div className="mx-auto mt-2 max-w-4xl rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-3 text-left text-[13px] text-[#2C2C2C]">
+              {topReflection}
+            </div>
+          ) : null}
           <div className="mt-10 rounded-[18px] border border-[#E4D8CE] bg-[#FFFBF7] px-5 py-5 text-left shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>

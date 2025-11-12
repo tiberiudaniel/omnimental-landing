@@ -8,6 +8,10 @@ import RadarIndicators from "./RadarIndicators";
 import { intentCategoryLabels } from "@/lib/intentExpressions";
 import { computeOmniIntentScore, type OmniIntentAnswers } from "@/lib/omniIntent";
 import { submitOmniIntentAssessment } from "@/lib/submitEvaluation";
+// Removed header-level JournalTrigger per request; section-level buttons remain
+import { useTStrings } from "./useTStrings";
+import type { JournalContext } from "./journal/useJournal";
+// Simple emoji icon to avoid extra dependencies
 
 const defaultIntentAnswers: OmniIntentAnswers = {
   knowledge: [5, 5, 5, 5],
@@ -51,11 +55,14 @@ type ArrayKeys = "knowledge" | "belief" | "commitment" | "planning";
 
 type Props = {
   lang: "ro" | "en";
+  onOpenJournal?: (ctx: JournalContext) => void;
+  activeJournalSourceBlock?: string;
 };
 
-export default function OmniIntentForm({ lang }: Props) {
+export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourceBlock }: Props) {
   const { profile } = useProfile();
   const { data: progress } = useProgressFacts(profile?.id);
+  const { s } = useTStrings();
   const [answers, setAnswers] = useState<OmniIntentAnswers>(defaultIntentAnswers);
   const scores = useMemo(() => computeOmniIntentScore(answers), [answers]);
   const [saving, setSaving] = useState(false);
@@ -111,30 +118,119 @@ export default function OmniIntentForm({ lang }: Props) {
     }
   };
 
+  const headerTitleFor = (k: keyof typeof FIELD_LABELS) => {
+    if (lang === "ro") {
+      switch (k) {
+        case "knowledge":
+          return "Claritate & cunoaștere";
+        case "belief":
+          return "Convingeri & încredere";
+        case "commitment":
+          return "Angajament";
+        case "planning":
+          return "Plan & execuție";
+      }
+    }
+    switch (k) {
+      case "knowledge":
+        return "Clarity & knowledge";
+      case "belief":
+        return "Beliefs & confidence";
+      case "commitment":
+        return "Commitment";
+      case "planning":
+        return "Plan & execution";
+    }
+  };
+
+  const getLevelLabel = (val: number) => {
+    if (val <= 3) return lang === "ro" ? "Nivel scăzut" : "Low";
+    if (val <= 6) return lang === "ro" ? "Nivel mediu" : "Medium";
+    return lang === "ro" ? "Nivel ridicat" : "High";
+  };
+
   const renderSection = (
     key: keyof typeof FIELD_LABELS,
     labels: readonly [string, string, string, string],
-  ) => (
-    <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#A08F82]">{key}</p>
-      {labels.map((label, index) => (
-        <label key={`${key}-${index}`} className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
-          {label}
-          <input
-            type="range"
-            min={0}
-            max={10}
-            value={(answers[key] as number[])[index]}
-            onChange={(event) => updateArray(key, index, Number(event.target.value))}
-            className="accent-[#E60012]"
-          />
-          <span className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
-            {(answers[key] as number[])[index]}/10
+  ) => {
+    const values = answers[key] as number[];
+    const avg = Math.round((values.reduce((s, v) => s + v, 0) / values.length) * 10) / 10;
+    const scaleDescription = lang === "ro" ? "0 = sunt ok / 10 = am nevoie urgentă de schimbare" : "0 = I’m ok / 10 = urgent change needed";
+
+    const isActive = activeJournalSourceBlock === `section_${key}`;
+    return (
+      <section
+        className={`space-y-4 rounded-[16px] border px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)] ${
+          isActive ? "border-[#2C2C2C]/70 bg-[#FFFBF7]" : "border-[#E4D8CE] bg-white"
+        }`}
+      >
+        {isActive ? (
+          <span className="mb-1 inline-block rounded-full bg-[#F6F2EE] px-2 py-0.5 text-[10px] text-[#2C2C2C]">
+            {s("journal.badge.active", "Jurnal activ")}
           </span>
-        </label>
-      ))}
-    </section>
-  );
+        ) : null}
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h3 className="text-[15px] font-semibold text-[#1F1F1F]">{headerTitleFor(key)}</h3>
+            <p className="text-xs text-[#7A6455]">{scaleDescription}</p>
+          </div>
+          <button
+            type="button"
+            className="inline-flex h-7 items-center gap-1 rounded-[10px] border border-[#E4D8CE] px-2 text-[11px] text-[#2C2C2C] hover:border-[#C9B8A8]"
+            onClick={() => {
+              if (!onOpenJournal) return;
+              const ctx: JournalContext = {
+                theme: headerTitleFor(key) ?? String(key),
+                sourcePage: "scop_intentii",
+                sourceBlock: `section_${key}`,
+                suggestedSnippets: [
+                  `Întrebare: ${headerTitleFor(key) ?? String(key)}`,
+                  (lang === "ro" ? "Valoare actuală: " : "Current value: ") + `${avg} / 10`,
+                  scaleDescription,
+                ].filter(Boolean) as string[],
+              };
+              onOpenJournal(ctx);
+            }}
+            aria-label={lang === "ro" ? "Deschide jurnal" : "Open journal"}
+            title={lang === "ro" ? "Deschide jurnal" : "Open journal"}
+          >
+            <span role="img" aria-hidden className="inline-block text-[12px]">📝</span>
+            Jurnal
+          </button>
+        </div>
+
+        {labels.map((label, index) => {
+          const v = values[index] ?? 0;
+          const valueClass = v >= 7 ? "text-[#C07963]" : "text-[#2C2C2C]";
+          return (
+            <div key={`${key}-${index}`} className="rounded-[10px] border border-[#F6EDE2] bg-[#FFFBF7] p-3">
+              <p className="text-sm text-[#2C2C2C]">{label}</p>
+              <div className="mt-3 flex items-center gap-3">
+                <div className="w-16 text-center text-[11px] text-[#7A6455]">0–10</div>
+                <div className="flex-1">
+                  <input
+                    type="range"
+                    min={0}
+                    max={10}
+                    value={v}
+                    onChange={(event) => updateArray(key, index, Number(event.target.value))}
+                    className="w-full accent-[#2C2C2C]"
+                  />
+                </div>
+                <div className={`w-16 text-right text-sm font-semibold ${valueClass}`}>{v} / 10</div>
+              </div>
+              <p className="mt-1 text-[11px] text-[#7A6455]">{getLevelLabel(v)}</p>
+            </div>
+          );
+        })}
+
+        <p className="mt-1 text-[11px] text-[#7A6455]">
+          {lang === "ro" ? "Ultima notare (medie secțiune): " : "Last note (section average): "}
+          <span className="font-semibold text-[#2C2C2C]">{avg} / 10</span>
+        </p>
+      </section>
+    );
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -142,11 +238,13 @@ export default function OmniIntentForm({ lang }: Props) {
         <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
           {lang === "ro" ? "Omni-Scop" : "Omni-Intent"}
         </p>
-        <h2 className="text-2xl font-semibold text-[#1F1F1F]">
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-2xl font-semibold text-[#1F1F1F]">
           {lang === "ro"
             ? "Claritate, angajament și plan pentru obiectivul tău"
             : "Clarity, commitment, and planning for your goal"}
-        </h2>
+          </h2>
+        </div>
         <p className="text-sm text-[#4A3A30]">
           {lang === "ro"
             ? "Completează fiecare rubrică (0–10). Scorul final combină Knowledge, Belief, Commitment, Planning și progresul obiectivului."
@@ -223,7 +321,7 @@ export default function OmniIntentForm({ lang }: Props) {
           onChange={(event) =>
             setAnswers((prev) => ({ ...prev, progress: Number(event.target.value) }))
           }
-          className="accent-[#E60012]"
+          className="w-full accent-[#2C2C2C]"
         />
         <span className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
           {answers.progress}%

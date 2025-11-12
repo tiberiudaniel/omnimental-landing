@@ -19,6 +19,7 @@ type ProfileRecord = {
   email: string;
   createdAt?: Timestamp;
   accessTier: AccessTier;
+  selection?: "none" | "individual" | "group";
 };
 
 type ProfileContextValue = {
@@ -40,6 +41,7 @@ async function ensureProfileDocument(uid: string, email: string | null | undefin
     email: email ?? "",
     createdAt: Timestamp.now(),
     accessTier: "public" as const,
+    selection: "none" as const,
   };
   await setDoc(profileRef, payload);
   return payload;
@@ -66,12 +68,17 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       try {
         const data = await ensureProfileDocument(user.uid, user.email, user.displayName);
         if (active) {
+          const selectionValue = ((data as { selection?: "none" | "individual" | "group" }).selection ?? "none") as
+            | "none"
+            | "individual"
+            | "group";
           setProfile({
             id: user.uid,
             name: data.name ?? user.email ?? "Utilizator",
             email: data.email ?? user.email ?? "",
             createdAt: data.createdAt,
             accessTier: data.accessTier ?? "public",
+            selection: selectionValue,
           });
         }
       } catch (error) {
@@ -82,6 +89,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
             name: user.email ?? "Utilizator",
             email: user.email ?? "",
             accessTier: "public",
+            selection: "none",
           });
         }
       } finally {

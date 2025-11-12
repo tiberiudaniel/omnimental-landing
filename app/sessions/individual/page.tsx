@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import ClientI18nWrapper from "../../../components/ClientI18nWrapper";
 import SessionDetails from "../../../components/SessionDetails";
 import SocialProof from "../../../components/SocialProof";
 import SiteHeader from "../../../components/SiteHeader";
@@ -28,9 +27,5 @@ function IndividualSessionsContent() {
 }
 
 export default function IndividualSessionsPage() {
-  return (
-    <ClientI18nWrapper>
-      <IndividualSessionsContent />
-    </ClientI18nWrapper>
-  );
+  return <IndividualSessionsContent />;
 }

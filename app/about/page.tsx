@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import ClientI18nWrapper from "../../components/ClientI18nWrapper";
 import SiteHeader from "../../components/SiteHeader";
 import MenuOverlay from "../../components/MenuOverlay";
 import { useNavigationLinks } from "../../components/useNavigationLinks";
@@ -160,9 +159,5 @@ function AboutContent() {
 }
 
 export default function AboutPage() {
-  return (
-    <ClientI18nWrapper>
-      <AboutContent />
-    </ClientI18nWrapper>
-  );
+  return <AboutContent />;
 }

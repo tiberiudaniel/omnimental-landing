@@ -410,5 +410,119 @@
   "recommendationReason_performance_group": "Focus pe performanță + calm bine balansat",
   "recommendationReason_low_urgency": "Urgență redusă → format de grup eficient",
   "recommendationReason_default": "Structura grupului oferă cel mai bun raport claritate/suport",
-  "recommendationReasonFallback": "Continuă evaluările pentru a rafina recomandarea"
+  "recommendationReasonFallback": "Continuă evaluările pentru a rafina recomandarea",
+  "antrenamentTabHelp": {
+    "os": "Aici clarifici ce te preocupă acum și de ce contează. Te ajută să formulezi direcția și motivația personală pentru pașii următori.",
+    "oc": "Completezi scale obiective (stres, prezență, energie etc.). Obții scoruri care calibrează recomandările și progresul.",
+    "ose": "Primești quest‑uri/ provocări scurte adaptate profilului tău. Construiesc ritmul și continuitatea practică.",
+    "oa": "Exersezi abilități concrete (reglare, claritate, obiceiuri). Marchezi ce ai făcut ca să vezi impactul în timp.",
+    "oi": "Vezi imaginea integrativă: scoruri, tendințe și nivel. De aici ajustezi direcția în cunoștință de cauză."
+  },
+  "antrenamentTabWhat": {
+    "os": [
+      "Jurnal scurt despre tema principală",
+      "Selectarea temelor (tag‑uri) și a categoriei",
+      "Stabilești intensitatea/urgența"
+    ],
+    "oc": [
+      "Scale validate (ex. stres, prezență, energie)",
+      "Quiz de cunoaștere pentru zonele tale",
+      "Obții scoruri și puncte forte/de îmbunătățit"
+    ],
+    "ose": [
+      "Mini task‑uri (quest‑uri) adaptate selecțiilor tale",
+      "Explicație scurtă de ce ajută fiecare task",
+      "Cadru de responsabilitate blând (ritm, follow‑up)"
+    ],
+    "oa": [
+      "Exerciții practice de reglare/claritate",
+      "Obiceiuri mici ușor de integrat",
+      "Marchezi ce ai făcut ca să vezi progresul"
+    ],
+    "oi": [
+      "Rezumat integrativ al scorurilor",
+      "Tendințe și nivel OmniIntel",
+      "Recomandări ajustate pe baza datelor"
+    ]
+  },
+  "progressLoading": "Se încarcă progresul…",
+  "progressStage1": "Etapa 1",
+  "progressStage2": "Etapa 2",
+  "progressStage3": "Etapa 3",
+  "progressStage4": "Etapa 4",
+  "progressResync": "Resincronizează",
+  "progressResyncing": "Sincronizare...",
+  "journal": {
+    "title": "Jurnal personal",
+    "relatedPrefix": "Legat de:",
+    "suggestionsTitle": "Sugestii din ce ai completat:",
+    "status": {
+      "autosave": "Se salvează automat.",
+      "loading": "Se încarcă…",
+      "saving": "Salvez…",
+      "saved": "Salvat"
+    },
+    "badge": { "active": "Jurnal activ" },
+    "action": { "close": "Ascunde panoul", "open": "Arată jurnalul" },
+    "tabs": {
+      "scop_intentie": {
+        "label": "Scop și intenție",
+        "placeholder": "Ce vrei să fie diferit pentru tine în 4–6 săptămâni?\nDe ce contează asta pentru tine acum?"
+      },
+      "motivatie_resurse": {
+        "label": "Motivație și resurse",
+        "placeholder": "De ce merită efortul pentru tine?\nCe resurse ai deja (timp, oameni, obiceiuri, bani) și le poți folosi mai bine?"
+      },
+      "plan_recomandari": {
+        "label": "Plan și recomandări",
+        "placeholder": "Notează recomandarea principală și 3–5 pași concreți.\nExemplu: ce vei face în următoarele 72 de ore?"
+      },
+      "observatii_evaluare": {
+        "label": "Observații din evaluare",
+        "placeholder": "Rescrie pe scurt ce ai observat din răspunsurile tale.\nCe ți se pare cel mai important acum?"
+      },
+      "note_libere": {
+        "label": "Note libere",
+        "placeholder": "Idei, insight-uri, lucruri pe care vrei să ți le amintești mai târziu."
+      }
+    }
+  },
+  "eval": {
+    "pss": {
+      "items": [
+        "Stres și presiune resimțite în ultimele zile",
+        "Dificultate în a controla lucrurile",
+        "Simt că mă depășesc responsabilitățile",
+        "Mă simt tensionat(ă) frecvent",
+        "Mă îngrijorez des"
+      ]
+    },
+    "gse": { "items": [
+      "Pot găsi soluții când apar probleme",
+      "Am încredere că îmi ating obiectivele",
+      "Mă descurc și sub presiune",
+      "Învăț repede din greșeli",
+      "Îmi adaptez planul eficient"
+    ]},
+    "maas": { "items": [
+      "Sunt atent(ă) la ceea ce simt",
+      "Observ ce se întâmplă în corp",
+      "Sunt prezent(ă) în activitățile mele",
+      "Îmi dau seama când mă distrag",
+      "Mă reconectez ușor la momentul prezent"
+    ]},
+    "panasPos": { "items": [
+      "Energic(ă)", "Entuziasmat(ă)", "Inspirat(ă)", "Hotărât(ă)", "Alert(ă)"
+    ]},
+    "panasNeg": { "items": [
+      "Iritat(ă)", "Anxios(ă)", "Abătut(ă)", "Tensionat(ă)", "Nerăbdător(are)"
+    ]},
+    "svs": { "items": [
+      "Mă simt plin(ă) de vitalitate",
+      "Am energie pentru ce contează",
+      "Mă simt viu(ă) și implicat(ă)",
+      "Mă pot mobiliza ușor",
+      "Mă simt în general în formă"
+    ]}
+  }
 }

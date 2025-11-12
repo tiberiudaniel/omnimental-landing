@@ -10,6 +10,7 @@ import {
   INDICATOR_LABELS,
   type IndicatorChartKey,
 } from "@/lib/indicators";
+import { CATEGORY_LABELS } from "@/lib/categoryLabels";
 
 interface ReflectionScreenProps {
   lines: string[];
@@ -40,11 +41,11 @@ export default function ReflectionScreen({
   const indicatorSummary = useMemo(() => buildIndicatorSummary(safeCategories), [safeCategories]);
   const indicatorEntries = INDICATOR_CHART_KEYS.map((key: IndicatorChartKey) => {
     const rawCount = indicatorSummary.chart[key] ?? 0;
-    const normalized = Math.max(0, Math.min(5, (rawCount / displayTotal) * 5));
+    const share = indicatorSummary.shares[key] ?? 0; // 0..1
     return {
       key,
       label: INDICATOR_LABELS[key][isRO ? "ro" : "en"],
-      value: normalized,
+      value: Math.max(0, Math.min(1, share)),
       rawCount,
     };
   });
@@ -56,6 +57,29 @@ export default function ReflectionScreen({
         .slice(0, 2),
     [safeCategories],
   );
+  const topReflection = useMemo(() => {
+    // Determine top category share from indicatorSummary (shares)
+    const pairs: Array<[IndicatorChartKey, number]> = INDICATOR_CHART_KEYS.map((k) => [
+      k,
+      Number(indicatorSummary.shares[k] ?? 0),
+    ]);
+    pairs.sort((a, b) => b[1] - a[1]);
+    const top = pairs[0]?.[0];
+    if (!top) return null;
+    // Map indicator key to RO category key used by CATEGORY_LABELS
+    const mapToRoKey: Record<string, keyof typeof CATEGORY_LABELS> = {
+      clarity: "claritate",
+      relationships: "relatii",
+      calm: "stres",
+      energy: "echilibru",
+      performance: "incredere",
+    };
+    const roKey = mapToRoKey[top];
+    const item = roKey ? CATEGORY_LABELS[roKey] : undefined;
+    if (!item) return null;
+    const text = isRO ? item.reflection?.ro : item.reflection?.en;
+    return text ?? null;
+  }, [indicatorSummary.shares, isRO]);
   const showIndicators = safeCategories.length > 0;
   const emptyIndicatorsText = isRO
     ? "Selectează câteva opțiuni pentru a vedea analiza."
@@ -74,7 +98,7 @@ export default function ReflectionScreen({
               {isRO ? "Profilul selecțiilor tale" : "Your selection profile"}
             </h3>
             <div className="mt-6 flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:gap-10">
-              <RadarIndicators data={indicatorEntries} />
+              <RadarIndicators data={indicatorEntries} maxValue={1} size="sm" />
               <div className="flex-1 space-y-4">
                 <ul className="grid w-full gap-3 text-sm">
                   {indicatorEntries.map(({ key, label, rawCount }) => (
@@ -113,6 +137,11 @@ export default function ReflectionScreen({
                   ) : (
                     <p className="mt-2 text-sm text-[#2C2C2C]/70">{emptyIndicatorsText}</p>
                   )}
+                  {topReflection ? (
+                    <div className="mt-3 rounded-[10px] border border-[#F0E6DA] bg-white px-3 py-2 text-[13px] text-[#2C2C2C]">
+                      {topReflection}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

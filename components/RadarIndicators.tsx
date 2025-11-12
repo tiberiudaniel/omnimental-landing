@@ -13,6 +13,7 @@ type RadarIndicatorsProps = {
   data: RadarDataPoint[];
   maxValue?: number;
   size?: "sm" | "md" | "lg";
+  ringSteps?: number; // optional explicit number of concentric rings
 };
 
 const WEDGE_COLORS: Record<IndicatorChartKey, string> = {
@@ -21,19 +22,19 @@ const WEDGE_COLORS: Record<IndicatorChartKey, string> = {
   calm: "#D95032",
   energy: "#1E3A8A",
   performance: "#2B6F88",
-  bodyHabits: "#7FAE92",
 };
 
 const clampValue = (value: number, max: number) => Math.max(0, Math.min(max, value));
 
-export function RadarIndicators({ data, maxValue = 5, size = "md" }: RadarIndicatorsProps) {
+export function RadarIndicators({ data, maxValue = 5, size = "md", ringSteps }: RadarIndicatorsProps) {
   const normalized = data.map((point) => ({
     ...point,
     value: clampValue(point.value, maxValue),
     color: WEDGE_COLORS[point.key],
   }));
 
-  const base = size === "sm" ? 220 : size === "lg" ? 360 : 320;
+  // Smaller defaults to avoid overpowering the card
+  const base = size === "sm" ? 160 : size === "lg" ? 280 : 220;
   const center = base / 2;
   const radius = center - 24;
   const total = normalized.length;
@@ -45,8 +46,10 @@ export function RadarIndicators({ data, maxValue = 5, size = "md" }: RadarIndica
     y: center + distance * Math.sin(angle),
   });
 
-  const rings = Array.from({ length: maxValue }, (_, index) => {
-    const ringRadius = radius * ((index + 1) / maxValue);
+  // When using shares (maxValue=1), draw more guide rings for clarity
+  const steps = typeof ringSteps === "number" && ringSteps > 0 ? ringSteps : (maxValue === 1 ? 5 : maxValue);
+  const rings = Array.from({ length: steps }, (_, index) => {
+    const ringRadius = radius * ((index + 1) / steps);
     return (
       <circle
         key={`ring-${ringRadius}`}
@@ -54,8 +57,8 @@ export function RadarIndicators({ data, maxValue = 5, size = "md" }: RadarIndica
         cy={center}
         r={ringRadius}
         fill="none"
-        stroke="rgba(44, 44, 44, 0.12)"
-        strokeWidth={1.5}
+        stroke="rgba(44, 44, 44, 0.14)"
+        strokeWidth={0.75}
       />
     );
   });

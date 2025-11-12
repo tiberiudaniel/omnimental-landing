@@ -427,6 +427,23 @@ export async function recordKnowledgeViewSummary() {
   }
 }
 
+// Lightweight analytics for gating/flows
+export async function recordExitModalShown(source: string) {
+  try {
+    await mergeProgressFact({ analytics: { exit_modal_shown: { source, at: serverTimestamp() } } });
+  } catch (e) {
+    console.warn("recordExitModalShown failed", e);
+  }
+}
+
+export async function recordCtaClicked(variant: string) {
+  try {
+    await mergeProgressFact({ analytics: { cta_clicked: { variant, at: serverTimestamp() } } });
+  } catch (e) {
+    console.warn("recordCtaClicked failed", e);
+  }
+}
+
 export async function recordWizardReset() {
   try {
     await mergeProgressFact({ wizardReset: { at: serverTimestamp() } });
@@ -475,6 +492,9 @@ export async function recordIntentProgressFact(
   lang: string;
   firstExpression?: string | null;
   firstCategory?: string | null;
+  selectionTotal?: number;
+  topCategory?: string | null;
+  topShare?: number | null;
   },
   profileId?: string | null,
 ) {
@@ -557,10 +577,39 @@ export async function recordRecommendationProgressFact(payload: {
           ? payload.selectedPath === payload.suggestedPath
           : null,
       dimensionScores: payload.dimensionScores ?? null,
+      // stamp when a selection is made
+      ...(payload.selectedPath ? { selectedAt: serverTimestamp() } : {}),
       updatedAt: serverTimestamp(),
     },
   });
 }
+
+// Text signals aggregation: bump indicator counters, store last tokens sample
+export async function recordTextSignalFact(payload: {
+  indicators: { calm?: number; focus?: number; energy?: number; relationships?: number; performance?: number };
+  tokens?: string[];
+  textIndicators?: Record<string, { count: number; hits: string[] }>;
+}) {
+  const inc = (v?: number) => (typeof v === "number" && Number.isFinite(v) ? (increment(v) as unknown as number) : undefined);
+  const update: Record<string, unknown> = {
+    analytics: {
+      indicators: {
+        calm: inc(payload.indicators.calm) ?? undefined,
+        focus: inc(payload.indicators.focus) ?? undefined,
+        energy: inc(payload.indicators.energy) ?? undefined,
+        relationships: inc(payload.indicators.relationships) ?? undefined,
+        performance: inc(payload.indicators.performance) ?? undefined,
+      },
+      lastTokens: Array.isArray(payload.tokens) ? payload.tokens.slice(0, 12) : undefined,
+      textIndicators: payload.textIndicators ?? undefined,
+      updatedAt: serverTimestamp(),
+    },
+  };
+  return mergeProgressFact(update);
+}
+
+// Persist evaluation totals and stage value into progress facts
+ 
 
 // Patch partial Omni block (deep merge). Useful to update knowledgeIndex/skills/unlocks.
 export async function recordOmniPatch(patch: DeepPartial<OmniBlock>) {

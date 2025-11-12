@@ -3,7 +3,7 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 // removed unused local step components
-import { I18nProvider, useI18n } from "../components/I18nProvider";
+import { useI18n } from "../components/I18nProvider";
 import SiteHeader from "../components/SiteHeader";
 import MenuOverlay from "../components/MenuOverlay";
 import type { IntentCloudResult } from "../components/IntentCloud";
@@ -26,23 +26,19 @@ import { recommendSession, type SessionType } from "../lib/recommendation";
 import { saveRecommendationCache, readRecommendationCache, updateSelectedPath } from "@/lib/recommendationCache";
 // duplicate import cleanup
 import { generateAdaptiveIntentCloudWords } from "@/lib/intentExpressions";
+import { CATEGORY_LABELS } from "@/lib/categoryLabels";
 import { useWindowWidth } from "@/lib/useWindowSize";
+import { useTStrings } from "../components/useTStrings";
 // import { getString as i18nGetString } from "@/lib/i18nGetString";
 
 const MIN_INTENT_SELECTIONS = 5;
 const MAX_INTENT_SELECTIONS = 7;
 
-const getTranslationString = (
-  translate: (key: string) => unknown,
-  key: string,
-  fallback = "",
-) => {
-  const value = translate(key);
-  return typeof value === "string" ? value : fallback;
-};
+// removed unused getTranslationString helper
 
 function PageContent() {
   const { t, lang } = useI18n();
+  const { s } = useTStrings();
   const { profile } = useProfile();
   const { step, goToStep } = useWizardSteps();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -141,22 +137,34 @@ function PageContent() {
   }, [returnTo, router]);
 
   const categoryLabels = useMemo(() => {
-    const categoryLabelsValue = t("intentCategoryLabels");
-    return categoryLabelsValue && typeof categoryLabelsValue === "object"
-      ? (categoryLabelsValue as Record<string, string>)
-      : {};
-  }, [t]);
-  const recommendedBadgeValue = getTranslationString(t, "cardsRecommendedLabel");
+    const fromI18n = t("intentCategoryLabels");
+    const base: Record<string, string> =
+      fromI18n && typeof fromI18n === "object" ? (fromI18n as Record<string, string>) : {};
+    // Fallbacks from CATEGORY_LABELS when i18n is missing
+    const isRO = lang !== "en";
+    const ensure = (key: string, roKey: keyof typeof CATEGORY_LABELS) => {
+      if (!base[key] || typeof base[key] !== "string") {
+        base[key] = isRO ? CATEGORY_LABELS[roKey].name.ro : CATEGORY_LABELS[roKey].name.en;
+      }
+    };
+    ensure("clarity", "claritate");
+    ensure("relationships", "relatii");
+    ensure("stress", "stres");
+    ensure("confidence", "incredere");
+    ensure("balance", "echilibru");
+    return base;
+  }, [t, lang]);
+  const recommendedBadgeValue = s("cardsRecommendedLabel", "");
   const recommendedBadgeLabel = recommendedBadgeValue || undefined;
   const reflectionOneLines = useMemo(() => {
     return ["reflectionOneLine1", "reflectionOneLine2"]
-      .map((key) => getTranslationString(t, key))
+      .map((key) => s(key, ""))
       .filter((line) => line.length > 0);
-  }, [t]);
+  }, [s]);
 
   const reflectionSummaryLines = useMemo(() => {
-    const introValue = getTranslationString(t, "reflectionTwoIntro");
-    const bodyValue = getTranslationString(t, "reflectionTwoBody");
+    const introValue = s("reflectionTwoIntro", "");
+    const bodyValue = s("reflectionTwoBody", "");
     const connector = lang === "ro" ? " și " : " & ";
     const summaryNames = intentCategories
       .filter((entry) => entry.count > 0)
@@ -195,7 +203,7 @@ function PageContent() {
       );
     }
     return lines;
-  }, [intentCategories, categoryLabels, journalEntry, lang, t]);
+  }, [intentCategories, categoryLabels, journalEntry, lang, s]);
 
   const navigateToStep = useCallback(
     (nextStep: Step) => {
@@ -298,8 +306,7 @@ function PageContent() {
   // Render-driven open: the modal will be open if either explicit state is true
 
   const savingGenericLabel = lang === "ro" ? "Se salvează..." : "Saving...";
-  const savingChoiceLabel = getTranslationString(
-    t,
+  const savingChoiceLabel = s(
     "cardsSavingChoiceLabel",
     lang === "ro" ? "Se salvează alegerea..." : "Saving your choice...",
   );
@@ -317,6 +324,7 @@ function PageContent() {
         showMenu
         onMenuToggle={() => setMenuOpen(true)}
         onAuthRequest={openAccountModal}
+        wizardMode={step !== "details"}
       />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       {accountModalOpen || showAccountPrompt ? (
@@ -330,8 +338,8 @@ function PageContent() {
       <main className="px-4 py-8 sm:px-6">
         {searchParams?.get("reset") === "1" ? (
           <Toast
-            message={getTranslationString(t, "toastResetMessage", lang === "ro" ? "Parcursul a fost resetat." : "Your journey was reset.")}
-            okLabel={getTranslationString(t, "toastOk", "OK")}
+            message={s("toastResetMessage", lang === "ro" ? "Parcursul a fost resetat." : "Your journey was reset.")}
+            okLabel={s("toastOk", "OK")}
             onClose={() => {
               void recordWizardResetNoticeDismissed();
               const params = new URLSearchParams(searchParams?.toString() ?? "");
@@ -369,42 +377,22 @@ function PageContent() {
                 window.location.assign(qs ? `/?${qs}` : "/");
               }
             }}
+            onExit={() => {
+              if (typeof window !== "undefined") {
+                const confirmed = window.confirm(
+                  lang === "ro"
+                    ? "Păstrăm progresul în draft și poți reveni oricând. Vrei să părăsești wizardul?"
+                    : "We’ll keep your progress as a draft. Do you want to exit the wizard?",
+                );
+                if (!confirmed) return;
+                const url = new URL(window.location.origin + "/choose");
+                url.searchParams.set("from", "wizard");
+                window.location.assign(url.pathname + url.search);
+              }
+            }}
           />
         )}
-        {step === "firstInput" ? (
-          <div className="mx-auto mb-3 max-w-4xl text-right">
-            <button
-              type="button"
-              className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] underline underline-offset-2 hover:text-[#E60012]"
-              onClick={() => {
-                if (typeof window !== "undefined") {
-                  const confirmed = window.confirm(
-                    lang === "ro"
-                      ? "Vrei să o iei de la capăt?"
-                      : "Do you want to start over?",
-                  );
-                  if (!confirmed) {
-                    void recordWizardResetCanceled();
-                    return;
-                  }
-                }
-                try {
-                  clearWizardState();
-                } catch {}
-                void recordWizardReset();
-                if (typeof window !== "undefined") {
-                  const params = new URLSearchParams(searchParams?.toString() ?? "");
-                  params.set("step", "preIntro");
-                  params.set("reset", "1");
-                  const qs = params.toString();
-                  window.location.assign(qs ? `/?${qs}` : "/");
-                }
-              }}
-            >
-              {lang === "ro" ? "Resetează parcursul" : "Reset journey"}
-            </button>
-          </div>
-        ) : null}
+        {/* per-step reset removed; use the progress bar reset above */}
         <WizardRouter
           step={step}
           lang={lang}
@@ -458,6 +446,8 @@ function PageContent() {
           recommendationReasonKey={recommendationReasonKey}
           journalEntry={journalEntry}
           formatPreference={formatPreference}
+          dimensionScores={dimensionScores}
+          algoVersion={1}
           selectedCard={selectedCard}
           onReturnToOrigin={returnTo ? handleReturnToOrigin : undefined}
           returnLabel={lang === "ro" ? "Înapoi la progres" : "Back to progress"}
@@ -467,12 +457,10 @@ function PageContent() {
   );
 }
 
-export default function PageWrapper() {
+export default function Page() {
   return (
-    <I18nProvider>
-      <Suspense fallback={null}>
-        <PageContent />
-      </Suspense>
-    </I18nProvider>
+    <Suspense fallback={null}>
+      <PageContent />
+    </Suspense>
   );
 }

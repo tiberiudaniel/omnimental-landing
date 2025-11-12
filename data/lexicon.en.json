@@ -1,0 +1,24 @@
+{
+  "indicators": {
+    "calm": {
+      "tokens": ["stress", "anxiety", "panic", "relax", "calm", "overwhelm", "pressure"],
+      "synonyms": ["tension", "unease"]
+    },
+    "focus": {
+      "tokens": ["clarity", "direction", "decide", "decision", "focus", "stuck", "vision", "choose"],
+      "synonyms": ["prioritize", "plan"]
+    },
+    "relationships": {
+      "tokens": ["relationship", "relationships", "boundary", "boundaries", "partner", "alone", "communication", "misunderstood", "trust"],
+      "synonyms": ["connection", "limits"]
+    },
+    "energy": {
+      "tokens": ["energy", "tired", "sleep", "insomnia", "balance", "habit", "lifestyle", "health"],
+      "synonyms": ["vitality", "rest"]
+    },
+    "performance": {
+      "tokens": ["productivity", "goal", "goals", "target", "performance", "motivation", "courage", "efficacy", "progress"],
+      "synonyms": ["result", "output"]
+    }
+  }
+}

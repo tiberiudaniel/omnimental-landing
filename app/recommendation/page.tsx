@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "../../components/SiteHeader";
 import MenuOverlay from "../../components/MenuOverlay";
 import AccountModal from "../../components/AccountModal";
 import { useNavigationLinks } from "../../components/useNavigationLinks";
-import { I18nProvider, useI18n } from "../../components/I18nProvider";
+import { useI18n } from "../../components/I18nProvider";
+import { useTStrings } from "../../components/useTStrings";
 import { useProfile } from "../../components/ProfileProvider";
 import { useProgressFacts } from "../../components/useProgressFacts";
 import { computeDimensionScores, type IntentCategorySummary } from "@/lib/scoring";
 import { recommendSession } from "@/lib/recommendation";
 import { readRecommendationCache } from "@/lib/recommendationCache";
+import DemoUserSwitcher from "../../components/DemoUserSwitcher";
 
 const STAGE_LABELS: Record<string, string> = {
   t0: "Start (0 săpt.)",
@@ -22,23 +24,33 @@ const STAGE_LABELS: Record<string, string> = {
   t4: "12 săpt.",
 };
 
-function resolveString(value: unknown, fallback: string) {
-  return typeof value === "string" ? value : fallback;
-}
+// use s() for translation keys; local guards for non-i18n values where needed
 
 function RecommendationContent() {
-  const { t, lang } = useI18n();
+  const router = useRouter();
+  const search = useSearchParams();
+  const { lang } = useI18n();
+  const { s } = useTStrings();
   const { profile } = useProfile();
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
 
+  // Guard: if user is logged-in but hasn't chosen a format, send to /choose
+  useEffect(() => {
+    if (profile?.id && (profile.selection ?? "none") === "none") {
+      const url = new URL(window.location.origin + "/choose");
+      url.searchParams.set("from", "reco");
+      router.replace(url.pathname + url.search);
+    }
+  }, [profile?.id, profile?.selection, router]);
+
   const tier = profile?.accessTier ?? "public";
   const { data: progress, loading, error } = useProgressFacts(profile?.id);
 
-  const pageTitle = resolveString(t("recommendationPageTitle"), "Recomandarea mea pentru tine");
-  const pageSubtitle = resolveString(
-    t("recommendationPageSubtitle"),
+  const pageTitle = s("recommendationPageTitle", "Recomandarea mea pentru tine");
+  const pageSubtitle = s(
+    "recommendationPageSubtitle",
     "Folosim datele completate până acum pentru a-ți da direcția cu cele mai multe șanse.",
   );
 
@@ -47,6 +59,12 @@ function RecommendationContent() {
   return (
     <div className="bg-[#FDFCF9] min-h-screen">
       <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => setAccountModalOpen(true)} />
+      {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
+      {search?.get("demo") ? (
+        <div className="mx-auto mt-3 w-full max-w-4xl px-4">
+          <span className="inline-flex items-center rounded-full bg-[#7A6455] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">Demo</span>
+        </div>
+      ) : null}
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <AccountModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
       <main className="px-4 py-12 md:px-8">
@@ -56,7 +74,7 @@ function RecommendationContent() {
           <p className="text-sm text-[#4A3A30]">{pageSubtitle}</p>
         </div>
         {showPublicView ? (
-          <PublicOrCachedView t={t} lang={lang} />
+          <PublicOrCachedView lang={lang} />
         ) : (
           <MemberRecommendationView
             profileName={profile?.name ?? "Membru OmniMental"}
@@ -64,7 +82,6 @@ function RecommendationContent() {
             loading={loading}
             error={error}
             tier={tier}
-            t={t}
           />
         )}
       </main>
@@ -72,13 +89,14 @@ function RecommendationContent() {
   );
 }
 
-function PublicRecommendationView({ t, lang }: { t: (key: string) => unknown; lang: string }) {
-  const title = resolveString(t("recommendationPublicTitle"), "Vrei o direcție personalizată?");
-  const body = resolveString(
-    t("recommendationPublicBody"),
+function PublicRecommendationView({ lang }: { lang: string }) {
+  const { s } = useTStrings();
+  const title = s("recommendationPublicTitle", "Vrei o direcție personalizată?");
+  const body = s(
+    "recommendationPublicBody",
     "Completează mini-evaluarea (5–7 minute) și primești un sumar logic + următorul pas recomandat.",
   );
-  const ctaLabel = resolveString(t("recommendationPublicCta"), "Începe evaluarea");
+  const ctaLabel = s("recommendationPublicCta", "Începe evaluarea");
   return (
     <section className="mx-auto mt-10 max-w-3xl space-y-4 rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-8 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
       <h2 className="text-2xl font-semibold text-[#1F1F1F]">{title}</h2>
@@ -104,11 +122,11 @@ type MemberViewProps = {
   loading: boolean;
   error: Error | null;
   tier: string;
-  t: (key: string) => unknown;
 };
 
-function MemberRecommendationView({ profileName, progress, loading, error, tier, t }: MemberViewProps) {
+function MemberRecommendationView({ profileName, progress, loading, error, tier }: MemberViewProps) {
   const router = useRouter();
+  const { s } = useTStrings();
   if (loading) {
     return (
       <div className="mx-auto mt-10 max-w-4xl rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 text-center text-sm text-[#4A3A30] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
@@ -126,10 +144,7 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
   if (!progress?.intent || !progress?.evaluation) {
     return (
       <div className="mx-auto mt-10 max-w-3xl rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-8 text-center text-sm text-[#4A3A30] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
-        {resolveString(
-          t("recommendationMemberFallback"),
-          "Finalizează o evaluare completă pentru a primi recomandări dedicate.",
-        )}
+        {s("recommendationMemberFallback", "Finalizează o evaluare completă pentru a primi recomandări dedicate.")}
       </div>
     );
   }
@@ -142,37 +157,28 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
     dimensionScores,
     hasProfile: true,
   });
-  const pathTitle = resolveString(
-    t(`recommendationPath_${recommendation.recommendedPath}_title`),
+  const pathTitle = s(
+    `recommendationPath_${recommendation.recommendedPath}_title`,
     recommendation.recommendedPath === "individual"
       ? "Recomandare: ședințe individuale"
       : "Recomandare: grup OmniMental",
   );
-  const pathBody = resolveString(
-    t(`recommendationPath_${recommendation.recommendedPath}_body`),
+  const pathBody = s(
+    `recommendationPath_${recommendation.recommendedPath}_body`,
     recommendation.recommendedPath === "individual"
       ? "Lucrăm 1-la-1 pentru a avansa pe tema ta prioritară."
       : "Ți se potrivește ritmul și suportul din programul de grup OmniMental.",
   );
-  const reasonLabel = resolveString(
-    t(`recommendationReason_${recommendation.reasonKey}`),
-    recommendation.reasonKey,
-  );
+  const reasonLabel = s(`recommendationReason_${recommendation.reasonKey}`, recommendation.reasonKey);
   const badgeLabel =
     tier === "persona"
-      ? resolveString(t("recommendationMemberPersonaBadge"), "Acces Persona")
-      : resolveString(t("recommendationMemberMemberBadge"), "Membru activ");
+      ? s("recommendationMemberPersonaBadge", "Acces Persona")
+      : s("recommendationMemberMemberBadge", "Membru activ");
 
-  const personaCtaLabel = resolveString(t("recommendationPersonaCta"), "Deschide planul Persona");
-  const personaCtaBody = resolveString(
-    t("recommendationPersonaCtaBody"),
-    "Primești modulul următor, sesiunea live și check-in dedicat.",
-  );
-  const memberCtaLabel = resolveString(t("recommendationMemberCta"), "Programează un call");
-  const memberCtaBody = resolveString(
-    t("recommendationMemberCtaBody"),
-    "Stabilim următorii pași în 20 de minute.",
-  );
+  const personaCtaLabel = s("recommendationPersonaCta", "Deschide planul Persona");
+  const personaCtaBody = s("recommendationPersonaCtaBody", "Primești modulul următor, sesiunea live și check-in dedicat.");
+  const memberCtaLabel = s("recommendationMemberCta", "Programează un call");
+  const memberCtaBody = s("recommendationMemberCtaBody", "Stabilim următorii pași în 20 de minute.");
   const quests = progress.quests?.items ?? [];
   const evaluationRows = [
     { label: "PSS", value: progress.evaluation.scores.pssTotal.toFixed(0) },
@@ -195,7 +201,7 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
-              {resolveString(t("recommendationMemberTitle"), "Recomandare curentă")}
+              {s("recommendationMemberTitle", "Recomandare curentă")}
             </p>
             <h2 className="text-2xl font-semibold text-[#1F1F1F]">{profileName}</h2>
           </div>
@@ -205,7 +211,7 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
               onClick={() => router.refresh()}
               className="rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
             >
-              {resolveString(t("recommendationRefresh"), "Resincronizează")}
+              {s("recommendationRefresh", "Resincronizează")}
             </button>
             <span className="rounded-full border border-[#D8C6B6] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#5C4F45]">
               {badgeLabel}
@@ -216,13 +222,10 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
           <h3 className="text-lg font-semibold text-[#1F1F1F]">{pathTitle}</h3>
           <p className="text-sm text-[#4A3A30]">{pathBody}</p>
           <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">
-            {resolveString(t("recommendationMemberReasonLabel"), "Motiv principal")}: {reasonLabel}
+            {s("recommendationMemberReasonLabel", "Motiv principal")}: {reasonLabel}
           </p>
           <p className="text-xs text-[#A08F82]">
-            {resolveString(
-              t("recommendationMemberStageLabel"),
-              "Etapă evaluare",
-            )}: {STAGE_LABELS[progress.evaluation.stageValue] ?? progress.evaluation.stageValue}
+            {s("recommendationMemberStageLabel", "Etapă evaluare")}: {STAGE_LABELS[progress.evaluation.stageValue] ?? progress.evaluation.stageValue}
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
@@ -248,9 +251,7 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
       </section>
 
       <section className="space-y-3 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
-          {resolveString(t("recommendationMemberSummaryHeading"), "Rezumat scoruri")}
-        </p>
+          <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">{s("recommendationMemberSummaryHeading", "Rezumat scoruri")}</p>
         <div className="grid gap-3 md:grid-cols-3">
           {evaluationRows.map((row) => (
             <div key={row.label} className="rounded-[10px] border border-[#F5EBE0] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C]">
@@ -264,7 +265,7 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
       <section className="space-y-3 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
         <header className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
-            {resolveString(t("recommendationMemberQuestsTitle"), "Quest-uri prioritare")}
+            {s("recommendationMemberQuestsTitle", "Quest-uri prioritare")}
           </p>
         </header>
         {quests.length ? (
@@ -282,12 +283,7 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
             ))}
           </div>
         ) : (
-          <p className="text-sm text-[#A08F82]">
-            {resolveString(
-              t("recommendationMemberQuestsEmpty"),
-              "Quest-urile apar după evaluări complete.",
-            )}
-          </p>
+          <p className="text-sm text-[#A08F82]">{s("recommendationMemberQuestsEmpty", "Quest-urile apar după evaluări complete.")}</p>
         )}
       </section>
     </div>
@@ -296,19 +292,20 @@ function MemberRecommendationView({ profileName, progress, loading, error, tier,
 
 export default function RecommendationPage() {
   return (
-    <I18nProvider>
+    <Suspense fallback={null}>
       <RecommendationContent />
-    </I18nProvider>
+    </Suspense>
   );
 }
-function PublicOrCachedView({ t, lang }: { t: (key: string) => unknown; lang: string }) {
+function PublicOrCachedView({ lang }: { lang: string }) {
+  const { s } = useTStrings();
   const cached = readRecommendationCache();
   if (!cached) {
-    return <PublicRecommendationView t={t} lang={lang} />;
+    return <PublicRecommendationView lang={lang} />;
   }
-  const title = resolveString(t("recommendationCachedTitle"), "Recomandarea ta salvată");
+  const title = s("recommendationCachedTitle", "Recomandarea ta salvată");
   const label = cached.recommendation.path === "individual" ? (lang === "ro" ? "Ședințe individuale" : "Individual sessions") : (lang === "ro" ? "Grup OmniMental" : "OmniMental group");
-  const reason = resolveString(t(`recommendationReason_${cached.recommendation.reasonKey}`), cached.recommendation.reasonKey);
+  const reason = s(`recommendationReason_${cached.recommendation.reasonKey}`, cached.recommendation.reasonKey);
   const selectionNote = cached.selectedPath
     ? (cached.selectedPath === "individual"
         ? (lang === "ro" ? "Ai ales sesiuni individuale." : "You chose individual sessions.")

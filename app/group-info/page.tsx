@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import CTAButton from "../../components/CTAButton";
-import ClientI18nWrapper from "../../components/ClientI18nWrapper";
 import SiteHeader from "../../components/SiteHeader";
 import MenuOverlay from "../../components/MenuOverlay";
 import { useNavigationLinks } from "../../components/useNavigationLinks";
@@ -363,9 +362,5 @@ function GroupInfoContent() {
 }
 
 export default function GroupInfoPage() {
-  return (
-    <ClientI18nWrapper>
-      <GroupInfoContent />
-    </ClientI18nWrapper>
-  );
+  return <GroupInfoContent />;
 }

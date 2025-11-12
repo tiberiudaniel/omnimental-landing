@@ -1,29 +1,19 @@
 "use client";
 
 import TypewriterText from "./TypewriterText";
-import { useI18n } from "./I18nProvider";
-import { getString } from "@/lib/i18nGetString";
+import { useTStrings } from "./useTStrings";
 
 interface JourneyIntroProps {
   onStart: () => void;
 }
 
 export default function JourneyIntro({ onStart }: JourneyIntroProps) {
-  const { t } = useI18n();
-  const title = getString(t, "journeyIntroTitle", "Antrenează-ți mintea. Începe mini-evaluarea ta.");
-  const body = getString(t, "journeyIntroBody", "3–4 pași rapizi. La final primești o recomandare");
-  const buttonLabel = getString(t, "journeyIntroButton", "Începe mini-evaluarea");
-  const bulletsValue = t("journeyIntroBullets");
-  const bullets = Array.isArray(bulletsValue)
-      ? bulletsValue.filter(
-          (entry): entry is string => typeof entry === "string" && entry.trim().length > 0,
-        )
-      : [
-          "Claritate despre ce te ajută acum",
-          "Recomandare personalizată, nu generalități",
-          "Fără spam. Poți ieși oricând",
-        ];
-  const microcopy = getString(t, "journeyIntroMicrocopy", "Este simplu și durează doar 2 minute.");
+  const { s, sa } = useTStrings();
+  const title = s("journeyIntroTitle", "Antrenează-ți mintea. Începe mini-evaluarea ta.");
+  const body = s("journeyIntroBody", "3–4 pași rapizi. La final primești o recomandare");
+  const buttonLabel = s("journeyIntroButton", "Începe mini-evaluarea");
+  const bullets = sa("journeyIntroBullets");
+  const microcopy = s("journeyIntroMicrocopy", "Este simplu și durează doar 2 minute.");
 
   return (
     <section id="intro" className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">

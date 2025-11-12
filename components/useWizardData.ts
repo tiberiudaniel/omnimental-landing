@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import type { IntentCloudResult } from "./IntentCloud";
 import { getDb, ensureAuth, areWritesDisabled } from "../lib/firebase";
@@ -19,6 +19,7 @@ import {
   detectCategoryFromRawInput,
   type IntentPrimaryCategory,
 } from "../lib/intentExpressions";
+import { detectCategory as detectCategoryJSON } from "@/lib/detectCategory";
 import {
   recordIntentProgressFact,
   recordMotivationProgressFact,
@@ -151,7 +152,23 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
             timestamp: serverTimestamp(),
           });
         }
-        const resolvedCategory = meta?.category ?? detectCategoryFromRawInput(cleanText) ?? null;
+        // Text analytics (best-effort)
+        try {
+          const { recordTextSignals } = await import("@/lib/textSignals");
+          void recordTextSignals({ text: cleanText, lang: lang === "en" ? "en" : "ro", source: "firstInput" });
+        } catch {}
+        let resolvedCategory = meta?.category ?? detectCategoryFromRawInput(cleanText) ?? null;
+        if (!resolvedCategory && lang === "ro") {
+          const roCat = detectCategoryJSON(cleanText);
+          const map: Record<string, IntentPrimaryCategory> = {
+            claritate: "clarity",
+            relatii: "relationships",
+            stres: "stress",
+            incredere: "confidence",
+            echilibru: "balance",
+          };
+          resolvedCategory = roCat ? map[roCat] ?? null : null;
+        }
         setFirstIntentCategory(resolvedCategory);
         setFirstIntentExpression(meta?.expressionId ?? cleanText);
       } catch (error) {
@@ -202,11 +219,42 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
         ? Math.min(7, Math.max(5, selectionCount))
         : 5;
 
+      // Derive top category and share (pondere din selecții)
+      const { shares } = await import("@/lib/indicators").then((m) => m.buildIndicatorSummary(categories));
+      const topShare = Math.max(
+        Number(shares.clarity ?? 0),
+        Number(shares.relationships ?? 0),
+        Number(shares.calm ?? 0),
+        Number(shares.energy ?? 0),
+        Number(shares.performance ?? 0),
+      );
+      const topCategory = (() => {
+        const pairs: Array<[string, number]> = [
+          ["clarity", Number(shares.clarity ?? 0)],
+          ["relationships", Number(shares.relationships ?? 0)],
+          ["calm", Number(shares.calm ?? 0)],
+          ["energy", Number(shares.energy ?? 0)],
+          ["performance", Number(shares.performance ?? 0)],
+        ];
+        pairs.sort((a, b) => b[1] - a[1]);
+        return pairs[0]?.[0] ?? null;
+      })();
+
       const includeExtras =
         Boolean(extra.dimensionScores) ||
         Boolean(extra.recommendation) ||
         Boolean(extra.recommendationReasonKey) ||
         typeof extra.algoVersion !== "undefined";
+
+      // Dev-only integrity check: sum of category counts should equal selection count
+      if (process.env.NODE_ENV !== "production") {
+        try {
+          const sum = categories.reduce((s, e) => s + (Number(e.count) || 0), 0);
+          if (sum !== selectionCount) {
+            console.warn("[DEBUG] category-count mismatch:", { selectionCount, sum, categories });
+          }
+        } catch {}
+      }
 
       const evaluationAnswerPayload: EvaluationAnswers = {
         urgency,
@@ -254,6 +302,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           urgency,
           selectionIds: intentSelectionIds,
           categoryScores: intentCategoryScores,
+          taxonomyVersion: 2,
+          selectionTotal: selectionCount,
+          topCategory,
+          topShare,
           firstExpression: firstIntentExpression ?? null,
           firstCategory: firstIntentCategory ?? null,
           profileId: snapshotOwnerId,
@@ -282,6 +334,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           profileId: snapshotOwnerId,
           ownerUid: snapshotOwnerId,
           lang,
+          taxonomyVersion: 2,
+          selectionTotal: selectionCount,
+          topCategory,
+          topShare,
           timestamp,
           createdAt: timestamp,
           ...(withExtras
@@ -314,6 +370,9 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           lang,
           firstExpression: firstIntentExpression ?? null,
           firstCategory: firstIntentCategory ?? null,
+          selectionTotal: selectionCount,
+          topCategory,
+          topShare,
         }, snapshotOwnerId).catch((progressError) => {
           console.error("progress fact intent failed", progressError);
         });
@@ -374,11 +433,16 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
     ],
   );
 
+  const selectGuardRef = useRef<{ busy: boolean; last?: WizardCardChoice } | null>(null);
+
   const handleCardSelect = useCallback(
     async (type: WizardCardChoice, extra: JourneyExtras = {}) => {
       if (isSavingJourney) {
         return false;
       }
+      // Simple guard to prevent accidental double submit
+      if (selectGuardRef.current?.busy) return false;
+      selectGuardRef.current = { busy: true, last: type };
       setSaveError(null);
       setIsSavingJourney(true);
       setJourneySavingChoice(type);
@@ -423,6 +487,11 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           await addDoc(collection(db, "userJourneys"), buildJourneyPayload(includeExtras));
         }
         setSelectedCard(type);
+        // Gate unlock: persist selection on profile (best-effort)
+        try {
+          const { updateProfileSelection } = await import("@/lib/selection");
+          void updateProfileSelection(type);
+        } catch {}
         if (includeExtras) {
           void recordRecommendationProgressFact({
             suggestedPath: extra.recommendedPath,
@@ -446,6 +515,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           try {
             await addDoc(collection(db, "userJourneys"), buildJourneyPayload(false));
             setSelectedCard(type);
+            try {
+              const { updateProfileSelection } = await import("@/lib/selection");
+              void updateProfileSelection(type);
+            } catch {}
             void recordRecommendationProgressFact({
               selectedPath: type,
             }).catch((progressError) => {
@@ -461,6 +534,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       } finally {
         setIsSavingJourney(false);
         setJourneySavingChoice(null);
+        selectGuardRef.current = { busy: false, last: type };
       }
     },
     [
