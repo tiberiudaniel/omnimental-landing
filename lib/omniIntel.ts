@@ -12,12 +12,15 @@ export type OmniBlock = {
     wordCount?: number | null;
     tags?: string[];
     directionMotivationIndex: number; // 0-100
+    motivationIndex?: number; // 0-100 (enhanced)
   };
   kuno: {
     completedTests: number;
     totalTestsAvailable: number;
     scores: Record<string, number>;
-    knowledgeIndex: number; // 0-100
+    knowledgeIndex: number; // 0-100 (latest)
+    averagePercent?: number; // 0-100 (EWMA/mean)
+    runsCount?: number;
   };
   sensei: {
     unlocked: boolean;
@@ -27,12 +30,19 @@ export type OmniBlock = {
   abil: {
     unlocked: boolean;
     exercisesCompletedCount: number;
-    skillsIndex: number; // 0-100
+    skillsIndex: number; // 0-100 (latest)
+    practiceIndex?: number; // 0-100 (blended)
+    runsCount?: number;
   };
   intel: {
     unlocked: boolean;
     evaluationsCount: number;
     consistencyIndex: number; // 0-100
+  };
+  flow?: {
+    flowIndex: number; // 0-100
+    streakCurrent: number;
+    streakBest: number;
   };
   omniIntelScore: number; // 0-100
   omniPoints: number;

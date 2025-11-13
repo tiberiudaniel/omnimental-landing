@@ -4,6 +4,13 @@ import { computeDirectionMotivationIndex, computeOmniIntelScore } from "./omniIn
 
 export function getDemoProgressFacts(locale: "ro" | "en" = "ro", variant: 1 | 2 | 3 = 1): ProgressFact {
   const now = new Date();
+  const DAY = 24 * 60 * 60 * 1000;
+  const days = variant === 3 ? 32 : variant === 2 ? 16 : 7;
+  const at = (offset: number, h: number, m: number) => {
+    const d = new Date(now.getTime() - offset * DAY);
+    d.setHours(h, m, 0, 0);
+    return d;
+  };
   const variants = {
     1: {
       tags: ["claritate", "granițe", "energie", "somn", "productivitate"],
@@ -112,12 +119,60 @@ export function getDemoProgressFacts(locale: "ro" | "en" = "ro", variant: 1 | 2 
       },
       updatedAt: now,
     },
+    recentEntries: (() => {
+      const texts = locale === "ro"
+        ? [
+            "Mi-am clarificat obiectivul pentru săptămâna asta.",
+            "Am observat că respirația m-a calmat în 2 minute.",
+            "Am setat o limită clară pentru timpul de lucru.",
+            "Am făcut o pauză de 5 minute și m-am resetat.",
+          ]
+        : [
+            "Clarified my goal for this week.",
+            "Noticed breathing calmed me within 2 minutes.",
+            "Set a clear boundary for work time.",
+            "Took a 5-minute break and reset.",
+          ];
+      return texts.map((text, i) => ({ text, timestamp: at(i + 1, 10 + (i % 3), 10) }));
+    })(),
+    practiceSessions: (() => {
+      const sessions: ProgressFact["practiceSessions"] = [];
+      for (let i = 0; i < days; i += 1) {
+        // Breathing every day (4–6 min)
+        sessions.push({
+          type: "breathing",
+          startedAt: at(i, 13, 0),
+          endedAt: at(i, 13, 0),
+          durationSec: (4 + (i % 3)) * 60,
+        });
+        // Reflection every 2nd day (7–10 min)
+        if (i % 2 === 0) {
+          sessions.push({
+            type: "reflection",
+            startedAt: at(i, 9, 15),
+            endedAt: at(i, 9, 15),
+            durationSec: (7 + (i % 4)) * 60,
+          });
+        }
+        // Drill every 3rd day (5–8 min)
+        if (i % 3 === 0) {
+          sessions.push({
+            type: "drill",
+            startedAt: at(i, 18, 30),
+            endedAt: at(i, 18, 30),
+            durationSec: (5 + (i % 4)) * 60,
+          });
+        }
+      }
+      return sessions;
+    })(),
     omni: {
       scope: { goalDescription: null, mainPain: null, idealDay: null, wordCount: null, tags, directionMotivationIndex: dirMot },
-      kuno: { completedTests: 1, totalTestsAvailable: 6, scores: {}, knowledgeIndex },
+      kuno: { completedTests: 1, totalTestsAvailable: 6, scores: {}, knowledgeIndex, averagePercent: Math.round((knowledgeIndex + 34) / 2), runsCount: 3 },
       sensei: { unlocked: true, activeQuests: [], completedQuestsCount: 2 },
-      abil: { unlocked: true, exercisesCompletedCount: 3, skillsIndex },
+      abil: { unlocked: true, exercisesCompletedCount: 12, skillsIndex, practiceIndex: Math.round(0.7 * skillsIndex + 0.3 * Math.min(100, 12 * 3)), runsCount: 2 },
       intel: { unlocked: true, evaluationsCount: 1, consistencyIndex },
+      flow: { flowIndex: variant === 3 ? 72 : variant === 2 ? 64 : 58, streakCurrent: variant === 3 ? 6 : variant === 2 ? 4 : 3, streakBest: variant === 3 ? 9 : 6 },
       omniIntelScore,
       omniPoints: 24,
     },

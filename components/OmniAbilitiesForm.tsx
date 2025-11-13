@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { computeOmniAbilities, type OmniAbilityLevels } from "@/lib/omniAbilities";
 import { submitOmniAbilitiesAssessment } from "@/lib/submitEvaluation";
-import { recordAbilityPracticeFact, recordOmniPatch } from "@/lib/progressFacts";
+import { recordAbilityPracticeFact, recordOmniPatch, recordPracticeEvent, recordPracticeSession } from "@/lib/progressFacts";
 
 const levelLabels = ["0", "1", "2", "3"];
 
@@ -27,6 +27,10 @@ export default function OmniAbilitiesForm({ lang }: Props) {
   const [result, setResult] = useState(() => computeOmniAbilities(defaultLevels));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [p1Active, setP1Active] = useState(false);
+  const [p4Active, setP4Active] = useState(false);
+  const [p1StartMs, setP1StartMs] = useState<number | null>(null);
+  const [p4StartMs, setP4StartMs] = useState<number | null>(null);
 
   const updateLevel = (path: string[], value: number) => {
     setLevels((prev) => {
@@ -105,6 +109,35 @@ export default function OmniAbilitiesForm({ lang }: Props) {
         <h3 className="text-lg font-semibold text-[#1F1F1F]">
           {lang === "ro" ? "P1 · Respirație de coerență HRV" : "P1 · HRV coherence breathing"}
         </h3>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={p1Active}
+            onClick={() => {
+              setP1Active(true);
+              setP1StartMs(Date.now());
+            }}
+            className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#F6F2EE]"
+          >
+            {lang === "ro" ? "Start" : "Start"}
+          </button>
+          <button
+            type="button"
+            disabled={!p1Active}
+            onClick={() => {
+              const end = Date.now();
+              const start = p1StartMs ?? end;
+              const durationSec = Math.max(0, Math.round((end - start) / 1000));
+              setP1Active(false);
+              setP1StartMs(null);
+              void recordPracticeEvent("breathing");
+              void recordPracticeSession("breathing", start, durationSec);
+            }}
+            className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#F6F2EE]"
+          >
+            {lang === "ro" ? "Final" : "End"}
+          </button>
+        </div>
         <div className="grid gap-3 md:grid-cols-2">
           {([
             ["tempo", lang === "ro" ? "Tempo 5–6/min" : "Tempo 5–6/min"],
@@ -242,6 +275,35 @@ export default function OmniAbilitiesForm({ lang }: Props) {
         <h3 className="text-lg font-semibold text-[#1F1F1F]">
           {lang === "ro" ? "P4 · Focus sprint 5 minute" : "P4 · 5-minute focus sprint"}
         </h3>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={p4Active}
+            onClick={() => {
+              setP4Active(true);
+              setP4StartMs(Date.now());
+            }}
+            className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#F6F2EE]"
+          >
+            {lang === "ro" ? "Start" : "Start"}
+          </button>
+          <button
+            type="button"
+            disabled={!p4Active}
+            onClick={() => {
+              const end = Date.now();
+              const start = p4StartMs ?? end;
+              const durationSec = Math.max(0, Math.round((end - start) / 1000));
+              setP4Active(false);
+              setP4StartMs(null);
+              void recordPracticeEvent("drill");
+              void recordPracticeSession("drill", start, durationSec);
+            }}
+            className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#F6F2EE]"
+          >
+            {lang === "ro" ? "Final" : "End"}
+          </button>
+        </div>
         <div className="grid gap-3 md:grid-cols-3">
           {([
             ["zeroSwitch", lang === "ro" ? "Zero switch" : "Zero switch"],

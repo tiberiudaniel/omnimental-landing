@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { JournalDoc, JournalTabId } from "@/lib/journal";
 import { getJournalByUser, updateJournalTab } from "@/lib/journal";
+import { recordPracticeEvent } from "@/lib/progressFacts";
 import { recordTextSignals } from "@/lib/textSignals";
 
 export type JournalContext = {
@@ -93,6 +94,8 @@ export function useJournal(userId: string | null | undefined) {
         });
         // Fire-and-forget text analytics (best-effort)
         void recordTextSignals({ text, source: `journal:${tabId}`, context: context as Record<string, unknown> | undefined });
+        // Increment reflection practice counter (best-effort)
+        void recordPracticeEvent("reflection");
         lastSavedRef.current[tabId] = text;
       } catch (e) {
         console.error("journal save failed", e);

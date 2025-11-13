@@ -76,6 +76,16 @@ service cloud.firestore {
       allow create: if true;
     }
 
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+
+    // Insights: public read, admin-only writes
+    match /insights/{theme} {
+      // Allow everyone to read insights
+      allow read: if true;
+      // Writes require admin custom claim. Use backend or temporarily grant claim for seeding.
+      allow create, update, delete: if isAdmin();
+    }
+
     // Fallback: deny everything else.
     match /{document=**} {
       allow read, write: if false;

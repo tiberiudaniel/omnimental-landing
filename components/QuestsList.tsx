@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { buildIndicatorSummary } from "@/lib/indicators";
-import { recordQuestCompletion, recordQuestProgressFact } from "@/lib/progressFacts";
+import { recordQuestCompletion, recordQuestProgressFact, recordPracticeEvent } from "@/lib/progressFacts";
 import type { QuestSuggestion } from "@/lib/quests";
 
 type Props = {
@@ -89,6 +89,12 @@ export default function QuestsList({ lang, categories, items = [] }: Props) {
                   setBusy(true);
                   try {
                     await recordQuestCompletion();
+                    // Best-effort: bump practice counter based on quest type
+                    if (q.type === "practice") {
+                      void recordPracticeEvent("breathing");
+                    } else if (q.type === "reflect") {
+                      void recordPracticeEvent("reflection");
+                    }
                   } finally {
                     setBusy(false);
                   }

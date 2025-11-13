@@ -11,6 +11,7 @@ import {
   setDoc,
   where,
   increment,
+  arrayUnion,
 } from "firebase/firestore";
 import { ensureAuth, getDb, areWritesDisabled } from "./firebase";
 import type {
@@ -26,6 +27,8 @@ import type { SessionType } from "./recommendation";
 import type { DimensionScores } from "./scoring";
 import type { OmniBlock } from "./omniIntel";
 import { computeDirectionMotivationIndex, computeOmniIntelScore } from "./omniIntel";
+import { computeKunoAggregate, computeAbilityIndex, computeMotivationIndexEnhanced, computeFlowIndex } from "./dashboardMetrics";
+import type { PracticeSessionLite } from "./progressAnalytics";
 
 // Basic write throttling to avoid rapid-fire writes that can trigger Firestore backoff
 let writeQueue: Promise<unknown> = Promise.resolve();
@@ -99,6 +102,13 @@ export type ProgressFact = {
     updatedAt?: Date;
   };
   omni?: OmniBlock;
+  recentEntries?: Array<{ text: string; timestamp: Date }>;
+  practiceSessions?: Array<{
+    type: "reflection" | "breathing" | "drill";
+    startedAt: Date;
+    endedAt?: Date;
+    durationSec: number;
+  }>;
 };
 
 const DIMENSION_KEYS: Array<keyof DimensionScores> = [
@@ -383,7 +393,7 @@ export async function backfillProgressFacts(profileId: string) {
         directionMotivationIndex: dirMot,
         consistencyIndex,
       });
-      return {
+      const baseOmni = {
         scope: { goalDescription: null, mainPain: null, idealDay: null, wordCount: null, tags, directionMotivationIndex: dirMot },
         kuno: { completedTests: 0, totalTestsAvailable: 0, scores: {}, knowledgeIndex },
         sensei: { unlocked: false, activeQuests: [], completedQuestsCount: 0 },
@@ -392,8 +402,71 @@ export async function backfillProgressFacts(profileId: string) {
         omniIntelScore,
         omniPoints: 0,
       } as OmniBlock;
+      return baseOmni;
     })(),
   };
+  // Enrich Omni with aggregates from historical assessments and sessions
+  try {
+    const omni = fact.omni as OmniBlock;
+    const knowledgeDocs = await getDocs(
+      query(
+        collection(db, "userKnowledgeAssessments"),
+        where("profileId", "==", effectiveId),
+        orderBy("timestamp", "asc"),
+        limit(50),
+      ),
+    );
+    const percs: number[] = [];
+    knowledgeDocs.forEach((d) => {
+      const v = (d.data()?.score as { percent?: number } | undefined)?.percent;
+      if (typeof v === "number") percs.push(Math.max(0, Math.min(100, Math.round(v))));
+    });
+    const kunoAgg = computeKunoAggregate(percs);
+    omni.kuno.averagePercent = kunoAgg.ewma || kunoAgg.mean || omni.kuno.knowledgeIndex || 0;
+    omni.kuno.runsCount = kunoAgg.runsCount;
+    if (kunoAgg.lastPercent) omni.kuno.knowledgeIndex = kunoAgg.lastPercent;
+  } catch {}
+  try {
+    const omni = fact.omni as OmniBlock;
+    const abilityDocs = await getDocs(
+      query(
+        collection(db, "userAbilityAssessments"),
+        where("profileId", "==", effectiveId),
+        orderBy("timestamp", "asc"),
+        limit(50),
+      ),
+    );
+    const asses: Array<{ total?: number; probes?: Record<string, { raw?: number; scaled?: number; maxRaw?: number }> }> = [];
+    abilityDocs.forEach((d) => {
+      const data = d.data() as { result?: { total?: number; probes?: Record<string, { raw?: number; scaled?: number; maxRaw?: number }> } };
+      const result = data?.result ?? {};
+      asses.push({ total: Number(result.total ?? 0), probes: result.probes });
+    });
+    const abilAgg = computeAbilityIndex(asses, Number(omni.abil.exercisesCompletedCount ?? 0));
+    omni.abil.practiceIndex = abilAgg.practiceIndex;
+    omni.abil.runsCount = abilAgg.runsCount;
+    if (!omni.abil.skillsIndex && abilAgg.assessMean) omni.abil.skillsIndex = abilAgg.assessMean;
+  } catch {}
+  try {
+    const omni = fact.omni as OmniBlock;
+    omni.scope.motivationIndex = computeMotivationIndexEnhanced({
+      urgency,
+      determination: evaluationAnswers?.determination,
+      hoursPerWeek: evaluationAnswers?.hoursPerWeek,
+      learnFromOthers: evaluationAnswers?.learnFromOthers,
+      scheduleFit: evaluationAnswers?.scheduleFit,
+      budgetLevel: evaluationAnswers?.budgetLevel,
+    });
+  } catch {}
+  try {
+    const omni = fact.omni as OmniBlock;
+    const sessions: PracticeSessionLite[] = Array.isArray(fact.practiceSessions)
+      ? (fact.practiceSessions as unknown as PracticeSessionLite[])
+      : [];
+    const refMs = (fact.updatedAt instanceof Date ? fact.updatedAt.getTime() : Date.now());
+    const flow = computeFlowIndex(sessions, refMs);
+    omni.flow = flow;
+  } catch {}
   const factRef = doc(getDb(), "userProgressFacts", effectiveId);
   const profileRef = doc(getDb(), "userProfiles", effectiveId);
   await Promise.all([
@@ -441,6 +514,38 @@ export async function recordCtaClicked(variant: string) {
     await mergeProgressFact({ analytics: { cta_clicked: { variant, at: serverTimestamp() } } });
   } catch (e) {
     console.warn("recordCtaClicked failed", e);
+  }
+}
+
+// Practice counters (reflection / breathing / drill)
+export async function recordPracticeEvent(type: "reflection" | "breathing" | "drill") {
+  try {
+    const update: Record<string, unknown> = {};
+    if (type === "reflection") update.reflectionsCount = increment(1) as unknown as number;
+    if (type === "breathing") update.breathingCount = increment(1) as unknown as number;
+    if (type === "drill") update.drillsCount = increment(1) as unknown as number;
+    await mergeProgressFact(update);
+  } catch (e) {
+    console.warn("recordPracticeEvent failed", e);
+  }
+}
+
+// Record a practice session with duration; complements the simple counters above.
+export async function recordPracticeSession(
+  type: "reflection" | "breathing" | "drill",
+  startedAtMs: number,
+  durationSec: number,
+) {
+  try {
+    const entry = {
+      type,
+      startedAt: new Date(Number.isFinite(startedAtMs) ? startedAtMs : Date.now()),
+      endedAt: serverTimestamp(),
+      durationSec: Math.max(0, Math.floor(durationSec)),
+    };
+    await mergeProgressFact({ practiceSessions: arrayUnion(entry) });
+  } catch (e) {
+    console.warn("recordPracticeSession failed", e);
   }
 }
 

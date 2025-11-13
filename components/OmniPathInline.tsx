@@ -68,26 +68,26 @@ export default function OmniPathInline({ lang, progress }: { lang: "ro" | "en"; 
         {/* approximate midpoints between 5 columns: 20%, 40%, 60%, 80% */}
         <span className="absolute top-1/2 left-[20%] -translate-x-1/2 -translate-y-1/2">
           <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden>
-            <path d="M2 7 H14" stroke="#D8C6B6" stroke-width="2" stroke-linecap="round" />
-            <path d="M10 3 L14 7 L10 11" stroke="#D8C6B6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M2 7 H14" stroke="#D8C6B6" strokeWidth="2" strokeLinecap="round" />
+            <path d="M10 3 L14 7 L10 11" stroke="#D8C6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
         <span className="absolute top-1/2 left-[40%] -translate-x-1/2 -translate-y-1/2">
           <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden>
-            <path d="M2 7 H14" stroke="#D8C6B6" stroke-width="2" stroke-linecap="round" />
-            <path d="M10 3 L14 7 L10 11" stroke="#D8C6B6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M2 7 H14" stroke="#D8C6B6" strokeWidth="2" strokeLinecap="round" />
+            <path d="M10 3 L14 7 L10 11" stroke="#D8C6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
         <span className="absolute top-1/2 left-[60%] -translate-x-1/2 -translate-y-1/2">
           <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden>
-            <path d="M2 7 H14" stroke="#D8C6B6" stroke-width="2" stroke-linecap="round" />
-            <path d="M10 3 L14 7 L10 11" stroke="#D8C6B6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M2 7 H14" stroke="#D8C6B6" strokeWidth="2" strokeLinecap="round" />
+            <path d="M10 3 L14 7 L10 11" stroke="#D8C6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
         <span className="absolute top-1/2 left-[80%] -translate-x-1/2 -translate-y-1/2">
           <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden>
-            <path d="M2 7 H14" stroke="#D8C6B6" stroke-width="2" stroke-linecap="round" />
-            <path d="M10 3 L14 7 L10 11" stroke="#D8C6B6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M2 7 H14" stroke="#D8C6B6" strokeWidth="2" strokeLinecap="round" />
+            <path d="M10 3 L14 7 L10 11" stroke="#D8C6B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
       </div>
