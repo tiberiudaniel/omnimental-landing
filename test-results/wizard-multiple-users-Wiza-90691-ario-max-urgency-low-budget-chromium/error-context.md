@@ -1,0 +1,93 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - button "Autentificare" [ref=e5]
+        - generic "bNJlANkMgfWy7nzIWnKUZgWDYS23" [ref=e6]: Oaspete
+        - generic [ref=e7]:
+          - button "RO" [pressed] [ref=e8]
+          - generic [ref=e9]: "-"
+          - button "EN" [ref=e10]
+          - generic "Salvare automată" [ref=e11]
+      - generic "OmniMental" [ref=e13]:
+        - img "OmniMental logo" [ref=e14]
+        - generic [ref=e15]: OmniMental
+    - main [ref=e16]:
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - paragraph [ref=e20]: Pasul 3 din 4
+          - generic [ref=e21]:
+            - generic [ref=e22]:
+              - generic [ref=e23]: "1"
+              - generic [ref=e24]: Context
+            - generic [ref=e26]:
+              - generic [ref=e27]: "2"
+              - generic [ref=e28]: Intenții & Cloud
+            - generic [ref=e30]:
+              - generic [ref=e31]: "3"
+              - generic [ref=e32]: Motivație & Resurse
+            - generic [ref=e34]:
+              - generic [ref=e35]: "4"
+              - generic [ref=e36]: Recomandare
+        - generic [ref=e41]:
+          - button "Părăsește wizardul" [ref=e42]
+          - button "Resetează parcursul" [ref=e43]: Resetează
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - generic [ref=e48]:
+              - generic [ref=e49]: Pasul 2 din 3
+              - generic [ref=e50]: 67%
+            - paragraph [ref=e53]: Apoi vedem ce resurse practice ai la dispoziție.
+          - heading "„Orice salt în rezultate cere un salt în disciplină.”" [level=2] [ref=e55]:
+            - generic "„Orice salt în rezultate cere un salt în disciplină.”" [ref=e56]:
+              - text: „Or
+              - generic [ref=e57]: "|"
+          - paragraph [ref=e58]: Profilul vizual de mai jos arată cum se distribuie selecțiile tale înainte să mergem mai departe.
+        - generic [ref=e60]:
+          - heading "Resurse și context practic" [level=3] [ref=e62]
+          - generic [ref=e63]:
+            - generic [ref=e64]:
+              - paragraph [ref=e65]: Cât timp pe săptămână poți investi?
+              - slider [ref=e66]: "3"
+              - generic [ref=e67]: 3 ore/săptămână
+            - generic [ref=e68]:
+              - paragraph [ref=e69]: Ce buget e realist pentru această temă?
+              - generic [ref=e70]:
+                - button "Buget minim" [active] [ref=e71]
+                - button "Buget mediu" [ref=e72]
+                - button "Buget maxim" [ref=e73]
+            - generic [ref=e74]:
+              - paragraph [ref=e75]: Cum ai descrie cel mai bine ce vrei să lucrezi acum?
+              - generic [ref=e76]:
+                - button "Am o singură temă foarte concretă" [ref=e77]
+                - button "Am 2–3 zone care se leagă între ele" [ref=e78]
+                - button "Simt că am nevoie de o reorganizare mai amplă" [ref=e79]
+                - paragraph [ref=e80]: Selectează o opțiune
+          - generic [ref=e81]:
+            - button "Înapoi" [ref=e82]
+            - button "Pasul următor" [disabled] [ref=e83]
+            - generic [ref=e84]: Completează selecțiile marcate.
+  - contentinfo [ref=e85]:
+    - generic [ref=e86]:
+      - paragraph [ref=e87]: © 2025 OmniMental
+      - navigation [ref=e88]:
+        - link "Despre" [ref=e89] [cursor=pointer]:
+          - /url: /about
+        - link "Contact" [ref=e90] [cursor=pointer]:
+          - /url: /contact
+        - link "Politica de confidențialitate" [ref=e91] [cursor=pointer]:
+          - /url: /privacy
+        - link "Termeni și condiții" [ref=e92] [cursor=pointer]:
+          - /url: /terms
+        - link "Politica cookies" [ref=e93] [cursor=pointer]:
+          - /url: /cookies
+        - link "Dezabonare" [ref=e94] [cursor=pointer]:
+          - /url: /unsubscribe
+  - button "Open Next.js Dev Tools" [ref=e100] [cursor=pointer]:
+    - img [ref=e101]
+  - alert [ref=e104]
+```

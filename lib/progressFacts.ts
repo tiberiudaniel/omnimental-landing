@@ -103,6 +103,15 @@ export type ProgressFact = {
   };
   omni?: OmniBlock;
   recentEntries?: Array<{ text: string; timestamp: Date }>;
+  quickAssessment?: {
+    energy: number; // 1-10
+    stress: number; // 1-10
+    sleep: number; // 1-10
+    clarity: number; // 1-10
+    confidence: number; // 1-10
+    focus: number; // 1-10
+    updatedAt?: Date;
+  };
   practiceSessions?: Array<{
     type: "reflection" | "breathing" | "drill";
     startedAt: Date;
@@ -725,12 +734,34 @@ export async function recordTextSignalFact(payload: {
 }
 
 // Persist evaluation totals and stage value into progress facts
- 
+
 
 // Patch partial Omni block (deep merge). Useful to update knowledgeIndex/skills/unlocks.
 export async function recordOmniPatch(patch: DeepPartial<OmniBlock>) {
   return mergeProgressFact({
     omni: patch,
+  });
+}
+
+// Quick self-assessment (lightweight, onboarding). Stores 1–10 sliders for immediate feedback.
+export async function recordQuickAssessment(payload: {
+  energy: number;
+  stress: number;
+  sleep: number;
+  clarity: number;
+  confidence: number;
+  focus: number;
+}) {
+  return mergeProgressFact({
+    quickAssessment: {
+      energy: payload.energy,
+      stress: payload.stress,
+      sleep: payload.sleep,
+      clarity: payload.clarity,
+      confidence: payload.confidence,
+      focus: payload.focus,
+      updatedAt: serverTimestamp(),
+    },
   });
 }
 

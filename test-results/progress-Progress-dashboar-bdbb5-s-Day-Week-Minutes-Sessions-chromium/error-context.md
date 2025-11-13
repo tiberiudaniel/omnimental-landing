@@ -1,0 +1,192 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - button "Autentificare" [ref=e5]
+        - generic "sXzKq0AtHHSQDsgRj0H467bJ6oQ2" [ref=e6]: Oaspete
+        - generic [ref=e7]:
+          - button "RO" [pressed] [ref=e8]
+          - generic [ref=e9]: "-"
+          - button "EN" [ref=e10]
+      - generic [ref=e11]:
+        - link "OmniMental logo OmniMental" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img "OmniMental logo" [ref=e13]
+          - generic [ref=e14]: OmniMental
+        - navigation [ref=e15]:
+          - link "Antrenament" [ref=e16] [cursor=pointer]:
+            - /url: /antrenament
+          - link "Progres" [ref=e17] [cursor=pointer]:
+            - /url: /progress
+          - link "Recomandare" [ref=e18] [cursor=pointer]:
+            - /url: /recommendation
+          - link "Onboarding" [ref=e19] [cursor=pointer]:
+            - /url: /onboarding
+        - button "Deschide meniul" [ref=e21]
+    - generic [ref=e27]:
+      - generic [ref=e28]: Demo
+      - generic [ref=e29]: "Mod demo: date sintetice — nu se salvează în cont."
+    - main [ref=e30]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - paragraph [ref=e34]: Pasul următor
+          - button "Continuă în Omni Abil" [ref=e35]
+        - generic [ref=e37]:
+          - generic:
+            - generic:
+              - img
+            - generic:
+              - img
+            - generic:
+              - img
+            - generic:
+              - img
+          - generic [ref=e38]:
+            - button "Omni-Scop" [ref=e39]: Omni-Scop
+            - button "Omni-Cuno" [ref=e41]: Omni-Cuno
+            - button "Omni-Sensei" [ref=e43]: Omni-Sensei
+            - button "Omni-Abil(După 1 provocare)" [ref=e45]:
+              - generic [ref=e46]:
+                - text: Omni-Abil
+                - generic [ref=e47]: (După 1 provocare)
+            - button "Omni-Intel" [ref=e49]: Omni-Intel
+      - generic [ref=e51]:
+        - heading "OmniMental Progress" [level=1] [ref=e52]
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - generic [ref=e55]:
+              - generic [ref=e57]:
+                - generic [ref=e58]:
+                  - heading "Indicatori interni" [level=3] [ref=e59]
+                  - paragraph [ref=e60]: Claritate, calm și energie în ultima perioadă.
+                - generic [ref=e64]:
+                  - generic [ref=e65]:
+                    - generic [ref=e68]: Claritate
+                    - generic [ref=e69]: 80%
+                  - generic [ref=e70]:
+                    - generic [ref=e73]: Calm
+                    - generic [ref=e74]: 40%
+                  - generic [ref=e75]:
+                    - generic [ref=e78]: Energie
+                    - generic [ref=e79]: 40%
+              - generic [ref=e81]:
+                - heading "Trend săptămânal — Săptămână • Minute" [level=3] [ref=e82]
+                - generic [ref=e83]:
+                  - paragraph [ref=e84]: Evoluția activităților
+                  - generic [ref=e85]:
+                    - generic [ref=e86]:
+                      - button "Azi" [ref=e87]
+                      - button "Săptămână" [ref=e88]
+                    - generic [ref=e89]:
+                      - button "Minute" [ref=e90]
+                      - button "Sesiuni" [ref=e91]
+                - img [ref=e93]:
+                  - generic [ref=e102]: "20"
+                  - generic [ref=e103]: "6"
+                  - generic [ref=e104]: "12"
+                  - generic [ref=e105]: "12"
+                  - generic [ref=e106]: "15"
+                  - generic [ref=e107]: "5"
+                  - generic [ref=e108]: "16"
+                  - generic [ref=e109]: Fri
+                  - generic [ref=e110]: Sat
+                  - generic [ref=e111]: Sun
+                  - generic [ref=e112]: Mon
+                  - generic [ref=e113]: Tue
+                  - generic [ref=e114]: Wed
+                  - generic [ref=e115]: Thu
+                - paragraph [ref=e116]: Minute
+            - generic [ref=e117]:
+              - generic [ref=e118]:
+                - generic [ref=e120]:
+                  - heading "Bine ai revenit" [level=2] [ref=e121]
+                  - paragraph [ref=e122]: "Ultima evaluare: 11/13/2025, 12:01:59 PM"
+                - generic [ref=e124]:
+                  - paragraph [ref=e125]: Omni-Intel
+                  - paragraph [ref=e126]: "35"
+                  - paragraph [ref=e127]: Indice general de claritate, calm și energie.
+              - generic [ref=e128]:
+                - generic [ref=e130]:
+                  - heading "Insightul zilei" [level=3] [ref=e131]
+                  - paragraph [ref=e132]: Mintea devine mai clară când limitele personale sunt respectate; confuzia vine adesea din supraîncărcare relațională.
+                  - paragraph [ref=e133]: "Temă: Clarity"
+                - generic [ref=e135]:
+                  - heading "Provocarea de azi" [level=3] [ref=e136]
+                  - paragraph [ref=e137]: Notează 3 clarificări azi
+                  - paragraph
+                  - paragraph [ref=e138]: Aplică azi, în viața reală.
+            - generic [ref=e139]:
+              - generic [ref=e141]:
+                - generic [ref=e142]:
+                  - generic [ref=e143]:
+                    - paragraph [ref=e144]: Reflections
+                    - paragraph [ref=e145]: "4"
+                  - generic [ref=e146]:
+                    - paragraph [ref=e147]: Breathing min
+                    - paragraph [ref=e148]: "7"
+                  - generic [ref=e149]:
+                    - paragraph [ref=e150]: Focus drills
+                    - paragraph [ref=e151]: "3"
+                  - generic [ref=e152]:
+                    - paragraph [ref=e153]: Energy idx
+                    - paragraph [ref=e154]: "40"
+                - heading "Practice snapshot" [level=4] [ref=e155]
+              - generic [ref=e157]:
+                - heading "Recent Entries" [level=4] [ref=e158]
+                - generic [ref=e159]:
+                  - paragraph [ref=e160]: Mi-am clarificat obiectivul pentru săptămâna asta.
+                  - paragraph [ref=e161]: 11/12/2025, 10:10:00 AM
+                - generic [ref=e162]:
+                  - paragraph [ref=e163]: Am observat că respirația m-a calmat în 2 minute.
+                  - paragraph [ref=e164]: 11/11/2025, 11:10:00 AM
+                - generic [ref=e165]:
+                  - paragraph [ref=e166]: Am setat o limită clară pentru timpul de lucru.
+                  - paragraph [ref=e167]: 11/10/2025, 12:10:00 PM
+          - generic [ref=e169]:
+            - heading "Profile indices" [level=3] [ref=e170]
+            - paragraph [ref=e171]: "Patru axe principale: cunoaștere, motivație, abilități și adaptare (flow)."
+            - generic [ref=e172]:
+              - generic [ref=e173]:
+                - paragraph [ref=e174]: Omni-Cuno
+                - paragraph [ref=e175]: "31"
+              - generic [ref=e176]:
+                - paragraph [ref=e177]: Motivare IDX
+                - paragraph [ref=e178]: "67"
+              - generic [ref=e179]:
+                - paragraph [ref=e180]: Omni-Abil
+                - paragraph [ref=e181]: "26"
+              - generic [ref=e182]:
+                - paragraph [ref=e183]: Omni-Flow
+                - paragraph [ref=e184]: "58"
+  - contentinfo [ref=e185]:
+    - generic [ref=e186]:
+      - paragraph [ref=e187]: © 2025 OmniMental
+      - navigation [ref=e188]:
+        - link "Despre" [ref=e189] [cursor=pointer]:
+          - /url: /about
+        - link "Contact" [ref=e190] [cursor=pointer]:
+          - /url: /contact
+        - link "Politica de confidențialitate" [ref=e191] [cursor=pointer]:
+          - /url: /privacy
+        - link "Termeni și condiții" [ref=e192] [cursor=pointer]:
+          - /url: /terms
+        - link "Politica cookies" [ref=e193] [cursor=pointer]:
+          - /url: /cookies
+        - link "Dezabonare" [ref=e194] [cursor=pointer]:
+          - /url: /unsubscribe
+  - generic [ref=e199] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e200]:
+      - img [ref=e201]
+    - generic [ref=e204]:
+      - button "Open issues overlay" [ref=e205]:
+        - generic [ref=e206]:
+          - generic [ref=e207]: "0"
+          - generic [ref=e208]: "1"
+        - generic [ref=e209]: Issue
+      - button "Collapse issues badge" [ref=e210]:
+        - img [ref=e211]
+  - alert [ref=e213]
+```

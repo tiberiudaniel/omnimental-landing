@@ -1,0 +1,98 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - button "Autentificare" [ref=e5]
+        - generic "94Niu4UHFtTKiVo46tVoSeIIr8x2" [ref=e6]: Oaspete
+        - generic [ref=e7]:
+          - button "RO" [pressed] [ref=e8]
+          - generic [ref=e9]: "-"
+          - button "EN" [ref=e10]
+          - generic "Salvare automată" [ref=e11]
+      - generic "OmniMental" [ref=e13]:
+        - img "OmniMental logo" [ref=e14]
+        - generic [ref=e15]: OmniMental
+    - main [ref=e16]:
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - paragraph [ref=e20]: Pasul 2 din 4
+          - generic [ref=e21]:
+            - generic [ref=e22]:
+              - generic [ref=e23]: "1"
+              - generic [ref=e24]: Context
+            - generic [ref=e26]:
+              - generic [ref=e27]: "2"
+              - generic [ref=e28]: Intenții & Cloud
+            - generic [ref=e30]:
+              - generic [ref=e31]: "3"
+              - generic [ref=e32]: Motivație & Resurse
+            - generic [ref=e34]:
+              - generic [ref=e35]: "4"
+              - generic [ref=e36]: Recomandare
+        - generic [ref=e41]:
+          - button "Părăsește wizardul" [ref=e42]
+          - button "Resetează parcursul" [ref=e43]: Resetează
+      - generic [ref=e46]:
+        - heading "Din ce ai ales, reiese că îți dorești Calm și claritate și direcție." [level=2] [ref=e48]:
+          - generic "Din ce ai ales, reiese că îți dorești Calm și claritate și direcție." [ref=e49]:
+            - text: Din ce ai ales, reiese că îți dorești Calm
+            - generic [ref=e50]: "|"
+        - generic [ref=e51]:
+          - paragraph [ref=e52]: Indicatori principali
+          - heading "Profilul selecțiilor tale" [level=3] [ref=e53]
+          - generic [ref=e54]:
+            - img "Radar chart with key indicators" [ref=e55]:
+              - generic [ref=e57]:
+                - generic [ref=e72]: 40%
+                - generic [ref=e77]: 60%
+            - generic [ref=e78]:
+              - list [ref=e79]:
+                - listitem [ref=e80]:
+                  - generic [ref=e81]: Claritate & focus
+                  - generic [ref=e82]: 2/7
+                - listitem [ref=e83]:
+                  - generic [ref=e84]: Relații
+                  - generic [ref=e85]: 0/7
+                - listitem [ref=e86]:
+                  - generic [ref=e87]: Calm
+                  - generic [ref=e88]: 3/7
+                - listitem [ref=e89]:
+                  - generic [ref=e90]: Energie
+                  - generic [ref=e91]: 0/7
+                - listitem [ref=e92]:
+                  - generic [ref=e93]: Performanță
+                  - generic [ref=e94]: 0/7
+              - generic [ref=e95]:
+                - paragraph [ref=e96]: Teme evidențiate
+                - list [ref=e97]:
+                  - listitem [ref=e98]:
+                    - generic [ref=e99]: Calm
+                    - generic [ref=e100]: 3/7
+                  - listitem [ref=e101]:
+                    - generic [ref=e102]: claritate și direcție
+                    - generic [ref=e103]: 2/7
+                - generic [ref=e104]: Ce te ajută, în mod realist, să cobori ritmul 10 minute azi?
+        - button "Continuă" [ref=e105]
+  - contentinfo [ref=e106]:
+    - generic [ref=e107]:
+      - paragraph [ref=e108]: © 2025 OmniMental
+      - navigation [ref=e109]:
+        - link "Despre" [ref=e110] [cursor=pointer]:
+          - /url: /about
+        - link "Contact" [ref=e111] [cursor=pointer]:
+          - /url: /contact
+        - link "Politica de confidențialitate" [ref=e112] [cursor=pointer]:
+          - /url: /privacy
+        - link "Termeni și condiții" [ref=e113] [cursor=pointer]:
+          - /url: /terms
+        - link "Politica cookies" [ref=e114] [cursor=pointer]:
+          - /url: /cookies
+        - link "Dezabonare" [ref=e115] [cursor=pointer]:
+          - /url: /unsubscribe
+  - button "Open Next.js Dev Tools" [ref=e121] [cursor=pointer]:
+    - img [ref=e122]
+  - alert [ref=e125]
+```

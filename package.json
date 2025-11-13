@@ -9,7 +9,10 @@
     "lint": "eslint",
     "test:logic": "node --test tests/*.test.cjs",
     "admin:set-claim": "node scripts/setAdminClaim.mjs",
-    "admin:seed-insights": "node scripts/seedInsightsAdmin.mjs"
+    "admin:seed-insights": "node scripts/seedInsightsAdmin.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@playwright/test": "^1.48.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

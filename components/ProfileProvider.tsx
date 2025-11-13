@@ -20,6 +20,7 @@ type ProfileRecord = {
   createdAt?: Timestamp;
   accessTier: AccessTier;
   selection?: "none" | "individual" | "group";
+  simulatedInsights?: string[];
 };
 
 type ProfileContextValue = {
@@ -72,6 +73,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
             | "none"
             | "individual"
             | "group";
+          const simulatedInsights = Array.isArray((data as { simulatedInsights?: unknown }).simulatedInsights)
+            ? ((data as { simulatedInsights?: string[] }).simulatedInsights)
+            : undefined;
           setProfile({
             id: user.uid,
             name: data.name ?? user.email ?? "Utilizator",
@@ -79,6 +83,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
             createdAt: data.createdAt,
             accessTier: data.accessTier ?? "public",
             selection: selectionValue,
+            simulatedInsights,
           });
         }
       } catch (error) {

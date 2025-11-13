@@ -8,8 +8,12 @@ import { getDailyInsight } from "@/lib/insights";
 import type { OmniBlock } from "@/lib/omniIntel";
 
 import { motion, type Variants } from "framer-motion";
+import { useI18n } from "@/components/I18nProvider";
+import { getString } from "@/lib/i18nGetString";
+import { useProfile } from "@/components/ProfileProvider";
+import { useMemo, useState } from "react";
 import WeeklyTrendsChart from "@/components/charts/WeeklyTrendsChart";
-import { extractSessions, computeWeeklyBuckets } from "@/lib/progressAnalytics";
+import { extractSessions, computeWeeklyBuckets, computeTodayBucket, computeWeeklyCounts, computeTodayCounts } from "@/lib/progressAnalytics";
 
 // ------------------------------------------------------
 // Animations
@@ -52,8 +56,22 @@ export default function ProgressDashboard({
   demoFacts?: ProgressFact;
 }) {
   const { data: liveFacts, loading: liveLoading } = useProgressFacts(profileId);
+  const { profile } = useProfile();
   const facts = demoFacts ?? liveFacts;
   const loading = demoFacts ? false : liveLoading;
+  const { t, lang } = useI18n();
+  // Hooks must be declared before any early returns
+  const [timeframe, setTimeframe] = useState<"day" | "week">("week");
+  const [metric, setMetric] = useState<"min" | "count">("min");
+  const [achvDismissed, setAchvDismissed] = useState(false);
+  const showAchv = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const omni = (facts?.omni as OmniBlock | undefined) ?? undefined;
+    const score = (omni?.kuno?.averagePercent ?? omni?.kuno?.knowledgeIndex ?? 0) as number;
+    const hasInsights = Array.isArray(profile?.simulatedInsights) && (profile?.simulatedInsights?.length ?? 0) > 0;
+    const dismissed = window.localStorage.getItem("omni_onboarding_achv_dismissed") === "1";
+    return score > 0 && hasInsights && !dismissed && !achvDismissed;
+  }, [facts, profile?.simulatedInsights, achvDismissed]);
 
   // Loading state
   if (loading) {
@@ -105,6 +123,9 @@ export default function ProgressDashboard({
     1;
 
   const weekly = computeWeeklyBuckets(sessions, refMs);
+  const weeklyCounts = computeWeeklyCounts(sessions, refMs);
+  const today = computeTodayBucket(sessions, refMs);
+  const todayCounts = computeTodayCounts(sessions, refMs);
 
   // ---- Profile indices from Omni block ----
   const omni: OmniBlock | undefined = facts?.omni as OmniBlock | undefined;
@@ -118,13 +139,20 @@ export default function ProgressDashboard({
 
   const quest = (() => {
     const q = facts?.quests?.items?.[0] as { title?: string; body?: string } | undefined;
-    if (q) return { title: q.title ?? "Quest of the Day", text: q.body ?? "" };
+    const fallbackTitle = getString(t, "dashboard.todayQuest", lang === "ro" ? "Provocarea de azi" : "Today’s quest");
+    if (q) {
+      const title = q.title && q.title.trim().length ? q.title : fallbackTitle;
+      const text = q.body ?? "";
+      return { title, text };
+    }
     return {
-      title: "Quest of the Day",
+      title: fallbackTitle,
       text:
         "Alege un moment concret din următoarele 24 de ore în care să aplici o tehnică de respirație sau de focus și notează ce observi în corp și în minte.",
     };
   })();
+
+  // Onboarding achievement banner state handled above to satisfy hooks rules
 
   return (
     <motion.section
@@ -183,18 +211,71 @@ export default function ProgressDashboard({
               </Card>
             </motion.div>
 
-            {/* Weekly Trends – mai scurt pe verticală */}
+            {/* Weekly Trends – toggle Day/Week and Minutes/Sessions */}
             <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
               <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
                 <h3 className="mb-2 text-sm font-semibold text-[#2C2C2C]">
-                  Weekly Trends
+                  {getString(t, "dashboard.trendsTitle", lang === "ro" ? "Trend săptămânal" : "Weekly trends")} — {timeframe === "day" ? getString(t, "dashboard.trendsToggle.day", lang === "ro" ? "Azi" : "Today") : getString(t, "dashboard.trendsToggle.week", lang === "ro" ? "Săptămână" : "Week")} • {metric === "min" ? getString(t, "dashboard.trendsToggle.minutes", lang === "ro" ? "Minute" : "Minutes") : getString(t, "dashboard.trendsToggle.sessions", lang === "ro" ? "Sesiuni" : "Sessions")}
                 </h3>
-                <p className="mb-1 text-[11px] text-[#7B6B60]">
-                  Evoluția activităților pe ultimele 7 zile.
-                </p>
-                <div className="h-[135px]">
-                  <WeeklyTrendsChart data={weekly} />
+                <div className="mb-1 flex items-center justify-between">
+                  <p className="text-[11px] text-[#7B6B60]">{lang === "ro" ? "Evoluția activităților" : "Activities evolution"}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setTimeframe("day")}
+                        className={`px-2 py-0.5 rounded ${timeframe === "day" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                        data-testid="trend-toggle-day"
+                      >
+                        {getString(t, "dashboard.trendsToggle.day", lang === "ro" ? "Azi" : "Today")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTimeframe("week")}
+                        className={`px-2 py-0.5 rounded ${timeframe === "week" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                        data-testid="trend-toggle-week"
+                      >
+                        {getString(t, "dashboard.trendsToggle.week", lang === "ro" ? "Săptămână" : "Week")}
+                      </button>
+                    </div>
+                    <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setMetric("min")}
+                        className={`px-2 py-0.5 rounded ${metric === "min" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                        data-testid="trend-toggle-minutes"
+                      >
+                        {getString(t, "dashboard.trendsToggle.minutes", lang === "ro" ? "Minute" : "Minutes")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMetric("count")}
+                        className={`px-2 py-0.5 rounded ${metric === "count" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                        data-testid="trend-toggle-sessions"
+                      >
+                        {getString(t, "dashboard.trendsToggle.sessions", lang === "ro" ? "Sesiuni" : "Sessions")}
+                      </button>
+                    </div>
+                  </div>
                 </div>
+                <div className="h-[135px]" data-testid="trends-chart">
+                  <WeeklyTrendsChart
+                    data={
+                      timeframe === "day"
+                        ? metric === "min"
+                          ? today
+                          : todayCounts
+                        : metric === "min"
+                        ? weekly
+                        : weeklyCounts
+                    }
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-[#7B6B60]">
+                  {metric === "min"
+                    ? getString(t, "dashboard.trendsToggle.minutes", lang === "ro" ? "Minute" : "Minutes")
+                    : getString(t, "dashboard.trendsToggle.sessions", lang === "ro" ? "Sesiuni" : "Sessions")}
+                </p>
               </Card>
             </motion.div>
           </div>
@@ -208,9 +289,9 @@ export default function ProgressDashboard({
               <motion.div variants={fadeDelayed(0.08)} {...hoverScale}>
                 <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
                   <h2 className="mb-1 text-sm font-semibold text-[#2C2C2C] lg:text-base">
-                    Welcome back
+                    {getString(t, "dashboard.welcomeBack", lang === "ro" ? "Bine ai revenit" : "Welcome back")}
                   </h2>
-                  <p className="text-xs text-[#6A6A6A] lg:text-sm">
+                  <p className="text-xs text-[#6A6A6A]">
                     Ultima evaluare:{" "}
                     {(() => {
                       const ms = toMsLocal(
@@ -248,7 +329,7 @@ export default function ProgressDashboard({
                     transition={{ duration: 0.35 }}
                     className="mb-2 text-sm font-semibold text-[#2C2C2C]"
                   >
-                    Insight of the Day
+                    {getString(t, "dashboard.insightTitle", lang === "ro" ? "Insightul zilei" : "Insight of the Day")}
                   </motion.h3>
 
                   <motion.p
@@ -261,7 +342,7 @@ export default function ProgressDashboard({
                   </motion.p>
 
                   <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-[#A08F82]">
-                    Theme: {insight.theme}
+                    {getString(t, 'dashboard.themeLabel', lang === 'ro' ? 'Temă' : 'Theme')}: {insight.theme}
                   </p>
                 </Card>
               </motion.div>
@@ -270,13 +351,18 @@ export default function ProgressDashboard({
               <motion.div variants={fadeDelayed(0.2)} {...hoverScale}>
                 <Card className="flex h-full flex-col justify-between rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-3 shadow-sm lg:p-4">
                   <h3 className="mb-2 text-sm font-semibold text-[#2C2C2C]">
-                    {quest.title}
+                    {getString(t, "dashboard.todayQuest", lang === "ro" ? "Provocarea de azi" : "Today’s quest")}
                   </h3>
+                  {quest.title && (
+                    <p className="mb-1 text-xs font-semibold text-[#7B6B60]">
+                      {quest.title}
+                    </p>
+                  )}
                   <p className="text-sm leading-relaxed text-[#3A3A3A]">
                     {quest.text}
                   </p>
                   <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-[#A08F82]">
-                    Aplică azi, în viața reală.
+                    {lang === "ro" ? "Aplică azi, în viața reală." : "Apply today, in real life."}
                   </p>
                 </Card>
               </motion.div>
@@ -353,9 +439,7 @@ export default function ProgressDashboard({
           className="mt-4"
         >
           <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
-            <h3 className="mb-2 text-sm font-semibold text-[#2C2C2C]">
-              Profile indices
-            </h3>
+              <h3 className="mb-2 text-sm font-semibold text-[#2C2C2C]">{lang === "ro" ? "Profile indices" : "Profile indices"}</h3>
             <p className="mb-2 text-[11px] text-[#7B6B60]">
               Patru axe principale: cunoaștere, motivație, abilități și
               adaptare (flow).
@@ -368,6 +452,52 @@ export default function ProgressDashboard({
             </div>
           </Card>
         </motion.div>
+
+        {showAchv ? (
+          <div className="mt-3 rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] p-3 text-sm text-[#1F3C2F]">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-medium">{lang === "ro" ? "Prima treaptă atinsă: Claritate" : "First milestone reached: Clarity"}</p>
+              <div className="flex items-center gap-2">
+                <a
+                  href="/antrenament"
+                  className="rounded border border-[#1F3C2F] px-2 py-0.5 text-[11px] hover:bg-[#1F3C2F] hover:text-white"
+                >
+                  {lang === "ro" ? "Începe antrenamentul" : "Go to Training"}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== "undefined") window.localStorage.setItem("omni_onboarding_achv_dismissed", "1");
+                    setAchvDismissed(true);
+                  }}
+                  className="rounded border border-[#1F3C2F] px-2 py-0.5 text-[11px]"
+                >
+                  {lang === "ro" ? "OK" : "OK"}
+                </button>
+              </div>
+            </div>
+            <p className="mt-1 text-[12px] text-[#1F3C2F]">
+              {lang === "ro"
+                ? "Ai trecut prin primele două etape. Continuă cu exercițiile scurte pentru a stabiliza progresul."
+                : "You’ve completed the first two steps. Continue with short exercises to stabilize progress."}
+            </p>
+          </div>
+        ) : null}
+
+        {Array.isArray(profile?.simulatedInsights) && profile!.simulatedInsights!.length > 0 ? (
+          <motion.div variants={fadeDelayed(0.3)} {...hoverScale} className="mt-3">
+            <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
+              <h3 className="mb-2 text-sm font-semibold text-[#2C2C2C]">{getString(t, "dashboard.initialInsights", lang === "ro" ? "Insight‑uri inițiale" : "Initial insights")}</h3>
+              <div className="flex flex-wrap gap-2">
+                {profile!.simulatedInsights!.map((tag, i) => (
+                  <span key={`${tag}-${i}`} className="rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2.5 py-0.5 text-[11px] text-[#2C2C2C]">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
+        ) : null}
       </Card>
     </motion.section>
   );

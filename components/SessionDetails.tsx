@@ -117,7 +117,21 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
         </div>
 
         <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CTAButton text={cta} />
+          <div className="flex items-center gap-3">
+            <CTAButton text={cta} />
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  try { localStorage.setItem('omnimental_guest_access', '1'); } catch {}
+                  window.location.assign('/recommendation?demo=1');
+                }
+              }}
+              className="rounded-[10px] border border-[#7A6455] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7A6455] transition hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+            >
+              {typeof t('guestSpecialAccess') === 'string' ? (t('guestSpecialAccess') as string) : 'Acces Invitat Special'}
+            </button>
+          </div>
           {metaBadge}
         </div>
 
@@ -358,13 +372,27 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
       ) : null}
 
       <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <CTAButton
-          text={customCtaText}
-          dialogTitle={ctaDialogTitle}
-          dialogDescription={ctaDialogDescription}
-          successMessage={ctaSuccessMessage}
-          submitLabel={ctaSubmitLabel}
-        />
+        <div className="flex items-center gap-3">
+          <CTAButton
+            text={customCtaText}
+            dialogTitle={ctaDialogTitle}
+            dialogDescription={ctaDialogDescription}
+            successMessage={ctaSuccessMessage}
+            submitLabel={ctaSubmitLabel}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                try { localStorage.setItem('omnimental_guest_access', '1'); } catch {}
+                window.location.assign('/recommendation?demo=1');
+              }
+            }}
+            className="rounded-[10px] border border-[#7A6455] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7A6455] transition hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+          >
+            {typeof t('guestSpecialAccess') === 'string' ? (t('guestSpecialAccess') as string) : 'Acces Invitat Special'}
+          </button>
+        </div>
         {metaBadge}
       </div>
       {faqItems.length > 0 && (

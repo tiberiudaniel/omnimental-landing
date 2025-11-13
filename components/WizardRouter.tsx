@@ -188,7 +188,10 @@ export default function WizardRouter(props: Props) {
           key={cloudKey}
           minSelection={minSelection}
           maxSelection={maxSelection}
-          onComplete={onIntentComplete}
+          onComplete={(result) => {
+            onIntentComplete(result);
+            navigateToStep("reflectionSummary");
+          }}
           words={words}
         />
       );

@@ -43,6 +43,14 @@ type FactsShape = {
   evaluation?: { scores?: Record<string, unknown> };
   recommendation?: { dimensionScores?: Record<string, unknown> };
   practiceSessions?: Array<{ type?: unknown }>;
+  quickAssessment?: {
+    energy?: unknown;
+    stress?: unknown;
+    sleep?: unknown;
+    clarity?: unknown;
+    confidence?: unknown;
+    focus?: unknown;
+  };
   reflectionsCount?: unknown;
   breathingCount?: unknown;
   drillsCount?: unknown;
@@ -98,6 +106,29 @@ export function adaptProgressFacts(facts: unknown): ProgressData {
       clarity = toPercent(clamp01(gse / 40) * 100);
       calm = toPercent(clamp01(maas / 90) * 100);
       energy = toPercent(clamp01(svs / 24) * 100);
+    }
+  }
+
+  // Last fallback: quick self-assessment (1..10 sliders)
+  if (clarity === 0 && calm === 0 && energy === 0 && f.quickAssessment) {
+    const qa = f.quickAssessment;
+    const qClarity = num(qa?.clarity, NaN);
+    const qEnergy = num(qa?.energy, NaN);
+    const qStress = num(qa?.stress, NaN);
+    const qSleep = num(qa?.sleep, NaN);
+    // Map 1..10 → 0..100
+    if (Number.isFinite(qClarity)) clarity = toPercent(clamp01(qClarity / 10) * 100);
+    if (Number.isFinite(qEnergy)) energy = toPercent(clamp01(qEnergy / 10) * 100);
+    // Calm derived from low stress and decent sleep; average of (10-stress) and sleep
+    if (Number.isFinite(qStress) || Number.isFinite(qSleep)) {
+      const invStress = Number.isFinite(qStress) ? (10 - qStress) : NaN;
+      const calmPieces: number[] = [];
+      if (Number.isFinite(invStress)) calmPieces.push(invStress as number);
+      if (Number.isFinite(qSleep)) calmPieces.push(qSleep as number);
+      if (calmPieces.length) {
+        const avg10 = calmPieces.reduce((a, b) => a + b, 0) / calmPieces.length;
+        calm = toPercent(clamp01(avg10 / 10) * 100);
+      }
     }
   }
 

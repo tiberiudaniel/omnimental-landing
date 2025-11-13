@@ -318,7 +318,7 @@ export function RecommendationStep(props: Props) {
   );
 
   return (
-    <section className="bg-[#FDFCF9] px-4 py-12">
+    <section className="bg-[#FDFCF9] px-4 py-12" data-testid="recommendation-step">
       <div className="mx-auto max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
         <div className="mx-auto flex max-w-4xl flex-col gap-6 text-center">
           {!profile && showAccountPrompt ? (

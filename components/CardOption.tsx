@@ -50,6 +50,7 @@ export default function CardOption({
 
   return (
     <div
+      data-testid={`card-${type}`}
       className={`relative w-full max-w-xs rounded-[12px] border p-8 text-left transition ${
         activeState
           ? "border-[#E60012] bg-[#F6F2EE]/95 shadow-[0_16px_40px_rgba(0,0,0,0.08)]"

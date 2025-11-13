@@ -192,6 +192,7 @@ export default function IntentSummary({
                         ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
                         : "border-[#D8C6B6] text-[#2C2C2C]"
                     }`}
+                    data-testid={`speed-${option.value}`}
                   >
                     {speedOptionsLabels?.[option.value] ?? option.fallback}
                   </button>
@@ -276,6 +277,7 @@ export default function IntentSummary({
                         ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
                         : "border-[#D8C6B6] text-[#2C2C2C]"
                     }`}
+                    data-testid={`budget-${option.value}`}
                   >
                     {budgetOptionsLabels?.[option.value] ?? option.fallback}
                   </button>
@@ -307,6 +309,7 @@ export default function IntentSummary({
                         ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
                         : "border-[#D8C6B6] text-[#2C2C2C]"
                     }`}
+                    data-testid={`goal-${option}`}
                   >
                     {goalTypeLabels[option]}
                   </button>
@@ -343,6 +346,7 @@ export default function IntentSummary({
                         ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
                         : "border-[#D8C6B6] text-[#2C2C2C]"
                     }`}
+                    data-testid={`emo-${option}`}
                   >
                     {emotionalStateLabels[option]}
                   </button>
@@ -457,7 +461,7 @@ export default function IntentSummary({
   };
 
   return (
-    <section className="bg-[#FDFCF9] px-6 py-12">
+    <section data-testid="wizard-step-summary" className="bg-[#FDFCF9] px-6 py-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
         <div className="rounded-[16px] border border-[#E4D8CE] bg-white/92 px-8 py-10 text-left shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
           <div className="mb-6 flex flex-col gap-3">
@@ -506,9 +510,15 @@ export default function IntentSummary({
                 onClick={handleNext}
                 disabled={isSaving || !canProceed || nextBusy}
                 className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
+                data-testid="wizard-next"
               >
                 {step === TOTAL_STEPS - 1 && isSaving ? savingLabel ?? "Se salvează..." : nextLabel}
               </button>
+              {!canProceed ? (
+                <span className="ml-3 text-[11px] text-[#7B6B60]">
+                  {lang === 'ro' ? 'Completează selecțiile marcate.' : 'Complete the marked selections.'}
+                </span>
+              ) : null}
             </div>
             {errorMessage ? (
               <div className="mt-3 flex items-center gap-3">

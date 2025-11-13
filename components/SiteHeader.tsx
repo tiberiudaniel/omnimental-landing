@@ -141,12 +141,12 @@ export default function SiteHeader({
       {/* Bottom row layout: logo | centered nav | journal + menu on right */}
       <div className={`${bottomMarginTop} grid grid-cols-[auto_1fr_auto] items-center gap-3`}>
         {wizardMode ? (
-          <div className="flex items-center gap-3 shrink-0" aria-label="OmniMental">
+          <Link href="/?step=preIntro&reset=1" className="flex items-center gap-3 shrink-0" aria-label="OmniMental">
             <Image src="/assets/logo.jpg" alt="OmniMental logo" width={compact ? 60 : 70} height={28} priority style={{ height: "auto" }} />
             <span className={`${titleSize} font-semibold tracking-wide text-neutral-dark`}>OmniMental</span>
-          </div>
+          </Link>
         ) : (
-          <Link href="/" className="flex items-center gap-3 shrink-0">
+          <Link href="/?step=preIntro&reset=1" className="flex items-center gap-3 shrink-0">
             <Image src="/assets/logo.jpg" alt="OmniMental logo" width={compact ? 60 : 70} height={28} priority style={{ height: "auto" }} />
             <span className={`${titleSize} font-semibold tracking-wide text-neutral-dark`}>OmniMental</span>
           </Link>
@@ -179,6 +179,15 @@ export default function SiteHeader({
             aria-current={isActive("/recommendation") ? "page" : undefined}
           >
             {typeof t("navRecommendation") === "string" ? (t("navRecommendation") as string) : (lang === "ro" ? "Recomandare" : "Recommendation")}
+          </Link>
+          <Link
+            href="/onboarding"
+            className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
+              isActive("/onboarding") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
+            }`}
+            aria-current={isActive("/onboarding") ? "page" : undefined}
+          >
+            {typeof t("navOnboarding") === "string" ? (t("navOnboarding") as string) : (lang === "ro" ? "Onboarding" : "Onboarding")}
           </Link>
           </nav>
         )}

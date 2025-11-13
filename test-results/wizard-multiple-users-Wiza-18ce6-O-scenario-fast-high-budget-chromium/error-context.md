@@ -1,0 +1,104 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - button "Autentificare" [ref=e5]
+        - generic "P3tPPOaSIdWKp1CrlaXy4SFJPtj2" [ref=e6]: Oaspete
+        - generic [ref=e7]:
+          - button "RO" [pressed] [ref=e8]
+          - generic [ref=e9]: "-"
+          - button "EN" [ref=e10]
+          - generic "Salvare automată" [ref=e11]
+      - generic "OmniMental" [ref=e13]:
+        - img "OmniMental logo" [ref=e14]
+        - generic [ref=e15]: OmniMental
+    - main [ref=e16]:
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - paragraph [ref=e20]: Pasul 4 din 4
+          - generic [ref=e21]:
+            - generic [ref=e22]:
+              - generic [ref=e23]: "1"
+              - generic [ref=e24]: Context
+            - generic [ref=e26]:
+              - generic [ref=e27]: "2"
+              - generic [ref=e28]: Intenții & Cloud
+            - generic [ref=e30]:
+              - generic [ref=e31]: "3"
+              - generic [ref=e32]: Motivație & Resurse
+            - generic [ref=e34]:
+              - generic [ref=e35]: "4"
+              - generic [ref=e36]: Recomandare
+        - generic [ref=e41]:
+          - button "Părăsește wizardul" [ref=e42]
+          - button "Resetează parcursul" [ref=e43]: Resetează
+      - generic [ref=e46]:
+        - heading "Uite recomandarea mea, luând în calcul situația și dorințele tale." [level=2] [ref=e48]:
+          - generic "Uite recomandarea mea, luând în calcul situația și dorințele tale." [ref=e49]:
+            - text: Uite recomandarea mea, luând în calcul sit
+            - generic [ref=e50]: "|"
+        - paragraph [ref=e51]: Aria principală importantă pentru tine acum este Echilibru, simți o urgență de 6/10 și vrei să lucrezi în câteva zile cu un buget maxim, în timp ce temele Echilibru și Calm susțin această direcție.
+        - paragraph [ref=e52]: Alege formatul cu care vrei să continui acum.
+        - generic [ref=e53]:
+          - button "Individual Individual Îndrumare unu-la-unu adaptată obiectivelor tale personale." [ref=e55] [cursor=pointer]:
+            - generic [ref=e56]: Individual
+            - heading "Individual" [level=3] [ref=e57]
+            - paragraph [ref=e59]: Îndrumare unu-la-unu adaptată obiectivelor tale personale.
+          - button "Group Group Antrenament de grup care combină mental coaching, biofeedback și responsabilitate colectivă. Recomandat" [ref=e61] [cursor=pointer]:
+            - generic [ref=e62]: Group
+            - heading "Group" [level=3] [ref=e63]
+            - paragraph [ref=e65]: Antrenament de grup care combină mental coaching, biofeedback și responsabilitate colectivă.
+            - generic [ref=e66]: Recomandat
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: Aria principală este Echilibru, iar nivelul tău de încărcare este Moderat.
+          - generic [ref=e69]:
+            - heading "Indicatori principali" [level=3] [ref=e70]
+            - generic [ref=e71]:
+              - img "Radar chart with key indicators" [ref=e72]:
+                - generic [ref=e74]:
+                  - generic [ref=e89]: 17%
+                  - generic [ref=e94]: 17%
+                  - generic [ref=e99]: 17%
+                  - generic [ref=e104]: 50%
+              - list [ref=e105]:
+                - listitem [ref=e106]:
+                  - generic [ref=e107]: Energie
+                  - generic [ref=e108]: 3/6
+                - listitem [ref=e109]:
+                  - generic [ref=e110]: Claritate & focus
+                  - generic [ref=e111]: 1/6
+          - button "Programează un call de 20 min" [ref=e113]
+          - paragraph [ref=e114]: OmniMental este coaching de performanță și claritate mentală. Nu înlocuiește evaluarea sau tratamentul medical/psihiatric.
+        - generic [ref=e115]: Ce obicei de 5 minute ți-ar aduce un plus de energie azi?
+        - generic [ref=e116]:
+          - generic [ref=e117]:
+            - generic [ref=e118]:
+              - paragraph [ref=e119]: Primește rezumatul și următorii pași pe email
+              - paragraph [ref=e120]: Îți trimitem recomandarea, indicatorii principali și o mini rutină pentru următoarele 24h.
+            - button "Trimite-mi rezumatul →" [ref=e121]:
+              - text: Trimite-mi rezumatul
+              - generic [ref=e122]: →
+          - paragraph [ref=e123]: Un singur email. Poți răspunde oricând cu întrebări.
+  - contentinfo [ref=e124]:
+    - generic [ref=e125]:
+      - paragraph [ref=e126]: © 2025 OmniMental
+      - navigation [ref=e127]:
+        - link "Despre" [ref=e128] [cursor=pointer]:
+          - /url: /about
+        - link "Contact" [ref=e129] [cursor=pointer]:
+          - /url: /contact
+        - link "Politica de confidențialitate" [ref=e130] [cursor=pointer]:
+          - /url: /privacy
+        - link "Termeni și condiții" [ref=e131] [cursor=pointer]:
+          - /url: /terms
+        - link "Politica cookies" [ref=e132] [cursor=pointer]:
+          - /url: /cookies
+        - link "Dezabonare" [ref=e133] [cursor=pointer]:
+          - /url: /unsubscribe
+  - button "Open Next.js Dev Tools" [ref=e139] [cursor=pointer]:
+    - img [ref=e140]
+  - alert [ref=e143]
+```

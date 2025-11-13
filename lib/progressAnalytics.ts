@@ -59,6 +59,24 @@ export function computeWeeklyBuckets(
   return buckets;
 }
 
+export function computeTodayBucket(
+  sessions: PracticeSessionLite[],
+  referenceMs: number,
+): { day: number; totalMin: number; label: string }[] {
+  const start = startOfDay(referenceMs);
+  const end = start + DAY_MS - 1;
+  let total = 0;
+  sessions.forEach((s) => {
+    const ms = toMs(s.startedAt);
+    if (!ms) return;
+    if (ms < start || ms > end) return;
+    total += Math.max(0, Math.round((s.durationSec ?? 0) / 60));
+  });
+  const isEN = typeof navigator !== "undefined" ? /^en/i.test(navigator.language || "") : false;
+  const label = isEN ? "Today" : "Azi";
+  return [{ day: start, totalMin: total, label }];
+}
+
 export function computeWeeklyCounts(
   sessions: PracticeSessionLite[],
   referenceMs: number,
@@ -135,4 +153,22 @@ export function computeStreak(
     else break;
   }
   return { current, best };
+}
+
+export function computeTodayCounts(
+  sessions: PracticeSessionLite[],
+  referenceMs: number,
+): { day: number; totalMin: number; label: string }[] {
+  const start = startOfDay(referenceMs);
+  const end = start + DAY_MS - 1;
+  let total = 0;
+  sessions.forEach((s) => {
+    const ms = toMs(s.startedAt);
+    if (!ms) return;
+    if (ms < start || ms > end) return;
+    total += 1; // count sessions
+  });
+  const isEN = typeof navigator !== "undefined" ? /^en/i.test(navigator.language || "") : false;
+  const label = isEN ? "Today" : "Azi";
+  return [{ day: start, totalMin: total, label }];
 }

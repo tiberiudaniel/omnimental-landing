@@ -16,6 +16,7 @@ import { recommendSession } from "@/lib/recommendation";
 import { readRecommendationCache } from "@/lib/recommendationCache";
 import { recordCtaClicked } from "@/lib/progressFacts";
 import DemoUserSwitcher from "../../components/DemoUserSwitcher";
+import ExperienceStep from "@/components/ExperienceStep";
 
 const STAGE_LABELS: Record<string, string> = {
   t0: "Start (0 săpt.)",
@@ -85,6 +86,10 @@ function RecommendationContent() {
             tier={tier}
           />
         )}
+        {/* Gentle onboarding continuation: simulated experience selection */}
+        {!showPublicView && profile?.id ? (
+          <ExperienceStep userId={profile.id} onContinue={() => router.push("/progress")} />
+        ) : null}
       </main>
     </div>
   );
@@ -301,7 +306,13 @@ export default function RecommendationPage() {
 }
 function PublicOrCachedView({ lang }: { lang: string }) {
   const { s } = useTStrings();
-  const cached = readRecommendationCache();
+  const [cached, setCached] = useState<ReturnType<typeof readRecommendationCache>>(
+    null,
+  );
+  // Read cache on client after hydration to avoid SSR/CSR mismatch
+  useEffect(() => {
+    setCached(readRecommendationCache());
+  }, []);
   if (!cached) {
     return <PublicRecommendationView lang={lang} />;
   }

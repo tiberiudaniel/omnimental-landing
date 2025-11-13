@@ -40,6 +40,30 @@ function ProgressContent() {
   }, [profile?.id, profile?.selection, search]);
 
   if (!profile?.id) {
+    if (demoParam) {
+      return (
+        <div className="min-h-screen bg-[#FAF7F2]">
+          <SiteHeader compact />
+          {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
+          <main className="mx-auto max-w-5xl px-4 py-6 md:px-8">
+            <section className="mx-auto w-full">
+              <NextBestStep
+                progress={demoFacts ?? undefined}
+                lang={lang === "en" ? "en" : "ro"}
+                className="rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-3 shadow-[0_10px_22px_rgba(0,0,0,0.06)] md:py-4"
+                onGoToKuno={() => router.push('/antrenament?tab=oc&source=progress')}
+                onGoToSensei={() => router.push('/antrenament?tab=ose&source=progress')}
+                onGoToAbil={() => router.push('/antrenament?tab=oa&source=progress')}
+                onGoToIntel={() => router.push('/antrenament?tab=oi&source=progress')}
+              >
+                <OmniPathInline lang={lang === "en" ? "en" : "ro"} progress={demoFacts ?? undefined} />
+              </NextBestStep>
+            </section>
+            <ProgressDashboard profileId={"demo-user"} demoFacts={demoFacts} />
+          </main>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-[#FAF7F2]">
         <SiteHeader compact />

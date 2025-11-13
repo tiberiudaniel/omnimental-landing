@@ -2,7 +2,15 @@
 
 type Point = { day: number; totalMin: number; label?: string };
 
-export default function WeeklyTrendsChart({ data, accent = "#7A6455" }: { data: Point[]; accent?: string }) {
+export default function WeeklyTrendsChart({
+  data,
+  accent = "#7A6455",
+  showValues = true,
+}: {
+  data: Point[];
+  accent?: string;
+  showValues?: boolean;
+}) {
   const w = 280;
   const h = 120;
   const padding = 12;
@@ -14,7 +22,7 @@ export default function WeeklyTrendsChart({ data, accent = "#7A6455" }: { data: 
     const x = padding + i * (innerW / data.length) + 3;
     const bh = Math.round((d.totalMin / max) * innerH);
     const y = padding + (innerH - bh);
-    return { x, y, bw, bh };
+    return { x, y, bw, bh, value: d.totalMin };
   });
   const points = data.map((d, i) => {
     const x = padding + i * (innerW / (data.length - 1 || 1));
@@ -28,6 +36,20 @@ export default function WeeklyTrendsChart({ data, accent = "#7A6455" }: { data: 
         <rect key={`b-${i}`} x={b.x} y={b.y} width={b.bw} height={b.bh} fill="#F0E6DB" rx={2} />
       ))}
       {path ? <path d={path} stroke={accent} strokeWidth={2} fill="none" /> : null}
+      {showValues
+        ? bars.map((b, i) => (
+            <text
+              key={`v-${i}`}
+              x={b.x + b.bw / 2}
+              y={Math.max(10, b.y - 4)}
+              textAnchor="middle"
+              fontSize={10}
+              fill="#7B6B60"
+            >
+              {Math.round(b.value)}
+            </text>
+          ))
+        : null}
       {data.map((d, i) => (
         <text
           key={`t-${i}`}
