@@ -56,7 +56,7 @@ export default function NextBestStep({ progress, lang, onGoToKuno, onGoToSensei,
       } as const;
     }
     return {
-      label: lang === "ro" ? "Continuă în Omni Abil" : "Continue in Omni Abil",
+      label: lang === "ro" ? "Mergi la Omni Abil" : "Go to Omni Abil",
       action: onGoToAbil,
     } as const;
   }, [lang, onGoToAbil, onGoToIntel, onGoToKuno, onGoToSensei, progress]);

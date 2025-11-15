@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useJournal, type JournalContext } from "./useJournal";
+import { useProgressFacts } from "@/components/useProgressFacts";
+import { deleteRecentEntry, type RecentEntry } from "@/lib/progressFacts";
+import Toast from "../Toast";
 import { useTStrings } from "../useTStrings";
 import type { JournalTabId } from "@/lib/journal";
 
@@ -10,6 +13,7 @@ export type JournalDrawerProps = {
   onOpenChange: (open: boolean) => void;
   userId: string | null | undefined;
   context?: JournalContext;
+  initialTab?: JournalTabId;
 };
 
 function useTabStrings() {
@@ -57,24 +61,79 @@ function useTabStrings() {
   return { label, placeholder, status };
 }
 
-export function JournalDrawer({ open, onOpenChange, userId, context }: JournalDrawerProps) {
+export function JournalDrawer({ open, onOpenChange, userId, context, initialTab }: JournalDrawerProps) {
   const { loading, saving, tabs, setTabText, saveTab, scheduleSave } = useJournal(userId);
+  const { data: facts } = useProgressFacts(userId ?? null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<JournalTabId>(() => {
     if (typeof window === "undefined") return "SCOP_INTENTIE";
+    const last = window.localStorage.getItem("journalLastEditedTab") as JournalTabId | null;
+    if (last) return last as JournalTabId;
     const raw = window.localStorage.getItem("journalActiveTab") as JournalTabId | null;
     return (raw as JournalTabId) || "SCOP_INTENTIE";
   });
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [loadedBlink, setLoadedBlink] = useState(false);
   const { label: tabLabel, placeholder: tabPlaceholder, status } = useTabStrings();
 
   const currentText = tabs[activeTab] ?? "";
+  const [historyScope, setHistoryScope] = useState<"tab" | "all">("tab");
+  const [historySearch, setHistorySearch] = useState("");
+  // Recent history for the active tab (from progress facts)
+  const toMs = (v: unknown): number => {
+    if (!v) return 0;
+    if (typeof v === "number") return v;
+    if (v instanceof Date) return v.getTime();
+    try {
+      const t = (v as { toDate?: () => Date } | undefined)?.toDate?.();
+      if (t instanceof Date) return t.getTime();
+    } catch {}
+    return 0;
+  };
+  const MAX_PREVIEW = 60;
+  const history = (() => {
+    const list: RecentEntry[] = Array.isArray(facts?.recentEntries)
+      ? (facts!.recentEntries as RecentEntry[])
+      : [];
+    const filtered = historyScope === "tab" ? list.filter((e) => (e?.tabId ? e.tabId === activeTab : true)) : list;
+    return filtered
+      .map((e) => {
+        const full = String(e?.text ?? "");
+        const preview = full.length > MAX_PREVIEW ? full.slice(0, MAX_PREVIEW).trimEnd() + "…" : full;
+        return { text: full, preview, ms: toMs(e?.timestamp), tabId: (e?.tabId as string | undefined) };
+      })
+      .filter((e) => e.text.trim().length > 0)
+      .sort((a, b) => b.ms - a.ms)
+      .slice(0, 8);
+  })();
+  const historyFiltered = (() => {
+    const q = historySearch.trim().toLowerCase();
+    if (!q) return history;
+    return history.filter((h) => h.text.toLowerCase().includes(q));
+  })();
+  const tabIdLabel = (id: string | undefined) => {
+    switch (id) {
+      case "SCOP_INTENTIE": return "Scop & intenție";
+      case "MOTIVATIE_REZURSE": return "Motivație & resurse";
+      case "PLAN_RECOMANDARI": return "Plan & recomandări";
+      case "OBSERVATII_EVALUARE": return "Observații & evaluare";
+      case "NOTE_LIBERE": return "Note libere";
+      default: return "—";
+    }
+  };
   const showSuggested =
     activeTab === "OBSERVATII_EVALUARE" &&
     (context?.suggestedSnippets?.length ?? 0) > 0 &&
     !currentText;
 
   useEffect(() => {
-    if (!open) void saveTab(activeTab, context);
+    if (!open) {
+      void (async () => {
+        const res = await saveTab(activeTab, context);
+        if (res === "cloud") setToastMsg("Salvat în cont");
+        else if (res === "local") setToastMsg("Salvat local");
+      })();
+    }
   }, [open, activeTab, context, saveTab]);
 
   // Focus automat când se deschide
@@ -84,6 +143,13 @@ export function JournalDrawer({ open, onOpenChange, userId, context }: JournalDr
       setTimeout(() => textareaRef.current?.focus(), 50);
     }
   }, [open, activeTab]);
+
+  // Switch active tab based on initialTab when opening from deep link
+  useEffect(() => {
+    if (open && initialTab && initialTab !== activeTab) {
+      setTimeout(() => setActiveTab(initialTab), 0);
+    }
+  }, [open, initialTab, activeTab]);
 
   // ESC pentru închidere
   useEffect(() => {
@@ -106,7 +172,7 @@ export function JournalDrawer({ open, onOpenChange, userId, context }: JournalDr
   );
 
   return (
-    <div className={`fixed inset-0 z-[60] ${open ? "pointer-events-auto" : "pointer-events-none"}`} aria-hidden={!open}>
+    <div className={`fixed inset-0 z-[60] ${open ? "pointer-events-auto" : "pointer-events-none"}`} aria-hidden={!open} data-testid="journal-drawer">
       {/* Backdrop */}
       <div
         className={`absolute inset-0 bg-black/20 transition-opacity ${open ? "opacity-100" : "opacity-0"}`}
@@ -119,12 +185,13 @@ export function JournalDrawer({ open, onOpenChange, userId, context }: JournalDr
             <div>
               <p className="text-[10px] uppercase tracking-[0.35em] text-[#A08F82]">{status.title}</p>
               <h2 className="text-base font-semibold text-[#1F1F1F]">
-                {context?.theme ? `${status.relatedPrefix} ${context.theme}` : "Notează ce este important pentru tine acum."}
+                {context?.theme ? `${status.relatedPrefix} ${context.theme}` : "Noteaza ceea ce este interesant si util."}
               </h2>
             </div>
             <button
               type="button"
               aria-label="Închide jurnalul"
+              data-testid="journal-close"
               className="rounded-full p-1 text-[#7A6455] hover:bg-[#F6F2EE]"
               onClick={() => onOpenChange(false)}
             >
@@ -166,15 +233,152 @@ export function JournalDrawer({ open, onOpenChange, userId, context }: JournalDr
 
             <textarea
               ref={textareaRef}
-              className="min-h-[160px] md:min-h-[220px] w-full resize-none rounded-[10px] border border-[#E4D8CE] bg-white p-3 text-sm md:text-[13px] text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+              className={`min-h-[160px] md:min-h-[220px] w-full resize-none rounded-[10px] border bg-white p-3 text-sm md:text-[13px] text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#E60012] ${loadedBlink ? 'border-emerald-500 ring-2 ring-emerald-400 transition-shadow' : 'border-[#E4D8CE]'}`}
               placeholder={tabPlaceholder(activeTab)}
               value={currentText}
+              data-testid="journal-text"
               onChange={(e) => {
                 setTabText(activeTab, e.target.value);
                 scheduleSave(activeTab, context);
               }}
-              onBlur={() => void saveTab(activeTab, context)}
+              onBlur={async () => {
+                const before = (tabs[activeTab] ?? "").trim();
+                const res = await saveTab(activeTab, context);
+                if (before) setToastMsg(res === "cloud" ? "Salvat în cont" : res === "local" ? "Salvat local" : "Jurnal salvat");
+              }}
             />
+
+            {/* History for current tab */}
+            {history.length > 0 ? (
+              <div className="mt-3 rounded-[10px] border border-[#EDE6DE] bg-[#FFFBF7] p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7B6B60]">Istoric</div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                      placeholder="Caută în istoric…"
+                      className="rounded-[8px] border border-[#E4DAD1] bg-white px-2 py-1 text-[10px] text-[#2C2C2C] focus:outline-none"
+                    />
+                    <div className="inline-flex rounded-md border border-[#E4DAD1] bg-white p-0.5 text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => setHistoryScope("tab")}
+                        className={`rounded px-2 py-0.5 ${historyScope === 'tab' ? 'bg-[#FFFBF7] font-semibold text-[#2C2C2C]' : 'text-[#7B6B60]'}`}
+                        title="Doar intrările din tab-ul curent"
+                      >
+                        Doar acest tab
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHistoryScope("all")}
+                        className={`rounded px-2 py-0.5 ${historyScope === 'all' ? 'bg-[#FFFBF7] font-semibold text-[#2C2C2C]' : 'text-[#7B6B60]'}`}
+                        title="Toate intrările"
+                      >
+                        Toate
+                      </button>
+                    </div>
+                    <div className="inline-flex gap-1">
+                      <button
+                        type="button"
+                        className="rounded-[8px] border border-[#D8C6B6] px-2 py-1 text-[10px] text-[#2C2C2C] hover:border-[#2C2C2C]"
+                        onClick={async () => {
+                          const content = historyFiltered
+                            .map((h) => `${new Date(h.ms).toLocaleString()}\n${h.text}`)
+                            .join("\n\n---\n\n");
+                          try {
+                            await navigator.clipboard.writeText(content);
+                            setToastMsg("Istoric copiat");
+                          } catch {
+                            setToastMsg("Nu am putut copia");
+                          }
+                        }}
+                        title="Copiază în clipboard"
+                      >
+                        Copiază
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-[8px] border border-[#D8C6B6] px-2 py-1 text-[10px] text-[#2C2C2C] hover:border-[#2C2C2C]"
+                        onClick={() => {
+                          const now = new Date();
+                          const pad = (n: number) => String(n).padStart(2, '0');
+                          const fname = `journal-history-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.txt`;
+                          const content = historyFiltered
+                            .map((h) => `${new Date(h.ms).toLocaleString()}\n${h.text}`)
+                            .join("\n\n---\n\n");
+                          const blob = new Blob([content], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = fname;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }}
+                        title="Descarcă .txt"
+                      >
+                        Descarcă .txt
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <ul className="space-y-2">
+                  {historyFiltered.map((h, idx) => (
+                    <li key={`${h.ms}-${idx}`} className="border-b border-[#F0E8E0] pb-2 last:border-0 last:pb-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          {historyScope === 'all' ? (
+                            <div className="mb-0.5 text-[10px] uppercase tracking-[0.14em] text-[#A08F82]">{tabIdLabel(h.tabId)}</div>
+                          ) : null}
+                          <p className="text-[11px] leading-relaxed text-[#2C2C2C]" title={h.text}>{h.preview}</p>
+                        </div>
+                        <button
+                          type="button"
+                          className="shrink-0 rounded-[8px] border border-[#D8C6B6] px-2 py-0.5 text-[10px] text-[#2C2C2C] hover:border-[#2C2C2C]"
+                          onClick={() => {
+                            setTabText(activeTab, h.text);
+                            scheduleSave(activeTab, context);
+                            try {
+                              textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              textareaRef.current?.focus();
+                            } catch {}
+                            setLoadedBlink(true);
+                            setTimeout(() => setLoadedBlink(false), 700);
+                            setToastMsg('Încărcat în editor');
+                          }}
+                          title="Încarcă în editor"
+                        >
+                          Încarcă
+                        </button>
+                        <button
+                          type="button"
+                          className="shrink-0 rounded-[8px] border border-[#F0B8B8] px-2 py-0.5 text-[10px] text-[#8A1F11] hover:border-[#B8000E]"
+                          onClick={async () => {
+                            await deleteRecentEntry({ text: h.text, timestamp: new Date(h.ms) }, userId ?? undefined);
+                            setToastMsg('Șters');
+                          }}
+                          title="Șterge intrarea"
+                        >
+                          Șterge
+                        </button>
+                      </div>
+                      <p className="mt-1 text-[10px] text-[#A08F82]">
+                        {(() => {
+                          try {
+                            return new Date(h.ms).toLocaleString();
+                          } catch {
+                            return String(h.ms);
+                          }
+                        })()}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
           <footer className="border-t border-[#F0E6DA] p-3 text-[10px] text-[#7A6455]">
             <div className="flex items-center justify-between gap-2">
@@ -203,6 +407,11 @@ export function JournalDrawer({ open, onOpenChange, userId, context }: JournalDr
           </footer>
         </div>
       </aside>
+      {toastMsg ? (
+        <div className="fixed bottom-4 left-0 right-0 mx-auto max-w-md px-4">
+          <Toast message={toastMsg} okLabel="OK" onClose={() => setToastMsg(null)} />
+        </div>
+      ) : null}
     </div>
   );
 }

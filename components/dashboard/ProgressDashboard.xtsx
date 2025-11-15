@@ -6,10 +6,16 @@ import type { ProgressFact } from "@/lib/progressFacts";
 import { adaptProgressFacts } from "@/lib/progressAdapter";
 import { getDailyInsight } from "@/lib/insights";
 import type { OmniBlock } from "@/lib/omniIntel";
+import { computeOmniFlex, computeOmniScope } from "@/lib/dashboardMetrics";
 
 import { motion, type Variants } from "framer-motion";
+import Link from "next/link";
+import { useI18n } from "@/components/I18nProvider";
+import { getString } from "@/lib/i18nGetString";
+import { useProfile } from "@/components/ProfileProvider";
+import { useMemo, useState } from "react";
 import WeeklyTrendsChart from "@/components/charts/WeeklyTrendsChart";
-import { extractSessions, computeWeeklyBuckets } from "@/lib/progressAnalytics";
+import { extractSessions, computeWeeklyBuckets, computeTodayBucket, computeWeeklyCounts, computeTodayCounts } from "@/lib/progressAnalytics";
 
 // ------------------------------------------------------
 // Animations
@@ -52,8 +58,22 @@ export default function ProgressDashboard({
   demoFacts?: ProgressFact;
 }) {
   const { data: liveFacts, loading: liveLoading } = useProgressFacts(profileId);
+  const { profile } = useProfile();
   const facts = demoFacts ?? liveFacts;
   const loading = demoFacts ? false : liveLoading;
+  const { t, lang } = useI18n();
+  // Hooks must be declared before any early returns
+  const [timeframe, setTimeframe] = useState<"day" | "week">("day");
+  const [metric, setMetric] = useState<"min" | "count">("min");
+  const [achvDismissed, setAchvDismissed] = useState(false);
+  const showAchv = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const omni = (facts?.omni as OmniBlock | undefined) ?? undefined;
+    const score = (omni?.kuno?.averagePercent ?? omni?.kuno?.knowledgeIndex ?? 0) as number;
+    const hasInsights = Array.isArray(profile?.simulatedInsights) && (profile?.simulatedInsights?.length ?? 0) > 0;
+    const dismissed = window.localStorage.getItem("omni_onboarding_achv_dismissed") === "1";
+    return score > 0 && hasInsights && !dismissed && !achvDismissed;
+  }, [facts, profile?.simulatedInsights, achvDismissed]);
 
   // Loading state
   if (loading) {
@@ -69,31 +89,7 @@ export default function ProgressDashboard({
     );
   }
 
-  // Empty-state: ai nevoie de cel puțin intenții + o evaluare
-  const hasEvaluation = Boolean(facts?.evaluation);
-  const hasIntent = Boolean(facts?.intent);
-  if (!hasEvaluation || !hasIntent) {
-    const missing: string[] = [];
-    if (!hasIntent) missing.push("intenții");
-    if (!hasEvaluation) missing.push("evaluare");
-    return (
-      <section className="w-full bg-[#FDFCF9] px-3 py-5 lg:px-5">
-        <h1 className="mb-3 text-lg font-bold text-[#2C2C2C] lg:mb-4 lg:text-2xl">
-          OmniMental Progress
-        </h1>
-        <Card className="rounded-2xl border border-[#E4DAD1] bg-white/90 px-4 py-6 text-sm text-[#6A6A6A] shadow-sm">
-          Nu avem încă suficiente date salvate pentru a construi dashboard-ul.
-          Completează cel puțin o evaluare și o sesiune de intenții pentru a
-          vedea progresul aici.
-          {!!missing.length && (
-            <p className="mt-2 text-xs text-[#A08F82]">
-              Lipsesc: {missing.join(", ")}
-            </p>
-          )}
-        </Card>
-      </section>
-    );
-  }
+  // No hard gating: render the dashboard with safe fallbacks even if some data is missing
 
   const prog = adaptProgressFacts(facts);
   const insight = getDailyInsight(prog.strengths.dominantTheme);
@@ -105,26 +101,45 @@ export default function ProgressDashboard({
     1;
 
   const weekly = computeWeeklyBuckets(sessions, refMs);
+  const weeklyCounts = computeWeeklyCounts(sessions, refMs);
+  const today = computeTodayBucket(sessions, refMs);
+  const todayCounts = computeTodayCounts(sessions, refMs);
 
   // ---- Profile indices from Omni block ----
   const omni: OmniBlock | undefined = facts?.omni as OmniBlock | undefined;
   const omniIntelScore =
     (omni?.omniIntelScore as number | undefined) ??
     Math.round((prog.indices.clarity + prog.indices.calm + prog.indices.energy) / 3);
-  const omniCunoScore = (omni?.kuno?.averagePercent ?? omni?.kuno?.knowledgeIndex ?? 0) as number;
-  const motivationIdx = (omni?.scope?.motivationIndex ?? omni?.scope?.directionMotivationIndex ?? 0) as number;
+  let omniCunoScore = (omni?.kuno?.averagePercent ?? omni?.kuno?.knowledgeIndex ?? 0) as number;
+  if (!omniCunoScore && typeof window !== 'undefined') {
+    try {
+      const v = window.localStorage.getItem('omnimental_kuno_guest_percent');
+      const n = v ? Number(v) : 0;
+      if (Number.isFinite(n) && n > 0) omniCunoScore = Math.round(n);
+    } catch {}
+  }
+  const omniScopeComp = computeOmniScope(facts as unknown as Record<string, unknown>);
+  const motivationIdx = omniScopeComp.score;
   const omniAbilScore = (omni?.abil?.practiceIndex ?? omni?.abil?.skillsIndex ?? 0) as number;
-  const omniFlowScore = (omni?.flow?.flowIndex ?? omni?.intel?.consistencyIndex ?? 0) as number;
+  const omniFlexComp = computeOmniFlex(facts as unknown as Record<string, unknown>);
+  const omniFlowScore = omniFlexComp.score;
 
   const quest = (() => {
     const q = facts?.quests?.items?.[0] as { title?: string; body?: string } | undefined;
-    if (q) return { title: q.title ?? "Quest of the Day", text: q.body ?? "" };
+    const fallbackTitle = getString(t, "dashboard.todayQuest", lang === "ro" ? "Provocarea de azi" : "Today’s quest");
+    if (q) {
+      const title = q.title && q.title.trim().length ? q.title : fallbackTitle;
+      const text = q.body ?? "";
+      return { title, text };
+    }
     return {
-      title: "Quest of the Day",
+      title: fallbackTitle,
       text:
         "Alege un moment concret din următoarele 24 de ore în care să aplici o tehnică de respirație sau de focus și notează ce observi în corp și în minte.",
     };
   })();
+
+  // Onboarding achievement banner state handled above to satisfy hooks rules
 
   return (
     <motion.section
@@ -141,6 +156,7 @@ export default function ProgressDashboard({
 
       {/* CARD CONTAINER – tot dashboard-ul într-un singur card */}
       <Card className="rounded-2xl border border-[#E4DAD1] bg-white/90 px-3 py-4 shadow-[0_4px_18px_rgba(0,0,0,0.04)] lg:px-4 lg:py-5">
+        {/* GRID PRINCIPAL: 3 coloane */}
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.05fr_1.25fr_0.8fr] lg:gap-4">
           {/* --------------------------------------------------------
               LEFT COLUMN – pie chart + weekly
@@ -182,24 +198,89 @@ export default function ProgressDashboard({
               </Card>
             </motion.div>
 
-            {/* Weekly Trends – cu zilele vizibile (gestionezi în WeeklyTrendsChart) */}
+            {/* Weekly Trends – toggle Day/Week and Minutes/Sessions */}
             <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
               <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
-                <h3 className="mb-2 text-sm font-semibold text-[#2C2C2C]">
-                  Weekly Trends
+                <h3 className="mb-2 flex items-center gap-1 text-sm font-semibold text-[#2C2C2C]">
+                  <span>
+                    {getString(t, "dashboard.trendsTitle", lang === "ro" ? "Trend săptămânal" : "Weekly trends")} — {timeframe === "day" ? getString(t, "dashboard.trendsToggle.day", lang === "ro" ? "Azi" : "Today") : getString(t, "dashboard.trendsToggle.week", lang === "ro" ? "Săptămână" : "Week")} • {metric === "min" ? getString(t, "dashboard.trendsToggle.minutes", lang === "ro" ? "Minute" : "Minutes") : getString(t, "dashboard.trendsToggle.sessions", lang === "ro" ? "Sesiuni" : "Sessions")}
+                  </span>
+                  <InfoTooltip
+                    label={lang === 'ro' ? 'Despre trend' : 'About trends'}
+                    items={lang === 'ro' ? [
+                      'Alege intervalul: Azi / Săptămână',
+                      'Alege metrica: Minute / Sesiuni',
+                    ] : [
+                      'Pick range: Today / Week',
+                      'Pick metric: Minutes / Sessions',
+                    ]}
+                  />
                 </h3>
-                <p className="mb-1 text-[11px] text-[#7B6B60]">
-                  Evoluția activităților pe ultimele 7 zile.
-                </p>
-                <div className="h-[170px]">
-                  <WeeklyTrendsChart data={weekly} />
+                <div className="mb-1 flex items-center justify-between">
+                  <p className="text-[11px] text-[#7B6B60]">{lang === "ro" ? "Evoluția activităților" : "Activities evolution"}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setTimeframe("day")}
+                        className={`px-2 py-0.5 rounded ${timeframe === "day" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                        data-testid="trend-toggle-day"
+                      >
+                        {getString(t, "dashboard.trendsToggle.day", lang === "ro" ? "Azi" : "Today")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTimeframe("week")}
+                        className={`px-2 py-0.5 rounded ${timeframe === "week" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                        data-testid="trend-toggle-week"
+                      >
+                        {getString(t, "dashboard.trendsToggle.week", lang === "ro" ? "Săptămână" : "Week")}
+                      </button>
+                    </div>
+                    <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setMetric("min")}
+                        className={`px-2 py-0.5 rounded ${metric === "min" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                        data-testid="trend-toggle-minutes"
+                      >
+                        {getString(t, "dashboard.trendsToggle.minutes", lang === "ro" ? "Minute" : "Minutes")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMetric("count")}
+                        className={`px-2 py-0.5 rounded ${metric === "count" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                        data-testid="trend-toggle-sessions"
+                      >
+                        {getString(t, "dashboard.trendsToggle.sessions", lang === "ro" ? "Sesiuni" : "Sessions")}
+                      </button>
+                    </div>
+                  </div>
                 </div>
+                <div className="h-[135px]" data-testid="trends-chart">
+                  <WeeklyTrendsChart
+                    data={
+                      timeframe === "day"
+                        ? metric === "min"
+                          ? today
+                          : todayCounts
+                        : metric === "min"
+                        ? weekly
+                        : weeklyCounts
+                    }
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-[#7B6B60]">
+                  {metric === "min"
+                    ? getString(t, "dashboard.trendsToggle.minutes", lang === "ro" ? "Minute" : "Minutes")
+                    : getString(t, "dashboard.trendsToggle.sessions", lang === "ro" ? "Sesiuni" : "Sessions")}
+                </p>
               </Card>
             </motion.div>
           </div>
 
           {/* --------------------------------------------------------
-              CENTER COLUMN – welcome + Omni-Intel + insight + quest + indices
+              CENTER COLUMN – welcome + Omni-Intel + insight + quest
           -------------------------------------------------------- */}
           <div className="order-1 space-y-3 lg:order-2">
             {/* Row 1: Welcome + Omni-Intel Score */}
@@ -207,12 +288,14 @@ export default function ProgressDashboard({
               <motion.div variants={fadeDelayed(0.08)} {...hoverScale}>
                 <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
                   <h2 className="mb-1 text-sm font-semibold text-[#2C2C2C] lg:text-base">
-                    Welcome back
+                    {getString(t, "dashboard.welcomeBack", lang === "ro" ? "Bine ai revenit" : "Welcome back")}
                   </h2>
-                  <p className="text-xs text-[#6A6A6A] lg:text-sm">
+                  <p className="text-xs text-[#6A6A6A]">
                     Ultima evaluare:{" "}
                     {(() => {
-                      const ms = toMsLocal(facts?.evaluation?.updatedAt ?? facts?.updatedAt);
+                      const ms = toMsLocal(
+                        facts?.evaluation?.updatedAt ?? facts?.updatedAt,
+                      );
                       return ms ? new Date(ms).toLocaleString() : "—";
                     })()}
                   </p>
@@ -221,13 +304,13 @@ export default function ProgressDashboard({
 
               <motion.div variants={fadeDelayed(0.1)} {...hoverScale}>
                 <Card className="flex h-full flex-col items-center justify-center rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-3 shadow-sm">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#7B6B60] mb-1">
+                  <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.16em] text-[#7B6B60]">
                     Omni-Intel
                   </p>
                   <p className="text-2xl font-bold text-[#C24B17]">
                     {omniIntelScore}
                   </p>
-                  <p className="mt-1 text-[11px] text-[#7B6B60] text-center">
+                  <p className="mt-1 text-center text-[11px] text-[#7B6B60]">
                     Indice general de claritate, calm și energie.
                   </p>
                 </Card>
@@ -245,20 +328,20 @@ export default function ProgressDashboard({
                     transition={{ duration: 0.35 }}
                     className="mb-2 text-sm font-semibold text-[#2C2C2C]"
                   >
-                    Insight of the Day
+                    {getString(t, "dashboard.insightTitle", lang === "ro" ? "Insightul zilei" : "Insight of the Day")}
                   </motion.h3>
 
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.45 }}
-                    className="text-sm leading-relaxed text-[#3A3A3A]"
+                    className="text-[11px] leading-relaxed text-[#2C2C2C] sm:text-xs"
                   >
                     {insight.text}
                   </motion.p>
 
                   <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-[#A08F82]">
-                    Theme: {insight.theme}
+                    {getString(t, 'dashboard.themeLabel', lang === 'ro' ? 'Temă' : 'Theme')}: {insight.theme}
                   </p>
                 </Card>
               </motion.div>
@@ -267,49 +350,35 @@ export default function ProgressDashboard({
               <motion.div variants={fadeDelayed(0.2)} {...hoverScale}>
                 <Card className="flex h-full flex-col justify-between rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-3 shadow-sm lg:p-4">
                   <h3 className="mb-2 text-sm font-semibold text-[#2C2C2C]">
-                    {quest.title}
+                    {getString(t, "dashboard.todayQuest", lang === "ro" ? "Provocarea de azi" : "Today’s quest")}
                   </h3>
-                  <p className="text-sm leading-relaxed text-[#3A3A3A]">
+                  {quest.title && (
+                    <p className="mb-1 text-xs font-semibold text-[#7B6B60]">
+                      {quest.title}
+                    </p>
+                  )}
+                  <p className="text-[11px] leading-relaxed text-[#2C2C2C] sm:text-xs">
                     {quest.text}
                   </p>
                   <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-[#A08F82]">
-                    Aplică azi, în viața reală.
+                    {lang === "ro" ? "Aplică azi, în viața reală." : "Apply today, in real life."}
                   </p>
                 </Card>
               </motion.div>
             </div>
-
-            {/* Row 3: Profile indices (în loc de Activities Distribution) */}
-            <motion.div variants={fadeDelayed(0.24)} {...hoverScale}>
-              <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
-                <h3 className="mb-2 text-sm font-semibold text-[#2C2C2C]">
-                  Profile indices
-                </h3>
-                <p className="mb-2 text-[11px] text-[#7B6B60]">
-                  Patru axe principale: cunoaștere, motivație, abilități și
-                  adaptare (flow).
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Metric label="Omni-Cuno" value={omniCunoScore} />
-                  <Metric label="Motivare IDX" value={motivationIdx} />
-                  <Metric label="Omni-Abil" value={omniAbilScore} />
-                  <Metric label="Omni-Flow" value={omniFlowScore} />
-                </div>
-              </Card>
-            </motion.div>
           </div>
 
           {/* --------------------------------------------------------
               RIGHT COLUMN – compact KPIs + recent entries
           -------------------------------------------------------- */}
           <div className="order-3 ml-auto space-y-2.5 lg:order-3 lg:max-w-[250px] xl:max-w-[280px]">
-            {/* KPIs într-un singur card, grid 2x2 */}
+            {/* KPIs într-un singur card, grid 2x2 – titlul jos */}
             <motion.div variants={fadeDelayed(0.18)} {...hoverScale}>
-              <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
+              <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
                 <h4 className="mb-2 text-sm font-semibold text-[#2C2C2C]">
                   Practice snapshot
                 </h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 mb-2">
                   <Metric label="Reflections" value={prog.reflectionCount} />
                   <Metric label="Breathing min" value={prog.breathingCount} />
                   <Metric label="Focus drills" value={prog.drillsCount} />
@@ -320,52 +389,250 @@ export default function ProgressDashboard({
 
             {/* RECENT ENTRIES */}
             <motion.div variants={fadeDelayed(0.24)} {...hoverScale}>
-              <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3.5 shadow-sm">
-                <h4 className="mb-2 text-sm font-semibold text-[#2C2C2C]">
-                  Recent Entries
-                </h4>
+              <Card className="min-w-0 rounded-xl border border-[#E4DAD1] bg-white p-3.5 shadow-sm">
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-[#2C2C2C]">
+                    {lang === 'ro' ? 'Însemnări recente' : 'Recent Entries'}
+                  </h4>
+                  <a
+                    href="/progress?open=journal"
+                    className="rounded-[10px] border border-[#2C2C2C] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                  >
+                    {lang === 'ro' ? 'Jurnal' : 'Journal'}
+                  </a>
+                </div>
 
                 {!facts?.recentEntries?.length && (
-                  <p className="text-xs text-[#6A6A6A]">No entries yet.</p>
+                  <p className="rounded-[10px] border border-[#F0E8E0] bg-[#FFFBF7] px-2.5 py-2 text-xs text-[#6A6A6A]">
+                    {lang === 'ro' ? 'Nimic deocamdată. Scrie un jurnal sau finalizează un exercițiu.' : 'Nothing yet. Add a journal entry or complete a practice.'}
+                  </p>
                 )}
 
-                {facts?.recentEntries
-                  ?.slice(0, 3)
-                  .map(
-                    (
-                      entry: { text?: string; timestamp?: unknown },
-                      i: number,
-                    ) => (
-                      <div
-                        key={i}
-                        className="mb-2.5 border-b border-[#F0E8E0] pb-2 last:border-b-0 last:pb-0"
-                      >
-                        <p className="text-xs text-[#2C2C2C]">
-                          {entry.text ?? "—"}
+                <div className="max-h-40 overflow-auto pr-1">
+                  {(() => {
+                    type EntryLike = { text?: string; timestamp?: unknown };
+                    type EntryWithMeta = EntryLike & { _ms: number; _text: string };
+                    const list: EntryWithMeta[] = Array.isArray(facts?.recentEntries)
+                      ? (facts!.recentEntries as EntryLike[]).map((e) => ({
+                          ...e,
+                          _ms: toMsLocal(e?.timestamp),
+                          _text: String(e?.text ?? '').trim(),
+                        }))
+                      : [];
+                    const sorted = list.sort((a, b) => (b._ms ?? 0) - (a._ms ?? 0));
+                    const seen = new Set<string>();
+                    const dedup: EntryWithMeta[] = [];
+                    for (const e of sorted) {
+                      const key = e._text;
+                      if (key && !seen.has(key)) {
+                        seen.add(key);
+                        dedup.push(e);
+                      }
+                    }
+                    return dedup.slice(0, 2).map((entry, i) => (
+                      <div key={i} className="mb-2.5 border-b border-[#F0E8E0] pb-2 last:border-b-0 last:pb-0">
+                        <p className="truncate text-xs text-[#2C2C2C]" title={entry.text ?? '—'}>
+                          {(() => {
+                            const full = String(entry.text ?? '—');
+                            const MAX_PREVIEW = 60;
+                            return full.length > MAX_PREVIEW ? full.slice(0, MAX_PREVIEW).trimEnd() + '…' : full;
+                          })()}
                         </p>
                         <p className="mt-1 text-[10px] text-[#A08F82]">
                           {(() => {
                             const v = entry.timestamp;
-                            if (!v) return "";
+                            if (!v) return '';
                             const ms = toMsLocal(v);
                             if (ms) return new Date(ms).toLocaleString();
                             return String(v);
                           })()}
                         </p>
                       </div>
-                    ),
-                  )}
+                    ));
+                  })()}
+                </div>
               </Card>
             </motion.div>
           </div>
         </div>
+
+        {/* --------------------------------------------------------
+            ROW SEPARAT – PROFILE INDICES, FULL-WIDTH SUB GRID
+        -------------------------------------------------------- */}
+        <motion.div
+          variants={fadeDelayed(0.28)}
+          {...hoverScale}
+          className="mt-4"
+        >
+          <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
+              <h3 className="mb-2 text-sm font-semibold text-[#2C2C2C]">{lang === "ro" ? "Profile indices" : "Profile indices"}</h3>
+            <p className="mb-2 text-[11px] text-[#7B6B60]">
+              Patru axe principale: cunoaștere, motivație, abilități și
+              adaptare (flow).
+            </p>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-3">
+              <Metric label="Omni Kuno" value={omniCunoScore} badge={(() => { try { return (omniCunoScore > 0 && Number((omni?.kuno?.completedTests ?? 0) as number) === 1) ? (lang === 'ro' ? 'Nou' : 'New') : undefined; } catch { return undefined; } })()} />
+              <Metric label="Omni-Scop" value={motivationIdx} />
+              <Metric label="Omni-Abil" value={omniAbilScore} />
+              <Metric label="Omni-Flow" value={omniFlowScore} />
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Link href="/kuno" className="inline-flex items-center rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]">
+                {lang === 'ro' ? 'Exersează Omni‑Kuno' : 'Practice Omni‑Kuno'}
+              </Link>
+              <Link href="/kuno/learn" className="inline-flex items-center rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]">
+                {lang === 'ro' ? 'Învață Omni‑Kuno' : 'Learn Omni‑Kuno'}
+              </Link>
+            </div>
+            {/* Mastery per category (Omni Kuno) */}
+            {(() => {
+              type MasteryMap = Record<string, number>;
+              const kuno = omni?.kuno as unknown as { masteryByCategory?: MasteryMap } | undefined;
+              let mastery: MasteryMap | undefined = kuno?.masteryByCategory;
+              // Fallback for demo/guest: read from localStorage if present
+              if ((!mastery || Object.keys(mastery).length === 0) && typeof window !== 'undefined') {
+                try {
+                  const raw = window.localStorage.getItem('omnimental_kuno_guest_mastery');
+                  if (raw) mastery = JSON.parse(raw) as MasteryMap;
+                } catch {}
+              }
+              if (!mastery || Object.keys(mastery).length === 0) return null;
+              const order = ['clarity','calm','energy','relationships','performance','health'];
+              const labelMap: Record<string, string> = {
+                clarity: lang === 'ro' ? 'Claritate' : 'Clarity',
+                calm: lang === 'ro' ? 'Calm' : 'Calm',
+                energy: lang === 'ro' ? 'Energie' : 'Energy',
+                relationships: lang === 'ro' ? 'Relații' : 'Relationships',
+                performance: lang === 'ro' ? 'Performanță' : 'Performance',
+                health: lang === 'ro' ? 'Sănătate' : 'Health',
+                general: lang === 'ro' ? 'General' : 'General',
+              };
+              return (
+                <div className="mt-3">
+                  <h4 className="mb-1 text-[12px] font-semibold text-[#2C2C2C]">{lang === 'ro' ? 'Măiestrie pe categorii' : 'Mastery by category'}</h4>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {order
+                      .filter((k) => typeof mastery[k] === 'number')
+                      .map((k) => {
+                        const v = Math.max(0, Math.min(100, Math.round(Number(mastery[k]))));
+                        return (
+                          <div key={k} className="flex items-center gap-2">
+                            <span className="w-28 shrink-0 text-[11px] text-[#7B6B60]">{labelMap[k] ?? k}</span>
+                            <div className="relative h-2 w-full rounded bg-[#F1EAE3]">
+                              <div className="absolute left-0 top-0 h-2 rounded bg-[#C07963]" style={{ width: `${v}%` }} />
+                            </div>
+                            <span className="w-10 shrink-0 text-right text-[11px] text-[#7B6B60]">{v}%</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {(() => {
+              const gm = (omni?.kuno as unknown as { gamification?: { xp?: number; badges?: string[] } } | undefined)?.gamification;
+              if (!gm || (typeof gm.xp !== 'number' && !(gm.badges && gm.badges.length))) return null;
+              const level = typeof gm.xp === 'number' ? Math.floor(Math.max(0, gm.xp) / 50) : 0;
+              return (
+                <div className="mt-3 rounded-[10px] border border-[#E4DAD1] bg-[#FFFBF7] px-3 py-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[12px] text-[#2C2C2C]">
+                      {lang === 'ro' ? 'XP' : 'XP'}: <span className="font-semibold">{gm.xp ?? 0}</span> · {lang === 'ro' ? 'Nivel' : 'Level'} <span className="font-semibold">{level}</span>
+                    </p>
+                    {Array.isArray(gm.badges) && gm.badges.length ? (
+                      <div className="flex flex-wrap gap-1">
+                        {gm.badges.slice(0, 5).map((b, i) => (
+                          <span key={`${b}-${i}`} className="rounded-full border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]">{b}</span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {(() => {
+              const k = omni?.kuno as unknown as { readinessIndex?: number; signals?: Record<string, string> } | undefined;
+              const readiness = typeof k?.readinessIndex === 'number' ? Math.round(k!.readinessIndex!) : null;
+              const signals = k?.signals ?? undefined;
+              if (readiness == null && (!signals || Object.keys(signals).length === 0)) return null;
+              const items = signals ? Object.entries(signals).slice(0, 2) : [];
+              return (
+                <div className="mt-3 rounded-[10px] border border-[#E4DAD1] bg-white px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[12px] font-medium text-[#2C2C2C]">{lang === 'ro' ? 'Semnale & Disponibilitate' : 'Signals & Readiness'}</p>
+                    {readiness != null ? (
+                      <span className="rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-0.5 text-[11px] text-[#7B6B60]">{lang === 'ro' ? 'Readiness' : 'Readiness'}: {readiness}</span>
+                    ) : null}
+                  </div>
+                  {items.length ? (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {items.map(([key, val], i) => (
+                        <span key={`${key}-${val}-${i}`} className="rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-0.5 text-[10px] text-[#7B6B60]">
+                          {key}: {val}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })()}
+          </Card>
+        </motion.div>
+
+        {showAchv ? (
+          <div className="mt-3 rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] p-3 text-sm text-[#1F3C2F]">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-medium">{lang === "ro" ? "Prima treaptă atinsă: Claritate" : "First milestone reached: Clarity"}</p>
+              <div className="flex items-center gap-2">
+                <a
+                  href="/antrenament"
+                  className="rounded border border-[#1F3C2F] px-2 py-0.5 text-[11px] hover:bg-[#1F3C2F] hover:text-white"
+                >
+                  {lang === "ro" ? "Începe antrenamentul" : "Go to Training"}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== "undefined") window.localStorage.setItem("omni_onboarding_achv_dismissed", "1");
+                    setAchvDismissed(true);
+                  }}
+                  className="rounded border border-[#1F3C2F] px-2 py-0.5 text-[11px]"
+                >
+                  {lang === "ro" ? "OK" : "OK"}
+                </button>
+              </div>
+            </div>
+            <p className="mt-1 text-[12px] text-[#1F3C2F]">
+              {lang === "ro"
+                ? "Ai trecut prin primele două etape. Continuă cu exercițiile scurte pentru a stabiliza progresul."
+                : "You’ve completed the first two steps. Continue with short exercises to stabilize progress."}
+            </p>
+          </div>
+        ) : null}
+
+        {Array.isArray(profile?.simulatedInsights) && profile!.simulatedInsights!.length > 0 ? (
+          <motion.div variants={fadeDelayed(0.3)} {...hoverScale} className="mt-3">
+            <Card className="rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm">
+              <h3 className="mb-2 text-sm font-semibold text-[#2C2C2C]">{getString(t, "dashboard.initialInsights", lang === "ro" ? "Insight‑uri inițiale" : "Initial insights")}</h3>
+              <div className="flex flex-wrap gap-2">
+                {profile!.simulatedInsights!.map((tag, i) => (
+                  <span key={`${tag}-${i}`} className="rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2.5 py-0.5 text-[11px] text-[#2C2C2C]">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
+        ) : null}
       </Card>
     </motion.section>
   );
 }
 
 // ------------------------------------------------------
-// INTERNAL PIE (donut) – fără librărie externă, doar CSS
+// INTERNAL PIE (donut)
 // ------------------------------------------------------
 function InternalPie({
   clarity,
@@ -379,7 +646,6 @@ function InternalPie({
   const total = Math.max(1, clarity + calm + energy);
   const cPct = (clarity / total) * 100;
   const calmPct = (calm / total) * 100;
-  // third segment inferred implicitly in CSS gradient
 
   const bg = `conic-gradient(
     #7A6455 0 ${cPct}%,
@@ -426,10 +692,15 @@ function LegendRow({
 // ------------------------------------------------------
 // METRIC TILE
 // ------------------------------------------------------
-function Metric({ label, value }: { label: string; value: number }) {
+function Metric({ label, value, badge }: { label: string; value: number; badge?: string }) {
   return (
-    <div className="rounded-lg border border-[#EFE3D7] bg-[#FCF7F1] px-2 py-1.5 text-left">
-      <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#7B6B60]">
+    <div className="relative rounded-lg border border-[#EFE3D7] bg-[#FCF7F1] px-2 py-1.5 text-left">
+      {badge ? (
+        <span className="absolute -right-1 -top-1 rounded-full border border-[#E4DAD1] bg-white px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#C07963]">
+          {badge}
+        </span>
+      ) : null}
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7B6B60]">
         {label}
       </p>
       <p className="text-base font-bold text-[#C24B17]">{value}</p>

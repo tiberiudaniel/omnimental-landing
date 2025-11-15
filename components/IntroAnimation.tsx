@@ -131,38 +131,16 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
     const startDelay = setTimeout(() => {
       createWord();
       const interval = setInterval(createWord, 500);
-
-      // zoom-out fade and exit after 10s
-      const timeout = setTimeout(() => {
-        clearInterval(interval);
-
-        gsap.to(container, {
-            filter: "blur(20px)",
-            opacity: 0,
-            duration: 1.6,
-            ease: "power2.out",
-            onComplete: safeComplete,
-            });
-      }, 10000);
-
+      // No auto exit; user advances via START. Clean up interval on unmount.
       return () => {
         clearInterval(interval);
-        clearTimeout(timeout);
       };
     }, 100);
 
     return () => clearTimeout(startDelay);
   }, [safeComplete, wordsList]);
 
-  useEffect(() => {
-    if (!imageLoaded) return;
-    const fallbackTimer = setTimeout(() => {
-      safeComplete();
-    }, 12000);
-    return () => {
-      clearTimeout(fallbackTimer);
-    };
-  }, [imageLoaded, safeComplete]);
+  // Remove auto-complete fallback; user advances explicitly.
 
   return (
     <div className="intro-container fixed inset-0 z-50 flex items-center justify-center bg-[#FDFCF9]/90 backdrop-blur-sm opacity-100">

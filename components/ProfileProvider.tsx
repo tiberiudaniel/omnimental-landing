@@ -21,6 +21,7 @@ type ProfileRecord = {
   accessTier: AccessTier;
   selection?: "none" | "individual" | "group";
   simulatedInsights?: string[];
+  experienceOnboardingCompleted?: boolean;
 };
 
 type ProfileContextValue = {
@@ -43,6 +44,7 @@ async function ensureProfileDocument(uid: string, email: string | null | undefin
     createdAt: Timestamp.now(),
     accessTier: "public" as const,
     selection: "none" as const,
+    experienceOnboardingCompleted: false as const,
   };
   await setDoc(profileRef, payload);
   return payload;
@@ -84,10 +86,21 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
             accessTier: data.accessTier ?? "public",
             selection: selectionValue,
             simulatedInsights,
+            experienceOnboardingCompleted: (data as { experienceOnboardingCompleted?: boolean }).experienceOnboardingCompleted ?? false,
           });
         }
       } catch (error) {
-        console.error("profile load failed", error);
+        try {
+          const search = typeof window !== 'undefined' ? window.location.search : '';
+          if (search.includes('e2e=1') || search.includes('demo=1')) {
+            console.warn("profile load failed", error);
+          } else {
+            // Keep default severity outside test/demo
+            console.error("profile load failed", error);
+          }
+        } catch {
+          console.error("profile load failed", error);
+        }
         if (active) {
           setProfile({
             id: user.uid,

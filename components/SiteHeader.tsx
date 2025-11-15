@@ -78,14 +78,61 @@ export default function SiteHeader({
     return pathname.startsWith(path);
   };
 
-  const headerPad = compact ? "p-2" : "p-3";
+  // Decide if we should show the Onboarding entry in the header.
+  // Rule of thumb: keep it visible for new/authenticated users and hide it after a generous grace window.
+  const showOnboardingNav = (() => {
+    // Always show for guests or in wizardMode (header has minimal chrome)
+    if (!isLoggedIn || wizardMode) return true;
+    // Allow forcing via query or localStorage when testing
+    try {
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      if (search.includes('e2e=1') || search.includes('demo=1')) return true;
+      const force = typeof window !== 'undefined' ? window.localStorage.getItem('omnimental_show_onboarding') : null;
+      if (force === '1' || force === 'true') return true;
+    } catch {}
+    // Cycles rule: hide after N cycles (default 1). Use profile field or localStorage counter.
+    let minCycles = 1;
+    try {
+      const envMin = Number(process.env.NEXT_PUBLIC_ONBOARDING_HIDE_MIN_CYCLES ?? '');
+      if (Number.isFinite(envMin) && envMin > 0) minCycles = Math.floor(envMin);
+      if (typeof window !== 'undefined') {
+        const override = Number(window.localStorage.getItem('omnimental_onboarding_required_cycles') ?? '');
+        if (Number.isFinite(override) && override > 0) minCycles = Math.floor(override);
+      }
+    } catch {}
+    try {
+      const cyclesProfile = (profile as { experienceOnboardingCycles?: number } | null)?.experienceOnboardingCycles ?? 0;
+      const cyclesLocal = typeof window !== 'undefined' ? Number(window.localStorage.getItem('omnimental_exp_onb_cycles') ?? '0') : 0;
+      const cycles = Number.isFinite(cyclesProfile) && cyclesProfile > 0 ? cyclesProfile : cyclesLocal;
+      if (cycles >= minCycles) return false; // hide after reaching the threshold
+    } catch {}
+    // Compute account age (fallback to show if missing)
+    const createdAt = (profile as { createdAt?: { toMillis?: () => number } } | null)?.createdAt;
+    const createdMs = typeof createdAt?.toMillis === 'function' ? createdAt.toMillis() : null;
+    if (!createdMs) return true;
+    // Threshold (generous by default for current testing): env override (days or hours), else 30 days
+    let thresholdMs = 30 * 24 * 60 * 60 * 1000; // 30 days
+    try {
+      const daysEnv = Number(process.env.NEXT_PUBLIC_ONBOARDING_HIDE_DAYS ?? '');
+      const hoursEnv = Number(process.env.NEXT_PUBLIC_ONBOARDING_HIDE_HOURS ?? '');
+      if (Number.isFinite(daysEnv) && daysEnv > 0) {
+        thresholdMs = daysEnv * 24 * 60 * 60 * 1000;
+      } else if (Number.isFinite(hoursEnv) && hoursEnv > 0) {
+        thresholdMs = hoursEnv * 60 * 60 * 1000;
+      }
+    } catch {}
+    const age = Date.now() - createdMs;
+    return age < thresholdMs;
+  })();
+
+  const headerPad = compact ? "p-1.5" : "p-2.5";
   const bottomMarginTop = compact ? "mt-1" : "mt-2";
   const titleSize = compact ? "text-lg" : "text-xl";
 
   return (
     <header className={`relative bg-white ${headerPad} shadow`}>
-      {/* Top row: minimal text — Auth | Guest | RO EN */}
-      <div className="flex items-center justify-end gap-2 text-[10px] text-[#4A3A30]">
+      {/* Top row: Auth | Guest | RO EN (slightly shifted left, tighter) */}
+      <div className="flex items-center justify-end gap-1.5 text-[10px] text-[#4A3A30]">
         <button
           type="button"
           onClick={
@@ -141,12 +188,12 @@ export default function SiteHeader({
       {/* Bottom row layout: logo | centered nav | journal + menu on right */}
       <div className={`${bottomMarginTop} grid grid-cols-[auto_1fr_auto] items-center gap-3`}>
         {wizardMode ? (
-          <Link href="/?step=preIntro&reset=1" className="flex items-center gap-3 shrink-0" aria-label="OmniMental">
+          <Link href="/intro" className="flex items-center gap-3 shrink-0" aria-label="OmniMental">
             <Image src="/assets/logo.jpg" alt="OmniMental logo" width={compact ? 60 : 70} height={28} priority style={{ height: "auto" }} />
             <span className={`${titleSize} font-semibold tracking-wide text-neutral-dark`}>OmniMental</span>
           </Link>
         ) : (
-          <Link href="/?step=preIntro&reset=1" className="flex items-center gap-3 shrink-0">
+          <Link href="/intro" className="flex items-center gap-3 shrink-0">
             <Image src="/assets/logo.jpg" alt="OmniMental logo" width={compact ? 60 : 70} height={28} priority style={{ height: "auto" }} />
             <span className={`${titleSize} font-semibold tracking-wide text-neutral-dark`}>OmniMental</span>
           </Link>
@@ -178,23 +225,25 @@ export default function SiteHeader({
             }`}
             aria-current={isActive("/recommendation") ? "page" : undefined}
           >
-            {typeof t("navRecommendation") === "string" ? (t("navRecommendation") as string) : (lang === "ro" ? "Recomandare" : "Recommendation")}
+            {typeof t("navRecommendation") === "string" ? (t("navRecommendation") as string) : (lang === "ro" ? "Recomandări" : "Recommendations")}
           </Link>
-          <Link
-            href="/onboarding"
-            className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-              isActive("/onboarding") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
-            }`}
-            aria-current={isActive("/onboarding") ? "page" : undefined}
-          >
-            {typeof t("navOnboarding") === "string" ? (t("navOnboarding") as string) : (lang === "ro" ? "Onboarding" : "Onboarding")}
-          </Link>
+          {showOnboardingNav ? (
+            <Link
+              href="/onboarding"
+              className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
+                isActive("/onboarding") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
+              }`}
+              aria-current={isActive("/onboarding") ? "page" : undefined}
+            >
+              {typeof t("navOnboarding") === "string" ? (t("navOnboarding") as string) : (lang === "ro" ? "Onboarding" : "Onboarding")}
+            </Link>
+          ) : null}
           </nav>
         )}
         <div className="flex items-center justify-end gap-2">
-          {!wizardMode && (profile?.selection === "individual" || profile?.selection === "group") && (
+          {!wizardMode && profile?.id && (
             <JournalTrigger
-              userId={profile?.id}
+              userId={profile.id}
               context={{ sourcePage: "header" }}
               label={lang === "ro" ? "Jurnal" : "Journal"}
               onRequireAuth={() => {

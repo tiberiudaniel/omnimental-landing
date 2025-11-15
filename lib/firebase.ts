@@ -111,13 +111,34 @@ if (typeof window !== "undefined") {
     }
   } catch {}
   const auth = getFirebaseAuth();
+  let anonTimer: number | null = null;
   onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      signInAnonymously(auth).catch((err) => {
-        console.error("Anonymous sign-in failed:", err);
-      });
-    } else {
+    // If a real user is present, clear any pending anon timer
+    if (user) {
+      if (anonTimer) {
+        try { window.clearTimeout(anonTimer); } catch {}
+        anonTimer = null;
+      }
       console.log("Signed in as:", user.uid);
+      return;
     }
+    // Avoid racing against magic-link consumption: if URL still contains oobCode, skip anon sign-in
+    try {
+      const href = window.location.href;
+      if (href.includes("oobCode=") || href.includes("mode=signIn")) {
+        return;
+      }
+    } catch {}
+    // Delay a bit to allow persisted sessions to hydrate before creating a fresh anonymous user
+    if (anonTimer) {
+      try { window.clearTimeout(anonTimer); } catch {}
+    }
+    anonTimer = window.setTimeout(() => {
+      if (!auth.currentUser) {
+        signInAnonymously(auth).catch((err) => {
+          console.error("Anonymous sign-in failed:", err);
+        });
+      }
+    }, 1200) as unknown as number;
   });
 }

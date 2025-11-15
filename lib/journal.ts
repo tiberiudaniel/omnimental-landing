@@ -1,7 +1,8 @@
 "use client";
 
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getDb, areWritesDisabled } from "./firebase";
+import { recordRecentEntry } from "./progressFacts";
 
 export type JournalTabId =
   | "SCOP_INTENTIE"
@@ -35,7 +36,7 @@ const DEFAULT_TABS: Partial<Record<JournalTabId, JournalTabContent>> = {
 
 export async function getJournalByUser(userId: string): Promise<JournalDoc> {
   const db = getDb();
-  const ref = doc(db, "journals", userId);
+  const ref = doc(db, "userJournals", userId);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
     // create lazily to avoid quota when disabled
@@ -61,7 +62,7 @@ export async function updateJournalTab(
 ): Promise<void> {
   if (areWritesDisabled()) return;
   const db = getDb();
-  const ref = doc(db, "journals", userId);
+  const ref = doc(db, "userJournals", userId);
   const update: Partial<JournalDoc> = {
     [`tabs.${tabId}`]: {
       ...content,
@@ -69,5 +70,24 @@ export async function updateJournalTab(
     } as JournalTabContent,
     updatedAt: serverTimestamp(),
   };
-  await updateDoc(ref, update as unknown as Record<string, unknown>);
+  try {
+    console.log("[Journal] trying to write to Firestore", { userId, path: `userJournals/${userId}`, tabId });
+  } catch {}
+  // Use setDoc with merge to create the document if it doesn't exist yet.
+  await setDoc(ref, update as unknown as Record<string, unknown>, { merge: true });
+  try {
+    console.log("[Journal] Firestore write OK");
+  } catch {}
+  try {
+    // Also add to progress recent entries when there is substantive text
+    const trimmed = (content.text ?? '').trim();
+    if (trimmed) {
+      await recordRecentEntry({
+        text: trimmed,
+        tabId,
+        theme: content.theme ?? null,
+        sourceBlock: content.sourceBlock ?? null,
+      }, undefined, userId);
+    }
+  } catch {}
 }

@@ -8,6 +8,7 @@ import {
 } from "@/lib/omniKnowledge";
 import { submitOmniKnowledgeAssessment } from "@/lib/submitEvaluation";
 import { recordKnowledgeViewSummary, recordOmniPatch } from "@/lib/progressFacts";
+import { useProfile } from "./ProfileProvider";
 
 const buildDefaultAnswers = () => {
   const map: Record<string, number | null> = {};
@@ -31,6 +32,7 @@ type Props = {
 };
 
 export default function OmniKnowledgeQuiz({ lang }: Props) {
+  const { profile } = useProfile();
   const [answers, setAnswers] = useState<Record<string, number | null>>(buildDefaultAnswers);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -108,7 +110,7 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
       try {
         await recordOmniPatch({
           kuno: { knowledgeIndex: score.percent, completedTests: 1 },
-        });
+        }, profile?.id);
       } catch (patchErr) {
         console.warn("omni patch (knowledgeIndex) failed", patchErr);
       }

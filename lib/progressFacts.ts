@@ -3,6 +3,7 @@
 import {
   collection,
   doc,
+  runTransaction,
   getDocs,
   limit,
   orderBy,
@@ -27,7 +28,7 @@ import type { SessionType } from "./recommendation";
 import type { DimensionScores } from "./scoring";
 import type { OmniBlock } from "./omniIntel";
 import { computeDirectionMotivationIndex, computeOmniIntelScore } from "./omniIntel";
-import { computeKunoAggregate, computeAbilityIndex, computeMotivationIndexEnhanced, computeFlowIndex } from "./dashboardMetrics";
+import { computeKunoAggregate, computeAbilityIndex, computeMotivationIndexEnhanced, computeFlowIndex, computeKunoComposite } from "./dashboardMetrics";
 import type { PracticeSessionLite } from "./progressAnalytics";
 
 // Basic write throttling to avoid rapid-fire writes that can trigger Firestore backoff
@@ -70,6 +71,17 @@ export type EvaluationScoreTotals = {
   svs: number;
 };
 
+type FireTs = { toDate: () => Date };
+
+export type RecentEntry = {
+  text: string;
+  timestamp: Date | number | FireTs;
+  tabId?: string;
+  theme?: string | null;
+  sourceBlock?: string | null;
+  sig?: string;
+};
+
 export type ProgressFact = {
   updatedAt?: Date;
   intent?: {
@@ -102,7 +114,7 @@ export type ProgressFact = {
     updatedAt?: Date;
   };
   omni?: OmniBlock;
-  recentEntries?: Array<{ text: string; timestamp: Date }>;
+  recentEntries?: RecentEntry[];
   quickAssessment?: {
     energy: number; // 1-10
     stress: number; // 1-10
@@ -434,6 +446,13 @@ export async function backfillProgressFacts(profileId: string) {
     omni.kuno.averagePercent = kunoAgg.ewma || kunoAgg.mean || omni.kuno.knowledgeIndex || 0;
     omni.kuno.runsCount = kunoAgg.runsCount;
     if (kunoAgg.lastPercent) omni.kuno.knowledgeIndex = kunoAgg.lastPercent;
+    try {
+      const currentK = omni.kuno as unknown as { masteryByCategory?: Record<string, number>; lessonsCompletedCount?: number } | undefined;
+      const masteryMap = currentK?.masteryByCategory;
+      const lessonsCompleted = Number(currentK?.lessonsCompletedCount ?? 0);
+      const kc = computeKunoComposite({ percents: percs, masteryByCategory: masteryMap ?? null, lessonsCompleted });
+      (omni.kuno as unknown as { generalIndex?: number }).generalIndex = kc.generalIndex;
+    } catch {}
   } catch {}
   try {
     const omni = fact.omni as OmniBlock;
@@ -527,13 +546,13 @@ export async function recordCtaClicked(variant: string) {
 }
 
 // Practice counters (reflection / breathing / drill)
-export async function recordPracticeEvent(type: "reflection" | "breathing" | "drill") {
+export async function recordPracticeEvent(type: "reflection" | "breathing" | "drill", ownerId?: string | null) {
   try {
     const update: Record<string, unknown> = {};
     if (type === "reflection") update.reflectionsCount = increment(1) as unknown as number;
     if (type === "breathing") update.breathingCount = increment(1) as unknown as number;
     if (type === "drill") update.drillsCount = increment(1) as unknown as number;
-    await mergeProgressFact(update);
+    await mergeProgressFact(update, ownerId);
   } catch (e) {
     console.warn("recordPracticeEvent failed", e);
   }
@@ -544,15 +563,17 @@ export async function recordPracticeSession(
   type: "reflection" | "breathing" | "drill",
   startedAtMs: number,
   durationSec: number,
+  ownerId?: string | null,
 ) {
   try {
     const entry = {
       type,
       startedAt: new Date(Number.isFinite(startedAtMs) ? startedAtMs : Date.now()),
-      endedAt: serverTimestamp(),
+      // Firestore does not allow serverTimestamp() inside arrayUnion objects; use client time
+      endedAt: new Date(),
       durationSec: Math.max(0, Math.floor(durationSec)),
     };
-    await mergeProgressFact({ practiceSessions: arrayUnion(entry) });
+    await mergeProgressFact({ practiceSessions: arrayUnion(entry) }, ownerId);
   } catch (e) {
     console.warn("recordPracticeSession failed", e);
   }
@@ -733,14 +754,157 @@ export async function recordTextSignalFact(payload: {
   return mergeProgressFact(update);
 }
 
+// Record a recent entry (e.g., from Journal). Keeps a short rolling list client-side; server can prune if needed.
+export async function recordRecentEntry(
+  entryIn:
+    | string
+    | {
+        text: string;
+        timestamp?: unknown;
+        tabId?: string;
+        theme?: string | null;
+        sourceBlock?: string | null;
+      },
+  at?: unknown,
+  ownerId?: string | null,
+) {
+  try {
+    const isObj = typeof entryIn === 'object' && entryIn !== null;
+    const src = isObj ? (entryIn as { text?: unknown; timestamp?: unknown; tabId?: unknown; theme?: unknown; sourceBlock?: unknown }) : null;
+    const normalizeTimestamp = (v: unknown): Date | number | FireTs => {
+      if (!v) return new Date();
+      if (v instanceof Date) return v;
+      if (typeof v === 'number') return v;
+      const maybe = v as FireTs | { toDate?: () => Date };
+      if (maybe && typeof (maybe as { toDate?: () => Date }).toDate === 'function') return maybe as FireTs;
+      return new Date();
+    };
+    const text = String((isObj ? src?.text : entryIn) || '').slice(0, 2000);
+    const entry: RecentEntry = {
+      text,
+      // Avoid serverTimestamp() within arrayUnion; use client timestamp
+      timestamp: normalizeTimestamp((isObj ? src?.timestamp : undefined) ?? at),
+      // Optional metadata to help deep-link back to the right tab
+      ...(isObj && src?.tabId ? { tabId: String(src.tabId) } : {}),
+      ...(isObj && typeof src?.theme !== 'undefined' ? { theme: (src?.theme as string | null) ?? null } : {}),
+      ...(isObj && typeof src?.sourceBlock !== 'undefined' ? { sourceBlock: (src?.sourceBlock as string | null) ?? null } : {}),
+    };
+
+    // Source-level dedupe: skip if there is an entry with the same text within the last ~2 minutes
+    const toMs = (v: unknown) => {
+      try {
+        if (!v) return 0;
+        if (typeof v === 'number') return v;
+        if (v instanceof Date) return v.getTime();
+        const ts = v as { toDate?: () => Date };
+        if (typeof ts?.toDate === 'function') return ts.toDate().getTime();
+      } catch {}
+      return 0;
+    };
+    const user = ownerId ? { uid: ownerId } : await ensureAuth();
+    if (!user?.uid) return;
+
+    // Transactional dedupe: add only if no entry with same signature in last 2 minutes
+    const db = getDb();
+    const factsRef = doc(db, 'userProgressFacts', user.uid);
+    const nowMs = toMs(entry.timestamp) || Date.now();
+    const tabId = entry.tabId ? String(entry.tabId) : '';
+    const bucket = Math.floor(nowMs / 120000); // 2 min bucket for sig
+    const sig = `${text.trim()}|${tabId}|${bucket}`;
+    entry.sig = sig;
+
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(factsRef);
+      const data = (snap.exists() ? (snap.data() as { recentEntries?: RecentEntry[] }) : {}) || {};
+      const rec: RecentEntry[] = Array.isArray(data.recentEntries) ? data.recentEntries.slice() : [];
+      // Stronger dedupe: same normalized text within 12 hours, or same sig (2 min bucket)
+      const exists = rec.some((e) => {
+        const esig = String(e.sig || '');
+        if (esig === sig) return true;
+        const etxt = String(e.text ?? '').trim();
+        const ems = toMs(e.timestamp);
+        const dt = Math.abs((nowMs) - (ems || 0));
+        return etxt === text.trim() && dt <= 12 * 60 * 60 * 1000; // 12h window
+      });
+      if (exists) return;
+      rec.push(entry);
+      // Optional cap to 50 items, newest last for consistency
+      const sanitizedAsc = rec
+        .map((e) => ({ ...e, _ms: toMs(e.timestamp), _text: String(e.text ?? '').trim() }))
+        .sort((a, b) => (a._ms ?? 0) - (b._ms ?? 0))
+        .slice(-100); // work with up to last 100 before final unique
+      // Keep only the latest occurrence per normalized text
+      const uniqMap = new Map<string, typeof sanitizedAsc[number]>();
+      for (const e of sanitizedAsc) {
+        uniqMap.set(e._text, e); // later overwrites earlier (we want latest)
+      }
+      const uniqueList: RecentEntry[] = Array.from(uniqMap.values())
+        .sort((a, b) => (a._ms ?? 0) - (b._ms ?? 0))
+        .slice(-50)
+        .map((e) => ({
+          text: e.text,
+          timestamp: e.timestamp,
+          tabId: e.tabId,
+          theme: e.theme ?? null,
+          sourceBlock: e.sourceBlock ?? null,
+          sig: e.sig,
+        }));
+      tx.set(factsRef, { recentEntries: uniqueList, updatedAt: serverTimestamp() }, { merge: true });
+    });
+  } catch (e) {
+    console.warn('recordRecentEntry failed', e);
+  }
+}
+
+// Delete a specific recent entry by matching normalized text and exact timestamp
+export async function deleteRecentEntry(
+  payload: { text: string; timestamp: unknown },
+  ownerId?: string | null,
+) {
+  try {
+    const toMs = (v: unknown) => {
+      try {
+        if (!v) return 0;
+        if (typeof v === 'number') return v;
+        if (v instanceof Date) return v.getTime();
+        const ts = v as { toDate?: () => Date };
+        if (typeof ts?.toDate === 'function') return ts.toDate().getTime();
+      } catch {}
+      return 0;
+    };
+    const user = ownerId ? { uid: ownerId } : await ensureAuth();
+    if (!user?.uid) return;
+    const db = getDb();
+    const factsRef = doc(db, 'userProgressFacts', user.uid);
+    const targetText = String(payload.text || '').trim();
+    const targetMs = toMs(payload.timestamp);
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(factsRef);
+      if (!snap.exists()) return;
+      const data = (snap.data() as { recentEntries?: RecentEntry[] }) || {};
+      const rec: RecentEntry[] = Array.isArray(data.recentEntries) ? data.recentEntries : [];
+      const filtered = rec.filter((e) => {
+        const etxt = String(e.text ?? '').trim();
+        const ems = toMs(e.timestamp);
+        return !(etxt === targetText && ems === targetMs);
+      });
+      if (filtered.length !== rec.length) {
+        tx.set(factsRef, { recentEntries: filtered, updatedAt: serverTimestamp() }, { merge: true });
+      }
+    });
+  } catch (e) {
+    console.warn('deleteRecentEntry failed', e);
+  }
+}
+
 // Persist evaluation totals and stage value into progress facts
 
 
 // Patch partial Omni block (deep merge). Useful to update knowledgeIndex/skills/unlocks.
-export async function recordOmniPatch(patch: DeepPartial<OmniBlock>) {
+export async function recordOmniPatch(patch: DeepPartial<OmniBlock>, ownerId?: string | null) {
   return mergeProgressFact({
     omni: patch,
-  });
+  }, ownerId);
 }
 
 // Quick self-assessment (lightweight, onboarding). Stores 1–10 sliders for immediate feedback.

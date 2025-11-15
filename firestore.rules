@@ -24,6 +24,12 @@ service cloud.firestore {
         isValidSessionType(request.resource.data.recommendation.suggestedPath);
     }
 
+    // Journals: owner-only, no extra field constraints
+    match /userJournals/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+    }
+
     // Snapshots and journeys: owner-only access. Allow create if profileId matches auth uid.
     // Accept either `evaluation` or legacy `answers`, and flexible timestamps.
     match /userIntentSnapshots/{docId} {
@@ -84,6 +90,18 @@ service cloud.firestore {
       allow read: if true;
       // Writes require admin custom claim. Use backend or temporarily grant claim for seeding.
       allow create, update, delete: if isAdmin();
+    }
+
+    // Kuno practice attempts (dev): owner-only
+    match /kunoAttempts/{docId} {
+      allow create: if signedIn() && request.resource.data.profileId == request.auth.uid;
+      allow read, update, delete: if signedIn() && resource.data.profileId == request.auth.uid;
+    }
+
+    // Kuno tests summary per profile
+    match /cunoTests/{docId} {
+      allow read: if isOwner(docId);
+      allow create, update: if isOwner(docId);
     }
 
     // Fallback: deny everything else.

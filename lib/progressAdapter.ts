@@ -43,6 +43,7 @@ type FactsShape = {
   evaluation?: { scores?: Record<string, unknown> };
   recommendation?: { dimensionScores?: Record<string, unknown> };
   practiceSessions?: Array<{ type?: unknown }>;
+  recentEntries?: Array<{ text?: string; timestamp?: unknown }>;
   quickAssessment?: {
     energy?: unknown;
     stress?: unknown;
@@ -163,6 +164,11 @@ export function adaptProgressFacts(facts: unknown): ProgressData {
     reflectionCount = sessions.filter((s) => (s?.type as string) === "reflection").length;
     breathingCount = sessions.filter((s) => (s?.type as string) === "breathing").length;
     drillsCount = sessions.filter((s) => (s?.type as string) === "drill").length;
+    // As a final fallback for reflections, use recent journal entries count
+    if (!reflectionCount) {
+      const rec = Array.isArray(f.recentEntries) ? f.recentEntries : [];
+      reflectionCount = rec.length;
+    }
   }
 
   return {

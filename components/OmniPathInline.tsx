@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import InfoTooltip from "./InfoTooltip";
 import type { ProgressFact } from "@/lib/progressFacts";
 import { getUnlockState } from "@/lib/unlockState";
 
@@ -13,7 +14,7 @@ type PathBtnProps = {
   inlineHint?: boolean;
 };
 
-function PathBtn({ lang, title, unlocked, onClick, hint, inlineHint = false }: PathBtnProps) {
+function PathBtn({ lang, title, unlocked, onClick, hint }: PathBtnProps) {
   return (
     <button
       type="button"
@@ -24,15 +25,12 @@ function PathBtn({ lang, title, unlocked, onClick, hint, inlineHint = false }: P
           : "border-dashed border-[#E4D8CE] bg-[#FFF9F3] text-[#A08F82] cursor-not-allowed"
       }`}
       aria-disabled={!unlocked}
-      title={hint ? `${title} — ${hint}` : title}
+      title={title}
     >
-      <span>
+      <span className="inline-flex items-center gap-1">
         {title}
-        {inlineHint && hint ? <span className="ml-1 text-[10px] font-normal text-[#7A6455]">({hint})</span> : null}
+        {!unlocked && hint ? <InfoTooltip items={[hint]} label={hint} /> : null}
       </span>
-      {!inlineHint && !unlocked && hint ? (
-        <span className="mt-0.5 block text-[10px] font-normal text-[#A08F82]">{hint}</span>
-      ) : null}
       <span
         className={`absolute top-1 right-1 h-1.5 w-1.5 rounded-full ${unlocked ? "bg-emerald-500" : "bg-[#C9B8A8]"}`}
         title={unlocked ? (lang === "ro" ? "Disponibil" : "Unlocked") : (lang === "ro" ? "Blocat" : "Locked")}
@@ -48,7 +46,7 @@ export default function OmniPathInline({ lang, progress }: { lang: "ro" | "en"; 
 
   const Label = {
     scope: lang === "ro" ? "Omni-Scop" : "Omni-Intent",
-    kuno: lang === "ro" ? "Omni-Cuno" : "Omni-Knowledge",
+    kuno: lang === "ro" ? "Omni Kuno" : "Omni Knowledge",
     sensei: "Omni-Sensei",
     abil: lang === "ro" ? "Omni-Abil" : "Omni-Abilities",
     intel: "Omni-Intel",
@@ -94,8 +92,8 @@ export default function OmniPathInline({ lang, progress }: { lang: "ro" | "en"; 
       <div className="relative z-10 grid grid-cols-2 gap-1.5 sm:grid-cols-5 sm:gap-2">
         <PathBtn lang={lang} title={Label.scope} unlocked={unlock.scopeUnlocked} onClick={() => router.push("/?step=intent&source=omni-path-inline")} />
         <PathBtn lang={lang} title={Label.kuno} unlocked={unlock.kunoUnlocked} hint={Hint.kuno} onClick={() => router.push("/antrenament?tab=oc")} />
-        <PathBtn lang={lang} title={Label.sensei} unlocked={unlock.senseiUnlocked} hint={Hint.sensei} onClick={() => router.push("/antrenament?tab=ose")} />
-        <PathBtn lang={lang} title={Label.abil} unlocked={unlock.abilUnlocked} hint={Hint.abil} inlineHint onClick={() => router.push("/antrenament?tab=oa")} />
+        <PathBtn lang={lang} title={Label.sensei} unlocked={false} hint={lang === 'ro' ? 'În curând' : 'Coming soon'} onClick={() => {}} />
+        <PathBtn lang={lang} title={Label.abil} unlocked={false} hint={lang === 'ro' ? 'În curând' : 'Coming soon'} onClick={() => {}} />
         <PathBtn lang={lang} title={Label.intel} unlocked={unlock.intelUnlocked} hint={Hint.intel} onClick={() => router.push("/antrenament?tab=oi")} />
       </div>
     </div>

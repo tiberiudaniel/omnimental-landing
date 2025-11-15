@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState, useEffect } from "react";
+import Toast from "./Toast";
 import {
   computeScores,
   evaluationSections,
@@ -14,7 +15,7 @@ import {
 } from "@/lib/submitEvaluation";
 import { useI18n } from "./I18nProvider";
 import { omniKnowledgeModules, computeOmniKnowledgeScore } from "../lib/omniKnowledge";
-import { generateQuestSuggestions, type QuestSuggestion } from "@/lib/quests";
+import { generateWeeklyQuests, type QuestSuggestion } from "@/lib/quests";
 import { recordEvaluationProgressFact, recordEvaluationSubmitStarted, recordEvaluationSubmitFinished } from "@/lib/progressFacts";
 
 type StepConfig = {
@@ -162,6 +163,7 @@ export default function EvaluationForm({
   const [scores, setScores] = useState<ReturnType<typeof computeScores> | null>(null);
   const [lastSubmittedAt, setLastSubmittedAt] = useState<Date | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
@@ -387,7 +389,8 @@ export default function EvaluationForm({
         knowledgePercent: knowledgeScore.percent,
         knowledgeGaps: knowledgeGapTitles,
       };
-      const generatedQuests = generateQuestSuggestions(questContext);
+      // Weekly standardized quests: same pool for everyone, ordered by theme proximity
+      const generatedQuests = generateWeeklyQuests({ ...questContext, userArea: undefined });
       setQuestSuggestions(generatedQuests);
       setQuestCompletions({});
 
@@ -403,6 +406,11 @@ export default function EvaluationForm({
       }
 
       onSubmitted?.();
+      setToastMsg(
+        normalizedLang === "ro"
+          ? "Evaluare și quest-uri salvate"
+          : "Evaluation and quests saved",
+      );
       void recordEvaluationSubmitFinished(formState.stage, normalizedLang, true);
     } catch (error) {
       console.error("evaluation submit failed", error);
@@ -771,6 +779,11 @@ export default function EvaluationForm({
             <span>Progres XP: {Math.round((completedCount / totalRequired) * 100)}%</span>
           </p>
         </div>
+        {toastMsg ? (
+          <div className="fixed bottom-4 left-0 right-0 mx-auto max-w-md px-4">
+            <Toast message={toastMsg} okLabel="OK" onClose={() => setToastMsg(null)} />
+          </div>
+        ) : null}
       </form>
 
       {scores && (

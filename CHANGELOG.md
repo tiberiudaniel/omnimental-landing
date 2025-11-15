@@ -103,3 +103,39 @@ Upgrade Notes
 1) Ensure Firebase Auth Email Link is enabled and the app domain is authorized.
 2) Set NEXT_PUBLIC_FIREBASE_AUTH_CONTINUE_URL to your app origin.
 3) Publish updated Firestore rules.
+
+2025-11-13 — Onboarding, Dashboard polish, E2E tests, hydration fix
+
+Summary
+- Onboarding (demo + member): stabilized flow with explicit data-testids and E2E coverage.
+- Dashboard: Weekly trends Day/Week • Minutes/Sessions toggles, numeric labels, RO copy (“Trend săptămânal”, “Revelația zilei”, “Provocarea de azi”).
+- Wizard routing: explicit reflection step between intent → summary; tests updated accordingly.
+- Recommendation: fixed hydration mismatch by deferring localStorage read until after hydration.
+- Guest path: “Acces Invitat Special” alongside signup CTAs, routes to `/recommendation?demo=1` and sets a guest flag.
+- Header UX: Logo always resets to intro: `/?step=preIntro&reset=1`.
+- Playwright E2E: multi-user scenarios, edge cases, stress test; migrated selectors to data-testid.
+
+Details
+- Components
+  - components/dashboard/ProgressDashboard.tsx: added trend toggles with testids; fixed hooks order; derived achievement banner state via useMemo; added chart testid.
+  - components/charts/WeeklyTrendsChart.tsx: label + axis polish (used by dashboard).
+  - components/IntentCloud.tsx, components/IntentSummary.tsx, components/ReflectionScreen.tsx: added stable testids (wizard-step-*, speed-*, budget-*, emo-*).
+  - components/OnboardingIntro.tsx, MiniSelfAssessment.tsx, MiniCunoTest.tsx: added onboarding testids.
+  - components/RecommendationStep.tsx: added `data-testid="recommendation-step"`.
+  - components/SessionDetails.tsx: added “Acces Invitat Special” CTA.
+  - components/SiteHeader.tsx: logo links to `/?step=preIntro&reset=1` in all modes.
+- Pages
+  - app/recommendation/page.tsx: PublicOrCachedView now reads localStorage in a client effect to avoid SSR hydration mismatch.
+- Lib/infra
+  - lib/recommendationCache.ts: unchanged API used; reading deferred in page.
+- Tests (Playwright)
+  - tests/e2e/wizard-multiple-users.spec.ts: 10 scenarios via helper; assertions updated for new copy and testids.
+  - tests/e2e/wizard-edge-cases.spec.ts: missing selection, back/change answers, extreme values; uses testids.
+  - tests/e2e/wizard-stress-test.spec.ts: 20 randomized runs; waits for reflection step; ignores benign 4xx console noise.
+  - tests/e2e/onboarding.spec.ts: full onboarding (intro → self‑assessment → mini‑cuno → recommendation) using testids.
+  - tests/e2e/progress.spec.ts: dashboard demo toggles using trend-toggle-* testids.
+
+Open TODOs
+- Add dev/QA banner when `NEXT_PUBLIC_DISABLE_PROGRESS_WRITES=1`.
+- Consider larger chart height at ≥1366px.
+- Expand E2E to cover EN variant and `/recommendation?demo` variants.

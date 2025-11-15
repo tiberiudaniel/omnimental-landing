@@ -24,6 +24,17 @@ export type ContentScript = {
   conditions: ScriptCondition[];
   priority: number;
   notes?: string;
+  // Optional thematic areas used to rank/reorder for users
+  areas?: Array<
+    | "clarity"
+    | "focus"
+    | "calm"
+    | "energy"
+    | "relationships"
+    | "performance"
+    | "health"
+    | "identity"
+  >;
 };
 
 export const defaultContentScripts: ContentScript[] = [
@@ -41,13 +52,14 @@ export const defaultContentScripts: ContentScript[] = [
     ctaLabel: {
       ro: "Încep resetul",
       en: "Start reset",
-    },
-    conditions: [
-      { metric: "pssTotal", operator: "gte", value: 25 },
-    ],
-    priority: 1,
-    notes: "Activated when perceived stress is high.",
   },
+  conditions: [
+    { metric: "pssTotal", operator: "gte", value: 25 },
+  ],
+  priority: 1,
+  notes: "Activated when perceived stress is high.",
+  areas: ["calm", "energy"],
+},
   {
     id: "knowledge-gap",
     type: "learn",
@@ -62,13 +74,14 @@ export const defaultContentScripts: ContentScript[] = [
     ctaLabel: {
       ro: "Revizuiesc modulele",
       en: "Review modules",
-    },
-    conditions: [
-      { metric: "knowledgePercent", operator: "lte", value: 70 },
-    ],
-    priority: 2,
-    notes: "Highlights when knowledge mastery is below the desired threshold.",
   },
+  conditions: [
+    { metric: "knowledgePercent", operator: "lte", value: 70 },
+  ],
+  priority: 2,
+  notes: "Highlights when knowledge mastery is below the desired threshold.",
+  areas: ["clarity", "identity"],
+},
   {
     id: "presence-scan",
     type: "reflect",
@@ -83,13 +96,14 @@ export const defaultContentScripts: ContentScript[] = [
     ctaLabel: {
       ro: "Planific pauzele",
       en: "Plan pauses",
-    },
-    conditions: [
-      { metric: "maasTotal", operator: "lte", value: 4 },
-    ],
-    priority: 3,
-    notes: "Triggered by lower mindfulness scores.",
   },
+  conditions: [
+    { metric: "maasTotal", operator: "lte", value: 4 },
+  ],
+  priority: 3,
+  notes: "Triggered by lower mindfulness scores.",
+  areas: ["clarity", "focus", "calm"],
+},
   {
     id: "vitality-check",
     type: "reflect",
@@ -104,13 +118,14 @@ export const defaultContentScripts: ContentScript[] = [
     ctaLabel: {
       ro: "Pornește jurnalul de energie",
       en: "Start energy log",
-    },
-    conditions: [
-      { metric: "svs", operator: "lte", value: 3 },
-    ],
-    priority: 4,
-    notes: "Helps when vitality is low.",
   },
+  conditions: [
+    { metric: "svs", operator: "lte", value: 3 },
+  ],
+  priority: 4,
+  notes: "Helps when vitality is low.",
+  areas: ["energy", "health"],
+},
   {
     id: "confidence-loop",
     type: "practice",
@@ -125,11 +140,53 @@ export const defaultContentScripts: ContentScript[] = [
     ctaLabel: {
       ro: "Pornesc micro-task-ul",
       en: "Start micro task",
-    },
-    conditions: [
-      { metric: "gseTotal", operator: "lte", value: 25 },
-    ],
-    priority: 5,
+  },
+  conditions: [
+    { metric: "gseTotal", operator: "lte", value: 25 },
+  ],
+  priority: 5,
     notes: "Boosts confidence when GSE is low.",
+    areas: ["performance", "identity"],
+  },
+  {
+    id: "clarity-notes-3",
+    type: "reflect",
+    title: {
+      ro: "Notează 3 clarificări azi",
+      en: "Write 3 clarifications today",
+    },
+    template: {
+      ro: "Astăzi, observă trei momente concrete în care apare confuzia sau ezitarea (la muncă, în familie, în tine). Pentru fiecare, scrie o propoziție clară: ce vrei, ce limită pui și o acțiune în următoarele 24h. Notează un semn somatic observat și un obstacol probabil. Seara, revizuiește și marchează progresul pentru fiecare situație.",
+      en: "Today, notice three concrete moments where confusion or hesitation shows up (at work, at home, in yourself). For each, write one clear sentence: what you want, which boundary you set, and one action within 24h. Add one somatic sign you noticed and one likely obstacle. In the evening, review and mark progress for each situation.",
+    },
+    ctaLabel: {
+      ro: "Notez 3 clarificări",
+      en: "Write 3 clarifications",
+    },
+    // No hard condition: available broadly; ordering handled by priority and weekly rotation
+    conditions: [],
+    priority: 6,
+    notes: "Short clarity journaling task; good general-purpose quest.",
+    areas: ["clarity", "focus"],
+  },
+  {
+    id: "clarity-notes-3-10min",
+    type: "reflect",
+    title: {
+      ro: "Notează 3 clarificări în 10 minute",
+      en: "Write 3 clarifications in 10 minutes",
+    },
+    template: {
+      ro: "Setează un timer de 10 minute. Alege rapid trei situații de azi în care ai simțit ezitare sau confuzie. Pentru fiecare, notează: intenția clară (1 propoziție), o limită/regulă personală (1 propoziție) și un pas în următoarele 24h. Adaugă un semn somatic observat (respirație, tensiune, căldură) și un obstacol probabil. La final, bifează ce ai clarificat cu adevărat.",
+      en: "Set a 10‑minute timer. Quickly pick three moments from today where hesitation or confusion showed up. For each, jot: a clear intent (1 sentence), a boundary/personal rule (1 sentence), and one step within 24h. Add one somatic sign noticed (breath, tension, warmth) and a likely obstacle. At the end, check what you truly clarified.",
+    },
+    ctaLabel: {
+      ro: "Pornesc sesiunea de 10 minute",
+      en: "Start 10‑minute session",
+    },
+    conditions: [],
+    priority: 7,
+    notes: "Time‑boxed clarity journaling; complements clarity‑notes‑3.",
+    areas: ["clarity", "focus"],
   },
 ];

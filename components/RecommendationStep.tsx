@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import TypewriterText from "./TypewriterText";
 import CardOption from "./CardOption";
 import { useI18n } from "./I18nProvider";
@@ -317,6 +318,17 @@ export function RecommendationStep(props: Props) {
     lang === "ro" ? "Trimite rezumatul" : "Send recap",
   );
 
+  const cardsRef = useRef<HTMLDivElement | null>(null);
+  const search = useSearchParams();
+  const e2e = search?.get('e2e') === '1';
+  useEffect(() => {
+    if (e2e && cardsRef.current) {
+      try {
+        cardsRef.current.scrollIntoView({ behavior: 'instant', block: 'center' as ScrollLogicalPosition });
+      } catch {}
+    }
+  }, [e2e]);
+
   return (
     <section className="bg-[#FDFCF9] px-4 py-12" data-testid="recommendation-step">
       <div className="mx-auto max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
@@ -353,7 +365,7 @@ export function RecommendationStep(props: Props) {
               ? "Alege formatul cu care vrei să continui acum."
               : "Pick the format you want to continue with right now."}
           </p>
-          <div className="mt-2 flex w-full flex-col items-center justify-center gap-6 md:flex-row md:items-stretch md:gap-8">
+          <div ref={cardsRef} className="mt-2 flex w-full flex-col items-center justify-center gap-6 md:flex-row md:items-stretch md:gap-8">
           {(["individual", "group"] as const).map((type) => (
             <div key={type} className="w-full max-w-sm md:max-w-none">
                   <CardOption

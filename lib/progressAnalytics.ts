@@ -27,6 +27,29 @@ function startOfDay(ms: number): number {
   return d.getTime();
 }
 
+function startOfWeekMonday(ms: number): number {
+  const sod = startOfDay(ms);
+  const d = new Date(sod);
+  const dow = d.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
+  // days since Monday (Mon=0, Sun=6)
+  const sinceMon = (dow + 6) % 7;
+  return sod - sinceMon * DAY_MS;
+}
+
+function startOfMonth(ms: number): number {
+  const d = new Date(ms || Date.now());
+  d.setUTCDate(1);
+  d.setUTCHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function daysInMonth(ms: number): number {
+  const d = new Date(ms || Date.now());
+  const y = d.getUTCFullYear();
+  const m = d.getUTCMonth();
+  return new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+}
+
 export function extractSessions(facts: ProgressFact | null | undefined): PracticeSessionLite[] {
   return Array.isArray(facts?.practiceSessions) ? (facts!.practiceSessions as PracticeSessionLite[]) : [];
 }
@@ -34,24 +57,24 @@ export function extractSessions(facts: ProgressFact | null | undefined): Practic
 export function computeWeeklyBuckets(
   sessions: PracticeSessionLite[],
   referenceMs: number,
+  lang?: string,
 ): { day: number; totalMin: number; label: string }[] {
-  const end = startOfDay(referenceMs);
-  const start = end - 6 * DAY_MS;
-  const isEN = typeof navigator !== "undefined" ? /^en/i.test(navigator.language || "") : false;
+  // Build buckets for calendar week starting Monday → Sunday
+  const weekStart = startOfWeekMonday(referenceMs);
+  const isEN = lang ? /^en/i.test(lang) : (typeof navigator !== "undefined" ? /^en/i.test(navigator.language || "") : false);
   const labels = isEN
-    ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    : ["Dum", "Lun", "Mar", "Mie", "Joi", "Vin", "Sâm"];
-  const buckets = new Array(7).fill(0).map((_, i) => {
-    const day = start + i * DAY_MS;
-    const dow = new Date(day).getDay();
-    const label = labels[dow] ?? "";
-    return { day, totalMin: 0, label };
-  });
+    ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    : ["Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum"];
+  const buckets = new Array(7).fill(0).map((_, i) => ({
+    day: weekStart + i * DAY_MS,
+    totalMin: 0,
+    label: labels[i] ?? "",
+  }));
   sessions.forEach((s) => {
     const ms = toMs(s.startedAt);
     if (!ms) return;
-    if (ms < start || ms > end + DAY_MS - 1) return;
-    const idx = Math.floor((startOfDay(ms) - start) / DAY_MS);
+    if (ms < weekStart || ms > weekStart + 7 * DAY_MS - 1) return;
+    const idx = Math.floor((startOfDay(ms) - weekStart) / DAY_MS);
     if (idx >= 0 && idx < buckets.length) {
       buckets[idx].totalMin += Math.max(0, Math.round((s.durationSec ?? 0) / 60));
     }
@@ -80,20 +103,103 @@ export function computeTodayBucket(
 export function computeWeeklyCounts(
   sessions: PracticeSessionLite[],
   referenceMs: number,
-): { day: number; totalMin: number }[] {
-  const end = startOfDay(referenceMs);
-  const start = end - 6 * DAY_MS;
-  const buckets = new Array(7).fill(0).map((_, i) => ({ day: start + i * DAY_MS, totalMin: 0 }));
+  lang?: string,
+): { day: number; totalMin: number; label: string }[] {
+  const weekStart = startOfWeekMonday(referenceMs);
+  const isEN = lang ? /^en/i.test(lang) : (typeof navigator !== "undefined" ? /^en/i.test(navigator.language || "") : false);
+  const labels = isEN
+    ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    : ["Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum"];
+  const buckets = new Array(7)
+    .fill(0)
+    .map((_, i) => ({ day: weekStart + i * DAY_MS, totalMin: 0, label: labels[i] ?? "" }));
   sessions.forEach((s) => {
     const ms = toMs(s.startedAt);
     if (!ms) return;
-    if (ms < start || ms > end + DAY_MS - 1) return;
-    const idx = Math.floor((startOfDay(ms) - start) / DAY_MS);
+    if (ms < weekStart || ms > weekStart + 7 * DAY_MS - 1) return;
+    const idx = Math.floor((startOfDay(ms) - weekStart) / DAY_MS);
     if (idx >= 0 && idx < buckets.length) {
-      buckets[idx].totalMin += 1; // reuse totalMin field to carry count to charts
+      buckets[idx].totalMin += 1; // reuse totalMin field to carry count (sessions) to charts
     }
   });
   return buckets;
+}
+
+export function computeMonthlyDailyMinutes(
+  sessions: PracticeSessionLite[],
+  referenceMs: number,
+  lang?: string,
+): { day: number; totalMin: number; label: string }[] {
+  const start = startOfMonth(referenceMs);
+  const totalDays = daysInMonth(referenceMs);
+  const weekLabel = (n: number) => (lang && /^ro/i.test(lang) ? `Săptămâna ${n}` : `Week ${n}`);
+  const arr = new Array(totalDays).fill(0).map((_, i) => {
+    const day = start + i * DAY_MS;
+    const dow = new Date(day).getDay();
+    // Monday is start of week; if day is the first of the month, consider week 1
+    const dayIndex = i; // 0-based
+    // week number within month counting Mondays; compute by counting Mondays up to i
+    const dateObj = new Date(day);
+    const dateOfMonth = dateObj.getUTCDate();
+    // compute Monday-based week number: 1 + number of Mondays passed so far
+    let weekNo = 1;
+    {
+      const first = new Date(start);
+      const len = dateOfMonth;
+      for (let k = 1; k <= len; k += 1) {
+        const dt = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), k));
+        if (dt.getUTCDay() === 1 && k <= dateOfMonth) weekNo += 1;
+      }
+      // The loop sets weekNo to 1 + number of Mondays up to and including current date; subtract 1 to get correct
+      weekNo = Math.max(1, weekNo - 1);
+    }
+    const label = (dow === 1 || dayIndex === 0) ? weekLabel(weekNo) : "";
+    return { day, totalMin: 0, label };
+  });
+  sessions.forEach((s) => {
+    const ms = toMs(s.startedAt);
+    if (!ms) return;
+    if (ms < start) return;
+    const idx = Math.floor((startOfDay(ms) - start) / DAY_MS);
+    if (idx >= 0 && idx < arr.length) arr[idx].totalMin += Math.max(0, Math.round((s.durationSec ?? 0) / 60));
+  });
+  return arr;
+}
+
+export function computeMonthlyDailyCounts(
+  sessions: PracticeSessionLite[],
+  referenceMs: number,
+  lang?: string,
+): { day: number; totalMin: number; label: string }[] {
+  const start = startOfMonth(referenceMs);
+  const totalDays = daysInMonth(referenceMs);
+  const weekLabel = (n: number) => (lang && /^ro/i.test(lang) ? `Săptămâna ${n}` : `Week ${n}`);
+  const arr = new Array(totalDays).fill(0).map((_, i) => {
+    const day = start + i * DAY_MS;
+    const dow = new Date(day).getDay();
+    const dateObj = new Date(day);
+    const dateOfMonth = dateObj.getUTCDate();
+    let weekNo = 1;
+    {
+      const first = new Date(start);
+      const len = dateOfMonth;
+      for (let k = 1; k <= len; k += 1) {
+        const dt = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), k));
+        if (dt.getUTCDay() === 1 && k <= dateOfMonth) weekNo += 1;
+      }
+      weekNo = Math.max(1, weekNo - 1);
+    }
+    const label = (dow === 1 || i === 0) ? weekLabel(weekNo) : "";
+    return { day, totalMin: 0, label };
+  });
+  sessions.forEach((s) => {
+    const ms = toMs(s.startedAt);
+    if (!ms) return;
+    if (ms < start) return;
+    const idx = Math.floor((startOfDay(ms) - start) / DAY_MS);
+    if (idx >= 0 && idx < arr.length) arr[idx].totalMin += 1;
+  });
+  return arr;
 }
 
 export function filterSessionsByType(

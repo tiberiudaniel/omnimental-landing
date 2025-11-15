@@ -44,6 +44,13 @@ function mapFromDoc(doc?: JournalDoc | null): Record<JournalTabId, string> {
 export function useJournal(userId: string | null | undefined) {
   const [state, setState] = useState<JournalState>(EMPTY);
   const lastSavedRef = useRef<Record<JournalTabId, string>>(EMPTY.tabs);
+  const inFlightRef = useRef<Record<JournalTabId, boolean>>({
+    SCOP_INTENTIE: false,
+    MOTIVATIE_REZURSE: false,
+    PLAN_RECOMANDARI: false,
+    OBSERVATII_EVALUARE: false,
+    NOTE_LIBERE: false,
+  });
   const timersRef = useRef<Record<JournalTabId, number | null>>({
     SCOP_INTENTIE: null,
     MOTIVATIE_REZURSE: null,
@@ -63,9 +70,39 @@ export function useJournal(userId: string | null | undefined) {
         const mapped = mapFromDoc(doc);
         setState({ loading: false, saving: false, tabs: mapped });
         lastSavedRef.current = mapped;
-      } catch (e) {
-        console.error("journal load failed", e);
-        if (!cancelled) setState((s) => ({ ...s, loading: false }));
+      } catch (e: unknown) {
+        // Downgrade permission issues to warnings to avoid noisy console errors in demo/guest
+        const code = (typeof e === 'object' && e && 'code' in e) ? String((e as { code?: unknown }).code ?? '') : '';
+        const message = (typeof e === 'object' && e && 'message' in e) ? String((e as { message?: unknown }).message ?? '') : '';
+        const isPermDenied = code.includes('permission') || /Missing or insufficient permissions/i.test(message);
+        try {
+          const q = typeof window !== 'undefined' ? window.location.search : '';
+          const isDemoOrE2E = q.includes('e2e=1') || q.includes('demo=1');
+          if (isDemoOrE2E || isPermDenied) {
+            console.warn("journal load failed", e);
+          } else {
+            console.error("journal load failed", e);
+          }
+        } catch {
+          if (isPermDenied) {
+            console.warn("journal load failed", e);
+          } else {
+            console.error("journal load failed", e);
+          }
+        }
+        if (!cancelled) {
+          // Try to hydrate from local fallback for demo/guest
+          let tabs = EMPTY.tabs;
+          try {
+            const key = `omnimental_journal_fallback_${userId}`;
+            const raw = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+            if (raw) {
+              const parsed = JSON.parse(raw) as Partial<Record<JournalTabId, string>>;
+              tabs = { ...tabs, ...parsed } as Record<JournalTabId, string>;
+            }
+          } catch {}
+          setState((s) => ({ ...s, loading: false, tabs }));
+        }
       }
     })();
     return () => {
@@ -78,29 +115,94 @@ export function useJournal(userId: string | null | undefined) {
   }, []);
 
   const saveTab = useCallback(
-    async (tabId: JournalTabId, context?: JournalContext) => {
-      if (!userId) return;
+    async (tabId: JournalTabId, context?: JournalContext): Promise<"cloud" | "local" | "noop" | "error"> => {
+      if (!userId) return "noop";
       const text = state.tabs[tabId] ?? "";
       if ((text ?? "").trim() === (lastSavedRef.current[tabId] ?? "").trim()) {
-        return;
+        return "noop";
+      }
+      if (inFlightRef.current[tabId]) {
+        return "noop";
       }
       setState((s) => ({ ...s, saving: true }));
+      inFlightRef.current[tabId] = true;
+      // In demo/e2e mode, avoid Firestore writes entirely; persist to local fallback only
       try {
+        const q = typeof window !== 'undefined' ? window.location.search : '';
+        const isDemoOrE2E = q.includes('e2e=1') || q.includes('demo=1');
+        if (isDemoOrE2E) {
+          console.log("[Journal] demo/e2e: skip Firestore write", { userId, path: `userJournals/${userId}` });
+          try {
+            const key = `omnimental_journal_fallback_${userId}`;
+            const existingRaw = window.localStorage.getItem(key);
+            const existing = existingRaw ? (JSON.parse(existingRaw) as Record<string, string>) : {};
+            existing[tabId] = text;
+            window.localStorage.setItem(key, JSON.stringify(existing));
+          } catch {}
+          lastSavedRef.current[tabId] = text;
+          setState((s) => ({ ...s, saving: false }));
+          inFlightRef.current[tabId] = false;
+          return "local";
+        }
+      } catch {}
+      try {
+        console.log("[Journal] trying to write to Firestore", { userId, path: `userJournals/${userId}` });
+        // Optimistically mark as saved to avoid duplicate concurrent writes
+        lastSavedRef.current[tabId] = text;
         await updateJournalTab(userId, tabId, {
           text,
           theme: context?.theme ?? null,
           sourcePage: context?.sourcePage ?? null,
           sourceBlock: context?.sourceBlock ?? null,
         });
+        console.log("[Journal] Firestore write OK");
+        // Remember last edited tab cross-context for better UX
+        try {
+          if ((text ?? '').trim()) {
+            window.localStorage.setItem('journalLastEditedTab', tabId);
+          }
+        } catch {}
         // Fire-and-forget text analytics (best-effort)
         void recordTextSignals({ text, source: `journal:${tabId}`, context: context as Record<string, unknown> | undefined });
         // Increment reflection practice counter (best-effort)
-        void recordPracticeEvent("reflection");
-        lastSavedRef.current[tabId] = text;
-      } catch (e) {
-        console.error("journal save failed", e);
+        void recordPracticeEvent("reflection", userId ?? null);
+        // Add a lightweight practice session so trends reflect journal activity
+        try {
+          const started = Date.now() - 120000;
+          const isPlan = tabId === 'PLAN_RECOMANDARI';
+          const dur = isPlan ? 240 : 120; // plan entries contează mai mult
+          const { recordPracticeSession } = await import("@/lib/progressFacts");
+          void recordPracticeSession("reflection", started, dur, userId ?? null);
+        } catch {}
+        return "cloud";
+      } catch (e: unknown) {
+        const code = (typeof e === 'object' && e && 'code' in e) ? String((e as { code?: unknown }).code ?? '') : '';
+        const message = (typeof e === 'object' && e && 'message' in e) ? String((e as { message?: unknown }).message ?? '') : '';
+        const isPermDenied = code.includes('permission') || /Missing or insufficient permissions/i.test(message);
+        // Also treat demo/e2e as non-fatal
+        let isDemoOrE2E = false;
+        try {
+          const q = typeof window !== 'undefined' ? window.location.search : '';
+          isDemoOrE2E = q.includes('e2e=1') || q.includes('demo=1');
+        } catch {}
+        if (isPermDenied || isDemoOrE2E) {
+          console.warn("journal save failed", e);
+          // Best-effort local fallback so user doesn't lose text in demo/guest
+          try {
+            const key = `omnimental_journal_fallback_${userId}`;
+            const existingRaw = window.localStorage.getItem(key);
+            const existing = existingRaw ? (JSON.parse(existingRaw) as Record<string, string>) : {};
+            existing[tabId] = text;
+            window.localStorage.setItem(key, JSON.stringify(existing));
+          } catch {}
+          return "local";
+        } else {
+          console.error("journal save failed", e);
+          return "error";
+        }
       } finally {
         setState((s) => ({ ...s, saving: false }));
+        inFlightRef.current[tabId] = false;
       }
     },
     [userId, state.tabs],

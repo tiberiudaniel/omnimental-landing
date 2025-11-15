@@ -27,73 +27,66 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
       }, 0);
       return () => clearTimeout(timeout);
     }
+    const db = getDb();
+    const profileRef = doc(db, "userProfiles", profileId);
+    const factsRef = doc(db, "userProgressFacts", profileId);
 
-    const profileRef = doc(getDb(), "userProfiles", profileId);
-    const unsubscribe = onSnapshot(
+    let latestProfile: ProgressFact | null = null;
+    let latestFacts: ProgressFact | null = null;
+
+    const mergeAndSet = () => {
+      const merged: ProgressFact | null = latestProfile || latestFacts
+        ? ({ ...(latestProfile ?? {}), ...(latestFacts ?? {}) } as ProgressFact)
+        : null;
+      setState((prev) => ({
+        data: merged ?? prev.data,
+        loading: false,
+        error: null,
+      }));
+    };
+
+    const unsubProfile = onSnapshot(
       profileRef,
       (snapshot) => {
-        const data = snapshot.exists()
+        latestProfile = snapshot.exists()
           ? ((snapshot.data().progressFacts as ProgressFact | undefined) ?? null)
           : null;
-        const hasIntent = Boolean(data?.intent);
-        const hasMotivation = Boolean(data?.motivation);
-        const hasEvaluation = Boolean(data?.evaluation);
-        const needsBackfill = !data || !hasIntent || !hasMotivation || !hasEvaluation;
 
-        if (!needsBackfill && data) {
-          setState({ data, loading: false, error: null });
-          backfillRequested.current = false;
-          return;
-        }
+        // Determine if we need backfill (intent/motivation/evaluation missing)
+        const hasIntent = Boolean(latestProfile?.intent);
+        const hasMotivation = Boolean(latestProfile?.motivation);
+        const hasEvaluation = Boolean(latestProfile?.evaluation);
+        const needsBackfill = !latestProfile || !hasIntent || !hasMotivation || !hasEvaluation;
 
-        setState((prev) => ({
-          data: data ?? prev.data,
-          loading: true,
-          error: prev.error,
-        }));
-
-        if (!backfillRequested.current) {
+        if (needsBackfill && !backfillRequested.current) {
+          setState((prev) => ({ data: latestProfile ?? prev.data, loading: true, error: prev.error }));
           backfillRequested.current = true;
           void backfillProgressFacts(profileId)
             .then((fact) => {
-              setState((prev) => {
-                // Merge partial facts to avoid wiping out existing fields
-                const merged: ProgressFact | null = fact
-                  ? {
-                      ...(prev.data ?? {}),
-                      ...fact,
-                      intent: fact.intent ?? prev.data?.intent,
-                      motivation: fact.motivation ?? prev.data?.motivation,
-                      evaluation: fact.evaluation ?? prev.data?.evaluation,
-                      recommendation: fact.recommendation ?? prev.data?.recommendation,
-                    }
-                  : prev.data ?? null;
-                return {
-                  data: merged,
-                  loading: false,
-                  error: null,
-                };
-              });
+              latestProfile = fact ?? latestProfile;
+              mergeAndSet();
             })
-            .catch((error) => {
-              setState((prev) => ({
-                data: prev.data,
-                loading: false,
-                error,
-              }));
-            })
-            .finally(() => {
-              backfillRequested.current = false;
-            });
+            .catch((error) => setState((prev) => ({ data: prev.data, loading: false, error })))
+            .finally(() => { backfillRequested.current = false; });
+        } else {
+          mergeAndSet();
         }
       },
-      (error) => {
-        setState({ data: null, loading: false, error });
+      (error) => setState({ data: null, loading: false, error }),
+    );
+
+    const unsubFacts = onSnapshot(
+      factsRef,
+      (snapshot) => {
+        latestFacts = snapshot.exists() ? ((snapshot.data() as ProgressFact | undefined) ?? null) : null;
+        mergeAndSet();
       },
+      () => {},
     );
 
     return () => {
-      unsubscribe();
+      unsubProfile();
+      unsubFacts();
     };
   }, [profileId]);
 

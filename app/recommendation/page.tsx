@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "../../components/SiteHeader";
 import MenuOverlay from "../../components/MenuOverlay";
@@ -38,14 +38,11 @@ function RecommendationContent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
 
-  // Guard: if user is logged-in but hasn't chosen a format, send to /choose
-  useEffect(() => {
-    if (profile?.id && (profile.selection ?? "none") === "none") {
-      const url = new URL(window.location.origin + "/choose");
-      url.searchParams.set("from", "reco");
-      router.replace(url.pathname + url.search);
-    }
-  }, [profile?.id, profile?.selection, router]);
+  // Gate tweak: do not auto-redirect to /choose. Instead, show a clear banner with a CTA.
+  const showChooseBanner = useMemo(
+    () => Boolean(profile?.id && (profile.selection ?? 'none') === 'none'),
+    [profile?.id, profile?.selection],
+  );
 
   const tier = profile?.accessTier ?? "public";
   const { data: progress, loading, error } = useProgressFacts(profile?.id);
@@ -70,10 +67,37 @@ function RecommendationContent() {
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <AccountModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
       <main className="px-4 py-12 md:px-8">
+        {showChooseBanner ? (
+          <div className="mx-auto mb-4 w-full max-w-4xl rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p>
+                {lang === 'ro'
+                  ? 'Pentru a vedea recomandarea completă, alege modul în care vrei să continui (individual sau grup).'
+                  : 'To view your full recommendation, choose how you want to continue (individual or group).'}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = new URL(window.location.origin + '/choose');
+                  url.searchParams.set('from', 'reco');
+                  router.push(url.pathname + url.search);
+                }}
+                className="shrink-0 rounded-[10px] border border-[#2C2C2C] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+              >
+                {lang === 'ro' ? 'Alege formatul' : 'Choose format'}
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="mx-auto flex max-w-4xl flex-col gap-3 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">OmniMental</p>
           <h1 className="text-3xl font-semibold text-[#2C1F18]">{pageTitle}</h1>
           <p className="text-sm text-[#4A3A30]">{pageSubtitle}</p>
+          <div className="mt-2 flex justify-center">
+            <a href="/experience-onboarding?start=1" className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]">
+              {lang === 'ro' ? 'Vreau să testez OmniMental' : 'I want to try OmniMental'}
+            </a>
+          </div>
         </div>
         {showPublicView ? (
           <PublicOrCachedView lang={lang} />
@@ -306,13 +330,10 @@ export default function RecommendationPage() {
 }
 function PublicOrCachedView({ lang }: { lang: string }) {
   const { s } = useTStrings();
-  const [cached, setCached] = useState<ReturnType<typeof readRecommendationCache>>(
-    null,
+  // Read once via lazy initializer; safe‑guard for SSR
+  const [cached] = useState<ReturnType<typeof readRecommendationCache>>(() =>
+    typeof window === 'undefined' ? null : readRecommendationCache(),
   );
-  // Read cache on client after hydration to avoid SSR/CSR mismatch
-  useEffect(() => {
-    setCached(readRecommendationCache());
-  }, []);
   if (!cached) {
     return <PublicRecommendationView lang={lang} />;
   }

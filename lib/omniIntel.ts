@@ -21,6 +21,23 @@ export type OmniBlock = {
     knowledgeIndex: number; // 0-100 (latest)
     averagePercent?: number; // 0-100 (EWMA/mean)
     runsCount?: number;
+    // Optional EDU activity: number of micro-lessons completed
+    lessonsCompletedCount?: number;
+    // Optional mastery per category (0-100), filled by Kuno practice/learn flows
+    masteryByCategory?: Partial<
+      Record<
+        'clarity' | 'calm' | 'energy' | 'relationships' | 'performance' | 'health' | 'general',
+        number
+      >
+    >;
+    gamification?: {
+      xp?: number;
+      badges?: string[];
+      streakDays?: number;
+      lastActiveDate?: string; // YYYY-MM-DD
+    };
+    readinessIndex?: number;
+    signals?: Record<string, string>;
   };
   sensei: {
     unlocked: boolean;

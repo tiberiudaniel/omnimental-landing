@@ -106,28 +106,86 @@ export function generateQuestSuggestions(
   scripts: ContentScript[] = defaultContentScripts,
   limit = 3,
 ): QuestSuggestion[] {
-  const placeholders = formatPlaceholders(context);
-  const suggestions: QuestSuggestion[] = [];
-
-  scripts
+  return renderScriptsToQuests(context, scripts
     .filter((script) => matchesScript(script, context))
     .sort((a, b) => a.priority - b.priority)
-    .slice(0, limit)
-    .forEach((script, index) => {
-      const title = renderTemplate(script.title[context.lang], placeholders);
-      const body = renderTemplate(script.template[context.lang], placeholders);
-      const ctaLabel = renderTemplate(script.ctaLabel[context.lang], placeholders);
-      suggestions.push({
-        id: `${script.id}-${Date.now()}-${index}`,
-        scriptId: script.id,
-        type: script.type,
-        title,
-        body,
-        ctaLabel,
-        priority: script.priority,
-        contextSummary: buildContextSummary(script.id, context),
-      });
-    });
+    .slice(0, limit));
+}
 
-  return suggestions;
+// --- Standardization helpers ---
+function clampText(text: string, max: number): string {
+  const t = String(text || "").trim();
+  if (t.length <= max) return t;
+  return t.slice(0, Math.max(0, max - 1)).trimEnd() + "…";
+}
+
+function normalizeBody(text: string, min = 180, max = 280): string {
+  const t = String(text || "").trim();
+  if (t.length > max) return clampText(t, max);
+  if (t.length >= min) return t;
+  // pad lightly by repeating last sentence fragment if needed
+  const pad = (s: string) => (s + (s.endsWith(".") ? "" : "."));
+  let out = t;
+  while (out.length < min) out = pad(out);
+  return out;
+}
+
+function renderScriptsToQuests(context: QuestContext, scripts: ContentScript[]): QuestSuggestion[] {
+  const placeholders = formatPlaceholders(context);
+  return scripts.map((script, index) => {
+    const rawTitle = renderTemplate(script.title[context.lang], placeholders);
+    const rawBody = renderTemplate(script.template[context.lang], placeholders);
+    const ctaLabel = renderTemplate(script.ctaLabel[context.lang], placeholders);
+    const title = clampText(rawTitle, 60);
+    const body = normalizeBody(rawBody);
+    return {
+      id: `${script.id}-${Date.now()}-${index}`,
+      scriptId: script.id,
+      type: script.type,
+      title,
+      body,
+      ctaLabel,
+      priority: script.priority,
+      contextSummary: buildContextSummary(script.id, context),
+    };
+  });
+}
+
+// --- Weekly distribution: same pool for everyone, personalized order by theme ---
+function getIsoWeek(dt: Date): number {
+  const date = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+function rotate<T>(arr: T[], offset: number): T[] {
+  if (!arr.length) return arr;
+  const o = ((offset % arr.length) + arr.length) % arr.length;
+  return arr.slice(o).concat(arr.slice(0, o));
+}
+
+export function getAreasForScript(scriptId: string): string[] {
+  const s = defaultContentScripts.find((x) => x.id === scriptId);
+  return (s?.areas as string[] | undefined) ?? [];
+}
+
+export function generateWeeklyQuests(
+  context: QuestContext & { userArea?: string | null },
+  limit = 3,
+  date: Date = new Date(),
+): QuestSuggestion[] {
+  // Select a weekly pool by priority, rotated by week number to vary across weeks
+  const week = getIsoWeek(date);
+  const base = [...defaultContentScripts].sort((a, b) => a.priority - b.priority);
+  const pool = rotate(base, week % base.length).slice(0, Math.max(limit, 5));
+  // Personalize order by thematic closeness
+  const area = (context.userArea || "").toLowerCase();
+  const scored = pool
+    .map((s) => ({ s, score: (s.areas || []).some((a) => a === area) ? 1 : 0 }))
+    .sort((a, b) => b.score - a.score || a.s.priority - b.s.priority)
+    .map((x) => x.s)
+    .slice(0, limit);
+  return renderScriptsToQuests(context, scored);
 }

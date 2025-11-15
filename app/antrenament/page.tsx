@@ -15,7 +15,6 @@ import OmniIntentForm from "../../components/OmniIntentForm";
 import OmniKnowledgeQuiz from "../../components/OmniKnowledgeQuiz";
 import EvaluationWizard from "../../components/evaluation/EvaluationWizard";
 import { recordEvaluationTabChange } from "../../lib/progressFacts";
-import OmniPathRow from "../../components/OmniPathRow";
 import { useProgressFacts } from "../../components/useProgressFacts";
 import QuestsList from "../../components/QuestsList";
 import InfoTooltip from "../../components/InfoTooltip";
@@ -26,7 +25,7 @@ import { useWindowWidth } from "@/lib/useWindowSize";
 
 const TAB_ITEMS = [
   { key: "os", label: "Omni-Scop", description: "Scop & intenție" },
-  { key: "oc", label: "Omni-Cuno", description: "Cunoaștere & concepte" },
+  { key: "oc", label: "Omni Kuno", description: "Cunoaștere & concepte" },
   { key: "ose", label: "Omni-Sensei", description: "Mentorat & ghidaj" },
   { key: "oa", label: "Omni-Abil", description: "Abilități practice" },
   { key: "oi", label: "Omni-Intel", description: "Stare integrativă" },
@@ -213,7 +212,7 @@ function AntrenamentContent() {
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
 
       <div className="mx-auto max-w-5xl px-6 pt-12">
-        <OmniPathRow lang={normalizedLang} progress={progress ?? undefined} />
+        {/* OmniPathRow hidden per request */}
         <div
           className="mt-2 flex flex-wrap gap-3 rounded-[12px] border border-[#E4D8CE] bg-white/90 px-4 py-3 shadow-[0_10px_28px_rgba(0,0,0,0.05)]"
           role="tablist"
@@ -221,13 +220,17 @@ function AntrenamentContent() {
         >
           {TAB_ITEMS.map((tab) => {
             const isActive = activeTab === tab.key;
+            const disabled = tab.key === 'ose' || tab.key === 'oa';
             return (
               <button
                 key={tab.key}
                 type="button"
                 role="tab"
                 aria-selected={isActive}
+                aria-disabled={disabled}
+                disabled={disabled}
                 onClick={() => {
+                  if (disabled) return;
                   const params = new URLSearchParams(searchParams?.toString() ?? "");
                   params.set("tab", tab.key);
                   const qs = params.toString();
@@ -235,10 +238,19 @@ function AntrenamentContent() {
                   void recordEvaluationTabChange(tab.key);
                 }}
                 className={`flex flex-col rounded-[10px] border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E60012] ${
-                  isActive ? "border-[#2C2C2C] bg-[#2C2C2C] text-white" : "border-transparent text-[#4A3A30] hover:border-[#D8C6B6]"
+                  disabled
+                    ? "cursor-not-allowed border-dashed border-[#E4D8CE] text-[#A08F82]"
+                    : isActive
+                    ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
+                    : "border-transparent text-[#4A3A30] hover:border-[#D8C6B6]"
                 }`}
               >
-                <span className="text-sm font-semibold uppercase tracking-[0.3em]">{tab.label}</span>
+                <span className="text-sm font-semibold uppercase tracking-[0.3em] inline-flex items-center gap-1">
+                  {tab.label}
+                  {disabled ? (
+                    <InfoTooltip items={[lang === 'ro' ? 'În curând' : 'Coming soon']} label={lang === 'ro' ? 'În curând' : 'Coming soon'} />
+                  ) : null}
+                </span>
                 <span className="text-xs text-current">{tab.description}</span>
               </button>
             );

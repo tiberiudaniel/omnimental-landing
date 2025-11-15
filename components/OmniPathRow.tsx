@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import InfoTooltip from "./InfoTooltip";
 import type { ProgressFact } from "@/lib/progressFacts";
 import { getUnlockState } from "@/lib/unlockState";
 import { useI18n } from "./I18nProvider";
@@ -23,7 +24,7 @@ export default function OmniPathRow({ lang: _langProp, progress }: Props) {
 
   const Label = {
     scope: getString("omniPath.scope", lang === "ro" ? "Omni-Scop" : "Omni-Intent"),
-    kuno: getString("omniPath.kuno", lang === "ro" ? "Omni-Cuno" : "Omni-Knowledge"),
+    kuno: getString("omniPath.kuno", lang === "ro" ? "Omni Kuno" : "Omni Knowledge"),
     sensei: getString("omniPath.sensei", "Omni-Sensei"),
     abil: getString("omniPath.abil", lang === "ro" ? "Omni-Abil" : "Omni-Abilities"),
     intel: getString("omniPath.intel", "Omni-Intel"),
@@ -61,11 +62,11 @@ export default function OmniPathRow({ lang: _langProp, progress }: Props) {
       }`}
       aria-disabled={!unlocked}
     >
-      <span>{title}</span>
-      {!unlocked && hint ? (
-        <span className="mt-1 block text-[10px] font-normal text-[#A08F82]">{hint}</span>
-      ) : null}
-    </button>
+      <span className="inline-flex items-center gap-1">
+        {title}
+        {!unlocked && hint ? <InfoTooltip items={[hint]} label={hint} /> : null}
+      </span>
+      </button>
   );
 
   return (
@@ -84,15 +85,15 @@ export default function OmniPathRow({ lang: _langProp, progress }: Props) {
         })}
         {Card({
           title: Label.sensei,
-          unlocked: unlock.senseiUnlocked,
-          hint: Hint.sensei,
-          onClick: () => router.push("/antrenament?tab=ose"),
+          unlocked: false,
+          hint: lang === 'ro' ? 'În curând' : 'Coming soon',
+          onClick: () => {},
         })}
         {Card({
           title: Label.abil,
-          unlocked: unlock.abilUnlocked,
-          hint: Hint.abil,
-          onClick: () => router.push("/antrenament?tab=oa"),
+          unlocked: false,
+          hint: lang === 'ro' ? 'În curând' : 'Coming soon',
+          onClick: () => {},
         })}
         {Card({
           title: Label.intel,

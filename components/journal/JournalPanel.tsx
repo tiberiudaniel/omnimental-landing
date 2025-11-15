@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useJournal, type JournalContext } from "./useJournal";
+import Toast from "../Toast";
 import { useTStrings } from "../useTStrings";
 import type { JournalTabId } from "@/lib/journal";
 
@@ -65,10 +66,13 @@ export function JournalPanel({
   const { loading, saving, tabs, setTabText, saveTab, scheduleSave } = useJournal(userId ?? null);
   const [activeTab, setActiveTab] = useState<JournalTabId>(() => {
     if (typeof window === "undefined") return "SCOP_INTENTIE";
+    const last = window.localStorage.getItem("journalLastEditedTab") as JournalTabId | null;
+    if (last) return last as JournalTabId;
     const raw = window.localStorage.getItem("journalActiveTab") as JournalTabId | null;
     return (raw as JournalTabId) || "SCOP_INTENTIE";
   });
   const { label: tabLabel, placeholder: tabPlaceholder, status, action } = useTabStrings();
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   useEffect(() => {
     // autosave when context changes (switching which card drives the panel)
@@ -112,7 +116,7 @@ export function JournalPanel({
         <div>
           <p className="text-[10px] uppercase tracking-[0.35em] text-[#A08F82]">{status.title}</p>
           <h3 className="text-base font-semibold text-[#1F1F1F]">
-            {context?.theme ? `${status.relatedPrefix} ${context.theme}` : "Notează ce este important pentru tine acum."}
+            {context?.theme ? `${status.relatedPrefix} ${context.theme}` : "Noteaza ceea ce este interesant si util."}
           </h3>
         </div>
         {onClose ? (
@@ -168,7 +172,11 @@ export function JournalPanel({
           setTabText(activeTab, e.target.value);
           scheduleSave(activeTab, context ?? undefined);
         }}
-        onBlur={() => void saveTab(activeTab, context ?? undefined)}
+        onBlur={async () => {
+          const before = (tabs[activeTab] ?? "").trim();
+          await saveTab(activeTab, context ?? undefined);
+          if (before) setToastMsg("Jurnal salvat");
+        }}
       />
 
       <div className="mt-2 text-[10px] text-[#7A6455]">
@@ -189,6 +197,11 @@ export function JournalPanel({
           )}
         </div>
       </div>
+      {toastMsg ? (
+        <div className="fixed bottom-4 left-0 right-0 mx-auto max-w-md px-4">
+          <Toast message={toastMsg} okLabel="OK" onClose={() => setToastMsg(null)} />
+        </div>
+      ) : null}
     </div>
   );
 }

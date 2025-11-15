@@ -28,7 +28,7 @@ export function JournalTrigger({ userId, context, label, onRequireAuth }: Props)
       >
         <span>{label ?? "Jurnal"}</span>
       </button>
-      {userId ? (
+      {userId && open ? (
         <JournalDrawer open={open} onOpenChange={setOpen} userId={userId} context={context} />
       ) : null}
     </>

@@ -71,6 +71,21 @@ export function getDemoProgressFacts(locale: "ro" | "en" = "ro", variant: 1 | 2 
   const consistencyIndex = variant === 2 ? 42 : variant === 3 ? 31 : 35;
   const omniIntelScore = computeOmniIntelScore({ knowledgeIndex, skillsIndex, directionMotivationIndex: dirMot, consistencyIndex });
 
+  // Demo Omni‑Kuno mastery and lessons (populates the Omni‑Kuno card)
+  const masteryByCategory: Record<string, number> = (() => {
+    if (variant === 2) {
+      return { clarity: 62, calm: 54, energy: 41, relationships: 48, performance: 43, health: 35 };
+    }
+    if (variant === 3) {
+      return { clarity: 38, calm: 46, energy: 72, relationships: 33, performance: 51, health: 40 };
+    }
+    return { clarity: 58, calm: 49, energy: 45, relationships: 37, performance: 42, health: 34 };
+  })();
+  const lastLessons: string[] = locale === "ro"
+    ? ["Respirație 3’", "Claritate: Focus", "Structurare obiective"]
+    : ["Breathing 3’", "Clarity: Focus", "Goals structuring"];
+  const readinessIndex = variant === 2 ? 66 : variant === 3 ? 61 : 63;
+
   const fact: ProgressFact = {
     updatedAt: now,
     intent: {
@@ -168,7 +183,7 @@ export function getDemoProgressFacts(locale: "ro" | "en" = "ro", variant: 1 | 2 
     })(),
     omni: {
       scope: { goalDescription: null, mainPain: null, idealDay: null, wordCount: null, tags, directionMotivationIndex: dirMot },
-      kuno: { completedTests: 1, totalTestsAvailable: 6, scores: {}, knowledgeIndex, averagePercent: Math.round((knowledgeIndex + 34) / 2), runsCount: 3 },
+      kuno: { completedTests: 2, totalTestsAvailable: 6, scores: {}, knowledgeIndex, averagePercent: Math.round((knowledgeIndex + 34) / 2), runsCount: 3, masteryByCategory, readinessIndex, signals: { lastLessonsCsv: lastLessons.join('|') } },
       sensei: { unlocked: true, activeQuests: [], completedQuestsCount: 2 },
       abil: { unlocked: true, exercisesCompletedCount: 12, skillsIndex, practiceIndex: Math.round(0.7 * skillsIndex + 0.3 * Math.min(100, 12 * 3)), runsCount: 2 },
       intel: { unlocked: true, evaluationsCount: 1, consistencyIndex },

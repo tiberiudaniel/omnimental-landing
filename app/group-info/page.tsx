@@ -217,8 +217,20 @@ function GroupInfoContent() {
           <p className="mt-5 text-base leading-relaxed text-[#2C2C2C]">
             {copy.hero.body}
           </p>
-          <div className="mt-6">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <CTAButton text={copy.hero.cta} />
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  try { localStorage.setItem('omnimental_guest_access', '1'); } catch {}
+                  window.location.assign('/recommendation?demo=1');
+                }
+              }}
+              className="rounded-[10px] border border-[#7A6455] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7A6455] transition hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+            >
+              {isRo ? 'Acces Invitat Special' : 'Special Guest Access'}
+            </button>
           </div>
         </section>
 

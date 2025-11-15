@@ -13,7 +13,7 @@ test.describe('Onboarding flow (RO, demo)', () => {
 
   test('intro → self‑assessment → mini‑cuno → recommendation (with optional experience step)', async ({ page }) => {
     // Intro
-    await page.goto('/onboarding?demo=1&lang=ro');
+    await page.goto('/onboarding?demo=1&lang=ro&e2e=1');
     // Pick the first choice via testid and continue
     await expect(page.getByTestId('onboarding-intro')).toBeVisible();
     await page.getByTestId('onboarding-choice-calm_clarity').click();
@@ -35,9 +35,8 @@ test.describe('Onboarding flow (RO, demo)', () => {
       await firstOption.click();
     }
     await page.getByTestId('onboarding-minicuno-save').click();
-
-    // Redirect to recommendation; assert visible
-    await expect(page.getByTestId('recommendation-step')).toBeVisible({ timeout: 15000 });
+    // Wait explicitly for recommendation step
+    await page.waitForSelector('[data-testid="recommendation-step"]', { timeout: 15000 });
 
     // Optional Experience step (only for member profiles). If present, select 1–2 chips and continue.
     const expTitle = page.getByText(/Hai să vedem cum ar fi|Let’s see how/i);
