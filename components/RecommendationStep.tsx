@@ -6,14 +6,14 @@ import TypewriterText from "./TypewriterText";
 import CardOption from "./CardOption";
 import { useI18n } from "./I18nProvider";
 import { getString } from "@/lib/i18nGetString";
-import { RecommendationSummary } from "@/components/RecommendationSummary";
-import { buildIndicatorSummary, INDICATOR_CHART_KEYS } from "@/lib/indicators";
+import { buildIndicatorSummary, INDICATOR_CHART_KEYS, INDICATOR_LABELS } from "@/lib/indicators";
+import RadarIndicators from "./RadarIndicators";
 import { CATEGORY_LABELS } from "@/lib/categoryLabels";
-import { getRecommendationReasonCopy } from "@/lib/recommendationCopy";
+// removed detailed copy mapping for minimalist UI
 import CTAButton from "./CTAButton";
 import { useProfile } from "./ProfileProvider";
 import { useProgressFacts } from "./useProgressFacts";
-import { recordRecommendationProgressFact } from "@/lib/progressFacts";
+import { recordRecommendationProgressFact, recordRecentEntry } from "@/lib/progressFacts";
 import { areWritesDisabled } from "@/lib/firebase";
 import { serverTimestamp } from "firebase/firestore";
 import Toast from "./Toast";
@@ -24,7 +24,7 @@ import type {
   EmotionalState,
   FormatPreference,
 } from "../lib/evaluation";
-import { determineLoadLevel, type LoadLevel } from "../lib/loadLevel";
+// import { determineLoadLevel, type LoadLevel } from "../lib/loadLevel";
 import type { DimensionScores } from "@/lib/scoring";
 
 export type RecommendationCardChoice = "individual" | "group";
@@ -92,30 +92,6 @@ const budgetLabel = (lang: string, budget: BudgetPreference) => {
   return lang === "ro" ? "maxim" : "maximum";
 };
 
-const buildSummaryMessage = ({
-  lang,
-  mainArea,
-  urgency,
-  pace,
-  budget,
-  themes,
-}: {
-  lang: string;
-  mainArea: string;
-  urgency: number;
-  pace: string;
-  budget: string;
-  themes: string[];
-}) => {
-  const themesText =
-    themes.length > 1
-      ? themes.join(lang === "ro" ? " și " : " & ")
-      : themes[0] ?? (lang === "ro" ? "temele selectate" : "selected themes");
-  if (lang === "ro") {
-    return `Aria principală importantă pentru tine acum este ${mainArea}, simți o urgență de ${urgency}/10 și vrei să lucrezi în ${pace} cu un buget ${budget}, în timp ce temele ${themesText} susțin această direcție.`;
-  }
-  return `Your main focus right now is ${mainArea}; you feel an urgency of ${urgency}/10 and want to work over ${pace} with a ${budget} budget, while ${themesText} support this direction.`;
-};
 
 export function RecommendationStep(props: Props) {
   const {
@@ -128,7 +104,6 @@ export function RecommendationStep(props: Props) {
     onCardSelect,
     accountPromptMessage,
     accountPromptButton,
-    cardLabels,
     isSavingChoice,
     savingChoiceType,
     errorMessage,
@@ -137,15 +112,15 @@ export function RecommendationStep(props: Props) {
     categories,
     intentUrgency,
     resolutionSpeed,
-    determination,
-    timeCommitmentHours,
+    // determination,
+    // timeCommitmentHours,
     budgetPreference,
-    goalType,
-    emotionalState,
-    groupComfort,
-    learnFromOthers,
-    scheduleFit,
-    formatPreference,
+    // goalType,
+    // emotionalState,
+    // groupComfort,
+    // learnFromOthers,
+    // scheduleFit,
+    // formatPreference,
     recommendationReasonKey: recommendationReasonKeyProp,
     initialStatement,
   } = props;
@@ -159,11 +134,6 @@ export function RecommendationStep(props: Props) {
   const effectiveRecommendedPath = recommendation?.path ?? recommendedPathProp;
   const effectiveReasonKey = recommendation?.reasonKey ?? recommendationReasonKeyProp;
   const effectiveBadge = recommendation?.badgeLabel ?? recommendedBadgeLabelProp;
-  const loadLevelsValue = t("intentSummaryLoadLevels");
-  const loadLevels =
-    loadLevelsValue && typeof loadLevelsValue === "object"
-      ? (loadLevelsValue as Record<LoadLevel, { label: string; recommendation: string }>)
-      : undefined;
 
   const sortedCategories = [...categories]
     .filter((entry) => entry.count > 0)
@@ -181,67 +151,11 @@ export function RecommendationStep(props: Props) {
       : [fallbackTheme];
   const mainAreaLabel = primaryLabel && primaryLabel.length > 0 ? primaryLabel : fallbackTheme;
 
-  const loadLevel = determineLoadLevel(intentUrgency);
-  const loadLevelContent = loadLevels?.[loadLevel];
 
-  const recommendationHeadline = effectiveRecommendedPath === "individual"
-    ? getCopy("recommendationHeadlineIndividual", lang === "ro" ? "Recomandare: sesiuni individuale 1-la-1." : "Recommendation: individual sessions.")
-    : getCopy("recommendationHeadlineGroup", lang === "ro" ? "Recomandare: grupul online OmniMental." : "Recommendation: OmniMental group.");
-  const recommendationBodyText =
-    loadLevelContent?.recommendation ??
-    (lang === "ro"
-      ? "Continuă în ritmul tău și caută ghidaj când simți că ritmul devine neclar."
-      : "Keep your current pace and lean on guidance when things feel unclear.");
-
-  const primaryReason = getRecommendationReasonCopy(
-    effectiveReasonKey,
-    lang === "ro" ? "ro" : "en",
-  );
-
-  const localizedReasons = [
-    primaryReason,
-    getCopy(
-      "recommendationFactorsNote",
-      lang === "ro"
-        ? "Datele de mai jos (ritm, timp, buget) completează imaginea."
-        : "The factors below (pace, time, budget) complete the picture.",
-    ),
-  ];
-
-  const goalTypeText =
-    goalType === "single"
-      ? lang === "ro"
-        ? "O temă concretă"
-        : "Single focus"
-      : goalType === "few"
-      ? lang === "ro"
-        ? "2–3 zone legate"
-        : "2–3 linked areas"
-      : lang === "ro"
-      ? "Reorganizare amplă"
-      : "Broader re-organization";
-
-  const emotionalStateText =
-    emotionalState === "stable"
-      ? lang === "ro"
-        ? "Relativ stabilă"
-        : "Fairly stable"
-      : emotionalState === "fluctuating"
-      ? lang === "ro"
-        ? "Fluctuantă"
-        : "Fluctuating"
-      : lang === "ro"
-      ? "Foarte instabilă"
-      : "Highly unstable";
-
-  const budgetLevelForSummary: "min" | "medium" | "max" =
-    budgetPreference === "low" ? "min" : budgetPreference === "medium" ? "medium" : "max";
-
-  const prefersIndividual = formatPreference === "individual";
+  // Detailed copy now removed for minimal presentation
   const indicatorSummary = useMemo(() => buildIndicatorSummary(categories), [categories]);
   const summaryIndicators = indicatorSummary.shares;
-  const summaryCounts = indicatorSummary.chart;
-  const selectionTotal = useMemo(() => categories.reduce((s, e) => s + (Number(e.count) || 0), 0), [categories]);
+  // chart and selection counts not shown in minimalist UI
   const topReflection = useMemo(() => {
     const pairs = INDICATOR_CHART_KEYS.map((k) => [k, Number(summaryIndicators[k] ?? 0)] as const);
     pairs.sort((a, b) => b[1] - a[1]);
@@ -268,14 +182,52 @@ export function RecommendationStep(props: Props) {
       ? "Uite recomandarea mea, luând în calcul situația și dorințele tale."
       : "Here’s my recommendation, based on your situation and priorities.";
 
-  const summaryMessage = buildSummaryMessage({
-    lang,
-    mainArea: mainAreaLabel,
-    urgency: intentUrgency,
-    pace: pacePhrase,
-    budget: budgetPhrase,
-    themes: summaryThemes,
-  });
+  // Friendlier recap copy
+  const numberToWordsRO = (n: number) => {
+    const map = ['unu','doi','trei','patru','cinci','șase','șapte','opt','nouă','zece'];
+    return map[n - 1] ?? String(n);
+  };
+  const themesForText = summaryThemes.filter((t) => t && t !== mainAreaLabel);
+  const pathLong = effectiveRecommendedPath === 'individual'
+    ? (lang === 'ro' ? 'ședințe individuale' : 'individual sessions')
+    : (lang === 'ro' ? 'grupul online' : 'the online group');
+  const otherPath = effectiveRecommendedPath === 'individual'
+    ? (lang === 'ro' ? 'grupul online' : 'the online group')
+    : (lang === 'ro' ? 'ședințe individuale' : 'individual sessions');
+  const summaryMessage: React.ReactNode = (() => {
+    if (lang === 'ro') {
+      const isPlural = effectiveRecommendedPath === 'individual';
+      const verb = isPlural ? 'sunt' : 'e';
+      const adj = isPlural ? 'potrivite' : 'potrivit';
+      return (
+        <>
+          Se pare că prioritatea ta acum este <strong className="font-semibold text-[#2C2C2C]">{mainAreaLabel}</strong>.{' '}
+          Simți o urgență de {numberToWordsRO(Math.max(1, Math.min(10, Math.round(intentUrgency))))} din zece să te ocupi de ea.{' '}
+          Țintești rezultate în {pacePhrase}, cu un buget {budgetPhrase}.{' '}
+          {themesForText.length ? (
+            <>
+              Direcția e susținută de {themesForText.join(' și ')}.{' '}
+            </>
+          ) : null}
+          Potrivit ritmului și preferințelor tale, <strong className="font-semibold text-[#2C2C2C]">{pathLong}</strong> {verb} mai {adj} decât {otherPath}.
+        </>
+      );
+    }
+    // EN fallback
+    return (
+      <>
+        Your priority now is <strong className="font-semibold text-[#2C2C2C]">{mainAreaLabel}</strong>.{' '}
+        You feel a {Math.round(intentUrgency)}/10 urgency to address it.{' '}
+        You aim for progress in {pacePhrase}, with a {budgetPhrase} budget.{' '}
+        {themesForText.length ? (
+          <>
+            This direction is supported by {themesForText.join(' & ')}.{' '}
+          </>
+        ) : null}
+        Given your pace and preferences, <strong className="font-semibold text-[#2C2C2C]">{pathLong}</strong> fits better than {otherPath}.
+      </>
+    );
+  })();
 
   const followUpTitle = getCopy(
     "recommendationFollowUpTitle",
@@ -321,6 +273,25 @@ export function RecommendationStep(props: Props) {
   const cardsRef = useRef<HTMLDivElement | null>(null);
   const search = useSearchParams();
   const e2e = search?.get('e2e') === '1';
+  // Quick clarity note (optional)
+  const noteKey = 'omnimental_quick_clarity_note';
+  const [quickNote, setQuickNote] = useState<string>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const v = window.localStorage.getItem(noteKey);
+        return v || '';
+      }
+    } catch {}
+    return '';
+  });
+  const [noteSavedAt, setNoteSavedAt] = useState<number | null>(null);
+  const [noteServerSaved, setNoteServerSaved] = useState(false);
+
+  // Initial load is handled in useState lazy initializer above
+
+  const placeholderNote = lang === 'ro'
+    ? 'Aș adăuga că …'
+    : 'I’d add that …';
   useEffect(() => {
     if (e2e && cardsRef.current) {
       try {
@@ -329,10 +300,23 @@ export function RecommendationStep(props: Props) {
     }
   }, [e2e]);
 
+  // Local autosave for quick note (debounced)
+  useEffect(() => {
+    const h = setTimeout(() => {
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(noteKey, quickNote);
+          setNoteSavedAt(Date.now());
+        }
+      } catch {}
+    }, 500);
+    return () => clearTimeout(h);
+  }, [quickNote]);
+
   return (
-    <section className="bg-[#FDFCF9] px-4 py-12" data-testid="recommendation-step">
-      <div className="mx-auto max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
-        <div className="mx-auto flex max-w-4xl flex-col gap-6 text-center">
+    <section className="bg-[#FDFCF9] px-4 py-8" data-testid="recommendation-step">
+      <div className="mx-auto max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
+        <div className="mx-auto flex max-w-4xl flex-col gap-5 text-center">
           {!profile && showAccountPrompt ? (
             <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
               <p className="mb-3">{accountPromptMessage}</p>
@@ -351,26 +335,94 @@ export function RecommendationStep(props: Props) {
             speed={96}
             enableSound
           />
-          {initialStatement && initialStatement.trim().length > 0 ? (
+          {(() => {
+            const fromFacts = (progressFacts?.intent as unknown as { firstExpression?: string | null } | undefined)?.firstExpression ?? null;
+            const visibleInitial = (initialStatement && initialStatement.trim()) || (fromFacts && String(fromFacts).trim()) || '';
+            return visibleInitial ? (
             <p className="text-sm text-[#4A3A30]/80">
               {lang === "ro"
-                ? `Ai început spunând: „${initialStatement.trim()}”.`
-                : `You opened by sharing: “${initialStatement.trim()}.”`}
+                ? `Ai început spunând: „${visibleInitial}”.`
+                : `You opened by sharing: “${visibleInitial}.”`}
             </p>
-          ) : null}
-          {/* Summary sentence placed immediately after the initial statement */}
-          <p className="text-sm text-[#4A3A30]">{summaryMessage}</p>
-          <p className="text-sm text-[#4A3A30]">
+            ) : null;
+          })()}
+          {/* Summary + Radar side by side */}
+          <div className="mx-auto flex w-full max-w-4xl items-start gap-4 md:grid md:grid-cols-[220px_minmax(0,56ch)]">
+            <div className="mx-auto w-[200px] md:w-[220px] shrink-0">
+              <RadarIndicators
+                data={INDICATOR_CHART_KEYS.map((k) => ({
+                  key: k,
+                  label: INDICATOR_LABELS[k][lang === 'en' ? 'en' : 'ro'],
+                  value: Number(summaryIndicators[k] ?? 0),
+                }))}
+                maxValue={1}
+                size="sm"
+                showValues={false}
+              />
+            </div>
+            <div className="w-full max-w-[56ch] rounded-[10px] border border-[#F5E7DA] bg-[#FFFBF7] px-4 py-3 text-left t-body-sm text-[#4A3A30]">
+              {summaryMessage}
+            </div>
+          </div>
+
+          {/* Optional quick clarity note (non-blocking) */}
+          <div className="mx-auto mt-2 w-full max-w-[56ch] rounded-[12px] border border-[#E4D8CE] bg-white px-3 py-2 text-left">
+            <textarea
+              data-testid="quick-clarity-note"
+              value={quickNote}
+              onChange={(e) => {
+                const v = e.target.value.slice(0, 200);
+                setQuickNote(v);
+                setNoteServerSaved(false);
+              }}
+              onBlur={async () => {
+                const text = quickNote.trim();
+                if (!text) return;
+                // Save one lightweight entry for logged-in users
+                try {
+                  if (currentProfile?.id) {
+                    await recordRecentEntry({
+                      text,
+                      timestamp: new Date(),
+                      theme: 'clarity',
+                      sourceBlock: 'quick_note',
+                    });
+                    setNoteServerSaved(true);
+                    setToastMessage(lang === 'ro' ? 'Gata, am salvat ideea ta.' : 'Saved your note.');
+                  }
+                } catch {}
+                if (!currentProfile?.id) {
+                  setToastMessage(lang === 'ro' ? 'Salvat local.' : 'Saved locally.');
+                }
+              }}
+              rows={2}
+              placeholder={placeholderNote}
+              className="w-full resize-none rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm text-[#2C2C2C] placeholder:text-[#9F8E84] focus:border-[#C07963] focus:outline-none"
+              maxLength={200}
+            />
+            <div className="mt-1 flex items-center justify-between text-[11px] text-[#7B6B60]">
+              <span>{quickNote.length}/200</span>
+              <span>
+                {noteServerSaved
+                  ? (lang === 'ro' ? 'Salvat' : 'Saved')
+                  : noteSavedAt
+                  ? (lang === 'ro' ? 'Salvat local' : 'Saved locally')
+                  : ''}
+              </span>
+            </div>
+          </div>
+          <p className="mx-auto w-full max-w-[60ch] text-[12px] text-[#7B6B60]">
             {lang === "ro"
-              ? "Alege formatul cu care vrei să continui acum."
-              : "Pick the format you want to continue with right now."}
+              ? "Eu îți sugerez direcția; tu alegi pasul următor."
+              : "I suggest the direction; you choose the next step."}
           </p>
-          <div ref={cardsRef} className="mt-2 flex w-full flex-col items-center justify-center gap-6 md:flex-row md:items-stretch md:gap-8">
+          <div ref={cardsRef} className="mt-2 flex w-full flex-col flex-wrap items-center justify-center gap-5 md:flex-row md:items-stretch md:justify-center md:gap-6 md:max-w-[820px] md:mx-auto">
           {(["individual", "group"] as const).map((type) => (
-            <div key={type} className="w-full max-w-sm md:max-w-none">
+            <div key={type} className="w-full md:flex-1">
                   <CardOption
                     type={type}
-                    title={cardLabels[type]}
+                    title={type === 'individual' ? (lang === 'ro' ? 'Sesiuni individuale' : 'Individual sessions') : (lang === 'ro' ? 'Grup online' : 'Online group')}
+                    className="h-full"
                     onClick={() => {
                       const algo = props.algoVersion ?? "v1.2";
                     const dim: DimensionScores | undefined = recommendation?.dimensionScores ?? props.dimensionScores ?? undefined;
@@ -418,36 +470,65 @@ export function RecommendationStep(props: Props) {
             <p className="text-xs text-[#B8000E]">{errorMessage}</p>
           ) : null}
 
-          <RecommendationSummary
-            variant="embedded"
-            loadLevel={loadLevel}
-            primaryThemes={summaryThemes}
-            mainArea={mainAreaLabel}
-            mainRecommendationTitle={recommendationHeadline}
-            mainRecommendationText={recommendationBodyText}
-            reasoningBullets={localizedReasons}
-            indicators={summaryIndicators}
-            indicatorCounts={summaryCounts}
-            selectionTotal={selectionTotal}
-            speed={resolutionSpeed}
-            commitment={determination}
-            weeklyTimeHours={timeCommitmentHours}
-            budgetLevel={budgetLevelForSummary}
-            goalType={goalTypeText}
-            emotionalState={emotionalStateText}
-            prefersIndividual={prefersIndividual}
-            groupComfort={groupComfort}
-            learnsFromOthers={learnFromOthers}
-            programFit={scheduleFit}
-            onBookCall={onAccountRequest}
-            language={lang === "en" ? "en" : "ro"}
-          />
+          {/* Soft upsell: Beta tiers (subtle, optional) */}
+          <div className="mx-auto mt-6 w-full max-w-4xl rounded-[14px] border border-[#E4D8CE] bg-white px-4 py-4 text-left shadow-[0_12px_28px_rgba(0,0,0,0.05)]">
+            <p className="text-sm font-semibold text-[#2C2C2C]">
+              {lang === 'ro' ? 'Vrei să continui cu acces Beta?' : 'Want to continue with Beta access?'}
+            </p>
+            <p className="mt-1 text-[13px] text-[#4A3A30]/80">
+              {lang === 'ro'
+                ? 'Încearcă platforma acum. Îți rămâne recapitularea și un mini‑plan. Poți decide ulterior.'
+                : 'Try the platform now. You keep your recap and a mini plan. Decide later.'}
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3">
+                <p className="text-sm font-semibold text-[#2C2C2C]">{lang === 'ro' ? 'Beta Access' : 'Beta Access'} <span className="opacity-70">• 2€</span></p>
+                <ul className="mt-1 list-disc pl-5 text-[13px] text-[#4A3A30]">
+                  <li>{lang === 'ro' ? 'Acces simplu + recap' : 'Basic access + recap'}</li>
+                  <li>{lang === 'ro' ? 'Mini‑plan pentru 24h' : 'Mini plan for 24h'}</li>
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void recordRecommendationProgressFact({
+                      reasonKey: effectiveReasonKey,
+                      badgeLabel: 'beta_basic',
+                    }).catch(() => undefined);
+                    onAccountRequest();
+                  }}
+                  className="mt-2 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                >
+                  {lang === 'ro' ? 'Activează' : 'Activate'}
+                </button>
+              </div>
+              <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3">
+                <p className="text-sm font-semibold text-[#2C2C2C]">{lang === 'ro' ? 'Beta + OmniSensei' : 'Beta + OmniSensei'} <span className="opacity-70">• 5€</span></p>
+                <ul className="mt-1 list-disc pl-5 text-[13px] text-[#4A3A30]">
+                  <li>{lang === 'ro' ? 'Tot din Beta' : 'Everything in Beta'}</li>
+                  <li>{lang === 'ro' ? 'Indicații ghidaj + semnale' : 'Guidance cues + signals'}</li>
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void recordRecommendationProgressFact({
+                      reasonKey: effectiveReasonKey,
+                      badgeLabel: 'beta_omnisensei',
+                    }).catch(() => undefined);
+                    onAccountRequest();
+                  }}
+                  className="mt-2 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                >
+                  {lang === 'ro' ? 'Activează' : 'Activate'}
+                </button>
+              </div>
+            </div>
+          </div>
           {topReflection ? (
-            <div className="mx-auto mt-2 max-w-4xl rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-3 text-left text-[13px] text-[#2C2C2C]">
+            <div className="mx-auto mt-2 max-w-4xl rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-2.5 text-left text-[13px] text-[#2C2C2C]">
               {topReflection}
             </div>
           ) : null}
-          <div className="mt-10 rounded-[18px] border border-[#E4D8CE] bg-[#FFFBF7] px-5 py-5 text-left shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
+          <div className="mt-8 rounded-[18px] border border-[#E4D8CE] bg-[#FFFBF7] px-5 py-4.5 text-left shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-base font-semibold text-[#2C2C2C]">{followUpTitle}</p>

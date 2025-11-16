@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { go, resetSession } from './helpers/env';
 
 const ro = {
   demoBadge: 'Demo',
@@ -13,7 +14,8 @@ const ro = {
 
 test.describe('Progress dashboard (demo)', () => {
   test('loads demo dashboard and toggles Day/Week & Minutes/Sessions', async ({ page }) => {
-    await page.goto('/progress?demo=1&e2e=1');
+    await resetSession(page);
+    await go(page, '/progress?demo=1&e2e=1');
 
     // Expect demo badge present (optional based on env switcher, but title/text should exist)
     await expect(page.getByText(ro.insightTitle)).toBeVisible();

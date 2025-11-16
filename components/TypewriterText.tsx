@@ -21,9 +21,10 @@ export default function TypewriterText({
   cursorClassName = "typewriter-cursor",
   pauseAtEndMs = 800,
 }: TypewriterTextProps) {
-  const [displayedText, setDisplayedText] = useState("");
-  const [index, setIndex] = useState(0);
-  const [showCursor, setShowCursor] = useState(true);
+  const staticMode = typeof window !== 'undefined' && window.location.search.includes('e2e=1');
+  const [displayedText, setDisplayedText] = useState(staticMode ? text : "");
+  const [index, setIndex] = useState(staticMode ? text.length : 0);
+  const [showCursor, setShowCursor] = useState(!staticMode);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completionRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -147,6 +148,7 @@ export default function TypewriterText({
   };
 
   useEffect(() => {
+    if (staticMode) return;
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -200,7 +202,7 @@ export default function TypewriterText({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [index, text, speed, enableSound, onComplete, pauseAtEndMs]);
+  }, [index, text, speed, enableSound, onComplete, pauseAtEndMs, staticMode]);
 
   useEffect(() => {
     return () => {

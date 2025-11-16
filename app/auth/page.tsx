@@ -63,8 +63,20 @@ function AuthContent() {
         }
         router.push("/progress");
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         try { window.localStorage.removeItem(AUTH_EMAIL_STORAGE_KEY); } catch {}
+        const code = (err as { code?: string })?.code ?? '';
+        const isInvalid = /invalid-action-code/i.test(code);
+        const ro = isInvalid ? 'Link-ul este invalid sau expirat. Te rog cere unul nou.' : 'Nu am putut valida linkul.';
+        const en = isInvalid ? 'The link is invalid or expired. Please request a new one.' : 'Could not validate the link.';
+        setErrorMessage(navigator.language?.startsWith('ro') ? ro : en);
+        setToastMessage(navigator.language?.startsWith('ro') ? ro : en);
+        setStatus('error');
+        // Clean noisy params so the effect does not re-fire endlessly
+        try {
+          const clean = new URL(window.location.origin + window.location.pathname);
+          window.history.replaceState({}, document.title, clean.toString());
+        } catch {}
       });
   }, [router, search]);
 

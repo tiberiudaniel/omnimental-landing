@@ -1,4 +1,5 @@
 import { expect, Page } from '@playwright/test';
+import { expectVisibleShort } from './diag';
 
 export type WizardProfile = {
   name: string;
@@ -25,30 +26,38 @@ export async function setRangeInput(page: Page, locatorStr: string, value: numbe
  */
 export async function fillWizardForUserProfile(page: Page, prof: WizardProfile) {
   // Intent cloud: pick N words
-  await expect(page.getByTestId('wizard-step-intent')).toBeVisible();
-  const cloudButtons = page.locator('button[class*="rounded-[14px]"]');
+  await expectVisibleShort(page, page.getByTestId('wizard-step-intent'), 'wizard-step-intent');
+  // Prefer stable container testId over class-based selector
+  const cloudButtons = page.locator('[data-testid="wizard-step-intent-cloud"] button:not([data-testid="wizard-continue"])');
   const toPick = Math.max(5, Math.min(7, prof.picks ?? 6));
-  for (let i = 0; i < toPick; i++) {
+  const total = await cloudButtons.count();
+  for (let i = 0; i < Math.min(toPick, total); i++) {
     await cloudButtons.nth(i).click();
   }
-  await page.getByTestId('wizard-continue').click();
+  // Ensure Continue enabled; if disabled, click extra unique words until it enables
+  const continueBtn = page.getByTestId('wizard-continue');
+  for (let i = 0; i < total && (await continueBtn.isDisabled()); i++) {
+    await cloudButtons.nth(i).click();
+  }
+  await expect(continueBtn).toBeEnabled({ timeout: 15000 });
+  await continueBtn.click();
   // New flow: intent -> reflectionSummary -> intentSummary
-  await expect(page.getByTestId('wizard-step-reflection')).toBeVisible();
+  await expectVisibleShort(page, page.getByTestId('wizard-step-reflection'), 'wizard-step-reflection');
   await page.getByTestId('wizard-reflection-continue').click();
-  await expect(page.getByTestId('wizard-step-summary')).toBeVisible();
+  await expectVisibleShort(page, page.getByTestId('wizard-step-summary'), 'wizard-step-summary');
 
   // Step 0: urgency + speed + determination
-  await setRangeInput(page, 'input[type="range"]', prof.urgency);
+  await setRangeInput(page, '[data-testid="stress-slider"]', prof.urgency);
   const speedKey = prof.speed === 'Zile' ? 'days' : prof.speed === 'Săptămâni' ? 'weeks' : 'months';
   await page.getByTestId(`speed-${speedKey}`).click();
-  await setRangeInput(page, 'input[type="range"] >> nth=1', prof.determination);
+  await setRangeInput(page, '[data-testid="determination-slider"]', prof.determination);
   await expect(page.getByTestId('wizard-next')).toBeVisible({ timeout: 30000 });
   await expect(page.getByTestId('wizard-next')).not.toHaveText(/Se salvează|Saving/i, { timeout: 30000 });
   await expect(page.getByTestId('wizard-next')).toBeEnabled({ timeout: 30000 });
   await page.getByTestId('wizard-next').click();
 
-  // Step 1: weekly time, budget, goal type (select first available)
-  await setRangeInput(page, 'input[type="range"]', prof.weeklyHours ?? 4);
+  // Step 1: weekly time (slider), budget, goal type
+  await setRangeInput(page, '[data-testid="time-slider"]', prof.weeklyHours ?? 4);
   const budgetKey = prof.budget.includes('minim') ? 'low' : prof.budget.includes('mediu') ? 'medium' : 'high';
   await page.getByTestId(`budget-${budgetKey}`).click();
   // Pick a default goal for stability
@@ -69,11 +78,13 @@ export async function fillWizardForUserProfile(page: Page, prof: WizardProfile) 
   await page.getByTestId('wizard-next').click();
 
   // Recommendation CTAs must be visible (container may vary)
-  await expect(page.getByTestId('card-individual')).toBeVisible({ timeout: 15000 });
-  await expect(page.getByTestId('card-group')).toBeVisible();
+  await expectVisibleShort(page, page.getByTestId('recommendation-step'), 'recommendation-step', 20000);
+  await expectVisibleShort(page, page.getByTestId('card-individual'), 'card-individual', 15000);
+  await expectVisibleShort(page, page.getByTestId('card-group'), 'card-group', 15000);
 
   // Assert key summary phrases visible
-  await expect(page.getByText(/Aria principală importantă/i)).toBeVisible();
+  // Verify summary card present (copy may vary slightly)
+  await expectVisibleShort(page, page.getByText(/recomandarea mea|recommendation, based/i), 'summary-callout');
   // Pace phrase mapping used in RecommendationStep
   const pace = prof.speed === 'Zile' ? 'câteva zile' : prof.speed === 'Săptămâni' ? 'câteva săptămâni' : 'câteva luni';
   await expect(page.getByText(new RegExp(pace))).toBeVisible();

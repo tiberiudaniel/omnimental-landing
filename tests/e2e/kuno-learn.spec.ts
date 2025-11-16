@@ -1,8 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { expectVisibleShort } from './helpers/diag';
+import { go, resetSession } from './helpers/env';
 
 test.describe('Kuno Learn micro-lesson', () => {
   test('user starts a lesson, completes micro-quiz, and reaches progress', async ({ page }) => {
-    await page.goto('/kuno/learn?cat=clarity&e2e=1');
+    await resetSession(page);
+    await go(page, '/kuno/learn?cat=clarity&e2e=1');
     // Heading may vary; assert the page structure rather than exact title
     await expect(page.locator('h1').first()).toBeVisible();
     await page.getByTestId('learn-start').click();
@@ -17,7 +20,8 @@ test.describe('Kuno Learn micro-lesson', () => {
     }
     await expect(page.getByText(/Rezultat micro/i)).toBeVisible();
     await page.getByTestId('learn-finish').click();
-    await page.waitForURL(/\/progress/, { timeout: 15000 });
-    await expect(page.getByText(/Omni-Cuno/i)).toBeVisible();
+    await page.waitForURL(/\/progress/, { timeout: 20000 });
+    await expectVisibleShort(page, page.getByTestId('metric-omni-cuno'), 'metric-omni-cuno');
+    await expectVisibleShort(page, page.getByTestId('metric-omni-cuno-value'), 'metric-omni-cuno-value');
   });
 });

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useI18n } from "./I18nProvider";
 import { useAuth } from "./AuthProvider";
+import { recordRecommendationProgressFact } from "@/lib/progressFacts";
 
 interface AccountModalProps {
   open: boolean;
@@ -40,6 +41,8 @@ export default function AccountModal({ open, onClose }: AccountModalProps) {
     setError(null);
     try {
       await sendMagicLink(email, rememberMe);
+      // Log magic link sent (funnel)
+      try { await recordRecommendationProgressFact({ badgeLabel: 'magic_sent' }); } catch {}
       setStatus("sent");
       setLastEmail(email);
       setEmail("");
@@ -53,8 +56,12 @@ export default function AccountModal({ open, onClose }: AccountModalProps) {
     }
   };
 
+  const isWizard = (() => {
+    try { return typeof window !== 'undefined' && window.location.pathname.startsWith('/wizard'); } catch { return false; }
+  })();
+  const overlayClass = isWizard ? 'bg-[#FDFCF9]/90' : 'bg-black/40';
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center ${overlayClass} px-4 py-8`}>
       <div className="w-full max-w-md rounded-2xl border border-[#E4D8CE] bg-white p-8 shadow-2xl">
         <div className="mb-6 space-y-2 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">

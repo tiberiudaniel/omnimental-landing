@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { fillWizardForUserProfile, type WizardProfile } from './helpers/wizard';
+import { go, resetSession } from './helpers/env';
 
 // 10 user profiles, each documented
 const users: WizardProfile[] = [
@@ -27,7 +28,7 @@ const users: WizardProfile[] = [
 
 // no local helpers required; flow is handled by fillWizardForUserProfile
 
-test.describe('Wizard multi-user scenarios (RO)', () => {
+test.describe('wizard-multiple-users', () => {
   test.beforeEach(async ({ page }) => {
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
@@ -41,7 +42,9 @@ test.describe('Wizard multi-user scenarios (RO)', () => {
 
   for (const user of users) {
     test(`scenario: ${user.name}`, async ({ page }) => {
-      await page.goto('/wizard?step=intent&lang=ro');
+      await resetSession(page);
+      // Direct root navigation avoids alias redirect delays
+      await go(page, '/?step=intent&lang=ro&e2e=1');
       await fillWizardForUserProfile(page, user);
       // Also ensure no obvious error messages in UI
       await expect(page.getByText(/Nu am putut|eroare|error/i)).toHaveCount(0);

@@ -1,4 +1,181 @@
 Acesta este un Master Spec pentru implementarea completă a Onboarding-ului Experiențial.
+si cateva specificatii despre scaffolding.
+
+Scaffolding, pe scurt, este felul în care “ții de mână” omul exact atât cât are nevoie ca să poată progresa singur, pas cu pas, fără să-l copleșești și fără să-l lași în aer.
+
+Aplicat la OmniMental, scaffolding înseamnă:
+
+să nu arunci utilizatorul într-un “mega-ecosistem” de teste și module,
+
+ci să-i dai o cale clară, cu sprijin dozabil, care se retrage treptat pe măsură ce capătă skill și autonomie.
+
+1. Definiție (adaptată pentru Omnimental)
+
+Scaffolding = structura de sprijin temporar (design + conținut + mesaje) care:
+
+îl pornește pe user de la nivelul lui real (nu ideal),
+
+îi dă exact atâta claritate, exemple și ghidare cât să reușească următorul pas,
+
+reduce gradual suportul, astfel încât userul să devină capabil să-și gestioneze singur antrenamentul mental.
+
+În OmniMental, “schelele” sunt: onboarding-ul, mini-teste, mesaje din typewriter, recomandări implicite, gating, XP, Omni-Kuno, Omni-Sensei, layout-ul dashboardului etc.
+
+2. Principii de scaffolding pentru OmniMental
+
+Un singur obiectiv clar pe “pas”
+
+Fără ecrane în care userul are 4 decizii majore deodată.
+
+Fiecare pas răspunde la: “De ce fac asta acum?” și “Ce primesc imediat?”
+
+Pornim din limbajul lui, nu din modelul tău
+
+Intent + Cloud → selectezi automat cuvintele și dimensiunile lui (relații, calm, performanță etc).
+
+Omni-Kuno Onboarding nu e generic, ci scaffolding personal: “acum, în relații” / “acum, în focus și oboseală”.
+
+Un singur nivel de dificultate nou la un moment dat
+
+Nu dai și concept nou, și exercițiu greu, și jurnal profund în același ecran.
+
+Întâi îi dai un test ușor + insight simplu; abia apoi exercițiu mai intens sau jurnal ghidat.
+
+Feedback imediat, neutru, scurt
+
+După fiecare mini-test, userul primește 1–2 propoziții care pun sens, nu judecată.
+
+Scaffolding-ul e feedback-ul care îl orientează: “Ești pe hartă. Uite unde ești și ce are sens să faci următorul pas.”
+
+Fading (retragi treptat sprijinul)
+
+La început: mesaje mai explicite, exemplu de jurnal, reminder clar.
+
+După câteva sesiuni: mai puțină explicație, mai multă autonomie (“alege tu modulul”, “alege tu tema din jurnal”).
+
+3. Sugestii concrete de scaffolding în proiectul OmniMental
+3.1. Scaffolding în onboarding (wizard + Omni-Kuno)
+
+Primul contact (Vreau să testez OmniMental)
+
+Ecranul de intro să funcționeze ca “scaffold de sens”:
+
+explicație scurtă: ce e OmniMental, ce câștigi în următoarele 5–10 minute;
+
+timeline foarte minimal (3 pași: “Te clarifici → Faci un mini-test → Vezi primul tău progres”).
+
+Intent + Cloud = scaffolding de limbaj
+
+Cloud-ul de expresii este deja un scaffold: îl ajuți să numească ceva ce simțea, dar nu formula.
+
+Îmbunătățire:
+
+după selectarea expresiilor, un micro-rezumat: “Ok, te preocupă mai ales X și Y. Folosim asta în test și antrenament.”
+
+Omni-Kuno Mini-test = scaffolding de diagnostic blând
+
+7–8 întrebări: mix de knowledge + reflecție + scenariu, toate în jurul categoriei lui.
+
+La final: 2–3 propoziții neutre + un singur “Next step recomandat” (nu 4 opțiuni).
+
+Legătura cu dashboard
+
+Când ajunge în /progress prima oară, scaffolding-ul este layout + micro-text:
+
+Ce vede → Ce înseamnă → Ce poate face mai departe (întotdeauna o singură sugestie clară).
+
+3.2. Scaffolding în Omni-Kuno (engine de educație și testare)
+
+Niveluri de dificultate vizibile implicit, nu declarat
+
+Lvl 1 = întrebări simple, explicații mai multe în learn.
+
+Lvl 2 = itemi mix knowledge + scenariu, exerciții un pic mai provocatoare.
+
+Lvl 3 = itemi de finețe, inversarea rolurilor, situații complexe.
+
+Scaffold-ul e: nu-l lași să sară în lvl 3 fără să fi trecut de câteva sesiuni la lvl 1–2.
+
+“Pachete” de learning gata definite
+
+Pentru fiecare categorie (relații, calm, performanță):
+
+Pachet 1 (începător): mini-test + 1 lecție + 1 exercițiu de viață reală.
+
+Pachet 2 (intermediar): practice adaptiv + jurnal ghidat.
+
+Pachet 3 (avansat): challenge de 7 zile / micro-misiuni.
+
+Userul nu navighează haotic; scaffolding-ul este: “Tu ești acum în Pachet 1 pentru RELAȚII. Ți-au mai rămas 2 pași.”
+
+Micro-scaffolding în itemii Kuno
+
+În loc de întrebări izolate, grupezi 2–3 itemi care se leagă între ei:
+
+Q1: cum reacționezi acum (scenariu).
+
+Q2: ce spune cercetarea (knowledge).
+
+Q3: ce ai putea testa ca mic experiment (microSkill).
+
+E o mini-scară în sine: stare actuală → concept → micro acțiune.
+
+3.3. Scaffolding în Training Zone / Omni-Sensei
+
+Ghidare inițială foarte clară
+
+Prima dată când intră în Training:
+
+un text scurt: “Aici nu mai e testare, aici e antrenament. Începem cu X și Y pentru că asta a ieșit în onboarding.”
+
+Sugerezi 1–2 “track-uri” de antrenament, nu întreg catalogul.
+
+Constrângeri pozitive (gating)
+
+Nu lași userul să înceapă 7 track-uri deodată.
+
+Scaffolding-ul e că îl limitezi la 1–2 focusuri active, dar îi explici de ce:
+
+“Concentrarea pe maximum 2 direcții simultan crește șansa să vezi progres real.”
+
+Fading deliberat
+
+La început, Omni-Sensei explică mai mult, face metafore, ghidaj.
+
+După câteva sesiuni bune și streak, mesajele devin mai scurte, mai provocatoare, mai autonome:
+
+“Alege singur următorul exercițiu în funcție de cum te simți azi.”
+
+3.4. Scaffolding prin gamification (fără copilărisme)
+
+Scaffolding = ritm + feedback.
+
+XP + streak = scaffolding de ritm: îl ajuți să “vadă” că e important să revină des, nu perfect.
+
+Badge-uri = scaffolding de milestone: îi arăți clar unde au fost pași importanți (primul test, primul jurnal, 7 zile la rând etc.).
+
+Mastery bars = scaffolding de hartă: îl orientezi pe “hartă mentală” (“sunt pe drumul ăsta la 40%, pe celălalt la 70%”).
+
+Important: gamification-ul nu e scop, e exoscheletul care ține laolaltă efortul și ritmul, până își construiește autonom motivația.
+
+3.5. Scaffolding pentru date și insight-uri (din perspectiva ta, ca coach)
+
+Prin scaffolding inteligent, onboarding-ul devine:
+
+un profil clar de punct de plecare,
+
+un filtru: cine e curios/implicat vs cine doar “bifează”,
+
+un predictor: cine ajunge la un anumit nivel de mastery & streak are șanse mai mari să cumpere programe mai intense sau 1:1.
+
+Poți seta de la început:
+
+reguli: “nu deschidem Omni-Sensei avansat înainte de X în Kuno + Y în streak”,
+
+semnale: “cine trece de 60% mastery la Relații + 30 zile streak este candidat bun pentru grup avansat / program premium”.
+
+Asta e scaffolding și la nivel de funnel de business, nu doar la nivel de UX.
+
 
 🔥 OMNIMENTAL — MASTER ONBOARDING SPEC
 (versiunea completă pentru implementare Codex)

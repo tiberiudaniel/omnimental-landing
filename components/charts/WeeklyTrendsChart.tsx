@@ -1,97 +1,109 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Line,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
+import type { ReactNode } from "react";
 
-type Point = { day: number; totalMin: number; label?: string };
+type Point = {
+  day: number | string | Date;
+  totalMin: number;
+  label?: string;
+};
+
+type SeriesConfig = {
+  data: Point[];
+  accent?: string;
+  strokeWidth?: number;
+};
+
+type WeeklyTrendsChartProps = {
+  data: Point[];              // single-series compatibility
+  series?: SeriesConfig[];    // multi-line (clarity, calm, energy)
+  showBars?: boolean;         // ignored for now; kept for prop compatibility
+  showValues?: boolean;
+  ariaLabel?: string;
+};
+
+function normalizeDay(day: Point["day"]): string {
+  if (day instanceof Date) return day.getTime().toString();
+  if (typeof day === "number") return day.toString();
+  return String(day);
+}
 
 export default function WeeklyTrendsChart({
   data,
-  accent = "#7A6455",
-  showValues = true,
-  ariaLabel,
-}: {
-  data: Point[];
-  accent?: string;
-  showValues?: boolean;
-  ariaLabel?: string;
-}) {
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const [size, setSize] = useState<{ w: number; h: number }>({ w: 320, h: 140 });
+  series,
+  showBars = false,
+  showValues = false,
+  ariaLabel = "Trend chart",
+}: WeeklyTrendsChartProps) {
+  const multiSeries: SeriesConfig[] =
+    series && series.length
+      ? series
+      : [
+          {
+            data,
+            accent: "#C07963",
+            strokeWidth: 2,
+          },
+        ];
 
-  useEffect(() => {
-    if (!wrapRef.current) return;
-    const el = wrapRef.current;
-    if (typeof window === 'undefined' || !('ResizeObserver' in window)) return;
-    const ro = new ResizeObserver((entries: ResizeObserverEntry[]) => {
-      for (const e of entries) {
-        const cr = e.contentRect;
-        setSize({ w: Math.max(220, cr.width), h: Math.max(110, cr.height) });
-      }
+  const base = data.map((p) => ({
+    ...p,
+    _x: p.label ?? normalizeDay(p.day),
+  }));
+
+  const rows = base.map((p, idx) => {
+    const row: Record<string, unknown> = {
+      _x: p._x,
+    };
+    multiSeries.forEach((s, sIdx) => {
+      const src = s.data[idx];
+      row[`s${sIdx}`] = src ? src.totalMin : 0;
     });
-    ro.observe(el);
-    const rect = el.getBoundingClientRect();
-    setSize({ w: Math.max(220, rect.width), h: Math.max(110, rect.height) });
-    return () => ro.disconnect();
-  }, []);
+    return row;
+  });
 
-  const padding = 12;
-  const w = Math.round(size.w);
-  const h = Math.round(size.h);
-  const innerW = Math.max(1, w - padding * 2);
-  const innerH = Math.max(1, h - padding * 2);
-  const max = Math.max(1, ...data.map((d) => d.totalMin));
-  const bars = data.map((d, i) => {
-    const step = innerW / Math.max(1, data.length);
-    const bw = Math.max(2, Math.floor(step * 0.6));
-    const x = padding + i * step + Math.max(0, (step - bw) / 2);
-    const bh = Math.round((d.totalMin / max) * innerH);
-    const y = padding + (innerH - bh);
-    return { x, y, bw, bh, value: d.totalMin };
-  });
-  const points = data.map((d, i) => {
-    const x = padding + i * (innerW / (data.length - 1 || 1));
-    const y = padding + (innerH - (d.totalMin / max) * innerH);
-    return `${x},${y}`;
-  });
-  const path = points.length ? `M ${points[0]} L ${points.slice(1).join(" ")}` : "";
+  const tooltipFormatter = (value: unknown, name: string): [string, ReactNode] => {
+    const idx = Number(name.replace("s", ""));
+    const s = multiSeries[idx];
+    return [`${value}`, s ? `Linia ${idx + 1}` : name];
+  };
 
   return (
-    <div ref={wrapRef} className="h-full w-full">
-      <svg width={w} height={h} className="block" role="img" aria-label={ariaLabel ?? "Weekly trend"}>
-        {bars.map((b, i) => (
-          <g key={`b-${i}`}>
-            <rect x={b.x} y={b.y} width={b.bw} height={b.bh} fill="#F0E6DB" rx={2} />
-            <title>{`${data[i]?.label ?? ''} ${Math.round(data[i]?.totalMin ?? 0)}`.trim()}</title>
-          </g>
-        ))}
-        {path ? <path d={path} stroke={accent} strokeWidth={2} fill="none" /> : null}
-        {showValues
-          ? bars.map((b, i) => (
-              <text
-                key={`v-${i}`}
-                x={b.x + b.bw / 2}
-                y={Math.max(10, b.y - 4)}
-                textAnchor="middle"
-                fontSize={10}
-                fill="#7B6B60"
-              >
-                {Math.round(b.value)}
-              </text>
-            ))
-          : null}
-        {data.map((d, i) => (
-          <text
-            key={`t-${i}`}
-            x={bars[i]?.x + (bars[i]?.bw || 0) / 2}
-            y={h - 2}
-            textAnchor="middle"
-            fontSize={10}
-            fill="#7B6B60"
-          >
-            {d.label ?? ""}
-          </text>
-        ))}
-      </svg>
+    <div role="img" aria-label={ariaLabel} className="h-full w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={rows} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="_x" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 9 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+          <Tooltip formatter={tooltipFormatter} labelStyle={{ fontSize: 10 }} contentStyle={{ fontSize: 10 }} />
+          {/* Bars only for single-series usage */}
+          {(!series || series.length === 0) && showBars ? (
+            <Bar dataKey="s0" fill="#F0E6DB" radius={[3,3,0,0]} />
+          ) : null}
+          {multiSeries.map((s, idx) => (
+            <Line
+              key={idx}
+              type="monotone"
+              dataKey={`s${idx}`}
+              stroke={s.accent ?? "#C07963"}
+              strokeWidth={s.strokeWidth ?? 2}
+              dot={false}
+              activeDot={showValues ? { r: 3 } : { r: 2 }}
+              isAnimationActive={false}
+            />
+          ))}
+        </ComposedChart>
+      </ResponsiveContainer>
     </div>
   );
 }

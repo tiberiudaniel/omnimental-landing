@@ -175,7 +175,8 @@ export function JournalDrawer({ open, onOpenChange, userId, context, initialTab 
     <div className={`fixed inset-0 z-[60] ${open ? "pointer-events-auto" : "pointer-events-none"}`} aria-hidden={!open} data-testid="journal-drawer">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/20 transition-opacity ${open ? "opacity-100" : "opacity-0"}`}
+        className={`absolute inset-0 transition-opacity ${open ? "opacity-100" : "opacity-0"}`}
+        style={{ background: (typeof window !== 'undefined' && window.location.pathname.startsWith('/wizard')) ? 'rgba(253, 252, 249, 0.85)' : 'rgba(0,0,0,0.2)' }}
         onClick={() => onOpenChange(false)}
       />
       {/* Panel */}
@@ -190,7 +191,7 @@ export function JournalDrawer({ open, onOpenChange, userId, context, initialTab 
             </div>
             <button
               type="button"
-              aria-label="Închide jurnalul"
+              aria-label="Ascunde jurnalul"
               data-testid="journal-close"
               className="rounded-full p-1 text-[#7A6455] hover:bg-[#F6F2EE]"
               onClick={() => onOpenChange(false)}
@@ -234,7 +235,12 @@ export function JournalDrawer({ open, onOpenChange, userId, context, initialTab 
             <textarea
               ref={textareaRef}
               className={`min-h-[160px] md:min-h-[220px] w-full resize-none rounded-[10px] border bg-white p-3 text-sm md:text-[13px] text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#E60012] ${loadedBlink ? 'border-emerald-500 ring-2 ring-emerald-400 transition-shadow' : 'border-[#E4D8CE]'}`}
-              placeholder={tabPlaceholder(activeTab)}
+              placeholder={(() => {
+                if (context?.sourceBlock === 'initiation.journal' && activeTab === 'NOTE_LIBERE' && !currentText) {
+                  return 'Scrie 2 propoziții (~60 caractere) despre ce observi acum. Apoi închide jurnalul.';
+                }
+                return tabPlaceholder(activeTab);
+              })()}
               value={currentText}
               data-testid="journal-text"
               onChange={(e) => {

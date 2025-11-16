@@ -5,12 +5,13 @@ import TestQuestionCard from "@/components/onboarding/TestQuestionCard";
 import { CUNO_QUESTIONS } from "@/lib/cunoQuestions";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
-import { getOmniKunoMiniTest } from "@/lib/omniKuno";
+import { getOnboardingQuestions } from "@/lib/omniKunoOnboarding";
+import { getCorrectIndexFor } from "@/lib/omniKunoAnswers";
 import type { OmniKunoTopicKey } from "@/lib/omniKunoTypes";
 import { useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 
-type MiniMeta = { topicKey?: string; questions?: Array<{ id: string; correctIndex: number; style?: string }> };
+type MiniMeta = { topicKey?: string; secondaryTopicKey?: string; questions?: Array<{ id: string; correctIndex: number; style?: string; facet?: string; topicKey?: string }> };
 
 export default function StepMiniTest({ onSubmit }: { onSubmit: (answers: number[], score: { raw: number; max: number }, meta?: MiniMeta) => void }) {
   const { lang } = useI18n();
@@ -33,26 +34,57 @@ export default function StepMiniTest({ onSubmit }: { onSubmit: (answers: number[
     if (tags.some((t) => /relat/i.test(t))) return 'relatii';
     return null;
   })();
-  const mini = primary ? getOmniKunoMiniTest({ primaryDimension: primary as OmniKunoTopicKey, cloudTags: (facts?.intent?.tags ?? []) as string[] }) : null;
-  const full = mini?.questions ?? [];
-  const questions = (full.length > 0
-    ? full.slice(0, 7).map((q) => ({
-        id: q.id,
-        question: q.text,
-        options: q.options.map((o) => o.label),
-        // Kuno mini‑test items are not graded (no correctIndex in schema)
-        correctIndex: -1,
-        explanation: q.defaultFeedback ?? '',
-      }))
-    : CUNO_QUESTIONS.slice(0, 3).map((q) => ({
-        id: q.id,
-        question: q.question,
-        options: q.options,
-        // For fallback bank, keep the real correct index so score is computed
-        correctIndex: typeof q.correctIndex === 'number' && q.correctIndex >= 0 ? q.correctIndex : -1,
-        explanation: q.explanation ?? '',
-      }))
-  );
+  // Determine secondary from intent categories if available
+  const secondary = (() => {
+    try {
+      const cats = (facts?.intent?.categories as Array<{ category: string; count: number }> | undefined) || [];
+      if (!cats.length) return null;
+      const norm = (s: string) => s.toLowerCase();
+      const sorted = [...cats].sort((a, b) => (b.count || 0) - (a.count || 0));
+      const top2 = sorted.slice(0, 2).map((c) => norm(c.category));
+      const map: Record<string, OmniKunoTopicKey> = {
+        relatii: 'relatii',
+        relatie: 'relatii',
+        calm: 'calm',
+        stres: 'calm',
+        claritate: 'identitate',
+        identitate: 'identitate',
+        performanta: 'performanta',
+        energie: 'energie',
+        obiceiuri: 'obiceiuri',
+        sens: 'sens',
+      };
+      const keys = top2.map((w) => Object.keys(map).find((k) => w.includes(k))).filter(Boolean) as string[];
+      const prim = primary as string | null;
+      const pick = keys.map((k) => map[k!]).find((k) => k !== prim) || null;
+      return pick;
+    } catch { return null; }
+  })();
+  // Build a pure knowledge mini‑quiz to avoid mixing types in the score.
+  // 1) Pull onboarding questions and filter to knowledge
+  const onboardingSet = primary ? getOnboardingQuestions(primary as OmniKunoTopicKey, undefined, (facts?.intent?.tags ?? []) as string[]) : [];
+  const knowledgeFromOnboarding = onboardingSet.filter((q) => q.style === 'knowledge');
+  // 2) If not enough, fallback to general CUNO bank for the mapped category
+  const catMap: Record<string, string> = { relatii: 'relationships', calm: 'calm', identitate: 'clarity', performanta: 'performance', energie: 'energy', obiceiuri: 'general', sens: 'general' };
+  const desired = 5;
+  const knowledgeMapped = knowledgeFromOnboarding.map((q) => ({ id: q.id, question: q.text, options: q.options.map((o) => o.label), correctIndex: getCorrectIndexFor(q.id, q.options.map((o) => o.id)), explanation: q.defaultFeedback ?? '' }));
+  const need = Math.max(0, desired - knowledgeMapped.length);
+  const fallback = (() => {
+    try {
+      const cat = primary ? (catMap[primary] || 'general') : 'general';
+      const pool = CUNO_QUESTIONS.filter((q) => (q.category || 'general') === cat);
+      const picks: typeof pool = [];
+      for (const q of pool) {
+        if (picks.length >= need) break;
+        // avoid accidental duplicate by question text
+        if (!knowledgeMapped.some((m) => m.question === q.question)) picks.push(q);
+      }
+      return picks.map((q) => ({ id: q.id, question: q.question, options: q.options, correctIndex: q.correctIndex, explanation: q.explanation }));
+    } catch { return []; }
+  })();
+  const built = [...knowledgeMapped, ...fallback].slice(0, desired);
+  const questions = built.length ? built : CUNO_QUESTIONS.slice(0, 3).map((q) => ({ id: q.id, question: q.question, options: q.options, correctIndex: q.correctIndex, explanation: q.explanation }));
+  // const totalCount = questions.length;
   const [answers, setAnswers] = useState<number[]>(Array(questions.length).fill(-1));
   const [touched, setTouched] = useState<boolean[]>(Array(questions.length).fill(false));
   const raw = answers.filter((a, i) => questions[i].correctIndex >= 0 && a === questions[i].correctIndex).length;
@@ -64,16 +96,24 @@ export default function StepMiniTest({ onSubmit }: { onSubmit: (answers: number[
         <div className="mb-1 text-xs uppercase tracking-[0.3em] text-[#A08F82]">{lang === 'ro' ? 'Pas 2/7' : 'Step 2/7'}</div>
         <Typewriter text={lang === 'ro' ? "Mini‑Cuno: 3 întrebări rapide. Vei vedea explicația corectă la fiecare răspuns." : "Mini‑Cuno: 3 quick questions. You’ll see the explanation for the correct answer."} />
       </div>
-      {questions.map((q, idx) => (
-        <TestQuestionCard
-          key={q.id}
-          item={{ id: q.id, question: q.question, options: q.options, correctIndex: q.correctIndex, explanation: q.explanation ?? '' }}
-          onAnswer={(sel) => {
-            setAnswers((prev) => prev.map((v, i) => (i === idx ? sel : v)));
-            setTouched((prev) => prev.map((v, i) => (i === idx ? true : v)));
-          }}
-        />
-      ))}
+      {/* Legend removed here to keep the quiz simple and self‑evident (pure knowledge) */}
+      {questions.map((q, idx) => {
+        const style = 'knowledge' as const;
+        return (
+          <TestQuestionCard
+            key={q.id}
+            item={{ id: q.id, question: q.question, options: q.options, correctIndex: q.correctIndex, explanation: q.explanation ?? '' }}
+            onAnswer={(sel) => {
+              setAnswers((prev) => prev.map((v, i) => (i === idx ? sel : v)));
+              setTouched((prev) => prev.map((v, i) => (i === idx ? true : v)));
+            }}
+            scored={q.correctIndex >= 0}
+            styleLabel={style}
+            index={idx}
+            total={questions.length}
+          />
+        );
+      })}
       <div className="flex items-center justify-between">
         <p className="text-sm text-[#4A3A30]">{lang === 'ro' ? 'Scor curent' : 'Current score'}: {raw}/{max}</p>
         <button
@@ -81,7 +121,14 @@ export default function StepMiniTest({ onSubmit }: { onSubmit: (answers: number[
           onClick={() => onSubmit(
             answers,
             { raw, max },
-            { topicKey: mini?.topicKey, questions: questions.map((q) => ({ id: q.id, correctIndex: q.correctIndex, style: full.find((f) => f.id === q.id)?.style })) }
+            {
+              topicKey: onboardingSet.length ? (primary as string) : (primary as string | undefined),
+              secondaryTopicKey: onboardingSet.length ? (secondary as string | undefined) : undefined,
+              questions: questions.map((q) => {
+                const src = onboardingSet.find((f) => f.id === q.id);
+                return { id: q.id, correctIndex: q.correctIndex, style: src?.style, facet: src?.facet as string | undefined, topicKey: src?.topicKey as string | undefined, questionText: q.question };
+              }),
+            }
           )}
           data-testid="eo-submit"
           className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"

@@ -8,6 +8,9 @@ type WizardReflectionProps = {
   categories?: Array<{ category: string; count: number }>;
   maxSelection?: number;
   categoryLabels?: Record<string, string>;
+  testId?: string;
+  cardTestId?: string;
+  compact?: boolean;
 };
 
 export default function WizardReflection({
@@ -16,6 +19,9 @@ export default function WizardReflection({
   categories,
   maxSelection,
   categoryLabels,
+  testId,
+  cardTestId,
+  compact,
 }: WizardReflectionProps) {
   return (
     <ReflectionScreen
@@ -24,6 +30,9 @@ export default function WizardReflection({
       categories={categories}
       maxSelection={maxSelection}
       categoryLabels={categoryLabels}
+      testId={testId}
+      cardTestId={cardTestId}
+      compact={compact}
     />
   );
 }

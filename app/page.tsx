@@ -51,6 +51,7 @@ function PageContent() {
   const {
     journalEntry,
     firstIntentCategory,
+    firstIntentExpression,
     intentCategories,
     intentUrgency,
     setIntentUrgency,
@@ -112,8 +113,10 @@ function PageContent() {
         locale: lang === "en" ? "en" : "ro",
         primaryCategory: firstIntentCategory ?? undefined,
         total: cloudWordCount,
+        // Exclude the exact curated expression id if present so it doesn't reappear in cloud
+        excludeIds: firstIntentExpression ? [firstIntentExpression] : [],
       }),
-    [cloudWordCount, firstIntentCategory, lang],
+    [cloudWordCount, firstIntentCategory, firstIntentExpression, lang],
   );
 
   const adaptiveCloudKey = useMemo(
@@ -126,7 +129,7 @@ function PageContent() {
       goToStep("firstInput");
       return;
     }
-    if (step === "intentSummary" && intentCategories.length === 0) {
+    if ((step === "intentMotivation" || step === "intentSummary") && intentCategories.length === 0) {
       goToStep("intent");
     }
   }, [goToStep, intentCategories.length, step]);
@@ -325,6 +328,39 @@ function PageContent() {
         onMenuToggle={() => setMenuOpen(true)}
         onAuthRequest={openAccountModal}
         wizardMode={step !== "details"}
+        onWizardExit={() => {
+          if (typeof window !== 'undefined') {
+            const confirmed = window.confirm(
+              lang === "ro"
+                ? "Păstrăm progresul în draft și poți reveni oricând. Vrei să ieși?"
+                : "We’ll keep your progress as a draft. Do you want to exit?",
+            );
+            if (!confirmed) return;
+            const url = new URL(window.location.origin + "/choose");
+            url.searchParams.set("from", "wizard");
+            window.location.assign(url.pathname + url.search);
+          }
+        }}
+        onWizardReset={() => {
+          if (typeof window !== 'undefined') {
+            const confirmed = window.confirm(
+              lang === 'ro'
+                ? 'Vrei să o iei de la capăt? Progresul curent se mută în draft.'
+                : 'Start over? Your current progress will be kept as a draft.'
+            );
+            if (!confirmed) return;
+            try { clearWizardState(); } catch {}
+            const params = new URLSearchParams(searchParams?.toString() ?? "");
+            params.set("step", "preIntro");
+            params.set("reset", "1");
+            const qs = params.toString();
+            window.location.assign(qs ? `/?${qs}` : "/");
+          }
+        }}
+        canWizardReset={(() => {
+          const s = step;
+          return !(s === 'preIntro' || s === 'intro' || s === 'firstInput' || s === 'reflectionPrompt');
+        })()}
       />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       {accountModalOpen || showAccountPrompt ? (
@@ -356,9 +392,9 @@ function PageContent() {
             onReset={() => {
               if (typeof window !== "undefined") {
                 const confirmed = window.confirm(
-                  lang === "ro"
-                    ? "Sigur vrei să resetezi parcursul?"
-                    : "Are you sure you want to reset your journey?",
+                  lang === 'ro'
+                    ? 'Vrei să o iei de la capăt? Progresul curent se mută în draft.'
+                    : 'Start over? Your current progress will be kept as a draft.'
                 );
                 if (!confirmed) {
                   void recordWizardResetCanceled();
@@ -380,9 +416,9 @@ function PageContent() {
             onExit={() => {
               if (typeof window !== "undefined") {
                 const confirmed = window.confirm(
-                  lang === "ro"
-                    ? "Păstrăm progresul în draft și poți reveni oricând. Vrei să părăsești wizardul?"
-                    : "We’ll keep your progress as a draft. Do you want to exit the wizard?",
+                  lang === 'ro'
+                    ? 'Păstrăm progresul în draft și poți reveni oricând. Vrei să ieși?'
+                    : 'We’ll keep your progress as a draft. Do you want to exit?'
                 );
                 if (!confirmed) return;
                 const url = new URL(window.location.origin + "/choose");

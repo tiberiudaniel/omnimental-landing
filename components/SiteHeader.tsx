@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useI18n } from "./I18nProvider";
 import { useAuth } from "./AuthProvider";
@@ -15,6 +16,9 @@ interface SiteHeaderProps {
   onAuthRequest?: () => void;
   compact?: boolean;
   wizardMode?: boolean; // hide nav and journal, keep only logo + lang
+  onWizardExit?: () => void;
+  onWizardReset?: () => void;
+  canWizardReset?: boolean;
 }
 
 export default function SiteHeader({
@@ -23,6 +27,9 @@ export default function SiteHeader({
   onAuthRequest,
   compact = false,
   wizardMode = false,
+  onWizardExit,
+  onWizardReset,
+  canWizardReset = false,
 }: SiteHeaderProps) {
   const { lang, setLang, t } = useI18n();
   const { user, signOutUser, linkSentTo, authNotice, clearAuthNotice } = useAuth();
@@ -128,6 +135,17 @@ export default function SiteHeader({
   const headerPad = compact ? "p-1.5" : "p-2.5";
   const bottomMarginTop = compact ? "mt-1" : "mt-2";
   const titleSize = compact ? "text-lg" : "text-xl";
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!actionsOpen) return;
+      const node = actionsRef.current;
+      if (node && !node.contains(e.target as Node)) setActionsOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [actionsOpen]);
 
   return (
     <header className={`relative bg-white ${headerPad} shadow`}>
@@ -264,6 +282,45 @@ export default function SiteHeader({
                 <span className="block h-[2px] w-5 bg-current"></span>
               </span>
             </button>
+          )}
+          {wizardMode && (
+            <div className="flex items-center gap-1" ref={actionsRef}>
+              {/* Desktop: Exit visible, Reset in menu */}
+              {/* Exit hidden on desktop too; available in menu */}
+              <button type="button" className="hidden" aria-hidden>
+                {lang === 'ro' ? 'Ieși' : 'Exit'}
+              </button>
+              <button
+                type="button"
+                aria-label={lang === 'ro' ? 'Opțiuni wizard' : 'Wizard options'}
+                onClick={() => setActionsOpen((v) => !v)}
+                className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#D8C6B6] text-[#2C2C2C] hover:bg-[#F6F2EE] md:h-9 md:w-9"
+              >
+                ⋯
+              </button>
+              {actionsOpen ? (
+                <div className="absolute right-2 top-full z-50 mt-2 min-w-[180px] rounded-[10px] border border-[#E4D8CE] bg-white p-2 text-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+                  <button
+                    type="button"
+                    onClick={() => { setActionsOpen(false); if (onWizardExit) onWizardExit(); }}
+                    className="flex w-full items-center justify-between rounded-[8px] px-3 py-1.5 text-left hover:bg-[#F6F2EE]"
+                  >
+                    {lang === 'ro' ? 'Ieși' : 'Exit'}
+                    <span className="opacity-60">⌘E</span>
+                  </button>
+                  {canWizardReset ? (
+                    <button
+                      type="button"
+                      onClick={() => { setActionsOpen(false); if (onWizardReset) onWizardReset(); }}
+                      className="mt-1 flex w-full items-center justify-between rounded-[8px] px-3 py-1.5 text-left hover:bg-[#FFF4EE]"
+                    >
+                      {lang === 'ro' ? 'Ia de la capăt' : 'Start over'}
+                      <span className="opacity-60">⌘R</span>
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           )}
         </div>
       </div>

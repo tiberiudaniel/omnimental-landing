@@ -64,6 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     const auth = getFirebaseAuth();
+    // Avoid double-consuming on the dedicated /auth page; let that page own the flow
+    try {
+      const path = window.location.pathname || '';
+      if (path.startsWith('/auth')) return;
+    } catch {}
     if (!isSignInWithEmailLink(auth, window.location.href)) {
       return;
     }

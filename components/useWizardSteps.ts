@@ -11,7 +11,8 @@ export type Step =
   | "reflectionPrompt"
   | "intent"
   | "reflectionSummary"
-  | "intentSummary"
+  | "intentMotivation" // new canonical name
+  | "intentSummary" // legacy alias accepted in URL
   | "cards"
   | "details";
 
@@ -22,13 +23,19 @@ const ORDERED_STEPS: Step[] = [
   "reflectionPrompt",
   "intent",
   "reflectionSummary",
-  "intentSummary",
+  "intentMotivation",
   "cards",
   "details",
 ];
 
+const LEGACY_ALIASES: Record<string, Step> = {
+  intentSummary: "intentMotivation",
+};
+
 const isStep = (value: string | null): value is Step => {
-  return Boolean(value && ORDERED_STEPS.includes(value as Step));
+  if (!value) return false;
+  if (ORDERED_STEPS.includes(value as Step)) return true;
+  return Boolean(LEGACY_ALIASES[value]);
 };
 
 export function useWizardSteps(initialStep: Step = "preIntro") {
@@ -41,7 +48,10 @@ export function useWizardSteps(initialStep: Step = "preIntro") {
   );
   const step = useMemo(() => {
     const paramStep = searchParams?.get("step");
-    return isStep(paramStep) ? (paramStep as Step) : localStep;
+    if (isStep(paramStep)) {
+      return (LEGACY_ALIASES[paramStep as string] ?? (paramStep as Step));
+    }
+    return localStep;
   }, [localStep, searchParams]);
 
   const goToStep = useCallback(
@@ -50,7 +60,8 @@ export function useWizardSteps(initialStep: Step = "preIntro") {
       const params = new URLSearchParams(searchParams?.toString() ?? "");
       params.set("step", next);
       const queryString = params.toString();
-      router.replace(queryString ? `/?${queryString}` : "/", { scroll: true });
+      // Use push to preserve browser history so Back navigates to previous wizard steps
+      router.push(queryString ? `/?${queryString}` : "/", { scroll: true });
     },
     [router, searchParams],
   );

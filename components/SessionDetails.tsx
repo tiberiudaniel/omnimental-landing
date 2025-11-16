@@ -3,17 +3,20 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { recordRecommendationProgressFact } from "@/lib/progressFacts";
 import { motion } from "framer-motion";
 import { useI18n } from "../components/I18nProvider";
 import TypewriterText from "./TypewriterText";
 import CTAButton from "./CTAButton";
+import AccountModal from "./AccountModal";
 
 interface SessionDetailsProps {
   type: "individual" | "group";
 }
 
 export default function SessionDetails({ type }: SessionDetailsProps) {
+  const [guestOpen, setGuestOpen] = useState(false);
   const { t } = useI18n();
   const ctaValue = t("signup");
   const reassuranceTitleValue = t("reassuranceTitle");
@@ -43,21 +46,25 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
     </div>
   );
 
-  const groupSummary = useMemo(
+  type GroupCard = { title: string; lines?: string[]; description?: string; inlineLink?: { href: string; label: string } };
+  const groupSummary = useMemo<GroupCard[]>(
     () => [
       {
         title: "Antrenament pentru minte și energie",
-        description:
-          "OmniMental Coaching aliniază creierul, inima și intestinul astfel încât deciziile să vină cu calm, energie și autocontrol. Programul online de 12 întâlniri condensează experiența din medii cu miză mare în exerciții ghidate, biofeedback și resetarea sistemului nervos. Este pentru profesioniști care vor să iasă din pilot automat și să transforme haosul zilnic în claritate și performanță.",
+        lines: [
+          "OmniMental Coaching aliniază creierul, inima și intestinul astfel încât deciziile să vină cu calm, energie și autocontrol.",
+          "Programul online de 12 întâlniri condensează experiența din medii cu miză mare în exerciții ghidate, biofeedback și resetarea sistemului nervos.",
+          "Este pentru profesioniști care vor să iasă din pilot automat și să transforme haosul zilnic în claritate și performanță.",
+        ],
       },
       {
         title: "Structură și rezultate",
-        description:
-          "Parcurgi un funnel de performanță în patru niveluri — Awareness, Control, Strategy, Mastery — care transformă reacțiile automate în răspunsuri lucide. Lucrezi live cu tehnici CBT, ACT, NLP, hipnoză, respirație și simulări pentru a crea automatisme de performanță. Energia de grup și responsabilitatea comună te țin în ritm până când focusul, reziliența și deciziile inspirate devin noua normalitate.",
-        inlineLink: {
-          href: "/group",
-          label: "All info",
-        },
+        lines: [
+          "Parcurgi un funnel de performanță în patru niveluri — Awareness, Control, Strategy, Mastery — care transformă reacțiile automate în răspunsuri lucide.",
+          "Lucrezi live cu tehnici CBT, ACT, NLP, hipnoză, respirație și simulări pentru a crea automatisme de performanță.",
+          "Energia de grup și responsabilitatea comună te țin în ritm până când focusul, reziliența și deciziile inspirate devin noua normalitate.",
+        ],
+        inlineLink: { href: "/group", label: "All info" },
       },
     ],
     []
@@ -101,17 +108,28 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
               className="rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
             >
               <h3 className="text-xl font-semibold text-[#1F1F1F]">{card.title}</h3>
-              <p className="mt-4 text-base leading-relaxed text-[#2C2C2C]">
-                {card.description}
-                {card.inlineLink && (
-                  <Link
-                    href={card.inlineLink.href}
-                    className="ml-1 text-sm font-semibold text-[#E60012] underline underline-offset-8 hover:text-[#B8000E]"
-                  >
-                    {card.inlineLink.label}
-                  </Link>
-                )}
-              </p>
+              <div className="mt-3 space-y-2 text-[15px] leading-relaxed text-[#2C2C2C]">
+                {(() => {
+                  const lines: string[] = Array.isArray(card.lines)
+                    ? card.lines
+                    : typeof card.description === "string"
+                    ? card.description.split(/\s*(?<=\.)\s+/).filter(Boolean)
+                    : [];
+                  return lines.map((line, i) => (
+                    <p key={`${card.title}-line-${i}`}>{line}</p>
+                  ));
+                })()}
+                {card.inlineLink ? (
+                  <p className="pt-1">
+                    <Link
+                      href={card.inlineLink.href}
+                      className="text-sm font-semibold text-[#C07963] underline underline-offset-4 hover:text-[#A76452]"
+                    >
+                      {card.inlineLink.label}
+                    </Link>
+                  </p>
+                ) : null}
+              </div>
             </motion.div>
           ))}
         </div>
@@ -122,17 +140,22 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
             <button
               type="button"
               onClick={() => {
-                if (typeof window !== 'undefined') {
-                  try { localStorage.setItem('omnimental_guest_access', '1'); } catch {}
-                  window.location.assign('/recommendation?demo=1');
-                }
+                void recordRecommendationProgressFact({ badgeLabel: 'magic_open' }).catch(() => undefined);
+                setGuestOpen(true);
               }}
-              className="rounded-[10px] border border-[#7A6455] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7A6455] transition hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+              className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
             >
-              {typeof t('guestSpecialAccess') === 'string' ? (t('guestSpecialAccess') as string) : 'Acces Invitat Special'}
+              {typeof t('guestSpecialAccess') === 'string' ? (t('guestSpecialAccess') as string) : (typeof window !== 'undefined' && (navigator.language || '').startsWith('en') ? 'Enter as Special Guest' : 'Acces Invitat Special')}
             </button>
           </div>
           {metaBadge}
+          <AccountModal
+            open={guestOpen}
+            onClose={() => {
+              void recordRecommendationProgressFact({ badgeLabel: 'magic_close' }).catch(() => undefined);
+              setGuestOpen(false);
+            }}
+          />
         </div>
 
         {reassuranceBlock}
@@ -313,7 +336,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
               {card.inlineLink && (
                 <Link
                   href={card.inlineLink.href}
-                  className="ml-1 text-sm font-semibold text-[#E60012] underline underline-offset-8 hover:text-[#B8000E]"
+                  className="text-sm font-semibold text-[#C07963] underline underline-offset-4 hover:text-[#A76452]"
                 >
                   {card.inlineLink.label}
                 </Link>
@@ -383,17 +406,23 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
           <button
             type="button"
             onClick={() => {
-              if (typeof window !== 'undefined') {
-                try { localStorage.setItem('omnimental_guest_access', '1'); } catch {}
-                window.location.assign('/recommendation?demo=1');
-              }
+              void recordRecommendationProgressFact({ badgeLabel: 'magic_open' }).catch(() => undefined);
+              setGuestOpen(true);
             }}
-            className="rounded-[10px] border border-[#7A6455] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7A6455] transition hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+            className="group inline-flex items-center gap-3 rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
           >
             {typeof t('guestSpecialAccess') === 'string' ? (t('guestSpecialAccess') as string) : 'Acces Invitat Special'}
+            <span className="translate-y-[1px] text-sm text-[#E60012] transition group-hover:translate-x-1 group-hover:text-[#B8000E]">→</span>
           </button>
         </div>
         {metaBadge}
+        <AccountModal
+          open={guestOpen}
+          onClose={() => {
+            void recordRecommendationProgressFact({ badgeLabel: 'magic_close' }).catch(() => undefined);
+            setGuestOpen(false);
+          }}
+        />
       </div>
       {faqItems.length > 0 && (
         <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">

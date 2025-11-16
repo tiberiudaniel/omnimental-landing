@@ -34,8 +34,12 @@ export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) 
   const closeLabel = getLabel("navClose", defaultNavigationText.close);
   const ctaLabel = getLabel("menuCtaLabel", defaultNavigationText.cta);
 
+  const isWizard = (() => {
+    try { return typeof window !== 'undefined' && window.location.pathname.startsWith('/wizard'); } catch { return false; }
+  })();
+  const overlayClass = isWizard ? 'bg-[#FDFCF9]/90' : 'bg-black/40';
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className={`fixed inset-0 z-50 ${overlayClass} backdrop-blur-sm`} onClick={onClose}>
       <div
         className="absolute right-6 top-6 w-[320px] max-w-[90%] border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.2)]"
         onClick={(event) => event.stopPropagation()}

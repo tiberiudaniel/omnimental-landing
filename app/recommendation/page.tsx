@@ -66,7 +66,7 @@ function RecommendationContent() {
       ) : null}
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <AccountModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} />
-      <main className="px-4 py-12 md:px-8">
+      <main className="px-4 py-12 md:px-8" data-testid="recommendation-step">
         {showChooseBanner ? (
           <div className="mx-auto mb-4 w-full max-w-4xl rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -94,7 +94,11 @@ function RecommendationContent() {
           <h1 className="text-3xl font-semibold text-[#2C1F18]">{pageTitle}</h1>
           <p className="text-sm text-[#4A3A30]">{pageSubtitle}</p>
           <div className="mt-2 flex justify-center">
-            <a href="/experience-onboarding?start=1" className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]">
+            <a
+              href="/experience-onboarding?flow=initiation&step=intro"
+              className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+              data-testid="reco-initiation-cta"
+            >
               {lang === 'ro' ? 'Vreau să testez OmniMental' : 'I want to try OmniMental'}
             </a>
           </div>

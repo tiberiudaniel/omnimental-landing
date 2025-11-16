@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Ensure dev server is available on 3000 for smoke tests
+BASE="http://localhost:3000"
+
+node -e "const http=require('http');const u=new URL(process.argv[1]);const req=http.get({hostname:u.hostname,port:u.port||80,path:u.pathname,timeout:2000},res=>{process.exit(0)});req.on('error',()=>process.exit(1));" "$BASE" || {
+  echo "[pre-push] Dev server not reachable at $BASE"
+  echo "Start it with: npm run dev (on port 3000)"
+  echo "Or push with --no-verify to skip the hook (not recommended)."
+  exit 1
+}
+
+echo "[pre-push] Running smoke tests against $BASE …"
+npm run -s test:smoke:3000
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+  echo "[pre-push] Smoke tests failed. Aborting push."
+  exit $RESULT
+fi
+
+echo "[pre-push] Smoke tests passed. Proceeding with push."
+

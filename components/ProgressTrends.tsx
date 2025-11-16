@@ -58,15 +58,17 @@ export default function ProgressTrends({ lang, sparkValues, radarChart, category
           {Object.values(radarChart).every((v) => !v) ? (
             <p className="text-xs text-[#7A6455]">{lang === "ro" ? "Încă nu ai selectat teme." : "No selections yet."}</p>
           ) : (
-            <RadarIndicators
-              data={INDICATOR_CHART_KEYS.map((key) => ({
-                key,
-                label: INDICATOR_LABELS[key][lang === "ro" ? "ro" : "en"],
-                value: Math.max(0, Math.min(5, radarChart[key] ?? 0)),
-              }))}
-              maxValue={5}
-              size="lg"
-            />
+            <div className="mx-auto max-w-[260px]">
+              <RadarIndicators
+                data={INDICATOR_CHART_KEYS.map((key) => ({
+                  key,
+                  label: INDICATOR_LABELS[key][lang === "ro" ? "ro" : "en"],
+                  value: Math.max(0, Math.min(5, radarChart[key] ?? 0)),
+                }))}
+                maxValue={5}
+                size="md"
+              />
+            </div>
           )}
           {/* Chips cu temele alese + acțiune de rafinare */}
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2">

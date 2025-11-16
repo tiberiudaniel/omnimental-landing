@@ -39,8 +39,12 @@ function WizardAliasInner() {
     const resume = params?.get("resume");
     const lang = params?.get("lang");
     const open = params?.get("open");
+    const e2e = params?.get("e2e");
+    const demo = params?.get("demo");
     if (lang) target.searchParams.set("lang", lang);
     if (open) target.searchParams.set("open", open);
+    if (e2e === "1") target.searchParams.set("e2e", "1");
+    if (demo) target.searchParams.set("demo", demo);
     if (resume === "1") {
       const resumeStep = computeResumeStep(progress);
       target.searchParams.set("step", resumeStep);

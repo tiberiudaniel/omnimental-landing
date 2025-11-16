@@ -85,6 +85,7 @@ export function computeWeeklyBuckets(
 export function computeTodayBucket(
   sessions: PracticeSessionLite[],
   referenceMs: number,
+  lang?: string,
 ): { day: number; totalMin: number; label: string }[] {
   const start = startOfDay(referenceMs);
   const end = start + DAY_MS - 1;
@@ -95,7 +96,7 @@ export function computeTodayBucket(
     if (ms < start || ms > end) return;
     total += Math.max(0, Math.round((s.durationSec ?? 0) / 60));
   });
-  const isEN = typeof navigator !== "undefined" ? /^en/i.test(navigator.language || "") : false;
+  const isEN = lang ? /^en/i.test(lang) : false;
   const label = isEN ? "Today" : "Azi";
   return [{ day: start, totalMin: total, label }];
 }
@@ -209,6 +210,73 @@ export function filterSessionsByType(
   return sessions.filter((s) => s.type === type);
 }
 
+// --------------------
+// Action trend (scored 0–100 per day) per spec in DOCS/DOCS/grafic-trendul-actiunilor.md
+// --------------------
+export type ActivityCategory = "knowledge" | "practice" | "reflection";
+export type ActivityEvent = {
+  startedAt: Date | string | number;
+  durationMin?: number;
+  units?: number;
+  source: "omnikuno" | "omniabil" | "breathing" | "journal" | "drill" | "slider" | "other";
+  category: ActivityCategory;
+  focusTag?: string;
+};
+
+const DEFAULT_MIN_PER_UNIT: Record<ActivityCategory, number> = {
+  knowledge: 6,
+  practice: 8,
+  reflection: 4,
+};
+const CATEGORY_WEIGHTS: Record<ActivityCategory, number> = {
+  knowledge: 0.8,
+  practice: 1.5,
+  reflection: 1.1,
+};
+const FOCUS_MATCH_WEIGHT = 1.0;
+const FOCUS_MISMATCH_WEIGHT = 0.5;
+function focusWeight(ev: ActivityEvent, currentFocusTag?: string) {
+  if (!currentFocusTag || !ev.focusTag) return 1.0;
+  return ev.focusTag === currentFocusTag ? FOCUS_MATCH_WEIGHT : FOCUS_MISMATCH_WEIGHT;
+}
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+const DAILY_TARGET = 30; // 30 weighted minutes ≈ 100
+const toActionScore = (mins: number) => Math.round(clamp01(mins / DAILY_TARGET) * 100);
+
+export function computeActionTrend(
+  events: ActivityEvent[],
+  refMs: number,
+  lang: string,
+  days: number,
+  currentFocusTag?: string,
+): { day: number; totalMin: number; label: string }[] {
+  const DAY = 24 * 60 * 60 * 1000;
+  const start = startOfDay(refMs - (days - 1) * DAY);
+  const arr: { day: number; totalMin: number; label: string }[] = [];
+  for (let i = 0; i < days; i += 1) {
+    const dayStart = start + i * DAY;
+    const dayEnd = dayStart + DAY;
+    const list = events.filter((ev) => {
+      const ms = toMs(ev.startedAt);
+      return ms >= dayStart && ms < dayEnd;
+    });
+    let weighted = 0;
+    for (const ev of list) {
+      const base = typeof ev.durationMin === 'number' && Number.isFinite(ev.durationMin)
+        ? Math.max(0, ev.durationMin)
+        : Math.max(0, (ev.units || 1) * DEFAULT_MIN_PER_UNIT[ev.category]);
+      const wCat = CATEGORY_WEIGHTS[ev.category];
+      const wF = focusWeight(ev, currentFocusTag);
+      weighted += base * wCat * wF;
+    }
+    const score = toActionScore(weighted);
+    const d = new Date(dayStart);
+    const label = lang && /^en/i.test(lang) ? String(d.getUTCDate()) : String(d.getUTCDate());
+    arr.push({ day: dayStart, totalMin: score, label });
+  }
+  return arr;
+}
+
 export function computeDistribution(sessions: PracticeSessionLite[]): {
   reflection: number; breathing: number; drill: number; total: number;
 } {
@@ -264,6 +332,7 @@ export function computeStreak(
 export function computeTodayCounts(
   sessions: PracticeSessionLite[],
   referenceMs: number,
+  lang?: string,
 ): { day: number; totalMin: number; label: string }[] {
   const start = startOfDay(referenceMs);
   const end = start + DAY_MS - 1;
@@ -274,7 +343,7 @@ export function computeTodayCounts(
     if (ms < start || ms > end) return;
     total += 1; // count sessions
   });
-  const isEN = typeof navigator !== "undefined" ? /^en/i.test(navigator.language || "") : false;
+  const isEN = lang ? /^en/i.test(lang) : false;
   const label = isEN ? "Today" : "Azi";
   return [{ day: start, totalMin: total, label }];
 }

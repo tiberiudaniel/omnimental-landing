@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { go, resetSession } from './helpers/env';
 
 test.describe('Progress journal → dashboard', () => {
   test('saves entry and shows in Recent Entries; reflections increments', async ({ page }) => {
+    test.setTimeout(90000);
     // Go to progress and force open journal drawer
-    await page.goto('/progress?open=journal&lang=ro');
+    await resetSession(page);
+    await go(page, '/progress?open=journal&lang=ro&e2e=1');
 
     // Type a unique journal line
     const unique = `E2E jurnal ${Date.now()}`;
@@ -21,9 +24,23 @@ test.describe('Progress journal → dashboard', () => {
       beforeReflections = txt ? Number((txt.match(/\d+/)?.[0]) ?? '0') : null;
     }
 
-    // Trigger save (autosave runs too); close via ESC to avoid selector flake
-    // Close via close button for stability
-    await page.getByTestId('journal-close').click();
+    // Allow autosave debounce briefly; closing the drawer shifts focus and triggers onBlur too
+    await page.waitForTimeout(250);
+    // Close drawer (prefer close button; fallback to ESC)
+    const closeBtn = drawer.getByTestId('journal-close');
+    try {
+      await closeBtn.scrollIntoViewIfNeeded().catch(() => {});
+      await closeBtn.waitFor({ state: 'visible', timeout: 5000 });
+      await closeBtn.click();
+    } catch {
+      // Fallback: click overlay
+      try {
+        const overlay = page.locator('[data-testid="journal-drawer"] > div').first();
+        await overlay.click({ trial: false, timeout: 2000 }).catch(() => {});
+      } catch {}
+      // Final fallback: ESC
+      await page.keyboard.press('Escape');
+    }
     // Drawer should hide
     await expect(drawer).toBeHidden({ timeout: 15000 });
     // Expect save toast

@@ -13,6 +13,11 @@ import StepProgressRedirect from "./steps/StepProgressRedirect";
 import StepJournal from "./steps/StepJournal";
 import StepBreathPractice from "./steps/StepBreathPractice";
 import StepProjection from "./steps/StepProjection";
+import InitiationStepJournal from "./steps/InitiationStepJournal";
+import InitiationStepKunoContext from "./steps/InitiationStepKunoContext";
+import InitiationStepOmniScope from "./steps/InitiationStepOmniScope";
+import InitiationStepDailyState from "./steps/InitiationStepDailyState";
+import InitiationStepLesson from "./steps/InitiationStepLesson";
 
 export type StepId =
   | "intro"
@@ -23,6 +28,15 @@ export type StepId =
   | "breath"
   | "projection";
 
+type InitiationStepId =
+  | "intro"
+  | "omnikuno-test"
+  | "omnikuno-context"
+  | "journal"
+  | "omniscope"
+  | "daily-state"
+  | "omnikuno-lesson";
+
 function ExperienceOnboardingContent() {
   const router = useRouter();
   const search = useSearchParams();
@@ -31,14 +45,18 @@ function ExperienceOnboardingContent() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const start = search?.get("start") === "1";
-  const stepParam = (search?.get("step") as StepId | null) ?? null;
-  const [step, setStep] = useState<StepId>(stepParam ?? (start ? "intro" : "intro"));
+  const flow = (search?.get("flow") || "default").toLowerCase();
+  const stepParamRaw = search?.get("step") as string | null;
+  const stepParam = (flow === 'initiation'
+    ? (stepParamRaw as InitiationStepId | null)
+    : (stepParamRaw as StepId | null)
+  ) ?? null;
+  const [step, setStep] = useState<string>(stepParam ?? (start ? "intro" : "intro"));
 
-  // Normalize entry: when coming with start=1, force intro and clear any stray step
+  // Normalize entry: if start=1 and no explicit step, set intro once
   useEffect(() => {
-    if (start && stepParam !== "intro") {
+    if (start && !stepParam) {
       const params = new URLSearchParams(search?.toString() ?? "");
-      params.delete("step");
       params.set("step", "intro");
       router.replace(`?${params.toString()}`, { scroll: false });
       setStep("intro");
@@ -46,9 +64,10 @@ function ExperienceOnboardingContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [start]);
 
-  const go = (next: StepId, extra?: Record<string, string>) => {
+  const go = (next: string, extra?: Record<string, string>) => {
     const params = new URLSearchParams(search?.toString() ?? "");
     params.set("step", next);
+    if (flow) params.set("flow", flow);
     if (extra) {
       for (const [k, v] of Object.entries(extra)) params.set(k, String(v));
     }
@@ -65,44 +84,98 @@ function ExperienceOnboardingContent() {
       <SiteHeader compact />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <main className="mx-auto max-w-4xl px-4 py-8 md:px-8">
-        {step === "intro" && (
-          <StepIntro onStart={() => go("miniTest")} />
-        )}
-        {step === "miniTest" && (
-          <StepMiniTest
-            onSubmit={(a, s, meta) => {
-              setAnswers(a);
-              setScore(s);
-              setMiniMeta(meta);
-              go("score");
-            }}
-          />
-        )}
-        {step === "score" && (
-          <StepMiniTestScore
-            answers={answers}
-            score={score}
-            userId={profile?.id ?? null}
-            topicKey={miniMeta?.topicKey}
-            questionsMeta={miniMeta?.questions}
-            onContinue={() => go("progressRedirect")}
-          />
-        )}
-        {step === "progressRedirect" && (
-          <StepProgressRedirect onRedirect={() => router.push("/progress?from=experience-onboarding")}/>
-        )}
-        {step === "journal" && (
-          <StepJournal
-            userId={profile?.id ?? null}
-            onSaved={() => router.push("/progress?after=os")}
-            onSkip={() => go("breath")}
-          />
-        )}
-        {step === "breath" && (
-          <StepBreathPractice userId={profile?.id} onDone={() => router.push("/progress?after=abil")} onSkip={() => go("projection")} />
-        )}
-        {step === "projection" && (
-          <StepProjection onGoTraining={() => router.push("/antrenament")} />
+        {flow !== 'initiation' ? (
+          <>
+            {step === "intro" && (
+              <StepIntro onStart={() => go("miniTest")} />
+            )}
+            {step === "miniTest" && (
+              <StepMiniTest
+                onSubmit={(a, s, meta) => {
+                  setAnswers(a);
+                  setScore(s);
+                  setMiniMeta(meta);
+                  go("score");
+                }}
+              />
+            )}
+            {step === "score" && (
+              <StepMiniTestScore
+                answers={answers}
+                score={score}
+                userId={profile?.id ?? null}
+                topicKey={miniMeta?.topicKey}
+                questionsMeta={miniMeta?.questions}
+                onContinue={() => go("progressRedirect")}
+              />
+            )}
+            {step === "progressRedirect" && (
+              <StepProgressRedirect onRedirect={() => router.push("/progress?from=experience-onboarding")}/>
+            )}
+            {step === "journal" && (
+              <StepJournal
+                userId={profile?.id ?? null}
+                onSaved={() => router.push("/progress?after=os")}
+                onSkip={() => go("breath")}
+              />
+            )}
+            {step === "breath" && (
+              <StepBreathPractice userId={profile?.id} onDone={() => router.push("/progress?after=abil")} onSkip={() => go("projection")} />
+            )}
+            {step === "projection" && (
+              <StepProjection onGoTraining={() => router.push("/antrenament")} />
+            )}
+          </>
+        ) : (
+          <>
+            {/* Initiation flow */}
+            {step === 'intro' && (
+              <StepIntro onStart={() => go('omnikuno-test')} />
+            )}
+            {step === 'omnikuno-test' && (
+              <>
+                {(() => {
+                  // render mini test then score
+                  if (answers.length && score.max > 0) {
+                    return (
+                      <StepMiniTestScore
+                        answers={answers}
+                        score={score}
+                        userId={profile?.id ?? null}
+                        topicKey={miniMeta?.topicKey}
+                        questionsMeta={miniMeta?.questions}
+                        onContinue={() => go('omnikuno-context')}
+                      />
+                    );
+                  }
+                  return (
+                    <StepMiniTest
+                      onSubmit={(a, s, meta) => {
+                        setAnswers(a);
+                        setScore(s);
+                        setMiniMeta(meta);
+                      }}
+                    />
+                  );
+                })()}
+              </>
+            )}
+            {step === 'omnikuno-context' && (
+              <InitiationStepKunoContext userId={profile?.id ?? null} onContinue={() => router.push('/progress?from=initiation&step=omnikuno-test-done')} />
+            )}
+            {step === 'journal' && (
+              <InitiationStepJournal />
+            )}
+            {step === 'omniscope' && (
+              <InitiationStepOmniScope userId={profile?.id ?? null} />
+            )}
+            {step === 'daily-state' && (
+              <InitiationStepDailyState />
+            )}
+            {step === 'omnikuno-lesson' && (
+              <InitiationStepLesson userId={profile?.id ?? null} />
+            )}
+          </>
         )}
       </main>
     </div>

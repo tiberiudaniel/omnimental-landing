@@ -36,7 +36,7 @@ assertEnv(
 );
 assertEnv(process.env.NEXT_PUBLIC_FIREBASE_APP_ID, "NEXT_PUBLIC_FIREBASE_APP_ID");
 
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && (process.env.NEXT_PUBLIC_DEBUG === "1")) {
   console.log(
     "FB cfg",
     (process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "").slice(0, 6) + "...",

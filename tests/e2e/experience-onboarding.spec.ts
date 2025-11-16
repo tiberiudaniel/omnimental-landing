@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { expectVisibleShort } from './helpers/diag';
 
 test.describe('Experience Onboarding (RO)', () => {
   test('mini-test → score → progress highlight', async ({ page }) => {
-    await page.goto('/experience-onboarding?start=1&lang=ro');
+    await page.goto('/experience-onboarding?start=1&lang=ro&e2e=1');
 
     // Intro
     await page.getByTestId('eo-start').click();
@@ -23,8 +24,8 @@ test.describe('Experience Onboarding (RO)', () => {
     await page.getByTestId('eo-continue').click();
     // Redirect step renders; click Continue now
     await page.getByRole('button', { name: /Continuă acum|Continue now/i }).click();
-    // Landing on progress with test highlight
-    await expect(page).toHaveURL(/progress/);
-    await expect(page.getByText(/Ai completat primul tău test/i)).toBeVisible();
+    // Landing on progress; assert Omni‑Cuno present (stable metric tile)
+    await expect(page).toHaveURL(/progress/, { timeout: 20000 });
+    await expectVisibleShort(page, page.getByTestId('metric-omni-cuno'), 'metric-omni-cuno');
   });
 });

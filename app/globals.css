@@ -6,6 +6,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --accent: #C07963;
+  --accent-hover: #A76452;
 }
 
 @theme inline {
@@ -15,16 +17,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Force light theme for Beta — ignore OS dark mode to avoid dark body behind light sections */
+/* If we later add a dark theme, gate it behind an explicit class instead of prefers-color-scheme */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  /* Use the product light background universally */
+  background: #FDFCF9;
+  color: #2C2C2C;
   font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
 }
@@ -43,11 +42,57 @@ body {
   .t-value-xl {
     @apply text-xl;
   }
+  /* Unified text sizes */
+  .t-body-sm { @apply text-[13px] leading-6; }
+  .t-body { @apply text-sm leading-relaxed; }
+  .t-heading-sm { @apply text-lg font-semibold; }
+  .t-heading { @apply text-xl font-semibold; }
+  .font-serif-display { font-family: var(--font-cormorant), Georgia, "Times New Roman", serif; letter-spacing: 0.01em; }
+  /* Page/container and panel helpers */
+  .page-wrap { max-width: 1120px; margin-left: auto; margin-right: auto; }
+  .panel-ghost { border: 1px solid #E4D8CE; background: rgba(255,255,255,0.92); box-shadow: 0 12px 32px rgba(0,0,0,0.08); border-radius: 16px; }
 }
+
+/* Mixer-style range with neumorphic rail, ticks, and raised knob */
+.mixer-wrap { position: relative; padding: 18px 0; border-radius: 14px; background: linear-gradient(180deg, #F7F3EE 0%, #FDFBF8 100%); box-shadow: -6px -6px 14px rgba(255,255,255,0.9), 6px 6px 12px rgba(0,0,0,0.06); }
+/* Minimal ticks only on bottom; use specific classes for alignment */
+.mixer-wrap::before { content: ""; position: absolute; left: 12px; right: 12px; bottom: 2px; height: 10px; pointer-events: none; background-repeat: repeat; }
+/* 10 stops (1–10): 9 intervals → 11.111% */
+.mixer-wrap.ticks-10::before { background-image: repeating-linear-gradient(to right, rgba(0,0,0,0.18) 0 1px, transparent 1px 11.111%); }
+/* 5 stops (1–5): 4 intervals → 25% */
+.mixer-wrap.ticks-5::before { background-image: repeating-linear-gradient(to right, rgba(0,0,0,0.18) 0 1px, transparent 1px 25%); }
+.mixer-slot { position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); height: 10px; border-radius: 999px; background: #DCD4CB; box-shadow: inset 0 1px 2px rgba(0,0,0,0.15), inset 0 -1px 2px rgba(255,255,255,0.9); pointer-events: none; }
+.mixer-fill { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); height: 10px; border-radius: 999px; background: #2B2B2B; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); pointer-events: none; }
+.mixer-range { appearance: none; width: 100%; background: transparent; position: relative; z-index: 1; }
+.mixer-range:focus { outline: none; }
+.mixer-range::-webkit-slider-runnable-track { height: 8px; background: transparent; border-radius: 999px; }
+.mixer-range::-moz-range-track { height: 8px; background: transparent; border-radius: 999px; }
+.mixer-range::-webkit-slider-thumb { appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 1px solid #D8C6B6; box-shadow: 0 10px 18px rgba(0,0,0,0.18), inset -2px -2px 3px rgba(0,0,0,0.06), inset 2px 2px 4px rgba(255,255,255,0.85); margin-top: -9px; }
+.mixer-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 1px solid #D8C6B6; box-shadow: 0 10px 18px rgba(0,0,0,0.18), inset -2px -2px 3px rgba(0,0,0,0.06), inset 2px 2px 4px rgba(255,255,255,0.85); }
+
+/* Fluid width wrapper so sliders adapt but don't stretch excessively */
+.mixer-fluid { width: 100%; max-width: 740px; }
+@media (min-width: 640px) { .mixer-fluid { max-width: 820px; } }
 
 html {
   scroll-behavior: smooth;
 }
+
+/* Display serif override for TypewriterText on intro */
+.typewriter-display h2 {
+  font-family: var(--font-cormorant), Georgia, "Times New Roman", serif !important;
+  font-weight: 600;
+  letter-spacing: 0em;
+  line-height: 1.22;
+  /* editorial scale: comfortable on mobile, elegant on desktop */
+  font-size: clamp(22px, 4.2vw, 36px);
+}
+.typewriter-display .typewriter-cursor { color: #7A6455; }
+
+/* Accent link + badge (consistent across pages) */
+.accent-link { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+.accent-link:hover { color: var(--accent-hover); }
+.badge-accent { color: var(--accent); border: 1px solid var(--accent); background: rgba(255,255,255,0.95); }
 
 .hero-canvas,
 .panel-canvas {

@@ -404,6 +404,7 @@ function Step3({ answers, setAnswers, lang }: StepProps) {
         <div className="w-2/3 text-sm text-[#2C2C2C]">{lang === "ro" ? "Confort în grup" : "Group comfort"}</div>
         <div className="w-1/3 text-right">
           <input type="range" min={1} max={10} value={answers.groupComfort}
+            data-testid="groupComfort-slider"
             onChange={(e) => setAnswers((a) => ({ ...a, groupComfort: Number(e.target.value) }))}
             className="w-full accent-[#2C2C2C]" />
           <div className="text-xs text-[#7A6455]">{answers.groupComfort} / 10</div>
@@ -413,6 +414,7 @@ function Step3({ answers, setAnswers, lang }: StepProps) {
         <div className="w-2/3 text-sm text-[#2C2C2C]">{lang === "ro" ? "Te ajută experiențele altora?" : "Do others' experiences help you?"}</div>
         <div className="w-1/3 text-right">
           <input type="range" min={1} max={10} value={answers.learnFromOthers}
+            data-testid="learnFromOthers-slider"
             onChange={(e) => setAnswers((a) => ({ ...a, learnFromOthers: Number(e.target.value) }))}
             className="w-full accent-[#2C2C2C]" />
           <div className="text-xs text-[#7A6455]">{answers.learnFromOthers} / 10</div>
@@ -470,6 +472,7 @@ function Step4({
         <div className="w-2/3 text-sm text-[#2C2C2C]">{lang === "ro" ? "Potrivit cu program fix (12 săpt.)" : "Fit for fixed schedule (12 weeks)"}</div>
         <div className="w-1/3 text-right">
           <input type="range" min={1} max={10} value={answers.scheduleFit}
+            data-testid="scheduleFit-slider"
             onChange={(e) => setAnswers((a) => ({ ...a, scheduleFit: Number(e.target.value) }))}
             className="w-full accent-[#2C2C2C]" />
           <div className="text-xs text-[#7A6455]">{answers.scheduleFit} / 10</div>

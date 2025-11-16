@@ -8,7 +8,7 @@ export function auditIntentExpressions(locale: "ro" | "en" = "ro") {
   const expr = getIntentExpressions(locale);
   const unknown: Array<{ id: string; label: string; category: string }> = [];
   for (const e of expr) {
-    const ok = intentCategoryToIndicator[e.category] != null;
+    const ok = intentCategoryToIndicator(e.category) != null;
     if (!ok) unknown.push({ id: e.id, label: e.label, category: e.category });
   }
   console.group("Intent expressions audit");

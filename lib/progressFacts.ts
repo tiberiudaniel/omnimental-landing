@@ -546,12 +546,19 @@ export async function recordCtaClicked(variant: string) {
 }
 
 // Practice counters (reflection / breathing / drill)
-export async function recordPracticeEvent(type: "reflection" | "breathing" | "drill", ownerId?: string | null) {
+// Practice counters (reflection / breathing / drill)
+// Optional count allows batching multiple events atomically via increment(count).
+export async function recordPracticeEvent(
+  type: "reflection" | "breathing" | "drill",
+  ownerId?: string | null,
+  count = 1,
+) {
   try {
     const update: Record<string, unknown> = {};
-    if (type === "reflection") update.reflectionsCount = increment(1) as unknown as number;
-    if (type === "breathing") update.breathingCount = increment(1) as unknown as number;
-    if (type === "drill") update.drillsCount = increment(1) as unknown as number;
+    const inc = Math.max(1, Math.floor(Number(count) || 1));
+    if (type === "reflection") update.reflectionsCount = increment(inc) as unknown as number;
+    if (type === "breathing") update.breathingCount = increment(inc) as unknown as number;
+    if (type === "drill") update.drillsCount = increment(inc) as unknown as number;
     await mergeProgressFact(update, ownerId);
   } catch (e) {
     console.warn("recordPracticeEvent failed", e);
@@ -780,6 +787,20 @@ export async function recordRecentEntry(
       return new Date();
     };
     const text = String((isObj ? src?.text : entryIn) || '').slice(0, 2000);
+    const normalizeForDedupe = (s: string): string => {
+      try {
+        const base = s
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/\p{Diacritic}+/gu, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        // collapse runs of the same char longer than 2 to 2 (e.g., "momomoooo" -> "momoo")
+        return base.replace(/(.)\1{2,}/g, '$1$1');
+      } catch {
+        return s.trim();
+      }
+    };
     const entry: RecentEntry = {
       text,
       // Avoid serverTimestamp() within arrayUnion; use client timestamp
@@ -810,7 +831,7 @@ export async function recordRecentEntry(
     const nowMs = toMs(entry.timestamp) || Date.now();
     const tabId = entry.tabId ? String(entry.tabId) : '';
     const bucket = Math.floor(nowMs / 120000); // 2 min bucket for sig
-    const sig = `${text.trim()}|${tabId}|${bucket}`;
+    const sig = `${normalizeForDedupe(text)}|${tabId}|${bucket}`;
     entry.sig = sig;
 
     await runTransaction(db, async (tx) => {
@@ -821,16 +842,16 @@ export async function recordRecentEntry(
       const exists = rec.some((e) => {
         const esig = String(e.sig || '');
         if (esig === sig) return true;
-        const etxt = String(e.text ?? '').trim();
+        const etxt = normalizeForDedupe(String(e.text ?? ''));
         const ems = toMs(e.timestamp);
         const dt = Math.abs((nowMs) - (ems || 0));
-        return etxt === text.trim() && dt <= 12 * 60 * 60 * 1000; // 12h window
+        return etxt === normalizeForDedupe(text) && dt <= 12 * 60 * 60 * 1000; // 12h window
       });
       if (exists) return;
       rec.push(entry);
       // Optional cap to 50 items, newest last for consistency
       const sanitizedAsc = rec
-        .map((e) => ({ ...e, _ms: toMs(e.timestamp), _text: String(e.text ?? '').trim() }))
+        .map((e) => ({ ...e, _ms: toMs(e.timestamp), _text: normalizeForDedupe(String(e.text ?? '')) }))
         .sort((a, b) => (a._ms ?? 0) - (b._ms ?? 0))
         .slice(-100); // work with up to last 100 before final unique
       // Keep only the latest occurrence per normalized text
@@ -841,14 +862,17 @@ export async function recordRecentEntry(
       const uniqueList: RecentEntry[] = Array.from(uniqMap.values())
         .sort((a, b) => (a._ms ?? 0) - (b._ms ?? 0))
         .slice(-50)
-        .map((e) => ({
-          text: e.text,
-          timestamp: e.timestamp,
-          tabId: e.tabId,
-          theme: e.theme ?? null,
-          sourceBlock: e.sourceBlock ?? null,
-          sig: e.sig,
-        }));
+        .map((e) => {
+          const obj: Record<string, unknown> = {
+            text: String(e.text ?? ''),
+            timestamp: e.timestamp,
+            theme: e.theme ?? null,
+            sourceBlock: e.sourceBlock ?? null,
+          };
+          if (typeof e.tabId === 'string' && e.tabId) obj.tabId = e.tabId;
+          if (typeof e.sig === 'string' && e.sig) obj.sig = e.sig;
+          return obj as RecentEntry;
+        });
       tx.set(factsRef, { recentEntries: uniqueList, updatedAt: serverTimestamp() }, { merge: true });
     });
   } catch (e) {
@@ -916,6 +940,21 @@ export async function recordQuickAssessment(payload: {
   confidence: number;
   focus: number;
 }) {
+  // Derive internal indices sample (0..100) from sliders
+  const asPct = (v: number) => Math.round(Math.max(0, Math.min(100, (Number(v) || 0) * 10)));
+  const clarity = asPct(payload.clarity);
+  const energy = asPct(payload.energy);
+  const calm = (() => {
+    const invStress = 10 - (Number(payload.stress) || 0);
+    const pieces = [invStress, Number(payload.sleep) || 0].filter((n) => Number.isFinite(n));
+    const avg10 = pieces.length ? pieces.reduce((a, b) => a + b, 0) / pieces.length : 0;
+    return Math.round(Math.max(0, Math.min(100, avg10 * 10)));
+  })();
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const key = `d${y}${m}${d}`;
   return mergeProgressFact({
     quickAssessment: {
       energy: payload.energy,
@@ -925,6 +964,13 @@ export async function recordQuickAssessment(payload: {
       confidence: payload.confidence,
       focus: payload.focus,
       updatedAt: serverTimestamp(),
+    },
+    omni: {
+      scope: {
+        history: {
+          [key]: { clarity, calm, energy, updatedAt: serverTimestamp() },
+        },
+      },
     },
   });
 }
@@ -972,4 +1018,48 @@ export async function recordConsistencyPing() {
       },
     },
   });
+}
+
+// Activity event log for action trend (knowledge/practice/reflection)
+export type ActivityEventLog = {
+  startedAt: Date;
+  source: 'omnikuno' | 'omniabil' | 'breathing' | 'journal' | 'drill' | 'slider' | 'other';
+  category: 'knowledge' | 'practice' | 'reflection';
+  units?: number;
+  durationMin?: number;
+  focusTag?: string | null;
+};
+
+export async function recordActivityEvent(payload: {
+  startedAtMs?: number;
+  source: ActivityEventLog['source'];
+  category: ActivityEventLog['category'];
+  units?: number;
+  durationMin?: number;
+  focusTag?: string | null;
+}, ownerId?: string | null) {
+  try {
+    const user = ownerId ? { uid: ownerId } : await ensureAuth();
+    if (!user?.uid) return;
+    const db = getDb();
+    const factsRef = doc(db, 'userProgressFacts', user.uid);
+    const ev: ActivityEventLog = {
+      startedAt: new Date(Number.isFinite(payload.startedAtMs) ? (payload.startedAtMs as number) : Date.now()),
+      source: payload.source,
+      category: payload.category,
+      units: typeof payload.units === 'number' ? Math.max(1, Math.floor(payload.units)) : 1,
+      durationMin: typeof payload.durationMin === 'number' ? Math.max(0, Math.round(payload.durationMin)) : undefined,
+      focusTag: (payload.focusTag ?? null) as string | null,
+    };
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(factsRef);
+      const data = (snap.exists() ? (snap.data() as { activityEvents?: ActivityEventLog[] }) : {}) || {};
+      const cur: ActivityEventLog[] = Array.isArray(data.activityEvents) ? data.activityEvents.slice() : [];
+      cur.push(ev);
+      const pruned = cur.slice(-200); // keep last 200
+      tx.set(factsRef, { activityEvents: pruned, updatedAt: serverTimestamp() }, { merge: true });
+    });
+  } catch (e) {
+    console.warn('recordActivityEvent failed', e);
+  }
 }

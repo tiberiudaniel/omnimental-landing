@@ -1,20 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  query,
-  getDocs,
-  orderBy,
-  limit,
-  DocumentData,
-  QuerySnapshot,
-} from "firebase/firestore";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "../components/I18nProvider";
-import { getDb, ensureAuth, areWritesDisabled } from "../lib/firebase";
 import {
   detectCategoryFromRawInput,
   getIntentExpressions,
@@ -23,7 +11,6 @@ import {
   type IntentPrimaryCategory,
 } from "../lib/intentExpressions";
 
-const db = getDb();
 
 type FirstExpressionMeta = {
   expressionId?: string;
@@ -37,13 +24,7 @@ interface FirstScreenProps {
   onAuthRequest?: () => void;
 }
 
-const PLACEHOLDER_SAMPLE_COUNT = 3;
-const SUGGESTION_BATCH_MIN = 3;
-const SUGGESTION_BATCH_MAX = 5;
-const SUGGESTION_SELECTION_MAX = 2;
-const SUGGESTION_FETCH_LIMIT = 100;
-const PRIMARY_COLLECTION = "userInterests";
-const FALLBACK_COLLECTIONS = ["usersInterests", "usersinterests", "userSuggestions"];
+// Simplified: no chip suggestions list, only curated primary themes
 const CATEGORY_ORDER: IntentPrimaryCategory[] = [
   "clarity",
   "relationships",
@@ -52,60 +33,27 @@ const CATEGORY_ORDER: IntentPrimaryCategory[] = [
   "balance",
 ];
 
-const sanitizeSuggestions = (values: string[]) =>
-  Array.from(
-    new Set(
-      values
-        .map((value) => value.trim())
-        .filter((value) => value.length > 0)
-    )
-  );
-
-const pickRandom = (pool: string[], count: number) => {
-  if (!pool.length) return [];
-  const copy = [...pool];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  const limitCount = Math.min(count, copy.length);
-  return copy.slice(0, limitCount);
-};
+// Utility kept minimal; placeholder uses static template
 
 export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onAuthRequest }: FirstScreenProps) {
   const { lang, t } = useI18n();
   const welcomeValue = t("firstScreenWelcome");
   const question = t("firstScreenQuestion");
   const placeholderTemplateValue = t("firstScreenPlaceholder");
-  const suggestionsLabel = t("firstScreenSuggestionsBtn");
   const continueLabel = t("firstScreenContinueBtn");
-  const suggestionValue = t("firstScreenSuggestionsList");
-  const suggestionHintValue = t("firstScreenSuggestionHint");
-  const suggestionRefreshValue = t("firstScreenSuggestionsRefresh");
-  const suggestionTitleValue = t("firstScreenSuggestionsTitle");
   const welcomeText = typeof welcomeValue === "string" ? welcomeValue : "";
   const questionText =
     typeof question === "string" ? question : "";
   const placeholderTemplate =
     typeof placeholderTemplateValue === "string" ? placeholderTemplateValue : "";
-  const suggestionHint =
-    typeof suggestionHintValue === "string" ? suggestionHintValue : "";
-  const suggestionRefresh =
-    typeof suggestionRefreshValue === "string" ? suggestionRefreshValue : "";
-  const suggestionTitle =
-    typeof suggestionTitleValue === "string" ? suggestionTitleValue : "";
 
   const [input, setInput] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [storedSuggestions, setStoredSuggestions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [introPhase, setIntroPhase] = useState<"welcome" | "question">(
     welcomeText ? "welcome" : "question"
   );
   const [isInputHovered, setIsInputHovered] = useState(false);
-  const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
-  const [suggestionSelectionError, setSuggestionSelectionError] = useState<string | null>(null);
+  const [showIdeas, setShowIdeas] = useState(false);
   const isMountedRef = useRef(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -140,76 +88,6 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
     return isClient ? buildPrimaryOptions() : [];
   }, [isClient, buildPrimaryOptions, primaryNonce]);
 
-  const fallbackSuggestions = useMemo(() => {
-    const suggestionPool = Array.isArray(suggestionValue) ? suggestionValue : [];
-    return sanitizeSuggestions(suggestionPool);
-  }, [suggestionValue]);
-
-  const activeSuggestionPool =
-    storedSuggestions.length > 0 ? storedSuggestions : fallbackSuggestions;
-
-useEffect(() => {
-  void ensureAuth().catch((err) => {
-    console.warn("anonymous auth init failed", err);
-  });
-
-  let cancelled = false;
-  isMountedRef.current = true;
-
-    const fetchFromCollection = async (collectionName: string) => {
-      try {
-        const suggestionsQuery = query(
-          collection(db, collectionName),
-          orderBy("timestamp", "desc"),
-          limit(SUGGESTION_FETCH_LIMIT)
-        );
-        return await getDocs(suggestionsQuery);
-      } catch (err) {
-        console.warn(`fetchSuggestions orderBy failed for ${collectionName}:`, err);
-        try {
-          return await getDocs(collection(db, collectionName));
-        } catch (innerErr) {
-          console.error(`fetchSuggestions failed for ${collectionName}:`, innerErr);
-          return null;
-        }
-      }
-    };
-
-  const fetchSuggestions = async () => {
-      try {
-        await ensureAuth();
-        const collectionsToQuery = [PRIMARY_COLLECTION, ...FALLBACK_COLLECTIONS];
-        const snapshots = await Promise.all(
-          collectionsToQuery.map((name) => fetchFromCollection(name))
-        );
-        if (cancelled) return;
-
-        const fetched = snapshots
-          .filter(
-            (snapshot): snapshot is QuerySnapshot<DocumentData> => snapshot !== null
-          )
-          .flatMap((snapshot) =>
-            snapshot.docs
-              .map((doc) => doc.data()?.text)
-              .filter((value): value is string => typeof value === "string")
-          );
-
-        if (!cancelled && isMountedRef.current) {
-          setStoredSuggestions(sanitizeSuggestions(fetched));
-        }
-      } catch (err) {
-        console.error("fetchSuggestions failed:", err);
-      }
-    };
-
-    fetchSuggestions();
-
-    return () => {
-      isMountedRef.current = false;
-      cancelled = true;
-    };
-  }, []);
-
   useEffect(() => {
     return () => {
       if (focusTimerRef.current) {
@@ -218,39 +96,7 @@ useEffect(() => {
     };
   }, []);
 
-  const placeholderText = useMemo(() => {
-    // Evită randomness în SSR: doar pe client folosim sugestii aleatorii
-    if (!isClient || !storedSuggestions.length) {
-      return placeholderTemplate;
-    }
-    const selection = pickRandom(
-      storedSuggestions,
-      Math.min(PLACEHOLDER_SAMPLE_COUNT, storedSuggestions.length),
-    );
-    if (!selection.length) {
-      return placeholderTemplate;
-    }
-    return `Ex: ${selection.join("; ")}`;
-  }, [isClient, placeholderTemplate, storedSuggestions]);
-
-  const persistSuggestion = async (text: string) => {
-    try {
-      await ensureAuth();
-      if (!areWritesDisabled()) {
-        await addDoc(collection(db, PRIMARY_COLLECTION), {
-          text,
-          timestamp: serverTimestamp(),
-        });
-      }
-      if (isMountedRef.current) {
-        setStoredSuggestions((prev) =>
-          sanitizeSuggestions([text, ...prev]).slice(0, SUGGESTION_FETCH_LIMIT)
-        );
-      }
-    } catch (err) {
-      console.error("addDoc failed:", err);
-    }
-  };
+  const placeholderText = placeholderTemplate;
 
   const handleSubmit = (value?: string, metadata?: FirstExpressionMeta) => {
     const text = value ?? input;
@@ -292,60 +138,9 @@ useEffect(() => {
     } catch {
       finish(false);
     }
-
-    if (!resolvedMeta?.expressionId) {
-      void persistSuggestion(trimmed);
-    }
-  };
-
-  const pullSuggestionBatch = () => {
-    if (!activeSuggestionPool.length) return [];
-    const range = SUGGESTION_BATCH_MAX - SUGGESTION_BATCH_MIN + 1;
-    const desired =
-      Math.min(
-        activeSuggestionPool.length,
-        Math.floor(Math.random() * range) + SUGGESTION_BATCH_MIN,
-      );
-    return pickRandom(activeSuggestionPool, desired);
-  };
-
-  const handleSuggestionsToggle = () => {
-    setSelectedSuggestions([]);
-    setSuggestions(pullSuggestionBatch());
-    setShowSuggestions(true);
-  };
-
-  const toggleSuggestionSelection = (value: string) => {
-    setSuggestionSelectionError(null);
-    setSelectedSuggestions((prev) => {
-      if (prev.includes(value)) {
-        return prev.filter((entry) => entry !== value);
-      }
-      if (prev.length >= SUGGESTION_SELECTION_MAX) {
-        setSuggestionSelectionError(
-          lang === "ro"
-            ? `Poți selecta cel mult ${SUGGESTION_SELECTION_MAX} opțiuni.`
-            : `You can select up to ${SUGGESTION_SELECTION_MAX} options.`,
-        );
-        return prev;
-      }
-      return [...prev, value];
-    });
-  };
-
-  const handleSuggestionSubmit = () => {
-    if (selectedSuggestions.length < 2) {
-      return;
-    }
-    const combined = selectedSuggestions.join(". ");
-    handleSubmit(combined);
-    setSelectedSuggestions([]);
-    setShowSuggestions(false);
   };
 
   const handlePrimaryOptionSelect = (option: LocalizedIntentExpression) => {
-    setSelectedSuggestions([]);
-    setShowSuggestions(false);
     handleSubmit(option.label, { expressionId: option.id, category: option.category });
   };
 
@@ -353,22 +148,7 @@ useEffect(() => {
     setPrimaryNonce((n) => n + 1);
   };
 
-  const suggestionContinueLabel =
-    lang === "ro" ? "Continuă cu selecțiile" : "Continue with selections";
-  const suggestionRequirementLabel =
-    lang === "ro"
-      ? `Selectează încă ${Math.max(
-          0,
-          SUGGESTION_SELECTION_MAX - selectedSuggestions.length,
-        )} opțiune pentru a continua.`
-      : `Select ${Math.max(
-          0,
-          SUGGESTION_SELECTION_MAX - selectedSuggestions.length,
-        )} more option(s) to continue.`;
-  const suggestionMaxLabel =
-    lang === "ro"
-      ? `Poți folosi maximum ${SUGGESTION_SELECTION_MAX} sugestii.`
-      : `You can use up to ${SUGGESTION_SELECTION_MAX} suggestions.`;
+  // Suggestions chips removed; no additional labels required
 
   const handleQuestionComplete = () => {
     if (focusTimerRef.current) {
@@ -417,10 +197,6 @@ useEffect(() => {
                   value={input}
                   onChange={(e) => {
                     setInput(e.target.value);
-                    if (showSuggestions) {
-                      setShowSuggestions(false);
-                      setSuggestions([]);
-                    }
                   }}
                   onMouseEnter={() => setIsInputHovered(true)}
                   onMouseLeave={() => setIsInputHovered(false)}
@@ -459,99 +235,51 @@ useEffect(() => {
         </div>
       </div>
 
-        <div className="mt-6 rounded-[12px] border border-[#E4D8CE] bg-white px-5 py-5">
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
-            <span>{lang === "ro" ? "Alege rapid" : "Quick pick"}</span>
-            <button
-              type="button"
-              onClick={handlePrimaryRefresh}
-              className="text-[11px] uppercase tracking-[0.25em] text-[#C07963] transition hover:text-[#E60012]"
-            >
-              {lang === "ro" ? "Reîncarcă" : "Refresh"}
-            </button>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {primaryOptions.map((option) => (
+        {showIdeas ? (
+          <div className="mt-6 rounded-[12px] border border-[#E4D8CE] bg-white px-5 py-5">
+            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+              <span>{lang === "ro" ? "Teme principale" : "Primary themes"}</span>
               <button
                 type="button"
-                key={option.id}
-                onClick={() => handlePrimaryOptionSelect(option)}
-                className="flex flex-col gap-1 rounded-[10px] border border-[#D8C6B6] bg-[#FDF8F3] px-4 py-3 text-left transition hover:border-[#E60012] hover:text-[#E60012]"
+                onClick={handlePrimaryRefresh}
+                className="text-[11px] uppercase tracking-[0.25em] text-[#C07963] transition hover:text-[#E60012]"
               >
-                <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
-                  {categoryLabels[option.category]}
-                </span>
-                <span className="text-sm text-[#2C2C2C]">{option.label}</span>
+                {lang === "ro" ? "Reîncarcă" : "Refresh"}
               </button>
-            ))}
+            </div>
+            <p className="mt-2 text-xs text-[#7B6B60]">
+              {lang === 'ro'
+                ? 'Alege una care rezonează cu tine, sau reîncarcă cu alte exemple.'
+                : 'Pick one that resonates with you, or refresh for other examples.'}
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {primaryOptions.map((option) => (
+                <button
+                  type="button"
+                  key={option.id}
+                  onClick={() => handlePrimaryOptionSelect(option)}
+                  className="flex flex-col gap-1 rounded-[10px] border border-[#D8C6B6] bg-[#FDF8F3] px-4 py-3 text-left transition hover:border-[#E60012] hover:text-[#E60012]"
+                >
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+                    {categoryLabels[option.category]}
+                  </span>
+                  <span className="text-sm text-[#2C2C2C]">{option.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
+        ) : null}
+
+        <div className="mt-6">
+          <button
+            onClick={() => setShowIdeas((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-[4px] border border-[#E4D8CE] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7B6B60] transition hover:border-[#C9B8A8] hover:text-[#C07963] focus:outline-none focus:ring-1 focus:ring-[#E4D8CE]"
+          >
+            {showIdeas
+              ? (lang === 'ro' ? 'Ascunde exemplele' : 'Hide examples')
+              : (lang === 'ro' ? 'Inspiră-te din exemple' : 'See examples')}
+          </button>
         </div>
-
-        {!showSuggestions && (
-          <div className="mt-6">
-            <button
-              onClick={handleSuggestionsToggle}
-              className="inline-flex items-center gap-2 rounded-[4px] border border-[#E60012] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
-            >
-              {typeof suggestionsLabel === "string" ? suggestionsLabel : ""}
-            </button>
-          </div>
-        )}
-
-        {showSuggestions && (
-          <div className="mt-8 space-y-3 rounded-[10px] border border-[#D8C6B6] bg-white px-5 py-6">
-            <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.25em] text-[#2C2C2C]">
-              <span>{suggestionTitle}</span>
-              <button
-                onClick={() => setSuggestions(pullSuggestionBatch())}
-                className="text-[#E60012] transition hover:text-[#B8000E]"
-              >
-                {suggestionRefresh}
-              </button>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-3">
-              {suggestions.map((s) => {
-                const isSelected = selectedSuggestions.includes(s);
-                return (
-                  <button
-                    type="button"
-                    key={s}
-                    onClick={() => toggleSuggestionSelection(s)}
-                    className={`rounded-[8px] border px-4 py-2 text-sm transition ${
-                      isSelected
-                        ? "border-[#E60012] bg-[#FDF1EF] text-[#E60012]"
-                        : "border-[#D8C6B6] bg-white text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
-                    }`}
-                    aria-pressed={isSelected}
-                  >
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-4 flex flex-col gap-2 text-left">
-              {selectedSuggestions.length < 2 && suggestionHint ? (
-                <p className="text-xs text-[#2C2C2C]">{suggestionHint}</p>
-              ) : null}
-              {selectedSuggestions.length < 2 ? (
-                <p className="text-xs text-[#B8000E]">{suggestionRequirementLabel}</p>
-              ) : (
-                <p className="text-xs text-[#2C2C2C]">{suggestionMaxLabel}</p>
-              )}
-              {suggestionSelectionError ? (
-                <p className="text-xs text-[#B8000E]">{suggestionSelectionError}</p>
-              ) : null}
-              <button
-                type="button"
-                onClick={handleSuggestionSubmit}
-                disabled={selectedSuggestions.length < 2 || isSubmitting}
-                className="inline-flex items-center justify-center rounded-[8px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:cursor-not-allowed disabled:border-[#2C2C2C]/30 disabled:text-[#2C2C2C]/30"
-              >
-                {suggestionContinueLabel}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </section>
   );

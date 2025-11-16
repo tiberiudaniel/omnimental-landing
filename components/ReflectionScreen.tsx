@@ -19,6 +19,9 @@ interface ReflectionScreenProps {
   categories?: Array<{ category: string; count: number }>;
   maxSelection?: number;
   categoryLabels?: Record<string, string>;
+  testId?: string; // optional override for container test id
+  cardTestId?: string; // optional test id for inner card wrapper
+  compact?: boolean; // align near top with reduced vertical padding
 }
 
 export default function ReflectionScreen({
@@ -27,6 +30,9 @@ export default function ReflectionScreen({
   categories,
   maxSelection,
   categoryLabels,
+  testId,
+  cardTestId,
+  compact = false,
 }: ReflectionScreenProps) {
   const { t, lang } = useI18n();
   const isRO = lang !== "en";
@@ -87,22 +93,27 @@ export default function ReflectionScreen({
   const emptyIndicatorsText = isRO
     ? "Selectează câteva opțiuni pentru a vedea analiza."
     : "Pick a few themes to reveal this view.";
+  const sectionClasses = compact
+    ? "flex w-full items-start justify-start bg-[#FDFCF9] px-5 pt-4 pb-8"
+    : "flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-5 py-12";
   return (
-    <section data-testid="wizard-step-reflection" className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">
-      <div className="w-full max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white/92 px-8 py-12 text-center shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
+    <section data-testid={testId ?? "wizard-step-reflection"} className={sectionClasses}>
+      <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right w-full max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white/92 px-7 py-10 text-center shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[2px]" data-testid={cardTestId}>
         <TypewriterText key={primaryLine} text={primaryLine} speed={90} enableSound />
 
         {showIndicators ? (
-          <div className="mt-10 text-left">
+          <div className="mt-6 text-left">
             <p className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
               {getString(t, "wizard.keyIndicators", isRO ? "Indicatori principali" : "Key indicators")}
             </p>
             <h3 className="mt-2 text-xl font-semibold text-[#1F1F1F]">
               {getString(t, "wizard.selectionProfile", isRO ? "Profilul selecțiilor tale" : "Your selection profile")}
             </h3>
-            <div className="mt-6 flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:gap-10">
-              <RadarIndicators data={indicatorEntries} maxValue={1} size="sm" />
-              <div className="flex-1 space-y-4">
+            <div className="mt-6 grid gap-6 md:grid-cols-[320px_minmax(0,560px)] md:items-start md:gap-8 md:justify-center">
+              <div className="mx-auto w-[320px] shrink-0 md:mr-4">
+                <RadarIndicators data={indicatorEntries} maxValue={1} size="lg" />
+              </div>
+              <div className="space-y-4 text-left md:w-[560px] md:max-w-[560px] md:justify-self-start">
                 <ul className="grid w-full gap-3 text-sm">
                   {indicatorEntries.map(({ key, label, rawCount }) => (
                     <li

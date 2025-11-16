@@ -1,0 +1,85 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useI18n } from "@/components/I18nProvider";
+import Typewriter from "@/components/onboarding/Typewriter";
+import TestQuestionCard from "@/components/onboarding/TestQuestionCard";
+import GuideCard from "@/components/onboarding/GuideCard";
+import { getOnboardingQuestions } from "@/lib/omniKunoOnboarding";
+import type { OmniKunoTopicKey } from "@/lib/omniKunoTypes";
+import { useProfile } from "@/components/ProfileProvider";
+import { useProgressFacts } from "@/components/useProgressFacts";
+import { recordPracticeEvent, recordPracticeSession } from "@/lib/progressFacts";
+
+export default function InitiationStepKunoContext({ userId, onContinue }: { userId: string | null; onContinue: () => void }) {
+  const { lang } = useI18n();
+  const { profile } = useProfile();
+  const { data: facts } = useProgressFacts(profile?.id);
+  const primary = useMemo(() => {
+    try {
+      const cats = facts?.intent?.categories as Array<{ category: string; count: number }> | undefined;
+      const top = cats && cats.length ? [...cats].sort((a, b) => (b.count || 0) - (a.count || 0))[0]?.category : null;
+      if (top && /relat/i.test(top)) return 'relatii';
+      if (top && /calm|stress/i.test(top)) return 'calm';
+      if (top && /clar|ident/i.test(top)) return 'identitate';
+      if (top && /perform/i.test(top)) return 'performanta';
+      if (top && /energie|energy/i.test(top)) return 'energie';
+      if (top && /obice|habit/i.test(top)) return 'obiceiuri';
+      if (top && /sens|meaning|purpose/i.test(top)) return 'sens';
+    } catch {}
+    const tags = (facts?.intent?.tags ?? []) as string[];
+    if (tags.some((t) => /relat/i.test(t))) return 'relatii';
+    return null;
+  }, [facts?.intent]);
+  const pool = useMemo(() => {
+    const set = primary ? getOnboardingQuestions(primary as OmniKunoTopicKey, undefined, (facts?.intent?.tags ?? []) as string[]) : [];
+    // Pick 2 reflection + 2 scenario when available
+    const reflection = set.filter((q) => q.style === 'reflection').slice(0, 2);
+    const scenario = set.filter((q) => q.style === 'scenario').slice(0, 2);
+    return [...reflection, ...scenario].slice(0, 4);
+  }, [primary, facts?.intent]);
+  const [answers, setAnswers] = useState<number[]>(Array(pool.length).fill(-1));
+  const allAnswered = answers.every((a) => a >= 0);
+  const save = async () => {
+    try {
+      const reflections = pool.filter((q) => q.style === 'reflection').length;
+      if (reflections) {
+        await recordPracticeEvent('reflection', userId ?? undefined, reflections);
+        await recordPracticeSession('reflection', Date.now() - reflections * 60000, 45 * reflections, userId ?? undefined);
+      }
+    } catch {}
+    onContinue();
+  };
+  return (
+    <section className="space-y-4">
+      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
+        <Typewriter text={lang === 'ro' ? 'Câteva scenarii și reflecții (nepunctate) pentru a calibra recomandările.' : 'A few scenarios and reflections (not scored) to calibrate recommendations.'} />
+      </div>
+      {pool.length === 0 ? (
+        <GuideCard title={lang === 'ro' ? 'Gata pentru pasul următor' : 'Ready for next step'}>
+          <p>{lang === 'ro' ? 'Continuă — îți vom clarifica contextul în pașii următori.' : 'Continue — we will clarify your context in the next steps.'}</p>
+        </GuideCard>
+      ) : null}
+      {pool.map((q, idx) => (
+        <TestQuestionCard
+          key={q.id}
+          item={{ id: q.id, question: q.text, options: q.options.map((o) => o.label), correctIndex: -1, explanation: q.defaultFeedback ?? '' }}
+          onAnswer={(sel) => setAnswers((prev) => prev.map((v, i) => (i === idx ? sel : v)))}
+          scored={false}
+          styleLabel={q.style as 'knowledge' | 'scenario' | 'reflection' | 'microSkill' | undefined}
+          index={idx}
+          total={pool.length}
+        />
+      ))}
+      <div className="flex justify-end">
+        <button
+          disabled={!allAnswered}
+          onClick={save}
+          className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
+        >
+          {lang === 'ro' ? 'Continuă' : 'Continue'}
+        </button>
+      </div>
+    </section>
+  );
+}

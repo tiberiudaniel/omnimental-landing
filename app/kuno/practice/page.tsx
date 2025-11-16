@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import Toast from '@/components/Toast';
 import AccountModal from '@/components/AccountModal';
@@ -15,6 +15,7 @@ import { recordPracticeSession } from '@/lib/progressFacts';
 import { useProgressFacts } from '@/components/useProgressFacts';
 
 function PracticeInner() {
+  const router = useRouter();
   const { profile } = useProfile();
   const search = useSearchParams();
   const cat = search?.get('cat');
@@ -118,9 +119,10 @@ function PracticeInner() {
               await recordPracticeSession('drill', started, 180, profile?.id);
             } catch {}
             setToast('Sesiunea Kuno a fost salvată');
+            // Deterministic client-side navigation for tests/Beta
             setTimeout(() => {
-              if (typeof window !== 'undefined') window.location.assign('/progress');
-            }, 700);
+              router.push('/progress?from=kuno-practice');
+            }, 300);
           }}
         >
           Salvează și mergi la progress

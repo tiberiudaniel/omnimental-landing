@@ -15,17 +15,18 @@ import { useProfile } from "@/components/ProfileProvider";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import WeeklyTrendsChart from "@/components/charts/WeeklyTrendsChart";
+import { INDICATORS } from "@/lib/indicators";
 import { computeKunoComposite, computeOmniScope, computeOmniFlex } from "@/lib/dashboardMetrics";
 import {
   extractSessions,
   computeWeeklyBuckets,
-  computeTodayBucket,
   computeWeeklyCounts,
-  computeTodayCounts,
   computeMonthlyDailyMinutes,
   computeMonthlyDailyCounts,
-  filterSessionsByType,
+  computeActionTrend,
+  type ActivityEvent,
 } from "@/lib/progressAnalytics";
+import { recordActivityEvent } from "@/lib/progressFacts";
 import { formatUtcShort } from "@/lib/format";
 // ------------------------------------------------------
 // Helpers
@@ -69,7 +70,12 @@ export default function ProgressDashboard({
   // Read debug flag from URL early to keep hook order stable across renders
   const search = useSearchParams();
   const debugMode = (search?.get('debug') === '1');
-  const [timeframe, setTimeframe] = useState<"day" | "week" | "month">("week");
+  const [timeframe, setTimeframe] = useState<"week" | "month">("week");
+  const [qaOpen, setQaOpen] = useState(false);
+  const [qaCategory, setQaCategory] = useState<'practice' | 'reflection' | 'knowledge'>('practice');
+  const [qaMinutes, setQaMinutes] = useState<number>(10);
+  const [qaBusy, setQaBusy] = useState(false);
+  const [qaSelectedDays, setQaSelectedDays] = useState<number[]>([]); // timestamps (start of day)
   const [metric, setMetric] = useState<"min" | "count" | "score">("min");
   const [weighted] = useState(false);
   const [achvDismissed, setAchvDismissed] = useState(false);
@@ -156,23 +162,30 @@ export default function ProgressDashboard({
       );
     } catch {}
   }, [loading, profileId, facts?.omni]);
-  // Loading state
-  if (loading) {
-    return (
-      <section className="w-full bg-[#FDFCF9] px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
-        <h1 className="mb-3 text-lg font-bold text-[#2C2C2C] lg:mb-4 lg:text-2xl">
-          OmniMental Progress
-        </h1>
-        <Card className="rounded-2xl border border-[#E4DAD1] bg-white/90 px-3 py-5 text-sm text-[#6A6A6A] shadow-sm sm:px-4">
-          Se încarcă datele...
-        </Card>
-      </section>
-    );
-  }
+  // Loading state handled inline in render to keep hooks order stable
   // No hard gating: safe fallbacks (no hooks here to avoid order changes with loading early return)
   const prog = adaptProgressFacts(facts);
   const insight = getDailyInsight(prog.strengths.dominantTheme);
   const sessions = extractSessions(facts ?? null);
+  // Current focus tag (top category from intent)
+  const currentFocusTag = useMemo(() => {
+    try {
+      const cats = (facts as { intent?: { categories?: Array<{ category: string; count: number }> } } | undefined)?.intent?.categories || [];
+      if (!cats.length) return undefined;
+      const top = [...cats].sort((a,b)=> (b.count||0)-(a.count||0))[0]?.category?.toLowerCase() || '';
+      const map: Record<string,string> = {
+        relatii: 'relationships', relatie: 'relationships',
+        calm: 'calm', stres: 'calm',
+        claritate: 'clarity', identitate: 'clarity', focus: 'clarity',
+        energie: 'energy', energy: 'energy',
+        performanta: 'performance',
+        sanatate: 'health', health: 'health',
+        obiceiuri: 'general', sens: 'general', general: 'general',
+      };
+      const key = Object.keys(map).find(k=> top.includes(k));
+      return key ? map[key] : undefined;
+    } catch { return undefined; }
+  }, [facts]);
   const refMs =
     (facts?.updatedAt instanceof Date ? facts.updatedAt.getTime() : 0) ||
     Math.max(
@@ -182,60 +195,12 @@ export default function ProgressDashboard({
     1;
   const weekly = computeWeeklyBuckets(sessions, refMs, lang);
   const weeklyCounts = computeWeeklyCounts(sessions, refMs, lang);
-  const today = computeTodayBucket(sessions, refMs);
-  const todayCounts = computeTodayCounts(sessions, refMs);
+  // const today = computeTodayBucket(sessions, refMs, lang);
+  // const todayCounts = computeTodayCounts(sessions, refMs, lang); // unused
   const monthDays = computeMonthlyDailyMinutes(sessions, refMs, lang);
   const monthCounts = computeMonthlyDailyCounts(sessions, refMs, lang);
 
-  // Weighted minutes by practice type (breathing/drill weigh more than reflection)
-  const WEIGHTS = { reflection: 1.0, breathing: 1.4, drill: 1.2 } as const;
-  // Weekly weighted minutes
-  const refW_week = computeWeeklyBuckets(filterSessionsByType(sessions, 'reflection'), refMs, lang);
-  const breW_week = computeWeeklyBuckets(filterSessionsByType(sessions, 'breathing'), refMs, lang);
-  const drlW_week = computeWeeklyBuckets(filterSessionsByType(sessions, 'drill'), refMs, lang);
-  const weeklyWeighted = refW_week.map((b, i) => ({
-    day: b.day,
-    label: b.label,
-    totalMin: Math.max(0, Math.round(
-      (refW_week[i]?.totalMin ?? 0) * WEIGHTS.reflection +
-      (breW_week[i]?.totalMin ?? 0) * WEIGHTS.breathing +
-      (drlW_week[i]?.totalMin ?? 0) * WEIGHTS.drill
-    )),
-  }));
-  // Today weighted minutes (single bucket array)
-  const refW_today = computeTodayBucket(filterSessionsByType(sessions, 'reflection'), refMs);
-  const breW_today = computeTodayBucket(filterSessionsByType(sessions, 'breathing'), refMs);
-  const drlW_today = computeTodayBucket(filterSessionsByType(sessions, 'drill'), refMs);
-  const todayWeighted = [{
-    day: refW_today[0]?.day ?? today[0]?.day ?? refMs,
-    label: refW_today[0]?.label ?? (lang === 'ro' ? 'Azi' : 'Today'),
-    totalMin: Math.max(0, Math.round(
-      (refW_today[0]?.totalMin ?? 0) * WEIGHTS.reflection +
-      (breW_today[0]?.totalMin ?? 0) * WEIGHTS.breathing +
-      (drlW_today[0]?.totalMin ?? 0) * WEIGHTS.drill
-    )),
-  }];
-  // Monthly weighted minutes (per day rows)
-  const refW_month = computeMonthlyDailyMinutes(filterSessionsByType(sessions, 'reflection'), refMs, lang);
-  const breW_month = computeMonthlyDailyMinutes(filterSessionsByType(sessions, 'breathing'), refMs, lang);
-  const drlW_month = computeMonthlyDailyMinutes(filterSessionsByType(sessions, 'drill'), refMs, lang);
-  const monthWeighted = refW_month.map((b, i) => ({
-    day: b.day,
-    label: b.label,
-    totalMin: Math.max(0, Math.round(
-      (refW_month[i]?.totalMin ?? 0) * WEIGHTS.reflection +
-      (breW_month[i]?.totalMin ?? 0) * WEIGHTS.breathing +
-      (drlW_month[i]?.totalMin ?? 0) * WEIGHTS.drill
-    )),
-  }));
-
-  // Activity Score (0–100) derived from weighted minutes vs. a daily target
-  const DAILY_TARGET_MIN = 20; // reaching ~20 weighted minutes ≈ score 100
-  const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
-  const toScore = (mins: number) => Math.round(clamp01(mins / DAILY_TARGET_MIN) * 100);
-  const weeklyScore = weeklyWeighted.map((b) => ({ day: b.day, label: b.label, totalMin: toScore(b.totalMin) }));
-  const todayScore = todayWeighted.map((b) => ({ day: b.day, label: b.label, totalMin: toScore(b.totalMin) }));
-  const monthScore = monthWeighted.map((b) => ({ day: b.day, label: b.label, totalMin: toScore(b.totalMin) }));
+  // (legacy weighted minutes scaffolding removed — we now rely on action trend scoring)
   const formatRelative = (ms: number) => {
     const now = Date.now();
     const diff = Math.max(0, now - ms);
@@ -434,14 +399,9 @@ export default function ProgressDashboard({
   })();
   const trendsTitle = (() => {
     if (lang === "ro") {
-      return timeframe === "day"
-        ? "Trend zilnic"
-        : timeframe === "week"
-        ? "Trend săptămânal"
-        : "Trend lunar";
+      return timeframe === "week" ? "Trendul acțiunilor / săptămână" : "Trendul acțiunilor / lună";
     }
-    const tfEn = timeframe === "day" ? "Daily trend" : timeframe === "week" ? "Weekly trend" : "Monthly trend";
-    return tfEn;
+    return timeframe === "week" ? "Actions trend / week" : "Actions trend / month";
   })();
   return (
     <motion.section
@@ -451,6 +411,9 @@ export default function ProgressDashboard({
     >
       <Card className="mx-auto max-w-6xl rounded-2xl border border-[#E4DAD1] bg-white/90 px-3 py-4 shadow-[0_4px_18px_rgba(0,0,0,0.04)] sm:px-4 sm:py-5">
         {/* WRAPPER: MAIN AREA (stânga+centru) + SIDEBAR (dreapta independentă) */}
+        {loading ? (
+          <div className="text-sm text-[#6A6A6A]">{lang==='ro'?'Se încarcă datele…':'Loading data…'}</div>
+        ) : null}
         <div
           className="flex flex-col gap-2 md:gap-3 lg:flex-row lg:gap-4"
           style={
@@ -478,53 +441,140 @@ export default function ProgressDashboard({
               <motion.div variants={fadeDelayed(0.05)} {...hoverScale}>
                 <Card className="flex items-center gap-2 rounded-xl border border-[#E4DAD1] bg-white p-1.5 shadow-sm sm:gap-3 sm:p-2.5">
                   <div className="flex-1">
-                    <h3 className="mb-0.5 text-xs font-semibold text-[#2C2C2C] sm:mb-1 sm:text-sm">
-                      Indicatori interni
-                    </h3>
-                    <p className="mb-1 text-[10px] text-[#7B6B60] sm:mb-1.5 sm:text-[11px]">
-                      Claritate, calm și energie în ultima perioadă.
+                    <div className="mb-0.5 flex items-center justify-between sm:mb-1">
+                      <h3 className="text-xs font-semibold text-[#2C2C2C] sm:text-sm">
+                        {lang === 'ro' ? 'KPI — Gândire • Emoție • Energie' : 'KPI — Thinking • Emotion • Energy'}
+                      </h3>
+                      <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[10px] sm:text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => setTimeframe('week')}
+                          className={`rounded px-1.5 py-0.5 transition ${timeframe === 'week' ? 'bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold' : 'text-[#5C4F45]'}`}
+                          aria-label="Toggle KPI to week"
+                          data-testid="kpi-toggle-week"
+                        >
+                          {getString(t, 'dashboard.trendsToggle.week', lang === 'ro' ? 'Săptămână' : 'Week')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTimeframe('month')}
+                          className={`rounded px-1.5 py-0.5 transition ${timeframe === 'month' ? 'bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold' : 'text-[#5C4F45]'}`}
+                          aria-label="Toggle KPI to month"
+                          data-testid="kpi-toggle-month"
+                        >
+                          {getString(t, 'dashboard.trendsToggle.month', lang === 'ro' ? 'Lună' : 'Month')}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-[#7B6B60] sm:text-[11px]">
+                      {lang === 'ro' ? 'Evoluția indicatorilor interni în timp.' : 'Evolution of internal indicators over time.'}
                     </p>
-                    <InternalPie
-                      clarity={prog.indices.clarity}
-                      calm={prog.indices.calm}
-                      energy={prog.indices.energy}
-                    />
+                    {/* Donut removed; focus on linear evolution + legend */}
+                    {(() => {
+                      try {
+                        type HistRec = Record<string, { clarity?: number; calm?: number; energy?: number; updatedAt?: unknown }>;
+                        const hist: HistRec = (
+                          (facts as { omni?: { scope?: { history?: HistRec } } } | undefined)?.omni?.scope?.history ?? {}
+                        );
+                        const entries = Object.entries(hist);
+                        if (!entries.length) {
+                          return (
+                            <div className="mt-2 border-t border-[#F0E8E0] pt-2 sm:pt-2.5 text-[11px] text-[#7B6B60]">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-[11px] text-[#7B6B60]">
+                                  {lang === 'ro' ? 'Nu avem încă istoric pentru indicatori. Completează rapid sliderele (1–10) ca să începem evoluția.' : 'No history yet. Do a quick 1–10 slider check to start your evolution.'}
+                                </p>
+                                <div className="flex items-center gap-3">
+                                  <a href="/experience-onboarding?flow=initiation&step=daily-state" className="text-[#2C2C2C] underline hover:text-[#C07963]" data-testid="internal-cta-sliders">
+                                    {lang === 'ro' ? 'Deschide sliderele' : 'Open sliders'}
+                                  </a>
+                                  <a href="/progress?open=journal&tab=NOTE_LIBERE" className="text-[#2C2C2C] underline hover:text-[#C07963]" data-testid="internal-cta-journal">
+                                    {lang === 'ro' ? 'Adaugă o notă rapidă' : 'Add a quick note'}
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        const byDay = entries
+                          .map(([k, v]) => {
+                            const ts = (() => {
+                              const y = Number(k.slice(1,5));
+                              const m = Number(k.slice(5,7)) - 1;
+                              const d = Number(k.slice(7,9));
+                              const dt = new Date(y, m, d).getTime();
+                              return Number.isFinite(dt) ? dt : 0;
+                            })();
+                            return { ts, clarity: Number(v.clarity)||0, calm: Number(v.calm)||0, energy: Number(v.energy)||0 };
+                          })
+                          .filter((e) => e.ts > 0)
+                          .sort((a, b) => a.ts - b.ts);
+                        const limit = timeframe === 'week' ? 7 : 30;
+                        const take = byDay.slice(-limit);
+                        const data = take.map((e) => ({ day: e.ts, totalMin: e.clarity, label: new Date(e.ts).getDate().toString() }));
+                        const series = [
+                          { data: take.map((e) => ({ day: e.ts, totalMin: e.clarity, label: new Date(e.ts).getDate().toString() })), accent: '#7A6455', strokeWidth: 2 },
+                          { data: take.map((e) => ({ day: e.ts, totalMin: e.calm, label: new Date(e.ts).getDate().toString() })), accent: '#4D3F36', strokeWidth: 2 },
+                          { data: take.map((e) => ({ day: e.ts, totalMin: e.energy, label: new Date(e.ts).getDate().toString() })), accent: '#C07963', strokeWidth: 2 },
+                        ];
+                        return (
+                          <div className="mt-2 border-t border-[#F0E8E0] pt-2 sm:pt-2.5">
+                            <div className="mb-1 flex items-center gap-3 text-[9px] text-[#7B6B60]">
+                              <span className="inline-flex items-center gap-1" title={INDICATORS.mental_clarity.label + ' — ' + INDICATORS.mental_clarity.description}>
+                                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#7A6455' }} />
+                                {INDICATORS.mental_clarity.shortLabel}
+                              </span>
+                              <span className="inline-flex items-center gap-1" title={INDICATORS.emotional_balance.label + ' — ' + INDICATORS.emotional_balance.description}>
+                                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#4D3F36' }} />
+                                {INDICATORS.emotional_balance.shortLabel}
+                              </span>
+                              <span className="inline-flex items-center gap-1" title={INDICATORS.physical_energy.label + ' — ' + INDICATORS.physical_energy.description}>
+                                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#C07963' }} />
+                                {INDICATORS.physical_energy.shortLabel}
+                              </span>
+                            </div>
+                            <div className="h-[70px] sm:h-[80px]">
+                              <WeeklyTrendsChart data={data} series={series} showBars={false} showValues={false} ariaLabel={lang === 'ro' ? 'Evoluție indicatori interni' : 'Internal indicators evolution'} />
+                            </div>
+                            <div className="mt-1 flex justify-end">
+                              <a href="/progress?open=journal&tab=NOTE_LIBERE" className="text-[9px] underline text-[#7B6B60] hover:text-[#2C2C2C]" data-testid="internal-link-quick-note">
+                                {lang === 'ro' ? 'Adaugă o notă rapidă' : 'Add a quick note'}
+                              </a>
+                            </div>
+                          </div>
+                        );
+                      } catch { return null; }
+                    })()}
                   </div>
-                  <div className="w-[40%] space-y-1 text-[10px] sm:space-y-1 sm:text-[11px]">
-                    <LegendRow
-                      label="Claritate"
-                      color="#7A6455"
-                      value={prog.indices.clarity}
-                    />
-                    <LegendRow
-                      label="Calm"
-                      color="#4D3F36"
-                      value={prog.indices.calm}
-                    />
-                    <LegendRow
-                      label="Energie"
-                      color="#C07963"
-                      value={prog.indices.energy}
-                    />
-                  </div>
+                  {/* Removed old side legend to keep KPI card clean */}
                 </Card>
               </motion.div>
               {/* Weekly Trends */}
               <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
+                <div id="actions-trend">
                 <Card className="h-[200px] overflow-hidden rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm sm:h-[240px] sm:p-4 lg:h-[280px]">
                   <h3 className="mb-1 flex items-center gap-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
                     <span>
-                      {trendsTitle}
-                      {" — "}
-                      {timeframe === 'day' ? (lang === 'ro' ? 'Azi' : 'Today') : timeframe === 'week' ? (lang === 'ro' ? 'Săptămâna' : 'Week') : (lang === 'ro' ? 'Luna' : 'Month')}
-                      {" • "}
-                      {metric === 'min' ? (lang === 'ro' ? 'Minute' : 'Minutes') : metric === 'count' ? (lang === 'ro' ? 'Sesiuni' : 'Sessions') : (lang === 'ro' ? 'Scor' : 'Score')}
+                      {(() => {
+                        const label = metric === 'count'
+                          ? (lang === 'ro' ? 'Sesiuni' : 'Sessions')
+                          : metric === 'score'
+                          ? (lang === 'ro' ? 'Scor' : 'Score')
+                          : '';
+                        return (
+                          <>
+                            {trendsTitle}
+                            {label ? ' • ' : ''}
+                            {label}
+                          </>
+                        );
+                      })()}
                     </span>
                     <InfoTooltip
                       label={lang === 'ro' ? 'Despre trend' : 'About trends'}
                       items={lang === 'ro'
                         ? [
-                            'Alege intervalul: Azi / Săptămână / Lună',
+                            'Alege intervalul: Săptămână / Lună',
                             'Alege metrica: Minute / Sesiuni / Scor',
                             weighted
                               ? 'Ponderi: minutele pentru Respirație/Drill cântăresc mai mult'
@@ -532,7 +582,7 @@ export default function ProgressDashboard({
                             'Scor activitate: 0–100 pe bază de minute ponderate',
                           ]
                         : [
-                            'Pick range: Today / Week / Month',
+                            'Pick range: Week / Month',
                             'Pick metric: Minutes / Sessions / Score',
                             weighted
                               ? 'Weighted: minutes for Breathing/Drill weigh more'
@@ -541,31 +591,15 @@ export default function ProgressDashboard({
                           ]}
                     />
                   </h3>
-                  <div className="mb-1 flex items-center justify-between">
+                  <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                     <p className="text-[10px] text-[#7B6B60] sm:text-[11px]">
                       {metric === 'score'
                         ? (lang === 'ro' ? 'Scor activitate (0–100)' : 'Activity score (0–100)')
                         : (lang === 'ro' ? 'Evoluția activităților' : 'Activities evolution')}
                     </p>
-                    <div className="flex items-center gap-1 sm:gap-2">
+                    <div className="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2">
                       <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[10px] sm:text-[11px]">
-                        <button
-                          type="button"
-                          onClick={() => setTimeframe("day")}
-                          className={`rounded px-1.5 py-0.5 transition ${
-                            timeframe === "day"
-                              ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold"
-                              : "text-[#5C4F45]"
-                          }`}
-                          aria-label="Toggle to day view"
-                          data-testid="trend-toggle-day"
-                        >
-                          {getString(
-                            t,
-                            "dashboard.trendsToggle.day",
-                            lang === "ro" ? "Azi" : "Today",
-                          )}
-                        </button>
+                        {/* Day toggle removed per product decision: show only Week/Month */}
                         <button
                           type="button"
                           onClick={() => setTimeframe("week")}
@@ -659,14 +693,49 @@ export default function ProgressDashboard({
                     <WeeklyTrendsChart
                       data={(() => {
                         if (metric === 'score') {
-                          return timeframe === 'day' ? todayScore : timeframe === 'week' ? weeklyScore : monthScore;
+                          // Build action events from practiceSessions
+                          const evs: ActivityEvent[] = sessions.map((s) => ({
+                            startedAt: ((): number | string | Date => {
+                              const v = (s as { startedAt?: unknown })?.startedAt;
+                              if (typeof v === 'number' || v instanceof Date || typeof v === 'string') return v as number | string | Date;
+                              return Date.now();
+                            })(),
+                            durationMin: Math.max(0, Math.round((s.durationSec ?? 0) / 60)),
+                            units: 1,
+                            source: s.type === 'breathing' ? 'breathing' : s.type === 'drill' ? 'drill' : 'journal',
+                            category: s.type === 'reflection' ? 'reflection' : 'practice',
+                          }));
+                          // merge explicit activityEvents (knowledge etc.) if present
+                          try {
+                            type RawAE = { startedAt?: unknown; source?: string; category?: 'knowledge'|'practice'|'reflection'; units?: number; durationMin?: number; focusTag?: string | null };
+                            const raws = (facts as { activityEvents?: RawAE[] } | undefined)?.activityEvents ?? [];
+                            raws.forEach((r) => {
+                              if (!r.category) return;
+                              const started: number | string | Date = (typeof r.startedAt === 'number' || r.startedAt instanceof Date || typeof r.startedAt === 'string') ? (r.startedAt as number | string | Date) : Date.now();
+                              const src: ActivityEvent['source'] = ((): ActivityEvent['source'] => {
+                                const s = r.source || 'other';
+                                return ['omnikuno','omniabil','breathing','journal','drill','slider','other'].includes(s) ? (s as ActivityEvent['source']) : 'other';
+                              })();
+                              evs.push({
+                                startedAt: started,
+                                durationMin: typeof r.durationMin === 'number' ? r.durationMin : undefined,
+                                units: typeof r.units === 'number' ? r.units : 1,
+                                source: src,
+                                category: r.category,
+                                focusTag: r.focusTag ?? undefined,
+                              });
+                            });
+                          } catch {}
+                          const days = timeframe === 'week' ? 7 : 30;
+                          return computeActionTrend(evs, refMs, lang, days, currentFocusTag);
                         }
                         if (metric === 'min') {
-                          return timeframe === 'day' ? today : timeframe === 'week' ? weekly : monthDays;
+                          return timeframe === 'week' ? weekly : monthDays;
                         }
                         // sessions count
-                        return timeframe === 'day' ? todayCounts : timeframe === 'week' ? weeklyCounts : monthCounts;
+                        return timeframe === 'week' ? weeklyCounts : monthCounts;
                       })()}
+                      showBars={metric === 'score' || metric === 'count' || metric === 'min'}
                       ariaLabel={
                         lang === "ro"
                           ? timeframe === "month"
@@ -686,20 +755,111 @@ export default function ProgressDashboard({
                       }
                     />
                   </div>
-                  <p className="mt-1 text-[9px] text-[#7B6B60] sm:text-[10px]">
-                    {metric === "min"
-                      ? getString(
-                          t,
-                          "dashboard.trendsToggle.minutes",
-                          lang === "ro" ? "Minute" : "Minutes",
-                        )
-                      : getString(
-                          t,
-                          "dashboard.trendsToggle.sessions",
-                          lang === "ro" ? "Sesiuni" : "Sessions",
-                        )}
-                  </p>
+                  {metric !== 'min' ? (
+                    <p className="mt-1 text-[9px] text-[#7B6B60] sm:text-[10px]">
+                      {getString(
+                        t,
+                        metric === 'count' ? 'dashboard.trendsToggle.sessions' : 'dashboard.trendsToggle.score',
+                        metric === 'count' ? (lang === 'ro' ? 'Sesiuni' : 'Sessions') : (lang === 'ro' ? 'Scor' : 'Score'),
+                      )}
+                    </p>
+                  ) : null}
+                  {(() => {
+                    // After the chart: show split + quick add for gap days (only last 7)
+                    try {
+                      // rebuild events array (same as above)
+                      const evs: ActivityEvent[] = sessions.map((s) => ({
+                        startedAt: s.startedAt as number | string | Date,
+                        durationMin: Math.max(0, Math.round((s.durationSec ?? 0) / 60)),
+                        units: 1,
+                        source: s.type === 'breathing' ? 'breathing' : s.type === 'drill' ? 'drill' : 'journal',
+                        category: s.type === 'reflection' ? 'reflection' : 'practice',
+                      }));
+                      type RawAE = { startedAt?: unknown; source?: string; category?: 'knowledge'|'practice'|'reflection'; units?: number; durationMin?: number; focusTag?: string | null };
+                      const raws = (facts as { activityEvents?: RawAE[] } | undefined)?.activityEvents ?? [];
+                      raws.forEach((r) => {
+                        if (!r.category) return;
+                        const started: number | string | Date = (typeof r.startedAt === 'number' || r.startedAt instanceof Date || typeof r.startedAt === 'string') ? (r.startedAt as number | string | Date) : Date.now();
+                        const src = ((): ActivityEvent['source'] => {
+                          const s = r.source || 'other';
+                          return ['omnikuno','omniabil','breathing','journal','drill','slider','other'].includes(s) ? (s as ActivityEvent['source']) : 'other';
+                        })();
+                        evs.push({ startedAt: started, durationMin: typeof r.durationMin==='number'?r.durationMin:undefined, units: typeof r.units==='number'?r.units:1, source: src, category: r.category, focusTag: r.focusTag ?? undefined });
+                      });
+                      const last7 = computeActionTrend(evs, refMs, lang, 7, currentFocusTag);
+                      const gaps = last7.filter((d) => (d.totalMin || 0) === 0).map(d=> d.day);
+                      const hasGaps = gaps.length > 0;
+                      // rounding helper no longer needed
+                      // compute split
+                      let wK=0,wP=0,wR=0; const now7=refMs - 6*24*60*60*1000;
+                      evs.forEach((e)=>{
+                        const ms = toMsLocal(e.startedAt);
+                        if (ms < now7) return;
+                        const base = typeof e.durationMin==='number'&&Number.isFinite(e.durationMin)? Math.max(0,e.durationMin): Math.max(0,(e.units||1)*(e.category==='knowledge'?6:e.category==='practice'?8:4));
+                        const w = e.category==='knowledge'?0.8:e.category==='practice'?1.5:1.1;
+                        const v = base*w*(currentFocusTag && e.focusTag ? (e.focusTag===currentFocusTag?1.0:0.5):1.0);
+                        if (e.category==='knowledge') wK+=v; else if (e.category==='practice') wP+=v; else wR+=v;
+                      });
+                      const tot = (wK+wP+wR)||1;
+                      const pct = (x:number)=> Math.round((x/tot)*100);
+                      return (
+                        <div className="mt-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-[#7B6B60]">
+                            <span>{lang==='ro'? 'Pondere (ultimele 7 zile):' : 'Share (last 7 days):'} {pct(wP)}% practice, {pct(wK)}% knowledge, {pct(wR)}% reflection.</span>
+                            {hasGaps ? (
+                              <button type="button" className="underline text-[#2C2C2C] hover:text-[#C07963]" onClick={() => { setQaOpen(!qaOpen); if (!qaSelectedDays.length) setQaSelectedDays([gaps[0]!]); }} data-testid="trend-quick-add">{lang==='ro'?'Adaugă acțiune rapidă':'Add quick action'}</button>
+                            ) : null}
+                          </div>
+                          {qaOpen && hasGaps ? (
+                            <div className="mt-2 rounded-[8px] border border-[#E4DAD1] bg-[#FFFBF7] p-2">
+                              <div className="flex flex-wrap items-center gap-3">
+                                <div className="flex items-center gap-2 text-[10px] text-[#7B6B60]">
+                                  <span>{lang==='ro'?'Zile fără acțiuni:':'Gap days:'}</span>
+                                  {gaps.map((g)=>{
+                                    const d=new Date(g); const lbl = d.getDate();
+                                    const checked = qaSelectedDays.includes(g);
+                                    return (
+                                      <label key={g} className="inline-flex items-center gap-1">
+                                        <input type="checkbox" checked={checked} onChange={(e)=>{
+                                          setQaSelectedDays(prev=> e.target.checked ? Array.from(new Set([...prev,g])) : prev.filter(x=>x!==g));
+                                        }} />
+                                        <span>{lbl}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                                <label className="text-[10px] text-[#7B6B60]">
+                                  {lang==='ro'?'Categorie':'Category'}
+                                  <select value={qaCategory} onChange={(e)=> setQaCategory(e.target.value as 'practice'|'reflection'|'knowledge')} className="ml-1 rounded border border-[#E4DAD1] bg-white px-1 py-0.5 text-[10px]">
+                                    <option value="practice">{lang==='ro'?'Practică':'Practice'}</option>
+                                    <option value="knowledge">{lang==='ro'?'Cunoaștere':'Knowledge'}</option>
+                                    <option value="reflection">{lang==='ro'?'Reflecție':'Reflection'}</option>
+                                  </select>
+                                </label>
+                                <label className="text-[10px] text-[#7B6B60]">
+                                  {lang==='ro'?'Minute':'Minutes'}
+                                  <input type="number" min={1} max={180} value={qaMinutes} onChange={(e)=> setQaMinutes(Number(e.target.value)||0)} className="ml-1 w-16 rounded border border-[#E4DAD1] bg-white px-1 py-0.5 text-[10px]" />
+                                </label>
+                                <button type="button" disabled={qaBusy || !qaSelectedDays.length || qaMinutes<=0} onClick={async()=>{
+                                  setQaBusy(true);
+                                  try {
+                                    const promises = qaSelectedDays.map(async (dayMs)=>{
+                                      const ts = dayMs + 12*60*60*1000; // noon
+                                      await recordActivityEvent({ startedAtMs: ts, source: qaCategory==='knowledge'?'omnikuno':'other', category: qaCategory, durationMin: qaMinutes, units: 1, focusTag: currentFocusTag ?? null }, profileId);
+                                    });
+                                    await Promise.all(promises);
+                                    setQaOpen(false); setQaSelectedDays([]);
+                                  } catch(e) { console.warn('quick-add failed', e); } finally { setQaBusy(false); }
+                                }} className="rounded border border-[#2C2C2C] px-2 py-0.5 text-[10px] font-semibold text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]">{qaBusy? (lang==='ro'?'Se salvează…':'Saving…') : (lang==='ro'?'Salvează':'Save')}</button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    } catch { return null; }
+                  })()}
                 </Card>
+                </div>
               </motion.div>
             </div>
 
@@ -737,7 +897,7 @@ export default function ProgressDashboard({
                   })()}
                 />
                   <Metric
-                    label="Omni Kuno"
+                    label="Omni-Cuno"
                     value={omniCunoScore}
                     testId="metric-omni-cuno"
                     testIdValue="metric-omni-cuno-value"
@@ -1118,7 +1278,7 @@ export default function ProgressDashboard({
                     </div>
                     <div className="mt-2 flex items-center justify-end">
                       <Link
-                        href="/wizard?step=intentSummary"
+                        href="/wizard?step=intentMotivation"
                         className="text-[10px] text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline"
                       >
                         {lang === "ro" ? "Schimbă" : "Change"}
@@ -1619,57 +1779,8 @@ export default function ProgressDashboard({
 // ------------------------------------------------------
 // INTERNAL PIE (donut)
 // ------------------------------------------------------
-function InternalPie({
-  clarity,
-  calm,
-  energy,
-}: {
-  clarity: number;
-  calm: number;
-  energy: number;
-}) {
-  const total = Math.max(1, clarity + calm + energy);
-  const cPct = (clarity / total) * 100;
-  const calmPct = (calm / total) * 100;
-  const bg = `conic-gradient(#7A6455 0 ${cPct}%, #4D3F36 ${cPct}% ${
-    cPct + calmPct
-  }%, #C07963 ${cPct + calmPct}% 100%)`;
-  return (
-    <div className="relative flex items-center justify-center">
-      <div
-        className="h-14 w-14 rounded-full sm:h-18 sm:w-18 lg:h-22 lg:w-22"
-        style={{ background: bg }}
-      />
-      <div className="absolute h-8 w-8 rounded-full bg-white shadow-inner sm:h-10 sm:w-10 lg:h-12 lg:w-12" />
-    </div>
-  );
-}
-function LegendRow({
-  label,
-  color,
-  value,
-}: {
-  label: string;
-  color: string;
-  value: number;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-1">
-      <div className="flex items-center gap-1">
-        <span
-          className="inline-block h-1.5 w-1.5 rounded-full sm:h-2 sm:w-2"
-          style={{ backgroundColor: color }}
-        />
-        <span className="text-[10px] text-[#5C4F45] sm:text-[11px]">
-          {label}
-        </span>
-      </div>
-      <span className="text-[10px] font-semibold text-[#2C2C2C] sm:text-[11px]">
-        {Math.round(value)}%
-      </span>
-    </div>
-  );
-}
+// Donut removed — linear mini-chart is used instead
+// Old legend row removed (no longer used)
 // ------------------------------------------------------
 // METRIC TILE
 // ------------------------------------------------------

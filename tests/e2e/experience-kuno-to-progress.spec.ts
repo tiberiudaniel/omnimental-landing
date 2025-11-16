@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { expectVisibleShort } from './helpers/diag';
+import { go, resetSession } from './helpers/env';
 
 test.describe('Experience onboarding → Omni‑Kuno reflected in /progress (guest/demo)', () => {
   test('mini‑test score appears as Omni‑Cuno on dashboard', async ({ page }) => {
     // Start on intro and proceed to mini‑test
-    await page.goto('/experience-onboarding?start=1&lang=ro&e2e=1');
+    await resetSession(page);
+    await go(page, '/experience-onboarding?start=1&lang=ro&e2e=1');
     await page.getByTestId('eo-start').click();
 
     // Answer 3 questions (first option for speed)
@@ -21,9 +24,10 @@ test.describe('Experience onboarding → Omni‑Kuno reflected in /progress (gue
 
     // Redirect step → Continue now
     await page.getByRole('button', { name: /Continuă acum|Continue now/i }).click();
+    await expect(page).toHaveURL(/\/progress/, { timeout: 20000 });
 
-    // On progress page, Omni‑Cuno should be > 0 (guest localStorage fallback)
-    const omniValue = page.getByTestId('metric-omni-cuno-value');
-    await expect(omniValue).toBeVisible();
+    // On progress page, Omni‑Cuno tile should be visible
+    await expectVisibleShort(page, page.getByTestId('metric-omni-cuno'), 'metric-omni-cuno');
+    await expectVisibleShort(page, page.getByTestId('metric-omni-cuno-value'), 'metric-omni-cuno-value');
   });
 });

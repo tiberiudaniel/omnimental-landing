@@ -20,7 +20,8 @@ export type Step =
   | "firstInput"
   | "reflectionPrompt"
   | "intent"
-  | "intentSummary"
+  | "intentMotivation" // canonical name
+  | "intentSummary" // legacy alias supported
   | "reflectionSummary"
   | "cards"
   | "details";
@@ -181,7 +182,14 @@ export default function WizardRouter(props: Props) {
         />
       );
     case "reflectionPrompt":
-      return <WizardReflection lines={reflectionPromptLines} onContinue={() => navigateToStep("intent")} />;
+      return (
+        <WizardReflection
+          lines={reflectionPromptLines}
+          onContinue={() => navigateToStep("intent")}
+          cardTestId="wizard-step-reflection-card"
+          compact
+        />
+      );
     case "intent":
       return (
         <IntentCloud
@@ -200,23 +208,15 @@ export default function WizardRouter(props: Props) {
         profileCtx?.profile?.id &&
           (profileCtx.profile.selection === "individual" || profileCtx.profile.selection === "group"),
       );
-      // In E2E/demo runs, auto-advance to intentSummary to keep tests simple
-      try {
-        if (typeof window !== 'undefined') {
-          const qs = window.location.search;
-          if (qs.includes('e2e=1')) {
-            setTimeout(() => navigateToStep("intentSummary"), 0);
-          }
-        }
-      } catch {}
       return (
-        <div className="relative" data-testid="wizard-step-summary">
+        <div className="relative" data-testid="wizard-step-reflection">
           <WizardReflection
             lines={reflectionSummaryLines}
-            onContinue={() => navigateToStep("intentSummary")}
+            onContinue={() => navigateToStep("intentMotivation")}
             categories={intentCategories}
             maxSelection={maxSelection}
             categoryLabels={categoryLabels}
+            testId="wizard-step-reflection-card"
           />
           {/* Mobile FAB: Journal only if selection allows; else prompts account/choice */}
           <div className="pointer-events-none fixed bottom-4 right-4 z-40 block sm:hidden">
@@ -242,7 +242,11 @@ export default function WizardRouter(props: Props) {
         </div>
       );
     }
-    case "intentSummary":
+    case "intentMotivation":
+    case "intentSummary": {
+      const sorted = [...intentCategories].filter(c => c.count > 0).sort((a,b) => b.count - a.count);
+      const primary = sorted[0];
+      const primaryAreaLabel = primary ? (categoryLabels[primary.category] ?? primary.category) : '';
       return (
         <IntentSummary
           urgency={urgency}
@@ -270,8 +274,10 @@ export default function WizardRouter(props: Props) {
           scheduleFit={scheduleFit}
           onScheduleFitChange={setScheduleFit}
           onAuthRequest={onAuthRequest}
+          primaryAreaLabel={primaryAreaLabel}
         />
       );
+    }
     case "cards": {
       const recommendation = {
         path: recommendedPath,

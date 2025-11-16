@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import CTAButton from "../../components/CTAButton";
+import AccountModal from "../../components/AccountModal";
+import { recordRecommendationProgressFact } from "../../lib/progressFacts";
 import SiteHeader from "../../components/SiteHeader";
 import MenuOverlay from "../../components/MenuOverlay";
 import { useNavigationLinks } from "../../components/useNavigationLinks";
@@ -200,6 +202,7 @@ function GroupInfoContent() {
   const copy = groupCopy[lang] ?? groupCopy.ro;
   const isRo = lang === "ro";
   const navLinks = useNavigationLinks();
+  const [guestOpen, setGuestOpen] = useState(false);
 
   return (
     <div className="bg-[#FDFCF9] min-h-screen pb-20">
@@ -221,16 +224,13 @@ function GroupInfoContent() {
             <CTAButton text={copy.hero.cta} />
             <button
               type="button"
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  try { localStorage.setItem('omnimental_guest_access', '1'); } catch {}
-                  window.location.assign('/recommendation?demo=1');
-                }
-              }}
-              className="rounded-[10px] border border-[#7A6455] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7A6455] transition hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+              onClick={() => { void recordRecommendationProgressFact({ badgeLabel: 'magic_open' }).catch(() => undefined); setGuestOpen(true); }}
+              className="group inline-flex items-center gap-3 rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
             >
-              {isRo ? 'Acces Invitat Special' : 'Special Guest Access'}
+              {isRo ? 'Acces Invitat Special' : 'Enter as Special Guest'}
+              <span className="translate-y-[1px] text-sm text-[#E60012] transition group-hover:translate-x-1 group-hover:text-[#B8000E]">→</span>
             </button>
+            <AccountModal open={guestOpen} onClose={() => { void recordRecommendationProgressFact({ badgeLabel: 'magic_close' }).catch(() => undefined); setGuestOpen(false); }} />
           </div>
         </section>
 
@@ -364,8 +364,21 @@ function GroupInfoContent() {
           <p className="mt-3 font-semibold text-[#1F1F1F]">
             {copy.closing.bold}
           </p>
-          <div className="mt-5">
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             <CTAButton text={copy.closing.cta} />
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  try { localStorage.setItem('omnimental_guest_access', '1'); } catch {}
+                  window.location.assign('/recommendation?demo=1');
+                }
+              }}
+              className="group inline-flex items-center gap-3 rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+            >
+              {isRo ? 'Acces Invitat Special' : 'Enter as Special Guest'}
+              <span className="translate-y-[1px] text-sm text-[#E60012] transition group-hover:translate-x-1 group-hover:text-[#B8000E]">→</span>
+            </button>
           </div>
         </section>
       </div>

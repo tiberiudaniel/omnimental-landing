@@ -184,7 +184,9 @@ export default function IntentCloud({
       <div className="w-full max-w-5xl space-y-6 rounded-[16px] border border-[#E4D8CE] bg-white/92 px-6 py-10 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
         <TypewriterText text={title} speed={90} enableSound key={title} />
         {helper ? (
-          <p className="text-sm text-[#2C2C2C]/80">{helper}</p>
+          <div className="mx-auto max-w-3xl text-[#2C2C2C]/80">
+            <p className="t-body text-center">{helper}</p>
+          </div>
         ) : null}
 
         <div className="mx-auto flex w-full max-w-xl flex-col gap-2">
@@ -208,8 +210,8 @@ export default function IntentCloud({
           </p>
         </div>
 
-        <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-2 md:gap-3">
-          {words.map(({ key, label, size, shift }) => {
+        <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-2 md:gap-3" data-testid="wizard-step-intent-cloud">
+          {words.map(({ key, label }) => {
             const isActive = selected.includes(key);
             return (
               <motion.button
@@ -218,17 +220,12 @@ export default function IntentCloud({
                 whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={() => toggleWord(key)}
-                className={`min-h-[34px] rounded-[14px] border px-3.5 py-1.5 text-[0.82rem] font-semibold uppercase tracking-[0.18em] shadow-[0_6px_14px_rgba(31,41,55,0.08)] transition focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E60012] ${
+                className={`min-h-[34px] rounded-full border px-3 py-2 text-sm md:text-base font-medium shadow-[0_6px_14px_rgba(31,41,55,0.08)] transition focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E60012] ${
                   isActive
                     ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
                     : "border-[#D6C7B8] bg-[#FCF7F1] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
                 }`}
-                style={{
-                  fontSize: size === 1 ? "0.85rem" : "0.78rem",
-                  transform: `translateX(${shift}px)`,
-                  borderStyle: "solid",
-                  transitionProperty: "transform, box-shadow, border, color, background",
-                }}
+                style={{ borderStyle: "solid", transitionProperty: "transform, box-shadow, border, color, background" }}
                 aria-pressed={isActive}
               >
                 {label}

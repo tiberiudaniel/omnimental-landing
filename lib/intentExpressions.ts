@@ -228,12 +228,14 @@ type AdaptiveCloudOptions = {
   locale: Locale;
   primaryCategory?: IntentPrimaryCategory | null;
   total?: number;
+  excludeIds?: readonly string[];
 };
 
 export function generateAdaptiveIntentCloudWords({
   locale,
   primaryCategory = null,
   total = 25,
+  excludeIds = [],
 }: AdaptiveCloudOptions): IntentCloudWord[] {
   const expressions = getIntentExpressions(locale);
   const wordsByCategory = CATEGORY_ORDER.reduce<Record<IntentPrimaryCategory, LocalizedIntentExpression[]>>(
@@ -250,7 +252,7 @@ export function generateAdaptiveIntentCloudWords({
     },
   );
 
-  const selectionIds = new Set<string>();
+  const selectionIds = new Set<string>(excludeIds ?? []);
   const words: LocalizedIntentExpression[] = [];
 
   if (primaryCategory && wordsByCategory[primaryCategory].length) {
