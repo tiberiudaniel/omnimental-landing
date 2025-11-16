@@ -24,20 +24,34 @@ type StepConfig = {
   sections?: Array<(typeof evaluationSections)[number]["key"]>;
 };
 
-const STEP_CONFIG: StepConfig[] = [
+const STEP_CONFIG_RO: StepConfig[] = [
   { key: "info", label: "Profil participant" },
   { key: "resilience", label: "Stres & autoeficacitate", sections: ["pss", "gse"] },
   { key: "presence", label: "Prezență conștientă", sections: ["maas"] },
   { key: "emotions", label: "Starea emoțională", sections: ["panas"] },
   { key: "vitality", label: "Vitalitate", sections: ["svs"] },
 ];
+const STEP_CONFIG_EN: StepConfig[] = [
+  { key: "info", label: "Participant profile" },
+  { key: "resilience", label: "Stress & self‑efficacy", sections: ["pss", "gse"] },
+  { key: "presence", label: "Mindful presence", sections: ["maas"] },
+  { key: "emotions", label: "Emotional state", sections: ["panas"] },
+  { key: "vitality", label: "Vitality", sections: ["svs"] },
+];
 
-const STAGES = [
+const STAGES_RO = [
   { value: "t0", label: "Start (săptămâna 0)", helper: "Baseline inițial" },
   { value: "t1", label: "3 săptămâni", helper: "Primul checkpoint" },
   { value: "t2", label: "6 săptămâni", helper: "Jumătatea programului" },
   { value: "t3", label: "9 săptămâni", helper: "Faza de consolidare" },
   { value: "t4", label: "Final (12 săptămâni)", helper: "Raport final" },
+];
+const STAGES_EN = [
+  { value: "t0", label: "Start (week 0)", helper: "Initial baseline" },
+  { value: "t1", label: "3 weeks", helper: "First checkpoint" },
+  { value: "t2", label: "6 weeks", helper: "Mid‑program" },
+  { value: "t3", label: "9 weeks", helper: "Consolidation phase" },
+  { value: "t4", label: "Final (12 weeks)", helper: "Final report" },
 ];
 
 const submissionFormatter = new Intl.DateTimeFormat("ro-RO", {
@@ -157,6 +171,8 @@ export default function EvaluationForm({
   onSubmitted?: () => void;
 }) {
   const { lang } = useI18n();
+  const STEP_CONFIG: StepConfig[] = (lang === 'en' ? STEP_CONFIG_EN : STEP_CONFIG_RO);
+  const STAGES = (lang === 'en' ? STAGES_EN : STAGES_RO);
   const normalizedLang: "ro" | "en" = lang === "en" ? "en" : "ro";
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [answers, setAnswers] = useState<EvaluationFormValues>({ ...initialEvaluationValues });
@@ -281,7 +297,7 @@ export default function EvaluationForm({
       } else {
         setFormState((prev) => ({
           ...prev,
-          errors: ["Te rugăm să completezi toate întrebările din această etapă."],
+          errors: [lang === 'ro' ? "Te rugăm să completezi toate întrebările din această etapă." : "Please complete all questions in this step."],
         }));
       }
       return;
@@ -290,20 +306,20 @@ export default function EvaluationForm({
     const errors: string[] = [];
 
     if (!formState.name.trim()) {
-      errors.push("Introdu numele tău pentru a salva evaluarea.");
+      errors.push(lang === 'ro' ? "Introdu numele tău pentru a salva evaluarea." : "Please enter your name to save the evaluation.");
     }
 
     if (completedCount < totalRequired) {
-      errors.push("Te rugăm să răspunzi la toate întrebările înainte de trimitere.");
+      errors.push(lang === 'ro' ? "Te rugăm să răspunzi la toate întrebările înainte de trimitere." : "Please answer all questions before submitting.");
     }
 
     const stageValid = STAGES.some((stage) => stage.value === formState.stage);
     if (!stageValid) {
-      errors.push("Selectează etapa evaluării (ex. Start, 3 săptămâni).");
+      errors.push(lang === 'ro' ? "Selectează etapa evaluării (ex. Start, 3 săptămâni)." : "Select the evaluation stage (e.g., Start, 3 weeks).");
     }
 
     if (mode === "full" && !knowledgeCompleted) {
-      errors.push("Completează toate întrebările Omni-Cunoaștere.");
+      errors.push(lang === 'ro' ? "Completează toate întrebările Omni-Cunoaștere." : "Complete all Omni‑Knowledge questions.");
     }
 
     if (errors.length) {
@@ -578,6 +594,7 @@ export default function EvaluationForm({
               <StageSelector
                 value={formState.stage}
                 onChange={(stage) => setFormState((prev) => ({ ...prev, stage }))}
+                stages={STAGES}
               />
             </div>
             <label className="flex flex-col gap-2 text-sm text-[#2C2C2C] md:col-span-2">
@@ -796,6 +813,7 @@ export default function EvaluationForm({
             submittedAt={lastSubmittedAt}
             mode={mode}
             knowledgePercent={mode === "full" ? knowledgeScore.percent : undefined}
+            stages={STAGES}
           />
           {formState.savedLocally && (
             <div className="border border-[#E6C200] bg-[#FFF9DB] px-4 py-3 text-sm text-[#2C2C2C]">
@@ -915,15 +933,17 @@ function interpretPSS(score: number) {
   return "Stres ridicat";
 }
 
+type StageMeta = { value: string; label: string; helper: string };
 type StageSelectorProps = {
   value: string;
   onChange: (stage: string) => void;
+  stages: StageMeta[];
 };
 
-function StageSelector({ value, onChange }: StageSelectorProps) {
+function StageSelector({ value, onChange, stages }: StageSelectorProps) {
   return (
     <div className="grid gap-2 sm:grid-cols-2">
-      {STAGES.map((stage) => {
+      {stages.map((stage) => {
         const active = stage.value === value;
         return (
           <button
@@ -951,6 +971,7 @@ type SubmissionSummaryCardProps = {
   submittedAt: Date | null;
   mode: "full" | "intelOnly";
   knowledgePercent?: number;
+  stages: StageMeta[];
 };
 
 function SubmissionSummaryCard({
@@ -958,8 +979,9 @@ function SubmissionSummaryCard({
   submittedAt,
   mode,
   knowledgePercent,
+  stages,
 }: SubmissionSummaryCardProps) {
-  const stageMeta = STAGES.find((stage) => stage.value === stageValue) ?? STAGES[0];
+  const stageMeta = stages.find((stage) => stage.value === stageValue) ?? stages[0];
   const submittedText = submittedAt
     ? submissionFormatter.format(submittedAt)
     : "Se va completa automat după trimitere.";

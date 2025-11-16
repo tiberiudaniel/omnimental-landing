@@ -2,6 +2,7 @@
 
 import TypewriterText from "./TypewriterText";
 import { useTStrings } from "./useTStrings";
+import { useI18n } from "./I18nProvider";
 
 interface JourneyIntroProps {
   onStart: () => void;
@@ -9,15 +10,18 @@ interface JourneyIntroProps {
 
 export default function JourneyIntro({ onStart }: JourneyIntroProps) {
   const { s } = useTStrings();
+  const { lang } = useI18n();
   // New narrative intro (typewriter): 2–3 scurte fraze
   const narrative = s(
     "journeyIntroNarrative",
-    "Trăim într-o perioadă în care mintea e bombardată constant: știri, presiune, decizii greu de amânat. Dacă nu o antrenezi, ea decide pentru tine – de obicei în favoarea fricii și oboselii, nu a clarității. Acest mic traseu te ajută să înțelegi rapid unde ești acum și ce tip de antrenament mental ți-ar folosi cel mai mult.",
+    lang === 'ro'
+      ? "Trăim într-o perioadă în care mintea e bombardată constant: știri, presiune, decizii greu de amânat. Dacă nu o antrenezi, ea decide pentru tine – de obicei în favoarea fricii și oboselii, nu a clarității. Acest mic traseu te ajută să înțelegi rapid unde ești acum și ce tip de antrenament mental ți-ar folosi cel mai mult."
+      : "We live in a time where the mind is constantly bombarded: news, pressure, decisions that can’t wait. If you don’t train it, it chooses for you — usually in favor of fear and fatigue, not clarity. This short path helps you quickly see where you are and what kind of mental training would help most.",
   ) as string;
   // optional title reserved for future use (removed to keep lint clean)
-  const buttonLabel = s("journeyIntroButton", "Începe mini‑evaluarea");
+  const buttonLabel = s("journeyIntroButton", lang === 'ro' ? "Începe mini‑evaluarea" : "Start the mini‑assessment");
   // Single, succinct duration mention
-  const microcopy = s("journeyIntroMicrocopy", "3–4 pași · ~2 minute");
+  const microcopy = s("journeyIntroMicrocopy", lang === 'ro' ? "3–4 pași · ~2 minute" : "3–4 steps · ~2 minutes");
 
   return (
     <section id="intro" className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">
@@ -32,19 +36,21 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
 
         {/* Ce urmează */}
         <div className="mx-auto mt-2 max-w-xl text-left">
-          <h2 className="mb-2 text-base font-semibold text-[#1F1F1F]">{s("journeyWhatsNext", "Ce urmează") as string}</h2>
+          <h2 className="mb-2 text-base font-semibold text-[#1F1F1F]">{s("journeyWhatsNext", lang === 'ro' ? "Ce urmează" : "What’s next") as string}</h2>
           <ul className="space-y-2 text-sm leading-relaxed text-[#2C2C2C]">
-            <li>• Alegi 5–7 intenții care te reprezintă acum.</li>
-            <li>• Răspunzi la câteva întrebări scurte despre ritm, resurse și obiective.</li>
-            <li>• Primești o recomandare clară (individual vs. grup) cu pași pentru următoarele 24h.</li>
+            <li>{lang === 'ro' ? '• Alegi 5–7 intenții care te reprezintă acum.' : '• Pick 5–7 intents that fit you right now.'}</li>
+            <li>{lang === 'ro' ? '• Răspunzi la câteva întrebări scurte despre ritm, resurse și obiective.' : '• Answer a few short questions about pace, resources, and goals.'}</li>
+            <li>{lang === 'ro' ? '• Primești o recomandare clară (individual vs. grup) cu pași pentru următoarele 24h.' : '• Get a clear recommendation (individual vs. group) plus next 24h steps.'}</li>
           </ul>
         </div>
 
         {/* Garanții / Ce NU este */}
         <div className="mx-auto mt-3 max-w-xl text-left">
-          <h3 className="mb-1 text-sm font-semibold text-[#1F1F1F]">{s("journeyWhatNot", "Ce NU este / Garanții") as string}</h3>
+          <h3 className="mb-1 text-sm font-semibold text-[#1F1F1F]">{s("journeyWhatNot", lang === 'ro' ? "Ce NU este / Garanții" : "What it isn’t / Guarantees") as string}</h3>
           <p className="text-sm leading-relaxed text-[#2C2C2C]/80">
-            Nu e diagnostic medical și nu promite rezultate peste noapte. E o orientare practică, bazată pe datele tale, ca să începi cu claritate.
+            {lang === 'ro'
+              ? 'Nu e diagnostic medical și nu promite rezultate peste noapte. E o orientare practică, bazată pe datele tale, ca să începi cu claritate.'
+              : 'It’s not a medical diagnosis, and it doesn’t promise overnight results. It’s a practical orientation, based on your data, to start with clarity.'}
           </p>
         </div>
 

@@ -57,7 +57,7 @@ export default function IntentCloud({
       : lang === "ro"
       ? "Alege între 5 și 7 afirmații care descriu cel mai bine starea ta actuală."
       : "Pick 5 to 7 statements that best describe what you feel right now.";
-  const buttonLabel = typeof buttonValue === "string" ? buttonValue : "Continuă";
+  const buttonLabel = typeof buttonValue === "string" ? buttonValue : (lang === 'ro' ? 'Continuă' : 'Continue');
   const progress = Math.min(selected.length / maxSelection, 1);
 
   const words = useMemo<IntentWord[]>(() => {

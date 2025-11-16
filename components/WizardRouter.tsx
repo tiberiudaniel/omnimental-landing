@@ -294,8 +294,8 @@ export default function WizardRouter(props: Props) {
           recommendedPath={recommendedPath}
           onCardSelect={onCardSelect}
           cardLabels={{ individual: s("cardIndividualLabel", "Individual"), group: s("cardGroupLabel", "Group") }}
-          accountPromptMessage={s("accountPromptMessage", "Salvează-ți progresul și vezi istoricul evaluărilor.")}
-          accountPromptButton={s("accountPromptButton", "Creează cont")}
+          accountPromptMessage={s("accountPromptMessage", lang === 'ro' ? "Salvează-ți progresul și vezi istoricul evaluărilor." : "Save your progress and see your evaluation history.")}
+          accountPromptButton={s("accountPromptButton", lang === 'ro' ? "Creează cont" : "Create account")}
           isSavingChoice={isSavingChoice}
           savingChoiceType={savingChoiceType}
           errorMessage={saveError}
@@ -330,7 +330,7 @@ export default function WizardRouter(props: Props) {
             {/* Clear next-step CTAs to continue the journey */}
             <div className="rounded-[14px] border border-[#F0E6DA] bg-[#FFFBF7] px-6 py-5 shadow-[0_8px_22px_rgba(0,0,0,0.05)]">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.35em] text-[#C07963]">
-                {s("wizardNextStepEyebrow", "Pasul următor")}
+                {s("wizardNextStepEyebrow", lang === 'ro' ? "Pasul următor" : "Next step")}
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <Link
@@ -340,13 +340,13 @@ export default function WizardRouter(props: Props) {
                   }}
                   className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] bg-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:opacity-90"
                 >
-                  {s("wizardCtaGoTraining", "Fă un antrenament complet")}
+                  {s("wizardCtaGoTraining", lang === 'ro' ? "Fă un antrenament complet" : "Start a full training")}
                 </Link>
                 <Link
                   href="/progress"
                   className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
                 >
-                  {s("wizardCtaGoDashboard", "Vezi tabloul tău de bord")}
+                  {s("wizardCtaGoDashboard", lang === 'ro' ? "Vezi tabloul tău de bord" : "Go to your dashboard")}
                 </Link>
               </div>
             </div>
@@ -358,7 +358,7 @@ export default function WizardRouter(props: Props) {
                   onClick={onReturnToOrigin}
                   className="rounded-[12px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
                 >
-                  {returnLabel ?? s("wizardBack", "Înapoi")}
+                  {returnLabel ?? s("wizardBack", lang === 'ro' ? "Înapoi" : "Back")}
                 </button>
               </div>
             ) : null}

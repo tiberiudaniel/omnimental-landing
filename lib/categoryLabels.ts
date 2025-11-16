@@ -8,7 +8,7 @@ export type CategoryLabels = {
 
 export const CATEGORY_LABELS: Record<CategoryKeyRO, CategoryLabels> = {
   claritate: {
-    name: { ro: "Claritate", en: "Clarity" },
+    name: { ro: "Claritate mentală", en: "Clarity" },
     short: { ro: "direcție & focus", en: "direction & focus" },
     reflection: {
       ro: "Notează 1–2 lucruri care ți-ar aduce mai multă claritate săptămâna asta.",
@@ -24,7 +24,7 @@ export const CATEGORY_LABELS: Record<CategoryKeyRO, CategoryLabels> = {
     },
   },
   stres: {
-    name: { ro: "Calm", en: "Calm" },
+    name: { ro: "Echilibru emoțional", en: "Calm" },
     short: { ro: "reglare stres", en: "stress regulation" },
     reflection: {
       ro: "Ce te ajută, în mod realist, să cobori ritmul 10 minute azi?",

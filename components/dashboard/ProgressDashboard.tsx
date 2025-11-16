@@ -6,7 +6,7 @@ import { adaptProgressFacts } from "@/lib/progressAdapter";
 import { getDailyInsight } from "@/lib/insights";
 import { getAreasForScript } from "@/lib/quests";
 import type { OmniBlock } from "@/lib/omniIntel";
-import { motion, type Variants, AnimatePresence } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import InfoTooltip from "@/components/InfoTooltip";
 import Link from "next/link";
 import { useI18n } from "@/components/I18nProvider";
@@ -57,10 +57,12 @@ export default function ProgressDashboard({
   profileId,
   demoFacts,
   debugGrid,
+  hideOmniIntel,
 }: {
   profileId: string;
   demoFacts?: ProgressFact;
   debugGrid?: boolean;
+  hideOmniIntel?: boolean;
 }) {
   const { data: liveFacts, loading: liveLoading } = useProgressFacts(profileId);
   const { profile } = useProfile();
@@ -113,11 +115,12 @@ export default function ProgressDashboard({
       return { omniIntelDelta: null, motivationDelta: null, kunoDelta: null };
     }
   }, [loading, profileId, facts?.omni]);
-  const [insightExpanded] = useState(false);
+  // const [insightExpanded] = useState(false);
   const [questExpanded, setQuestExpanded] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   useEffect(() => {
-    const id = window.setTimeout(() => setShowWelcome(false), 2600);
+    // Keep the greeting long enough to be read comfortably (~2s total including enter animation)
+    const id = window.setTimeout(() => setShowWelcome(false), 2000);
     return () => window.clearTimeout(id);
   }, []);
   const showAchv = useMemo(() => {
@@ -336,6 +339,16 @@ export default function ProgressDashboard({
         "Alege un moment concret din următoarele 24 de ore în care să aplici o tehnică de respirație sau de focus și notează ce observi în corp și în minte.",
     };
   })();
+  const questPreview = useMemo(() => {
+    const txt = (quest?.text || "").trim();
+    if (!txt) return "";
+    const limit = 140; // short, clean preview that fits collapsed card
+    if (txt.length <= limit) return txt;
+    const slice = txt.slice(0, limit);
+    // avoid cutting mid-word
+    const lastSpace = slice.lastIndexOf(" ");
+    return (lastSpace > 60 ? slice.slice(0, lastSpace) : slice).trimEnd() + "…";
+  }, [quest?.text]);
   const focusTheme = (() => {
     type EvalBlock = {
       mainAreaLabel?: string;
@@ -366,10 +379,10 @@ export default function ProgressDashboard({
       topCategory = max?.category;
     }
     const catLabelMap: Record<string, string> = {
-      clarity: lang === "ro" ? "Claritate" : "Clarity",
-      focus: lang === "ro" ? "Claritate" : "Clarity",
-      calm: lang === "ro" ? "Calm" : "Calm",
-      energy: lang === "ro" ? "Energie" : "Energy",
+      clarity: lang === "ro" ? "Claritate mentală" : "Clarity",
+      focus: lang === "ro" ? "Claritate mentală" : "Clarity",
+      calm: lang === "ro" ? "Echilibru emoțional" : "Calm",
+      energy: lang === "ro" ? "Energie fizică" : "Energy",
       relationships: lang === "ro" ? "Relații" : "Relationships",
       performance: lang === "ro" ? "Performanță" : "Performance",
       health: lang === "ro" ? "Sănătate" : "Health",
@@ -434,7 +447,7 @@ export default function ProgressDashboard({
                 debugGrid ? "outline outline-1 outline-[#C24B17]/40" : ""
               }`}
             >
-              <h2 className="mt-0 mb-1.5 text-base font-bold text-[#7A6455] sm:mt-0 sm:text-lg lg:mt-0 lg:text-xl">
+              <h2 className="mt-0 mb-1.5 text-base font-bold text-[#A08F82] sm:mt-0 sm:text-lg lg:mt-0 lg:text-xl">
                 OmniMental Progress
               </h2>
               {/* Internal indices – PIE CHART */}
@@ -443,7 +456,7 @@ export default function ProgressDashboard({
                   <div className="flex-1">
                     <div className="mb-0.5 flex items-center justify-between sm:mb-1">
                       <h3 className="text-xs font-semibold text-[#2C2C2C] sm:text-sm">
-                        {lang === 'ro' ? 'KPI — Gândire • Emoție • Energie' : 'KPI — Thinking • Emotion • Energy'}
+                      {lang === 'ro' ? 'KPI — Gândire • Emoție • Energie' : 'KPI — Thinking • Emotion • Energy'}
                       </h3>
                       <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[10px] sm:text-[11px]">
                         <button
@@ -520,21 +533,29 @@ export default function ProgressDashboard({
                         return (
                           <div className="mt-2 border-t border-[#F0E8E0] pt-2 sm:pt-2.5">
                             <div className="mb-1 flex items-center gap-3 text-[9px] text-[#7B6B60]">
-                              <span className="inline-flex items-center gap-1" title={INDICATORS.mental_clarity.label + ' — ' + INDICATORS.mental_clarity.description}>
-                                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#7A6455' }} />
-                                {INDICATORS.mental_clarity.shortLabel}
-                              </span>
-                              <span className="inline-flex items-center gap-1" title={INDICATORS.emotional_balance.label + ' — ' + INDICATORS.emotional_balance.description}>
-                                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#4D3F36' }} />
-                                {INDICATORS.emotional_balance.shortLabel}
-                              </span>
-                              <span className="inline-flex items-center gap-1" title={INDICATORS.physical_energy.label + ' — ' + INDICATORS.physical_energy.description}>
-                                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#C07963' }} />
-                                {INDICATORS.physical_energy.shortLabel}
-                              </span>
+                      <span className="inline-flex items-center gap-1" title={INDICATORS.mental_clarity.label + ' — ' + INDICATORS.mental_clarity.description}>
+                        <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#7A6455' }} />
+                        {INDICATORS.mental_clarity.label}
+                      </span>
+                      <span className="inline-flex items-center gap-1" title={INDICATORS.emotional_balance.label + ' — ' + INDICATORS.emotional_balance.description}>
+                        <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#4D3F36' }} />
+                        {INDICATORS.emotional_balance.label}
+                      </span>
+                      <span className="inline-flex items-center gap-1" title={INDICATORS.physical_energy.label + ' — ' + INDICATORS.physical_energy.description}>
+                        <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#C07963' }} />
+                        {INDICATORS.physical_energy.label}
+                      </span>
                             </div>
                             <div className="h-[70px] sm:h-[80px]">
-                              <WeeklyTrendsChart data={data} series={series} showBars={false} showValues={false} ariaLabel={lang === 'ro' ? 'Evoluție indicatori interni' : 'Internal indicators evolution'} />
+                              <WeeklyTrendsChart
+                                data={data}
+                                series={series}
+                                showBars={false}
+                                showValues={false}
+                                showXAxisBaseline={true}
+                                yAxisWidth={16}
+                                ariaLabel={lang === 'ro' ? 'Evoluție indicatori interni' : 'Internal indicators evolution'}
+                              />
                             </div>
                             <div className="mt-1 flex justify-end">
                               <a href="/progress?open=journal&tab=NOTE_LIBERE" className="text-[9px] underline text-[#7B6B60] hover:text-[#2C2C2C]" data-testid="internal-link-quick-note">
@@ -736,6 +757,8 @@ export default function ProgressDashboard({
                         return timeframe === 'week' ? weeklyCounts : monthCounts;
                       })()}
                       showBars={metric === 'score' || metric === 'count' || metric === 'min'}
+                      showValues={true}
+                      yAxisWidth={24}
                       ariaLabel={
                         lang === "ro"
                           ? timeframe === "month"
@@ -964,9 +987,9 @@ export default function ProgressDashboard({
                       .sort((a, b) => b[1] - a[1])
                       .slice(0, 4);
                     const labelMap: Record<string, string> = {
-                      clarity: lang === 'ro' ? 'Claritate' : 'Clarity',
-                      calm: lang === 'ro' ? 'Calm' : 'Calm',
-                      energy: lang === 'ro' ? 'Energie' : 'Energy',
+                      clarity: lang === 'ro' ? 'Claritate mentală' : 'Clarity',
+                      calm: lang === 'ro' ? 'Echilibru emoțional' : 'Calm',
+                      energy: lang === 'ro' ? 'Energie fizică' : 'Energy',
                       relationships: lang === 'ro' ? 'Relații' : 'Relationships',
                       performance: lang === 'ro' ? 'Performanță' : 'Performance',
                       health: lang === 'ro' ? 'Sănătate' : 'Health',
@@ -1003,85 +1026,93 @@ export default function ProgressDashboard({
               {/* Welcome + OmniIntel + Focus + Motivation */}
               <div className="grid grid-cols-1 items-stretch gap-2 md:grid-cols-2 md:gap-3 lg:grid-cols-2 lg:gap-3">
                 {/* Welcome: animate only the words “Bine ai revenit”, then hide them */}
-                <motion.div variants={fadeDelayed(0.08)} {...hoverScale} className="h-full">
-                  <Card className="flex h-full flex-col rounded-xl border border-[#E4DAD1] bg-white p-2 shadow-sm sm:p-3">
-                    <AnimatePresence>
-                      {showWelcome ? (
-                        <motion.h2
-                          key="welcome-text"
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0, transition: { duration: 0.35 } }}
-                          exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
-                          className="mb-0.5 text-xs font-semibold text-[#2C2C2C] sm:mb-1 sm:text-sm"
-                        >
-                          {getString(
-                            t,
-                            "dashboard.welcomeBack",
-                            lang === "ro" ? "Bine ai revenit" : "Welcome back",
-                          )}
-                        </motion.h2>
-                      ) : null}
-                    </AnimatePresence>
-                    <p className="text-[11px] text-[#6A6A6A] sm:text-xs">
-                      Ultima evaluare:{" "}
-                      <span suppressHydrationWarning>
-                        {formatUtcShort(
-                          toMsLocal(
-                            facts?.evaluation?.updatedAt ?? facts?.updatedAt,
-                          ),
+                {showWelcome ? (
+                  <motion.div variants={fadeDelayed(0.08)} {...hoverScale} className="h-full">
+                    <Card className="flex h-full flex-col rounded-xl border border-[#E4DAD1] bg-white p-2 shadow-sm sm:p-3">
+                      <motion.h2
+                        key="welcome-text"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0, transition: { duration: 0.35 } }}
+                        exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
+                        className="mb-0.5 text-xs font-semibold text-[#2C2C2C] sm:mb-1 sm:text-sm"
+                      >
+                        {getString(
+                          t,
+                          "dashboard.welcomeBack",
+                          lang === "ro" ? "Bine ai revenit" : "Welcome back",
                         )}
-                      </span>
-                    </p>
-                  </Card>
-                </motion.div>
-                {/* Omni-Intel */}
-                <motion.div
-                  variants={fadeDelayed(0.1)}
-                  {...hoverScale}
-                  className="h-full"
-                >
+                      </motion.h2>
+                      <p className="text-[11px] text-[#6A6A6A] sm:text-xs">
+                        Ultima evaluare:{" "}
+                        <span suppressHydrationWarning>
+                          {formatUtcShort(
+                            toMsLocal(
+                              facts?.evaluation?.updatedAt ?? facts?.updatedAt,
+                            ),
+                          )}
+                        </span>
+                      </p>
+                    </Card>
+                  </motion.div>
+                ) : null}
+                {/* Omni-Intel (optional here; can be moved near OmniPath) */}
+                {hideOmniIntel ? null : (
+                  <motion.div
+                    variants={fadeDelayed(0.1)}
+                    {...hoverScale}
+                    className="h-full"
+                  >
                   <Card className="flex h-full flex-col items-center justify-center rounded-xl border border-[#E4DAD1] bg-white p-2 shadow-sm sm:p-3">
-                    <p className="mb-0.5 text-[9px] font-medium tracking-[0.16em] text-[#7B6B60] sm:mb-1 sm:text-[10px]">
+                    <p className="mb-0.5 flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.16em] text-[#7B6B60] sm:mb-1 sm:text-[10px]">
                       {getString(
                         t,
                         "dashboard.omniIntel.small",
                         "Omni-Intel",
                       )}
+                      <InfoTooltip
+                        items={[
+                          lang === 'ro'
+                            ? 'Index compus din inteligența minții din cap, a minții din inimă, a minții din intestin.'
+                            : 'Composite index from the head mind, heart mind, and gut mind intelligence.',
+                        ]}
+                        label={lang === 'ro' ? 'Detalii Omni‑Intel' : 'Omni‑Intel details'}
+                      />
                     </p>
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-xl font-bold text-[#C24B17] sm:text-2xl">
-                        {omniIntelScore}
-                      </p>
-                      {omniIntelDelta != null &&
-                      Number.isFinite(omniIntelDelta) ? (
-                        <span
-                          className={`text-[10px] font-semibold ${
-                            omniIntelDelta >= 0
-                              ? "text-[#1F7A43]"
-                              : "text-[#B8000E]"
-                          }`}
-                          title={getString(
-                            t,
-                            "dashboard.delta.vsLast",
-                            lang === "ro"
-                              ? "față de ultima vizită"
-                              : "vs last visit",
-                          )}
-                        >
-                          {omniIntelDelta >= 0 ? "+" : ""}
-                          {Math.round(omniIntelDelta)}
-                        </span>
-                      ) : null}
-                    </div>
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-xl font-bold text-[#C24B17] sm:text-2xl">
+                          {omniIntelScore}
+                        </p>
+                        {omniIntelDelta != null &&
+                        Number.isFinite(omniIntelDelta) ? (
+                          <span
+                            className={`text-[10px] font-semibold ${
+                              omniIntelDelta >= 0
+                                ? "text-[#1F7A43]"
+                                : "text-[#B8000E]"
+                            }`}
+                            title={getString(
+                              t,
+                              "dashboard.delta.vsLast",
+                              lang === "ro"
+                                ? "față de ultima vizită"
+                                : "vs last visit",
+                            )}
+                          >
+                            {omniIntelDelta >= 0 ? "+" : ""}
+                            {Math.round(omniIntelDelta)}
+                          </span>
+                        ) : null}
+                      </div>
                     <p className="mt-0.5 text-center text-[10px] text-[#7B6B60] sm:mt-1 sm:text-[11px]">
                       {getString(
                         t,
-                        "dashboard.omniIntel.small",
-                        "Omni-Intel",
+                        "dashboard.omniIntel.level",
+                        lang === 'ro' ? 'Nivel de Omni‑Inteligență' : 'Omni‑Intelligence level',
                       )}
                     </p>
-                  </Card>
-                </motion.div>
+                    </Card>
+                  </motion.div>
+                )}
                 {/* Focus theme */}
                 <motion.div
                   variants={fadeDelayed(0.09)}
@@ -1089,7 +1120,7 @@ export default function ProgressDashboard({
                   className="h-full"
                 >
                   <Card className="flex h-full flex-col justify-between rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-2 shadow-sm sm:p-2">
-                    <h2 className="mb-1 text-[11px] font-semibold text-[#2C2C2C] sm:mb-1.5 sm:text-[12px]">
+                    <h2 className="mb-1 text-[12px] font-semibold text-[#2C2C2C] sm:mb-1.5 sm:text-[13px]">
                       {lang === "ro" ? "Tematica în focus" : "Focus theme"}
                     </h2>
                     <p className="text-[13px] font-bold text-[#2C2C2C] sm:text-sm">
@@ -1116,7 +1147,7 @@ export default function ProgressDashboard({
                 >
                   <Card className="flex h-full flex-col justify-between rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-2 shadow-sm sm:p-2">
                     <h2
-                      className="mb-1 whitespace-nowrap text-[11px] font-semibold text-[#2C2C2C] sm:mb-1.5 sm:text-[12px]"
+                      className="mb-1 whitespace-nowrap text-[12px] font-semibold text-[#2C2C2C] sm:mb-1.5 sm:text-[13px]"
                       title={
                         lang === "ro"
                           ? "Motivație / Resurse"
@@ -1178,10 +1209,10 @@ export default function ProgressDashboard({
                           0,
                           Math.min(100, Math.round(omniScopeScore)),
                         )}
-                        className="h-2 w-full rounded bg-[#F1EAE3]"
+                        className="h-1.5 w-full rounded bg-[#F7F2EC]"
                       >
                         <div
-                          className="h-2 rounded bg-[#C07963]"
+                          className="h-1.5 rounded bg-[#D8B6A3]"
                           style={{
                             width: `${Math.max(
                               0,
@@ -1289,54 +1320,175 @@ export default function ProgressDashboard({
               </div>
               {/* Insight full-width in center column */}
               <div className="grid grid-cols-1 items-stretch gap-2 md:gap-3 lg:gap-3">
-                {/* Insight of the Day */}
-                <motion.div
-                  variants={fadeDelayed(0.16)}
-                  {...hoverScale}
-                >
-                  <Card
-                    className={`flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-3 shadow-sm sm:p-4 ${
-                      insightExpanded ? "h-auto" : "h-[180px] sm:h-[220px] lg:h-[260px]"
-                    }`}
-                  >
-                    <motion.h3
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.35 }}
-                      className="mb-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm"
-                    >
-                      {getString(
-                        t,
-                        "dashboard.insightTitle",
-                        lang === "ro"
-                          ? "Revelația zilei"
-                          : "Insight of the Day",
-                      )}
-                    </motion.h3>
-                    <div className="relative overflow-auto">
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.45 }}
-                        className="text-[11px] leading-relaxed text-[#2C2C2C] sm:text-xs"
-                      >
-                        {insight.text}
-                      </motion.p>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between sm:mt-2">
-                      <p className="text-[9px] uppercase tracking-[0.16em] text-[#A08F82] sm:text-[10px]">
-                        {getString(
-                          t,
-                          "dashboard.themeLabel",
-                          lang === "ro" ? "Temă" : "Theme",
-                        )}
-                        : {insight.theme}
-                      </p>
-                      {/* Expanded by default; toggle removed per request */}
-                    </div>
-                  </Card>
+                {/* Guidance card (now primary center card) */}
+                <motion.div variants={fadeDelayed(0.20)} {...hoverScale}>
+                  {(() => {
+                    const last = (facts?.quickAssessment ?? null) as
+                      | { energy?: number; stress?: number; clarity?: number; confidence?: number; focus?: number; updatedAt?: unknown }
+                      | null;
+                    const energy = Math.max(0, Math.min(10, Number(last?.energy ?? 0)));
+                    const stress = Math.max(0, Math.min(10, Number(last?.stress ?? 0)));
+                    const clarity = Math.max(0, Math.min(10, Number(last?.clarity ?? 0)));
+                    // Pull last 3 days scope.history for energy/clarity/calm if available
+                    type ScopeHist = Record<string, { clarity?: number; calm?: number; energy?: number; updatedAt?: unknown }>;
+                    const scopeHist = ((facts as { omni?: { scope?: { history?: ScopeHist } } } | undefined)?.omni?.scope?.history ?? {}) as ScopeHist;
+                    const lastKeys = Object.keys(scopeHist)
+                      .filter((k) => /^d\d{8}$/.test(k))
+                      .sort()
+                      .slice(-3);
+                    const avg = (arr: number[]) => (arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0);
+                    const energy3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.energy ?? 0)));
+                    const clarity3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.clarity ?? 0)));
+                    const calm3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.calm ?? 0)));
+                    // Build action score today from events
+                    const evs: ActivityEvent[] = (() => {
+                      const base: ActivityEvent[] = sessions.map((s) => ({
+                        startedAt: ((): number | string | Date => {
+                          const v = (s as { startedAt?: unknown })?.startedAt;
+                          if (typeof v === 'number' || v instanceof Date || typeof v === 'string') return v as number | string | Date;
+                          return Date.now();
+                        })(),
+                        durationMin: Math.max(0, Math.round((s.durationSec ?? 0) / 60)),
+                        units: 1,
+                        source: (s.type === 'breathing' ? 'breathing' : s.type === 'drill' ? 'drill' : 'journal') as ActivityEvent['source'],
+                        category: (s.type === 'reflection' ? 'reflection' : 'practice') as ActivityEvent['category'],
+                      }));
+                      try {
+                        type RawAE = { startedAt?: unknown; source?: string; category?: 'knowledge'|'practice'|'reflection'; units?: number; durationMin?: number; focusTag?: string | null };
+                        const raws = (facts as { activityEvents?: RawAE[] } | undefined)?.activityEvents ?? [];
+                        raws.forEach((r) => {
+                          if (!r.category) return;
+                          const started: number | string | Date = (typeof r.startedAt === 'number' || r.startedAt instanceof Date || typeof r.startedAt === 'string') ? (r.startedAt as number | string | Date) : Date.now();
+                          const src: ActivityEvent['source'] = ((): ActivityEvent['source'] => {
+                            const s = r.source || 'other';
+                            return ['omnikuno','omniabil','breathing','journal','drill','slider','other'].includes(s) ? (s as ActivityEvent['source']) : 'other';
+                          })();
+                          base.push({
+                            startedAt: started,
+                            durationMin: typeof r.durationMin === 'number' ? r.durationMin : undefined,
+                            units: typeof r.units === 'number' ? r.units : 1,
+                            source: src,
+                            category: r.category,
+                            focusTag: r.focusTag ?? undefined,
+                          });
+                        });
+                      } catch {}
+                      return base;
+                    })();
+                    const todayScore = computeActionTrend(evs, Date.now(), lang, 1, currentFocusTag)[0]?.totalMin ?? 0;
+                    const makeBar = (val01: number, accent: string) => (
+                      <div className="h-2 w-full rounded-full bg-[#E8DED4]">
+                        <div className="h-2 rounded-full" style={{ width: `${Math.max(0, Math.min(100, Math.round(val01 * 10)))}%`, background: accent }} />
+                      </div>
+                    );
+                    const state: 'low' | 'tense' | 'ready' = (energy <= 4 || energy3 <= 4) ? 'low' : ( (10 - stress) <= 3 || calm3 <= 4 ? 'tense' : 'ready');
+                    const badge = (() => {
+                      if (state === 'low') return { text: lang==='ro' ? 'ENERGIE SCĂZUTĂ' : 'LOW ENERGY', cls: 'bg-[#FFF1ED] text-[#B8472B] border-[#F3D3C6]' };
+                      if (state === 'tense') return { text: lang==='ro' ? 'STARE TENSIONATĂ' : 'TENSE STATE', cls: 'bg-[#FFEFF3] text-[#B82B4F] border-[#F6D0DA]' };
+                      return { text: lang==='ro' ? 'PREGĂTIT' : 'READY', cls: 'bg-[#ECF8F0] text-[#1F7A43] border-[#CFEBDD]' };
+                    })();
+                    const primary = (() => {
+                      if (state === 'low') return { title: lang==='ro' ? 'Respirație 5 minute pentru reset' : '5‑min breath reset', href: { pathname: '/antrenament', query: { tab: 'ose' } }, dur: '~5 min' } as const;
+                      if (state === 'tense') return { title: lang==='ro' ? 'Jurnal ghidat: descarcă emoțiile (5 min)' : 'Guided journal: release tension (5 min)', href: { pathname: '/progress', query: { open: 'journal', tab: 'NOTE_LIBERE' } }, dur: '~5 min' } as const;
+                      return { title: lang==='ro' ? 'Mini‑lecție OmniKuno pe tema ta' : 'OmniKuno micro‑lesson on your theme', href: { pathname: '/antrenament', query: { tab: 'oc' } }, dur: lang==='ro' ? '3–7 min' : '3–7 min' } as const;
+                    })();
+                    const primaryDesc = (() => {
+                      if (state === 'tense') {
+                        return lang==='ro'
+                          ? 'Scrie 2–3 rânduri despre ce te apasă acum. Nu analiza — doar descarcă tensiunea; va ușura claritatea.'
+                          : 'Write 2–3 lines about what feels heavy right now. Don’t analyze — just offload the tension to regain clarity.';
+                      }
+                      if (state === 'low') {
+                        return lang==='ro'
+                          ? 'Ritm simplu 4–4 (sau 4–6): inspiră 4s, ține 4s, expiră 4s, ține 4s. 3–5 cicluri, cu atenția pe expirație.'
+                          : 'Simple 4–4 (or 4–6) rhythm: inhale 4s, hold 4s, exhale 4s, hold 4s. Do 3–5 cycles, focus on the exhale.';
+                      }
+                      return lang==='ro'
+                        ? '3–7 minute: parcurgi o idee-cheie aplicată pe tema ta din focus. 1 concept + 1 exemplu concret.'
+                        : '3–7 minutes: review a key idea applied to your focus theme. 1 concept + 1 concrete example.';
+                    })();
+                    const alt1 = lang==='ro' ? 'Somn: checklist scurt (2 min)' : 'Sleep: short checklist (2 min)';
+                    const alt2 = lang==='ro' ? 'Jurnal: o notă rapidă' : 'Journal: a quick note';
+                    const why = (() => {
+                      const e = Math.round((energy3 || energy) * 10) / 10;
+                      const c = Math.round((10 - stress) * 10) / 10;
+                      const a = todayScore;
+                      if (lang==='ro') return `Îți recomandăm asta pentru că, în ultimele zile, energia ta a fost ~${e}/10, echilibrul emoțional ~${c}/10, iar scorul de acțiune azi este ${a}/100.`;
+                      return `We recommend this because, in recent days, your energy was ~${e}/10, emotional balance ~${c}/10, and today’s action score is ${a}/100.`;
+                    })();
+                    return (
+                      <Card className="min-h-[220px] rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-3 shadow-sm sm:min-h-[255px] sm:p-4 lg:min-h-[280px]">
+                        <div className="mb-1 flex items-start justify-between sm:mb-2">
+                          <div>
+                            <h4 className="text-[13px] font-bold text-[#2C2C2C] sm:text-[15px]">
+                              {lang==='ro' ? 'Antrenamentul tău de azi' : 'Today\'s guidance'}
+                            </h4>
+                            <div className="text-[9px] uppercase tracking-[0.16em] text-[#7B6B60] sm:text-[10px]">
+                              {lang==='ro' ? 'Pași mici, impact real' : 'Small steps, real impact'}
+                            </div>
+                          </div>
+                          <span className={`ml-2 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>
+                            {badge.text}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] sm:gap-4">
+                          {/* Left: internal indicators + why */}
+                          <div>
+                            <div className="mb-2">
+                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Claritate mentală' : 'Mental clarity'}</p>
+                              {makeBar(clarity3 || clarity, '#7A6455')}
+                            </div>
+                            <div className="mb-2">
+                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Echilibru emoțional' : 'Emotional balance'}</p>
+                              {makeBar((10 - stress) || (calm3 || 0), '#4D3F36')}
+                            </div>
+                            <div>
+                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Energie fizică' : 'Physical energy'}</p>
+                              {makeBar(energy3 || energy, '#5C4F45')}
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              <span className="rounded-[10px] border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]">
+                                {lang==='ro' ? 'Acțiuni azi' : 'Actions today'}: {todayScore}/100
+                              </span>
+                              {focusTheme?.area ? (
+                                <span className="rounded-[10px] border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]">
+                                  {lang==='ro' ? 'Focus' : 'Focus'}: {focusTheme.area}
+                                </span>
+                              ) : null}
+                            </div>
+                            {/* Why section on left */}
+                            <div className="mt-3">
+                              <p className="mb-1 text-[11px] font-semibold text-[#2C2C2C] sm:text-xs">{lang==='ro' ? 'De ce asta?' : 'Why this?'}</p>
+                              <p className="text-[11px] text-[#2C2C2C] sm:text-xs">{why}</p>
+                            </div>
+                          </div>
+                          {/* Right: main step + light alternatives */}
+                          <div className="flex flex-col justify-between sm:border-l sm:border-[#E8DACE] sm:pl-4">
+                            <div>
+                              <p className="mb-1 text-[12px] font-semibold text-[#2C2C2C] sm:text-sm">{lang==='ro' ? 'Pasul principal' : 'Primary step'}</p>
+                              <p className="mb-1 text-[13px] font-bold leading-snug text-[#2C2C2C] sm:text-[14px]">{primary.title}</p>
+                              <p className="mb-2 text-[11px] text-[#7B6B60] sm:text-[12px]">{primaryDesc}</p>
+                              <Link href={primary.href} className="group inline-flex w-full items-center justify-between rounded-[12px] border border-[#D3C1B2] bg-[#EADCCC] px-4 py-3 text-[#2C2C2C] shadow-sm transition hover:border-[#C9B8A8]">
+                                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] sm:text-[12px]">{lang==='ro' ? 'Începe acum' : 'Start now'}</span>
+                                <span className="text-[10px] text-[#7B6B60]">{primary.dur}</span>
+                              </Link>
+                            </div>
+                            <div className="mt-2">
+                              <div className="mb-1 flex items-baseline justify-between">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#A08F82]">{lang==='ro' ? 'Variante light' : 'Light options'}</p>
+                                <span className="text-[10px] text-[#7B6B60]">— 5 min</span>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <Link href={{ pathname: '/antrenament', query: { tab: 'oc' } }} className="text-[11px] text-[#2C2C2C] underline-offset-2 hover:text-[#C07963] hover:underline sm:text-xs">• {alt1}</Link>
+                                <Link href={{ pathname: '/progress', query: { open: 'journal', tab: 'NOTE_LIBERE' } }} className="text-[11px] text-[#2C2C2C] underline-offset-2 hover:text-[#C07963] hover:underline sm:text-xs">• {alt2}</Link>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })()}
                 </motion.div>
-                
               </div>
             </div>
           {/* Profile indices moved under Trends */}
@@ -1347,76 +1499,34 @@ export default function ProgressDashboard({
               debugGrid ? "outline outline-1 outline-[#C24B17]/40" : ""
             }`}
           >
-            {/* Omni-Kuno recap moved below Recent entries */}
-            {/* Profile indices recap removed from sidebar per request */}
-            {/* Quest of the Day (moved to sidebar, above Practice) */}
-            <motion.div variants={fadeDelayed(0.24)} {...hoverScale}>
-              <Card
-                className={`flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] px-3 py-2 shadow-sm sm:px-4 sm:py-3 ${
-                  questExpanded ? "h-auto" : "h-[120px] sm:h-[140px] lg:h-[160px]"
-                }`}
-              >
+            {/* Insight of the Day (moved above Today’s quest) */}
+            <motion.div variants={fadeDelayed(0.16)} {...hoverScale}>
+              <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
                 <h3 className="mb-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
                   {getString(
                     t,
-                    "dashboard.todayQuest",
-                    lang === "ro" ? "Provocarea de azi" : "Today’s quest",
+                    "dashboard.insightTitle",
+                    lang === "ro" ? "Revelația zilei" : "Insight of the Day",
                   )}
                 </h3>
-                {quest.title && (
-                  <p className="mb-0.5 text-[11px] font-semibold text-[#7B6B60] sm:mb-1 sm:text-xs">{quest.title}</p>
-                )}
-                <div className={`relative ${questExpanded ? "" : "overflow-hidden"}`}>
-                  <p className="text-[11px] leading-relaxed text-[#2C2C2C] sm:text-xs">{quest.text}</p>
-                  {!questExpanded ? (
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-[#FCF7F1] to-transparent" />
-                  ) : null}
+                <div className="relative">
+                  <p className="text-[11px] leading-relaxed text-[#2C2C2C] sm:text-xs">{insight.text}</p>
                 </div>
                 <div className="mt-1 flex items-center justify-between sm:mt-2">
                   <p className="text-[9px] uppercase tracking-[0.16em] text-[#A08F82] sm:text-[10px]">
-                    {lang === "ro" ? "Aplică azi, în viața reală." : "Apply today, in real life."}
+                    {getString(
+                      t,
+                      "dashboard.themeLabel",
+                      lang === "ro" ? "Temă" : "Theme",
+                    )}
+                    : {insight.theme}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setQuestExpanded((v) => !v)}
-                    className="text-[11px] font-semibold text-[#7B6B60] underline hover:text-[#2C2C2C]"
-                  >
-                    {questExpanded ? (lang === "ro" ? "Mai puțin" : "Less") : lang === "ro" ? "Vezi tot" : "More"}
-                  </button>
                 </div>
               </Card>
             </motion.div>
-            {/* Practice snapshot */}
-            <motion.div
-              variants={fadeDelayed(0.26)}
-              {...hoverScale}
-            >
-              <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
-                <h4 className="mb-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
-                  Practice snapshot
-                </h4>
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  <Metric
-                    label="Reflections"
-                    value={prog.reflectionCount}
-                    testId="metric-reflections"
-                  />
-                  <Metric
-                    label="Breathing min"
-                    value={prog.breathingCount}
-                  />
-                  <Metric
-                    label="Focus drills"
-                    value={prog.drillsCount}
-                  />
-                  <Metric
-                    label="Energy idx"
-                    value={prog.indices.energy}
-                  />
-                </div>
-                
-              </Card>
-            </motion.div>
+            {/* Omni-Kuno recap moved below Recent entries */}
+            {/* Profile indices recap removed from sidebar per request */}
+            
             {/* Recent entries */}
             <motion.div
               variants={fadeDelayed(0.28)}
@@ -1541,6 +1651,37 @@ export default function ProgressDashboard({
               </Card>
             </motion.div>
 
+            {/* Practice snapshot (moved below Recent entries) */}
+            <motion.div
+              variants={fadeDelayed(0.26)}
+              {...hoverScale}
+            >
+              <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
+                <h4 className="mb-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
+                  Practice snapshot
+                </h4>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <Metric
+                    label="Reflections"
+                    value={prog.reflectionCount}
+                    testId="metric-reflections"
+                  />
+                  <Metric
+                    label="Breathing min"
+                    value={prog.breathingCount}
+                  />
+                  <Metric
+                    label="Focus drills"
+                    value={prog.drillsCount}
+                  />
+                  <Metric
+                    label="Energy idx"
+                    value={prog.indices.energy}
+                  />
+                </div>
+              </Card>
+            </motion.div>
+
             {/* Omni Kuno Edu (moved below Recent entries) */}
             <motion.div variants={fadeDelayed(0.30)} {...hoverScale}>
               <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
@@ -1614,9 +1755,9 @@ export default function ProgressDashboard({
                     } catch {}
                   }
                   const catLabel: Record<string, string> = {
-                    clarity: lang === "ro" ? "Claritate" : "Clarity",
-                    calm: lang === "ro" ? "Calm" : "Calm",
-                    energy: lang === "ro" ? "Energie" : "Energy",
+                    clarity: lang === "ro" ? "Claritate mentală" : "Clarity",
+                    calm: lang === "ro" ? "Echilibru emoțional" : "Calm",
+                    energy: lang === "ro" ? "Energie fizică" : "Energy",
                     relationships: lang === "ro" ? "Relații" : "Relationships",
                     performance: lang === "ro" ? "Performanță" : "Performance",
                     health: lang === "ro" ? "Sănătate" : "Health",
@@ -1695,13 +1836,47 @@ export default function ProgressDashboard({
               </Card>
             </motion.div>
 
+            {/* Quest of the Day – moved last in sidebar */}
+            <motion.div variants={fadeDelayed(0.32)} {...hoverScale}>
+              <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-white px-3 py-2 shadow-sm sm:px-4 sm:py-3 h-auto">
+                <h3 className="mb-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
+                  {getString(
+                    t,
+                    "dashboard.todayQuest",
+                    lang === "ro" ? "Provocarea de azi" : "Today’s quest",
+                  )}
+                </h3>
+                <div className="relative">
+                  <p className="text-[11px] leading-relaxed text-[#2C2C2C] sm:text-xs">
+                    {questExpanded ? quest.text : questPreview}
+                  </p>
+                </div>
+                <div className="mt-1 flex items-center justify-between sm:mt-2">
+                  <p className="text-[9px] uppercase tracking-[0.16em] text-[#A08F82] sm:text-[10px]">
+                    {lang === "ro" ? "Aplică azi, în viața reală." : "Apply today, in real life."}
+                  </p>
+                  {(quest?.text || "").length > (questPreview?.length || 0) ? (
+                    <button
+                      type="button"
+                      onClick={() => setQuestExpanded((v) => !v)}
+                      className="text-[11px] font-semibold text-[#7B6B60] underline hover:text-[#2C2C2C]"
+                    >
+                      {questExpanded ? (lang === "ro" ? "Mai puțin" : "Less") : lang === "ro" ? "Vezi tot" : "More"}
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-transparent">—</span>
+                  )}
+                </div>
+              </Card>
+            </motion.div>
+
             {/* Achievement banner + initial insights – tot în coloană dreapta */}
             {showAchv ? (
               <div className="mt-1 rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] p-2 text-sm text-[#1F3C2F] sm:mt-2 sm:p-3">
                 <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2">
                   <p className="text-[13px] font-medium sm:text-sm">
                     {lang === "ro"
-                      ? "Prima treaptă atinsă: Claritate"
+                      ? "Prima treaptă atinsă: Claritate mentală"
                       : "First milestone reached: Clarity"}
                   </p>
                   <div className="flex items-center gap-1 sm:gap-2">

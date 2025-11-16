@@ -76,7 +76,12 @@ export default function QuestsList({ lang, categories, items = [] }: Props) {
         <p className="text-xs text-[#7A6455]">{lang === "ro" ? "Vor apărea aici după generare." : "They will appear after generation."}</p>
       ) : (
         <ul className="space-y-2">
-          {items.map((q) => (
+          {items.map((q) => {
+            const isReflect = q.type === 'reflect';
+            const ctaText = q.completed
+              ? (lang === 'ro' ? 'Finalizat' : 'Completed')
+              : (isReflect ? (lang === 'ro' ? 'Deschide jurnalul' : 'Open journal') : (lang === 'ro' ? 'Completează' : 'Complete'));
+            return (
             <li key={q.id} className="flex items-center justify-between rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-3 py-2 text-sm text-[#2C2C2C]">
               <div>
                 <p className="font-semibold">{q.title}</p>
@@ -89,11 +94,17 @@ export default function QuestsList({ lang, categories, items = [] }: Props) {
                   setBusy(true);
                   try {
                     await recordQuestCompletion();
-                    // Best-effort: bump practice counter based on quest type
-                    if (q.type === "practice") {
-                      void recordPracticeEvent("breathing");
-                    } else if (q.type === "reflect") {
-                      void recordPracticeEvent("reflection");
+                    if (q.type === 'practice') {
+                      void recordPracticeEvent('breathing');
+                    } else if (q.type === 'reflect') {
+                      void recordPracticeEvent('reflection');
+                      if (typeof window !== 'undefined') {
+                        const url = new URL(window.location.origin + '/progress');
+                        url.searchParams.set('open', 'journal');
+                        url.searchParams.set('tab', 'NOTE_LIBERE');
+                        window.location.assign(url.toString());
+                        return;
+                      }
                     }
                   } finally {
                     setBusy(false);
@@ -101,10 +112,10 @@ export default function QuestsList({ lang, categories, items = [] }: Props) {
                 }}
                 className="rounded-[10px] border border-[#2C2C2C] px-2 py-[2px] text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:opacity-60"
               >
-                {q.completed ? (lang === "ro" ? "Finalizat" : "Completed") : (lang === "ro" ? "Completează" : "Complete")}
+                {ctaText}
               </button>
             </li>
-          ))}
+          );})}
         </ul>
       )}
     </div>

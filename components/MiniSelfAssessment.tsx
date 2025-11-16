@@ -22,10 +22,10 @@ export default function MiniSelfAssessment({ onDone }: { onDone: () => void }) {
 
   const label = (k: SliderKey) => {
     const map: Record<SliderKey, string> = {
-      energy: getString(t, "selfAssessment.energy", lang === "ro" ? "Energie" : "Energy"),
+      energy: getString(t, "selfAssessment.energy", lang === "ro" ? "Energie fizică" : "Energy"),
       stress: getString(t, "selfAssessment.stress", lang === "ro" ? "Stres" : "Stress"),
       sleep: getString(t, "selfAssessment.sleep", lang === "ro" ? "Somn" : "Sleep"),
-      clarity: getString(t, "selfAssessment.clarity", lang === "ro" ? "Claritate" : "Clarity"),
+      clarity: getString(t, "selfAssessment.clarity", lang === "ro" ? "Claritate mentală" : "Clarity"),
       confidence: getString(t, "selfAssessment.confidence", lang === "ro" ? "Încredere" : "Confidence"),
       focus: getString(t, "selfAssessment.focus", lang === "ro" ? "Focus" : "Focus"),
     };

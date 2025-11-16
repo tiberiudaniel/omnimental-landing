@@ -41,11 +41,21 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
   const question = t("firstScreenQuestion");
   const placeholderTemplateValue = t("firstScreenPlaceholder");
   const continueLabel = t("firstScreenContinueBtn");
-  const welcomeText = typeof welcomeValue === "string" ? welcomeValue : "";
-  const questionText =
-    typeof question === "string" ? question : "";
-  const placeholderTemplate =
-    typeof placeholderTemplateValue === "string" ? placeholderTemplateValue : "";
+  const welcomeText = typeof welcomeValue === "string"
+    ? welcomeValue
+    : (lang === 'ro'
+      ? "Bine ai venit! În două minute îmi spui ce vrei să clarifici."
+      : "Welcome! In two minutes, tell me what you want to clarify.");
+  const questionText = typeof question === "string"
+    ? question
+    : (lang === 'ro'
+      ? "Cu ce vrei să te ajut acum? Scrie pe scurt."
+      : "What do you want help with right now? Type a short line.");
+  const placeholderTemplate = typeof placeholderTemplateValue === "string"
+    ? placeholderTemplateValue
+    : (lang === 'ro'
+      ? "Ex.: claritate decizie / stres / energie / relații…"
+      : "e.g., clarity on a decision / stress / energy / relationships…");
 
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);

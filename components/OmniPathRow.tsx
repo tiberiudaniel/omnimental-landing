@@ -25,7 +25,7 @@ export default function OmniPathRow({ lang: _langProp, progress }: Props) {
   const Label = {
     scope: getString("omniPath.scope", lang === "ro" ? "Omni-Scop" : "Omni-Intent"),
     kuno: getString("omniPath.kuno", lang === "ro" ? "Omni Kuno" : "Omni Knowledge"),
-    sensei: getString("omniPath.sensei", "Omni-Sensei"),
+    sensei: getString("omniPath.sensei", "Omni-Flex"),
     abil: getString("omniPath.abil", lang === "ro" ? "Omni-Abil" : "Omni-Abilities"),
     intel: getString("omniPath.intel", "Omni-Intel"),
   };

@@ -109,19 +109,19 @@ export default function ReflectionScreen({
             <h3 className="mt-2 text-xl font-semibold text-[#1F1F1F]">
               {getString(t, "wizard.selectionProfile", isRO ? "Profilul selecțiilor tale" : "Your selection profile")}
             </h3>
-            <div className="mt-6 grid gap-6 md:grid-cols-[320px_minmax(0,560px)] md:items-start md:gap-8 md:justify-center">
-              <div className="mx-auto w-[320px] shrink-0 md:mr-4">
+            <div className="mt-6 grid gap-4 sm:gap-5 md:grid-cols-[minmax(240px,320px)_minmax(0,1fr)] md:items-start md:gap-8 md:justify-center">
+              <div className="mx-auto w-full max-w-[300px] shrink-0 md:mr-4">
                 <RadarIndicators data={indicatorEntries} maxValue={1} size="lg" />
               </div>
-              <div className="space-y-4 text-left md:w-[560px] md:max-w-[560px] md:justify-self-start">
+              <div className="min-w-0 w-full space-y-4 text-left md:justify-self-start">
                 <ul className="grid w-full gap-3 text-sm">
                   {indicatorEntries.map(({ key, label, rawCount }) => (
                     <li
                       key={key}
-                      className="flex items-center justify-between rounded-[12px] border border-[#F0E2D4] bg-white px-3 py-2"
+                      className="flex flex-col gap-1 rounded-[12px] border border-[#F0E2D4] bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <span className="text-[#5C4F45]">{label}</span>
-                      <span className="font-semibold text-[#1F1F1F]">
+                      <span className="break-words text-[#5C4F45]">{label}</span>
+                      <span className="text-xs font-semibold text-[#1F1F1F] sm:text-sm">
                         {rawCount}/{displayTotal}
                       </span>
                     </li>
@@ -138,10 +138,10 @@ export default function ReflectionScreen({
                         return (
                           <li
                             key={`${entry.category}-${entry.count}`}
-                            className="flex items-center justify-between"
+                            className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"
                           >
-                            <span>{label}</span>
-                            <span className="text-xs uppercase tracking-[0.2em] text-[#A08F82]">
+                            <span className="break-words">{label}</span>
+                            <span className="text-[11px] uppercase tracking-[0.2em] text-[#A08F82]">
                               {entry.count}/{displayTotal}
                             </span>
                           </li>

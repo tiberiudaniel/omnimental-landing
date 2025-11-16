@@ -33,7 +33,7 @@ export default function OmniScopLitePage() {
         </div>
         <RecommendationSummary
           loadLevel={"moderate"}
-          mainArea={isRO ? "Claritate" : "Clarity"}
+          mainArea={isRO ? "Claritate mentală" : "Clarity"}
           indicators={indicators}
           language={isRO ? "ro" : "en"}
           onBookCall={() => {}}

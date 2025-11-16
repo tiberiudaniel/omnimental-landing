@@ -47,7 +47,7 @@ export default function OmniPathInline({ lang, progress }: { lang: "ro" | "en"; 
   const Label = {
     scope: lang === "ro" ? "Omni-Scop" : "Omni-Intent",
     kuno: lang === "ro" ? "Omni Kuno" : "Omni Knowledge",
-    sensei: "Omni-Sensei",
+    sensei: "Omni-Flex",
     abil: lang === "ro" ? "Omni-Abil" : "Omni-Abilities",
     intel: "Omni-Intel",
   };

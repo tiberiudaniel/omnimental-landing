@@ -80,9 +80,10 @@ html {
 
 /* Display serif override for TypewriterText on intro */
 .typewriter-display h2 {
-  font-family: var(--font-cormorant), Georgia, "Times New Roman", serif !important;
+  /* Switch to Courier Prime for typewriter effect */
+  font-family: "Courier Prime", Courier, monospace !important;
   font-weight: 600;
-  letter-spacing: 0em;
+  letter-spacing: 0.02em;
   line-height: 1.22;
   /* editorial scale: comfortable on mobile, elegant on desktop */
   font-size: clamp(22px, 4.2vw, 36px);

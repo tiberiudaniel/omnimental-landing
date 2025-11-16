@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Roboto, Cormorant_Garamond } from "next/font/google";
+import { Geist, Geist_Mono, Roboto, Cormorant_Garamond, Courier_Prime } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../components/AuthProvider";
 import { ProfileProvider } from "../components/ProfileProvider";
@@ -30,6 +30,14 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+const courierPrime = Courier_Prime({
+  variable: "--font-courier-prime",
+  subsets: ["latin"],
+  weight: ["400", "700"],
   style: ["normal", "italic"],
   display: "swap",
 });
@@ -78,7 +86,7 @@ export default function RootLayout({
   return (
     <html
       lang="ro"
-      className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} ${cormorant.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} ${cormorant.variable} ${courierPrime.variable}`}
       data-scroll-behavior="smooth"
     >
       <body className="antialiased">

@@ -848,9 +848,18 @@ export async function recordRecentEntry(
         return etxt === normalizeForDedupe(text) && dt <= 12 * 60 * 60 * 1000; // 12h window
       });
       if (exists) return;
-      rec.push(entry);
+      // Coalesce rapid incremental drafts: within the same 2‑minute bucket and same tabId/source
+      // keep only the latest entry (drop earlier in-bucket variants like "des", "dese", "deseori")
+      const recFiltered = rec.filter((e) => {
+        const sameTab = (String(e.tabId || '') === tabId);
+        const eMs = toMs(e.timestamp);
+        const eBucket = eMs ? Math.floor(eMs / 120000) : -1;
+        if (sameTab && eBucket === bucket) return false; // drop earlier entries in this window
+        return true;
+      });
+      recFiltered.push(entry);
       // Optional cap to 50 items, newest last for consistency
-      const sanitizedAsc = rec
+      const sanitizedAsc = recFiltered
         .map((e) => ({ ...e, _ms: toMs(e.timestamp), _text: normalizeForDedupe(String(e.text ?? '')) }))
         .sort((a, b) => (a._ms ?? 0) - (b._ms ?? 0))
         .slice(-100); // work with up to last 100 before final unique
@@ -1061,5 +1070,39 @@ export async function recordActivityEvent(payload: {
     });
   } catch (e) {
     console.warn('recordActivityEvent failed', e);
+  }
+}
+
+// Lightweight habit tick for dashboard guidance card.
+// Stores daily ticks under habits.ticks.dYYYYMMDD[habitKey] = N (incremented),
+// and updates updatedAt mirror. Caller may also log an ActivityEvent.
+export async function recordHabitTick(payload: { habitKey: string }, ownerId?: string | null) {
+  try {
+    const user = ownerId ? { uid: ownerId } : await ensureAuth();
+    if (!user?.uid || areWritesDisabled()) return;
+    const db = getDb();
+    const factsRef = doc(db, 'userProgressFacts', user.uid);
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const key = `d${y}${m}${d}`;
+    await runTransaction(db, async (tx) => {
+      tx.set(
+        factsRef,
+        {
+          habits: {
+            ticks: {
+              [key]: { [payload.habitKey]: increment(1) as unknown as number },
+            },
+            updatedAt: serverTimestamp(),
+          },
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    });
+  } catch (e) {
+    console.warn('recordHabitTick failed', e);
   }
 }

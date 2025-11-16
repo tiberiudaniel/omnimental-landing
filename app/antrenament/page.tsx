@@ -26,7 +26,7 @@ import { useWindowWidth } from "@/lib/useWindowSize";
 const TAB_ITEMS = [
   { key: "os", label: "Omni-Scop", description: "Scop & intenție" },
   { key: "oc", label: "Omni Kuno", description: "Cunoaștere & concepte" },
-  { key: "ose", label: "Omni-Sensei", description: "Mentorat & ghidaj" },
+  { key: "ose", label: "Omni-Flex", description: "Flexibilitate psihologică" },
   { key: "oa", label: "Omni-Abil", description: "Abilități practice" },
   { key: "oi", label: "Omni-Intel", description: "Stare integrativă" },
 ] as const;

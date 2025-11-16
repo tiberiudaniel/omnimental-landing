@@ -12,7 +12,7 @@ export default function ProgressTrendsLeft({ lang, sparkValues }: Props) {
     <div className="h-full rounded-[12px] border border-[#E4D8CE] bg-white px-5 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.08)]">
       <header className="mb-2 flex items-center justify-between">
         <p className="t-title-sm text-[#1F1F1F]">
-          {lang === "ro" ? "Trend 7 zile: Calm (proxy)" : "7-day trend: Calm (proxy)"}
+          {lang === "ro" ? "Trend 7 zile: Echilibru emoțional (proxy)" : "7-day trend: Calm (proxy)"}
         </p>
         <span className="text-xs text-[#7A6455]">
           {lang === "ro" ? "Auto-raport" : "Self-report"}

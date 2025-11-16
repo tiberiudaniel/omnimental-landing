@@ -9,6 +9,7 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  LabelList,
 } from "recharts";
 import type { ReactNode } from "react";
 
@@ -29,7 +30,9 @@ type WeeklyTrendsChartProps = {
   series?: SeriesConfig[];    // multi-line (clarity, calm, energy)
   showBars?: boolean;         // ignored for now; kept for prop compatibility
   showValues?: boolean;
+  showXAxisBaseline?: boolean;
   ariaLabel?: string;
+  yAxisWidth?: number;        // tweakable reserved width for Y axis (reduces left gutter)
 };
 
 function normalizeDay(day: Point["day"]): string {
@@ -43,7 +46,9 @@ export default function WeeklyTrendsChart({
   series,
   showBars = false,
   showValues = false,
+  showXAxisBaseline = false,
   ariaLabel = "Trend chart",
+  yAxisWidth = 28,
 }: WeeklyTrendsChartProps) {
   const multiSeries: SeriesConfig[] =
     series && series.length
@@ -81,14 +86,18 @@ export default function WeeklyTrendsChart({
   return (
     <div role="img" aria-label={ariaLabel} className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={rows} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+        <ComposedChart data={rows} margin={{ top: 14, right: 6, bottom: 6, left: 2 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="_x" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 9 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+          <XAxis dataKey="_x" tick={{ fontSize: 9 }} axisLine={showXAxisBaseline} tickLine={false} tickMargin={2} />
+          <YAxis width={yAxisWidth} tick={{ fontSize: 9 }} axisLine={false} tickLine={false} domain={[0, 'auto']} />
           <Tooltip formatter={tooltipFormatter} labelStyle={{ fontSize: 10 }} contentStyle={{ fontSize: 10 }} />
           {/* Bars only for single-series usage */}
           {(!series || series.length === 0) && showBars ? (
-            <Bar dataKey="s0" fill="#F0E6DB" radius={[3,3,0,0]} />
+            <Bar dataKey="s0" fill="#F0E6DB" radius={[3,3,0,0]}>
+              {showValues ? (
+                <LabelList dataKey="s0" position="top" offset={6} style={{ fontSize: 10, fill: "#7B6B60" }} />
+              ) : null}
+            </Bar>
           ) : null}
           {multiSeries.map((s, idx) => (
             <Line
@@ -100,7 +109,11 @@ export default function WeeklyTrendsChart({
               dot={false}
               activeDot={showValues ? { r: 3 } : { r: 2 }}
               isAnimationActive={false}
-            />
+            >
+              {showValues ? (
+                <LabelList dataKey={`s${idx}`} position="top" offset={6} style={{ fontSize: 10, fill: "#7B6B60" }} />
+              ) : null}
+            </Line>
           ))}
         </ComposedChart>
       </ResponsiveContainer>

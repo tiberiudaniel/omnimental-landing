@@ -19,7 +19,7 @@ export const INDICATORS: Record<IndicatorId, IndicatorDef> = {
   mental_clarity: {
     id: 'mental_clarity',
     label: 'Claritate mentală',
-    shortLabel: 'Claritate',
+    shortLabel: 'Claritate mentală',
     domain: 'cognitiv',
     type: 'state',
     range: [0, 10],
@@ -30,7 +30,7 @@ export const INDICATORS: Record<IndicatorId, IndicatorDef> = {
   emotional_balance: {
     id: 'emotional_balance',
     label: 'Echilibru emoțional',
-    shortLabel: 'Calm',
+    shortLabel: 'Echilibru emoțional',
     domain: 'emoțional',
     type: 'state',
     range: [0, 10],
@@ -41,7 +41,7 @@ export const INDICATORS: Record<IndicatorId, IndicatorDef> = {
   physical_energy: {
     id: 'physical_energy',
     label: 'Energie fizică',
-    shortLabel: 'Energie',
+    shortLabel: 'Energie fizică',
     domain: 'somatic',
     type: 'state',
     range: [0, 10],
@@ -82,10 +82,10 @@ export const INDICATOR_CHART_KEYS: IndicatorChartKey[] = [
 ];
 
 export const INDICATOR_LABELS: Record<IndicatorChartKey, { ro: string; en: string }> = {
-  clarity: { ro: 'Claritate', en: 'Clarity' },
+  clarity: { ro: 'Claritate mentală', en: 'Clarity' },
   relationships: { ro: 'Relații', en: 'Relationships' },
-  calm: { ro: 'Calm', en: 'Calm' },
-  energy: { ro: 'Energie', en: 'Energy' },
+  calm: { ro: 'Echilibru emoțional', en: 'Calm' },
+  energy: { ro: 'Energie fizică', en: 'Energy' },
   performance: { ro: 'Performanță', en: 'Performance' },
 };
 
