@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import TypewriterText from "./TypewriterText";
+import MultiTypewriter from "./MultiTypewriter";
 import { useI18n } from "../components/I18nProvider";
 import {
   detectCategoryFromRawInput,
@@ -37,37 +37,41 @@ const CATEGORY_ORDER: IntentPrimaryCategory[] = [
 
 export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onAuthRequest }: FirstScreenProps) {
   const { lang, t } = useI18n();
-  const welcomeValue = t("firstScreenWelcome");
-  const question = t("firstScreenQuestion");
-  const placeholderTemplateValue = t("firstScreenPlaceholder");
-  const continueLabel = t("firstScreenContinueBtn");
-  const welcomeText = typeof welcomeValue === "string"
-    ? welcomeValue
-    : (lang === 'ro'
-      ? "Bine ai venit! În două minute îmi spui ce vrei să clarifici."
-      : "Welcome! In two minutes, tell me what you want to clarify.");
-  const questionText = typeof question === "string"
-    ? question
-    : (lang === 'ro'
-      ? "Cu ce vrei să te ajut acum? Scrie pe scurt."
-      : "What do you want help with right now? Type a short line.");
-  const placeholderTemplate = typeof placeholderTemplateValue === "string"
-    ? placeholderTemplateValue
+  const placeholderTemplate = (typeof t("firstScreenPlaceholder") === "string"
+    ? (t("firstScreenPlaceholder") as string)
     : (lang === 'ro'
       ? "Ex.: claritate decizie / stres / energie / relații…"
-      : "e.g., clarity on a decision / stress / energy / relationships…");
+      : "e.g., clarity on a decision / stress / energy / relationships…"));
+  const linesFirstInput = (() => {
+    const v = t('wizard.firstInput');
+    if (Array.isArray(v)) return v as string[];
+    return (lang === 'ro'
+      ? [
+          'Înainte să îți spun ce poate face proiectul ăsta, vreau să văd cum arată problema prin ochii tăi.',
+          'Scrie în câteva cuvinte ce te apasă cel mai tare acum, fără să cauți formularea perfectă.',
+          'De aici pornește harta antrenamentului tău mental.',
+        ]
+      : [
+          'Before I tell you what this project can do, I want to see the problem through your eyes.',
+          'Write in a few words what weighs on you most now — don’t look for the perfect wording.',
+          'From here your mental training map begins.',
+        ]);
+  })();
 
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [introPhase, setIntroPhase] = useState<"welcome" | "question">(
-    welcomeText ? "welcome" : "question"
-  );
+  // no need to track sequence flag, we only focus the input after text finishes
   const [isInputHovered, setIsInputHovered] = useState(false);
   const [showIdeas, setShowIdeas] = useState(false);
   const isMountedRef = useRef(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const locale = lang === "en" ? "en" : "ro";
+  const continueLabel = ((): string => {
+    const v = t('wizard.continue');
+    if (typeof v === 'string') return v as string;
+    return lang === 'ro' ? 'Continuă' : 'Continue';
+  })();
   const expressionLibrary = useMemo(() => getIntentExpressions(locale), [locale]);
   const categoryLabels = useMemo(() => {
     const labels = intentCategoryLabels;
@@ -106,7 +110,7 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
     };
   }, []);
 
-  const placeholderText = placeholderTemplate;
+  // placeholderTemplate is used directly in JSX to avoid unused-var lint
 
   const handleSubmit = (value?: string, metadata?: FirstExpressionMeta) => {
     const text = value ?? input;
@@ -177,25 +181,16 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
           OmniMental Coaching
         </div>
         <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FDFCF9] px-6 py-6">
-          {introPhase === "welcome" && welcomeText ? (
-            <TypewriterText
-              key={`${lang}-welcome-${welcomeText}`}
-              text={welcomeText}
-              speed={90}
-              enableSound
-              onComplete={() => setIntroPhase("question")}
-              wrapperClassName="mb-5 w-full bg-transparent px-0 py-0"
-            />
-          ) : (
-            <TypewriterText
-              key={`${lang}-question-${questionText || "question"}`}
-              text={questionText}
-              speed={102}
-              enableSound
-              onComplete={handleQuestionComplete}
-              wrapperClassName="mb-5 w-full bg-transparent px-0 py-0"
-            />
-          )}
+          <MultiTypewriter
+            key={`first-input-${lang}`}
+            lines={linesFirstInput}
+            speed={60}
+            gapMs={500}
+            wrapperClassName="mb-5 w-full bg-transparent px-0 py-0"
+            onDone={() => {
+              handleQuestionComplete();
+            }}
+          />
 
           <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -203,7 +198,7 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder={isInputHovered ? "" : placeholderText}
+                placeholder={isInputHovered ? "" : placeholderTemplate}
                   value={input}
                   onChange={(e) => {
                     setInput(e.target.value);

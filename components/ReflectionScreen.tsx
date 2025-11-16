@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import TypewriterText from "./TypewriterText";
+import MultiTypewriter from "./MultiTypewriter";
 import { useI18n } from "./I18nProvider";
 import { getString } from "@/lib/i18nGetString";
 import RadarIndicators from "./RadarIndicators";
@@ -43,6 +44,7 @@ export default function ReflectionScreen({
     const cleaned = lines.find((line) => line && line.trim().length > 0);
     return cleaned ?? "";
   }, [lines]);
+  const hasMultipleLines = useMemo(() => (lines || []).filter((l) => (l || '').trim().length > 0).length > 1, [lines]);
   const safeCategories = useMemo(() => categories ?? [], [categories]);
   const safeMaxSelection = maxSelection ?? 0;
   const displayTotal = safeMaxSelection > 0 ? safeMaxSelection : Math.max(1, safeCategories.reduce((sum, entry) => sum + entry.count, 0));
@@ -99,7 +101,11 @@ export default function ReflectionScreen({
   return (
     <section data-testid={testId ?? "wizard-step-reflection"} className={sectionClasses}>
       <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right w-full max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white/92 px-7 py-10 text-center shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[2px]" data-testid={cardTestId}>
-        <TypewriterText key={primaryLine} text={primaryLine} speed={90} enableSound />
+        {hasMultipleLines ? (
+          <MultiTypewriter lines={lines} speed={90} />
+        ) : (
+          <TypewriterText key={primaryLine} text={primaryLine} speed={90} enableSound />
+        )}
 
         {showIndicators ? (
           <div className="mt-6 text-left">

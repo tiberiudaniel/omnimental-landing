@@ -10,18 +10,23 @@ interface TypewriterTextProps {
   wrapperClassName?: string;
   cursorClassName?: string;
   pauseAtEndMs?: number;
+  skipEnabled?: boolean;
 }
 
 export default function TypewriterText({
   text,
-  speed = 88,
+  speed = 60,
   enableSound = false,
   onComplete,
   wrapperClassName = "mb-6 w-full bg-[#F6F2EE] px-6 py-5",
   cursorClassName = "typewriter-cursor",
-  pauseAtEndMs = 800,
+  // target pause after a short sentence: 1.0–1.5s
+  pauseAtEndMs = 1200,
+  skipEnabled = true,
 }: TypewriterTextProps) {
-  const staticMode = typeof window !== 'undefined' && window.location.search.includes('e2e=1');
+  // Revert to simple "test only" static mode to avoid accidental skips
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const staticMode = (typeof window !== 'undefined' && window.location.search.includes('e2e=1')) || reducedMotion;
   const [displayedText, setDisplayedText] = useState(staticMode ? text : "");
   const [index, setIndex] = useState(staticMode ? text.length : 0);
   const [showCursor, setShowCursor] = useState(!staticMode);
@@ -30,6 +35,23 @@ export default function TypewriterText({
   const audioContextRef = useRef<AudioContext | null>(null);
   const noiseBufferRef = useRef<AudioBuffer | null>(null);
   const cursorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Respect system reduced-motion
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const mq: MediaQueryList = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const handler = () => setReducedMotion(!!mq.matches);
+      handler();
+      if ('addEventListener' in mq) (mq as unknown as { addEventListener: (type: 'change', listener: () => void) => void }).addEventListener('change', handler);
+      else if ('addListener' in mq) (mq as unknown as { addListener: (listener: () => void) => void }).addListener(handler);
+      return () => {
+        if ('removeEventListener' in mq) (mq as unknown as { removeEventListener: (type: 'change', listener: () => void) => void }).removeEventListener('change', handler);
+        else if ('removeListener' in mq) (mq as unknown as { removeListener: (listener: () => void) => void }).removeListener(handler);
+      };
+    } catch {
+      // noop: keep default reducedMotion=false
+    }
+  }, []);
 
   useEffect(() => {
     if (!enableSound) {
@@ -164,9 +186,11 @@ export default function TypewriterText({
     if (index >= text.length) {
       if (!completionRef.current && onComplete) {
         completionRef.current = true;
+        // small natural variance around the pause window (1000–1500ms)
+        const endPause = Math.max(1000, Math.min(1500, Math.round(pauseAtEndMs + (Math.random() * 500 - 250))));
         const timeout = setTimeout(() => {
           setShowCursor(false);
-        }, pauseAtEndMs);
+        }, endPause);
         cursorTimeoutRef.current = timeout;
         onComplete();
       }
@@ -176,9 +200,9 @@ export default function TypewriterText({
     completionRef.current = false;
 
     const char = text[index];
-    const baseSpeed = Math.max(speed, 30);
-    const variation = baseSpeed * 0.45;
-    let delay = baseSpeed + (Math.random() - 0.5) * variation;
+    const baseSpeed = Math.max(speed, 30); // 50–70ms target (default 60)
+    const jitter = 12; // ±10–15ms variation → pick 12ms
+    let delay = baseSpeed + (Math.random() * (jitter * 2) - jitter);
 
     if (char === "," || char === ";") {
       delay *= 2.4;
@@ -215,8 +239,19 @@ export default function TypewriterText({
     };
   }, []);
 
+  const handleSkip = () => {
+    if (!skipEnabled) return;
+    setDisplayedText(text);
+    setIndex(text.length);
+    setShowCursor(false);
+    if (!completionRef.current && onComplete) {
+      completionRef.current = true;
+      onComplete();
+    }
+  };
+
   return (
-    <div className={wrapperClassName}>
+    <div className={wrapperClassName} onClick={handleSkip} role="presentation">
       <h2
         className="text-center text-2xl font-semibold leading-snug text-[#1F1F1F] md:text-[28px]"
         style={{

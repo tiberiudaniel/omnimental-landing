@@ -13,6 +13,8 @@ import { recordEvaluationTabChange } from "@/lib/progressFacts";
 import SessionDetails from "./SessionDetails";
 import type { IntentPrimaryCategory, IntentCloudWord } from "@/lib/intentExpressions";
 import type { ResolutionSpeed, BudgetPreference, GoalType, EmotionalState, FormatPreference } from "@/lib/evaluation";
+import { useState } from "react";
+import MultiTypewriter from "./MultiTypewriter";
 
 export type Step =
   | "preIntro"
@@ -113,8 +115,10 @@ export default function WizardRouter(props: Props) {
     onFirstInputSubmit,
     onAuthRequest,
     firstInputError,
-    reflectionPromptLines,
-    reflectionSummaryLines,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    reflectionPromptLines: _reflectionPromptLines,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    reflectionSummaryLines: _reflectionSummaryLines,
     intentCategories,
     // intentSelectionTotal not used in this router; kept in parent
     categoryLabels,
@@ -166,6 +170,10 @@ export default function WizardRouter(props: Props) {
     returnLabel,
   } = props;
 
+  // Local guide sequencing for the Intent step (second instruction waits the first sequence)
+  const [intentIntroDone, setIntentIntroDone] = useState(false);
+  const [intentInstructionDone, setIntentInstructionDone] = useState(false);
+
   switch (step) {
     case "preIntro":
       return <IntroAnimation onComplete={() => navigateToStep("intro")} />;
@@ -181,29 +189,97 @@ export default function WizardRouter(props: Props) {
           onAuthRequest={onAuthRequest}
         />
       );
-    case "reflectionPrompt":
+    case "reflectionPrompt": {
+      const v = s('wizard.reflectionPrompt');
+      const lines = Array.isArray(v)
+        ? (v as string[])
+        : (lang === 'en'
+            ? [
+                'What you wrote is not just a complaint — it’s a candid photo of your mind today.',
+                'Behind those words are stress patterns, pressure, and how you treat yourself.',
+                'We don’t judge; we use these signals to build something genuinely useful for you.',
+              ]
+            : [
+                'Ce ai scris nu e doar o plângere, e o fotografie sinceră a minții tale, azi.',
+                'În spatele acelor cuvinte sunt tipare de stres, presiune și felul în care te tratezi pe tine.',
+                'Aici nu te judecăm; folosim aceste semnale ca să construim ceva cu adevărat util pentru tine.',
+              ]);
       return (
         <WizardReflection
-          lines={reflectionPromptLines}
+          lines={lines}
           onContinue={() => navigateToStep("intent")}
           cardTestId="wizard-step-reflection-card"
           compact
         />
       );
-    case "intent":
+    }
+    case "intent": {
+      const linesRaw = s('wizard.intent');
+      const lines = Array.isArray(linesRaw)
+        ? (linesRaw as string[])
+        : (lang === 'en'
+            ? [
+                'Your mind isn’t only in the brain: your heart and gut also send signals when making decisions.',
+                'When these three “minds” are misaligned, blocks, hesitation and stress spikes appear.',
+                'OmniMental blends education, biohacking (sleep, energy, habits) and biofeedback — and it all starts from the intention you choose now.',
+              ]
+            : [
+                'Mintea ta nu stă doar în creier: și inima, și intestinul trimit semnale când iei decizii importante.',
+                'Când aceste trei ‘minți’ nu sunt aliniate, apar blocajele, ezitările și exploziile de stres.',
+                'OmniMental folosește educație, biohacking (somn, energie, obiceiuri) și biofeedback, iar totul pornește de la intenția pe care o alegi acum.',
+              ]);
+      const instruction = ((): string => {
+        const v = s('wizard.intentInstruction');
+        if (typeof v === 'string') return v as string;
+        return lang === 'en'
+          ? 'Choose 7 statements that best describe what you experience now.'
+          : 'Alege 7 afirmații care descriu cel mai bine ce trăiești acum.';
+      })();
       return (
-        <IntentCloud
-          key={cloudKey}
-          minSelection={minSelection}
-          maxSelection={maxSelection}
-          onComplete={(result) => {
-            onIntentComplete(result);
-            navigateToStep("reflectionSummary");
-          }}
-          words={words}
-        />
+        <div className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8">
+          <div className="w-full max-w-5xl rounded-[12px] border border-[#E4D8CE] bg-white/92 px-6 py-5 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+            {/* Multi-line typewriter scaffold */}
+            <div className="mb-4">
+              <MultiTypewriter lines={lines} speed={60} onDone={() => setIntentIntroDone(true)} />
+            </div>
+            {intentIntroDone ? (
+              <div className="mb-4">
+                <MultiTypewriter lines={[instruction]} speed={60} gapMs={750} onDone={() => setIntentInstructionDone(true)} />
+              </div>
+            ) : null}
+            {intentInstructionDone ? (
+              <div className="mt-2">
+                <IntentCloud
+                  key={cloudKey}
+                  minSelection={minSelection}
+                  maxSelection={maxSelection}
+                  onComplete={(result) => {
+                    onIntentComplete(result);
+                    navigateToStep("reflectionSummary");
+                  }}
+                  words={words}
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
       );
+    }
     case "reflectionSummary": {
+      const v = s('wizard.reflectionSummary');
+      const lines = Array.isArray(v)
+        ? (v as string[])
+        : (lang === 'en'
+            ? [
+                'You said what hurts and picked a direction: this is your starting point in OmniMental.',
+                'Next, you’ll receive short combinations of explanations, exercises and reflections — not just generic advice.',
+                'The goal is to be clearer, more flexible, and harder to knock down than you were today.',
+              ]
+            : [
+                'Ai spus ce te doare și ai ales o direcție: acesta este punctul tău de start în OmniMental.',
+                'În continuare vei primi combinații scurte de explicații, exerciții și reflecții, nu doar sfaturi generale.',
+                'Scopul este să devii mai clar, mai flexibil și mai greu de doborât decât erai în ziua asta.',
+              ]);
       const canJournal = Boolean(
         profileCtx?.profile?.id &&
           (profileCtx.profile.selection === "individual" || profileCtx.profile.selection === "group"),
@@ -211,7 +287,7 @@ export default function WizardRouter(props: Props) {
       return (
         <div className="relative" data-testid="wizard-step-reflection">
           <WizardReflection
-            lines={reflectionSummaryLines}
+            lines={lines}
             onContinue={() => navigateToStep("intentMotivation")}
             categories={intentCategories}
             maxSelection={maxSelection}

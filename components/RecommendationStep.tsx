@@ -275,19 +275,20 @@ export function RecommendationStep(props: Props) {
   const e2e = search?.get('e2e') === '1';
   // Quick clarity note (optional)
   const noteKey = 'omnimental_quick_clarity_note';
-  const [quickNote, setQuickNote] = useState<string>(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const v = window.localStorage.getItem(noteKey);
-        return v || '';
-      }
-    } catch {}
-    return '';
-  });
+  const [quickNote, setQuickNote] = useState<string>('');
   const [noteSavedAt, setNoteSavedAt] = useState<number | null>(null);
   const [noteServerSaved, setNoteServerSaved] = useState(false);
 
   // Initial load is handled in useState lazy initializer above
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const v = window.localStorage.getItem(noteKey);
+        if (v) setQuickNote(v);
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const placeholderNote = lang === 'ro'
     ? 'Aș adăuga că …'

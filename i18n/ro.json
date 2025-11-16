@@ -174,7 +174,7 @@
   "recommendationMemberQuestsTitle": "Quest-uri prioritare",
   "progressLockSenseiHint": "Se activează după Kuno",
   "progressQuestsComingSoon": "În curând: exerciții practice ghidate. Vor apărea după prima evaluare.",
-  "intentCloudTitle": "Intenții & Cloud: alege 7 afirmații care descriu cel mai bine ce trăiești acum.",
+  "intentCloudTitle": "Alege 7 afirmații care descriu cel mai bine ce trăiești acum.",
   "intentCloudHelper": "Aceste cuvinte ne ajută să calibrăm următorul pas.",
   "intentCloudButton": "Continuă",
   "intentCloudList": [
@@ -637,6 +637,34 @@
     ]}
   },
   "navOnboarding": "Inițiere",
+  "wizard": {
+    "intro": [
+      "Trăim într-o perioadă în care mintea e bombardată non-stop de știri, notificări și presiune.",
+      "Ajungi să iei decizii pe fugă, cu un creier obosit și un corp care cere pauză.",
+      "OmniMental este gândit ca un spațiu în care îți antrenezi mintea, nu doar o repari după ce cedează."
+    ],
+    "firstInput": [
+      "Înainte să îți spun ce poate face proiectul ăsta, vreau să văd cum arată obiectivul, problema prin ochii tăi.",
+      "Scrie în câteva cuvinte ce te preocupa cel mai tare acum, fără să cauți formularea perfectă.",
+      "De aici pornește harta antrenamentului tău mental."
+    ],
+    "reflectionPrompt": [
+      "Ce ai scris nu e doar o idee, e o fotografie sinceră a minții tale, azi.",
+      "În spatele acelor cuvinte sunt tipare de stres, presiune și felul în care te tratezi pe tine.",
+      "Aici nu te judecăm; folosim aceste semnale ca să construim ceva cu adevărat util pentru tine."
+    ],
+    "intent": [
+      "Mintea ta nu stă doar în creier: și inima, și intestinul trimit semnale când iei decizii importante.",
+      "Când aceste trei ‘minți’ nu sunt aliniate, apar blocajele, ezitările și exploziile de stres.",
+      "OmniMental folosește educație, biohacking (somn, energie, obiceiuri) și biofeedback, iar totul pornește de la direcția pe care o alegi acum."
+    ],
+    "intentInstruction": "Alege 7 afirmații care descriu cel mai bine ce trăiești acum.",
+    "reflectionSummary": [
+      "Ai spus ce te doare și ai ales o direcție: acesta este punctul tău de start în OmniMental.",
+      "În continuare vei primi combinații scurte de explicații, exerciții și reflecții, nu doar sfaturi generale.",
+      "Scopul este să devii mai clar, mai flexibil și mai greu de doborât decât erai în ziua asta."
+    ]
+  },
   "onboarding.intro.title": "În diverse perioade, viața ne provoacă la adaptare.",
   "onboarding.intro.body": "Aici începe antrenamentul tău pentru perioade ca aceasta — când ai nevoie de claritate, energie și sens.",
   "onboarding.intro.choice.calm_clarity": "Vreau mai multă liniște și claritate.",

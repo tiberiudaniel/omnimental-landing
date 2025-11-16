@@ -74,6 +74,34 @@
   "dashboard.todayQuest": "Today’s quest",
   "dashboard.omniIntel.small": "Omni-Intelligence Index",
   "dashboard.omniIntel.level": "Omni-Intelligence level",
+  "wizard": {
+    "intro": [
+      "We live in a time where the mind is bombarded non-stop by news, notifications and pressure.",
+      "You end up deciding in a rush, with a tired brain and a body asking for a break.",
+      "OmniMental is built as a space where you train your mind — not just fix it after it breaks."
+    ],
+    "firstInput": [
+      "Before I tell you what this project can do, I want to see the problem through your eyes.",
+      "Write in a few words what weighs on you most now — don’t look for the perfect wording.",
+      "From here your mental training map begins."
+    ],
+    "reflectionPrompt": [
+      "What you wrote is not just a complaint — it’s a candid photo of your mind today.",
+      "Behind those words are stress patterns, pressure, and how you treat yourself.",
+      "We don’t judge; we use these signals to build something genuinely useful for you."
+    ],
+    "intent": [
+      "Your mind isn’t only in the brain: your heart and gut also send signals when making decisions.",
+      "When these three “minds” are misaligned, blocks, hesitation and stress spikes appear.",
+      "OmniMental blends education, biohacking (sleep, energy, habits) and biofeedback — and it all starts from the intention you choose now."
+    ],
+    "intentInstruction": "Choose 7 statements that best describe what you experience now.",
+    "reflectionSummary": [
+      "You said what hurts and picked a direction: this is your starting point in OmniMental.",
+      "Next, you’ll receive short combinations of explanations, exercises and reflections — not just generic advice.",
+      "The goal is to be clearer, more flexible, and harder to knock down than you were today."
+    ]
+  },
   "dashboard.quickTraining.title": "Quick training",
   "dashboard.quickTraining.subtitle": "3–5 min",
   "dashboard.quickTraining.startPractice": "Start practice",
@@ -301,7 +329,7 @@
   "recommendationFollowUpSuccess": "All set. The recap is on its way to your inbox.",
   "recommendationFollowUpSubmit": "Send recap",
   "cardsHeadline": "Choose the experience that fits your rhythm",
-  "intentCloudTitle": "Intent & Cloud: choose 7 statements that match what you’re living now.",
+    "intentCloudTitle": "Choose 7 statements that best describe what you experience now.",
   "intentCloudHelper": "These words help us calibrate the next step together.",
   "intentCloudButton": "Continue",
   "intentCloudList": [

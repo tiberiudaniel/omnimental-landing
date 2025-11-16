@@ -1,6 +1,6 @@
 "use client";
 
-import TypewriterText from "./TypewriterText";
+import MultiTypewriter from "./MultiTypewriter";
 import { useTStrings } from "./useTStrings";
 import { useI18n } from "./I18nProvider";
 
@@ -12,12 +12,21 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
   const { s } = useTStrings();
   const { lang } = useI18n();
   // New narrative intro (typewriter): 2–3 scurte fraze
-  const narrative = s(
-    "journeyIntroNarrative",
-    lang === 'ro'
-      ? "Trăim într-o perioadă în care mintea e bombardată constant: știri, presiune, decizii greu de amânat. Dacă nu o antrenezi, ea decide pentru tine – de obicei în favoarea fricii și oboselii, nu a clarității. Acest mic traseu te ajută să înțelegi rapid unde ești acum și ce tip de antrenament mental ți-ar folosi cel mai mult."
-      : "We live in a time where the mind is constantly bombarded: news, pressure, decisions that can’t wait. If you don’t train it, it chooses for you — usually in favor of fear and fatigue, not clarity. This short path helps you quickly see where you are and what kind of mental training would help most.",
-  ) as string;
+  const introLines = (() => {
+    const v = s('wizard.intro');
+    if (Array.isArray(v)) return v as string[];
+    return (lang === 'ro'
+      ? [
+          'Trăim într-o perioadă în care mintea e bombardată non-stop de știri, notificări și presiune.',
+          'Ajungi să iei decizii pe fugă, cu un creier obosit și un corp care cere pauză.',
+          'OmniMental este gândit ca un spațiu în care îți antrenezi mintea, nu doar o repari după ce cedează.',
+        ]
+      : [
+          'We live in a time where the mind is bombarded non-stop by news, notifications and pressure.',
+          'You end up deciding in a rush, with a tired brain and a body asking for a break.',
+          'OmniMental is built as a space where you train your mind — not just fix it after it breaks.',
+        ]);
+  })();
   // optional title reserved for future use (removed to keep lint clean)
   const buttonLabel = s("journeyIntroButton", lang === 'ro' ? "Începe mini‑evaluarea" : "Start the mini‑assessment");
   // Single, succinct duration mention
@@ -26,11 +35,11 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
   return (
     <section id="intro" className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">
       <div className="w-full max-w-3xl space-y-6 rounded-[16px] border border-[#E4D8CE] bg-white/92 px-8 py-12 text-center shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
-        <TypewriterText
-          key={narrative}
-          text={narrative}
-          speed={88}
-          enableSound
+        <MultiTypewriter
+          key={introLines.join("|")}
+          lines={introLines}
+          speed={60}
+          gapMs={500}
           wrapperClassName="typewriter-display mb-6 w-full bg-[#F6F2EE] px-6 py-5"
         />
 

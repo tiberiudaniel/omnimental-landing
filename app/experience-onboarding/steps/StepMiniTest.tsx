@@ -94,7 +94,7 @@ export default function StepMiniTest({ onSubmit }: { onSubmit: (answers: number[
     <section className="space-y-4">
       <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
         <div className="mb-1 text-xs uppercase tracking-[0.3em] text-[#A08F82]">{lang === 'ro' ? 'Pas 2/7' : 'Step 2/7'}</div>
-        <Typewriter text={lang === 'ro' ? "Mini‑Cuno: 3 întrebări rapide. Vei vedea explicația corectă la fiecare răspuns." : "Mini‑Cuno: 3 quick questions. You’ll see the explanation for the correct answer."} />
+        <Typewriter text={lang === 'ro' ? `Mini‑Cuno: ${questions.length} întrebări rapide. Vei vedea explicația corectă la fiecare răspuns.` : `Mini‑Cuno: ${questions.length} quick questions. You’ll see the explanation for the correct answer.`} />
       </div>
       {/* Legend removed here to keep the quiz simple and self‑evident (pure knowledge) */}
       {questions.map((q, idx) => {
