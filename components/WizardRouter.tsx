@@ -171,8 +171,8 @@ export default function WizardRouter(props: Props) {
   } = props;
 
   // Local guide sequencing for the Intent step (second instruction waits the first sequence)
-  const [intentIntroDone, setIntentIntroDone] = useState(false);
   const [intentInstructionDone, setIntentInstructionDone] = useState(false);
+  // Single typewriter now; intro gate removed
 
   switch (step) {
     case "preIntro":
@@ -228,29 +228,16 @@ export default function WizardRouter(props: Props) {
                 'Când aceste trei ‘minți’ nu sunt aliniate, apar blocajele, ezitările și exploziile de stres.',
                 'OmniMental folosește educație, biohacking (somn, energie, obiceiuri) și biofeedback, iar totul pornește de la intenția pe care o alegi acum.',
               ]);
-      const instruction = ((): string => {
-        const v = s('wizard.intentInstruction');
-        if (typeof v === 'string') return v as string;
-        return lang === 'en'
-          ? 'Choose 7 statements that best describe what you experience now.'
-          : 'Alege 7 afirmații care descriu cel mai bine ce trăiești acum.';
-      })();
+      // Instruction removed — we run only the scaffold lines
       return (
         <div className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8">
           <div className="w-full max-w-5xl rounded-[12px] border border-[#E4D8CE] bg-white/92 px-6 py-5 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
-            {/* Multi-line typewriter scaffold (centered container, left-aligned text) */}
+            {/* Single typewriter: use the scaffold lines in the lower position */}
             <div className="mb-4 w-full flex justify-center">
               <div className="max-w-xl text-left w-full">
-                <MultiTypewriter lines={lines} speed={60} gapMs={420} onDone={() => setIntentIntroDone(true)} />
+                <MultiTypewriter lines={lines} speed={60} gapMs={500} onDone={() => setIntentInstructionDone(true)} />
               </div>
             </div>
-            {intentIntroDone ? (
-              <div className="mb-4 w-full flex justify-center">
-                <div className="max-w-xl text-left w-full">
-                  <MultiTypewriter lines={[instruction]} speed={60} gapMs={650} onDone={() => setIntentInstructionDone(true)} />
-                </div>
-              </div>
-            ) : null}
             {intentInstructionDone ? (
               <div className="mt-2">
                 <IntentCloud

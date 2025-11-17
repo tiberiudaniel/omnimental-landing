@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
 import { getDb, areWritesDisabled } from "../lib/firebase";
 import type { IntentCloudWord, IntentPrimaryCategory } from "@/lib/intentExpressions";
@@ -184,7 +183,7 @@ export default function IntentCloud({
       <div className="w-full max-w-5xl space-y-6 rounded-[16px] border border-[#E4D8CE] bg-white/92 px-6 py-10 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
         <div className="w-full flex justify-center">
           <div className="max-w-xl w-full text-left">
-            <TypewriterText text={title} speed={90} enableSound key={title} />
+            <p className="t-title" key={title}>{title}</p>
           </div>
         </div>
         {helper ? (

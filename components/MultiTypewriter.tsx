@@ -8,10 +8,11 @@ type Props = {
   speed?: number;
   gapMs?: number; // pause between lines
   wrapperClassName?: string;
+  headingClassName?: string;
   onDone?: () => void;
 };
 
-export default function MultiTypewriter({ lines, speed = 60, gapMs = 450, wrapperClassName = "mb-5 w-full bg-transparent px-0 py-0", onDone }: Props) {
+export default function MultiTypewriter({ lines, speed = 60, gapMs = 450, wrapperClassName = "mb-5 w-full bg-transparent px-0 py-0", headingClassName, onDone }: Props) {
   const [idx, setIdx] = useState(0);
   const sig = useMemo(() => lines.join("|"), [lines]);
   const prevSigRef = useRef<string>(sig);
@@ -32,6 +33,7 @@ export default function MultiTypewriter({ lines, speed = 60, gapMs = 450, wrappe
       speed={speed}
       enableSound
       wrapperClassName={wrapperClassName}
+      headingClassName={headingClassName}
       onComplete={() => {
         if (idx < lines.length - 1) {
           // slightly quicker progression with smaller variance: ~0.38–0.62s around gapMs

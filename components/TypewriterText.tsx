@@ -8,6 +8,7 @@ interface TypewriterTextProps {
   enableSound?: boolean;
   onComplete?: () => void;
   wrapperClassName?: string;
+  headingClassName?: string;
   cursorClassName?: string;
   pauseAtEndMs?: number;
   skipEnabled?: boolean;
@@ -19,6 +20,7 @@ export default function TypewriterText({
   enableSound = false,
   onComplete,
   wrapperClassName = "mb-6 w-full bg-[#F6F2EE] px-6 py-5 text-left",
+  headingClassName,
   cursorClassName = "typewriter-cursor",
   pauseAtEndMs = 1200, // ~1–1.5s pauză înainte de onComplete
   skipEnabled = true,
@@ -291,7 +293,7 @@ export default function TypewriterText({
     <div className={wrapperClassName} onClick={handleSkip} role="presentation">
       <div className="min-h-[7.5rem] flex items-start">
         <h2
-          className="text-2xl font-semibold leading-snug text-[#1F1F1F] md:text-[28px] text-left"
+          className={`${headingClassName ?? 'text-2xl md:text-[28px]'} font-semibold leading-snug text-[#1F1F1F] text-left`}
           style={{
             letterSpacing: "0.04em",
             fontFamily: '"Courier Prime", monospace',
