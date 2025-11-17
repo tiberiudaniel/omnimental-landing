@@ -238,13 +238,17 @@ export default function WizardRouter(props: Props) {
       return (
         <div className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8">
           <div className="w-full max-w-5xl rounded-[12px] border border-[#E4D8CE] bg-white/92 px-6 py-5 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
-            {/* Multi-line typewriter scaffold */}
-            <div className="mb-4">
-              <MultiTypewriter lines={lines} speed={60} onDone={() => setIntentIntroDone(true)} />
+            {/* Multi-line typewriter scaffold (centered container, left-aligned text) */}
+            <div className="mb-4 w-full flex justify-center">
+              <div className="max-w-xl text-left w-full">
+                <MultiTypewriter lines={lines} speed={60} gapMs={420} onDone={() => setIntentIntroDone(true)} />
+              </div>
             </div>
             {intentIntroDone ? (
-              <div className="mb-4">
-                <MultiTypewriter lines={[instruction]} speed={60} gapMs={750} onDone={() => setIntentInstructionDone(true)} />
+              <div className="mb-4 w-full flex justify-center">
+                <div className="max-w-xl text-left w-full">
+                  <MultiTypewriter lines={[instruction]} speed={60} gapMs={650} onDone={() => setIntentInstructionDone(true)} />
+                </div>
               </div>
             ) : null}
             {intentInstructionDone ? (

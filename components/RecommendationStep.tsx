@@ -279,15 +279,18 @@ export function RecommendationStep(props: Props) {
   const [noteSavedAt, setNoteSavedAt] = useState<number | null>(null);
   const [noteServerSaved, setNoteServerSaved] = useState(false);
 
-  // Initial load is handled in useState lazy initializer above
+  // Initial load is handled after mount; schedule state set to avoid sync setState in effect
   useEffect(() => {
+    let tid: number | null = null;
     try {
       if (typeof window !== 'undefined') {
         const v = window.localStorage.getItem(noteKey);
-        if (v) setQuickNote(v);
+        if (v) {
+          tid = window.setTimeout(() => setQuickNote(v), 0);
+        }
       }
     } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { if (tid) window.clearTimeout(tid); };
   }, []);
 
   const placeholderNote = lang === 'ro'
@@ -330,12 +333,16 @@ export function RecommendationStep(props: Props) {
               </button>
             </div>
           ) : null}
-          <TypewriterText
-            key={`summary-${lang}`}
-            text={typewriterMessage}
-            speed={96}
-            enableSound
-          />
+          <div className="w-full flex justify-center">
+            <div className="max-w-xl w-full text-left">
+              <TypewriterText
+                key={`summary-${lang}`}
+                text={typewriterMessage}
+                speed={96}
+                enableSound
+              />
+            </div>
+          </div>
           {(() => {
             const fromFacts = (progressFacts?.intent as unknown as { firstExpression?: string | null } | undefined)?.firstExpression ?? null;
             const visibleInitial = (initialStatement && initialStatement.trim()) || (fromFacts && String(fromFacts).trim()) || '';

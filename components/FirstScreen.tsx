@@ -181,16 +181,20 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
           OmniMental Coaching
         </div>
         <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FDFCF9] px-6 py-6">
-          <MultiTypewriter
-            key={`first-input-${lang}`}
-            lines={linesFirstInput}
-            speed={60}
-            gapMs={500}
-            wrapperClassName="mb-5 w-full bg-transparent px-0 py-0"
-            onDone={() => {
-              handleQuestionComplete();
-            }}
-          />
+          <div className="w-full flex justify-center">
+            <div className="max-w-xl w-full text-left">
+              <MultiTypewriter
+                key={`first-input-${lang}`}
+                lines={linesFirstInput}
+                speed={60}
+                gapMs={420}
+                wrapperClassName="mb-5 w-full bg-transparent px-0 py-0"
+                onDone={() => {
+                  handleQuestionComplete();
+                }}
+              />
+            </div>
+          </div>
 
           <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -263,9 +267,9 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
                   type="button"
                   key={option.id}
                   onClick={() => handlePrimaryOptionSelect(option)}
-                  className="flex flex-col gap-1 rounded-[10px] border border-[#D8C6B6] bg-[#FDF8F3] px-4 py-3 text-left transition hover:border-[#E60012] hover:text-[#E60012]"
+                  className="flex flex-col gap-1 rounded-[10px] border border-[#E9DED3] bg-white px-4 py-3 text-left transition hover:border-[#C9B8A8]"
                 >
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-[#B9AFA7]">
                     {categoryLabels[option.category]}
                   </span>
                   <span className="text-sm text-[#2C2C2C]">{option.label}</span>

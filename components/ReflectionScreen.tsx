@@ -101,11 +101,15 @@ export default function ReflectionScreen({
   return (
     <section data-testid={testId ?? "wizard-step-reflection"} className={sectionClasses}>
       <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right w-full max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white/92 px-7 py-10 text-center shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[2px]" data-testid={cardTestId}>
-        {hasMultipleLines ? (
-          <MultiTypewriter lines={lines} speed={90} />
-        ) : (
-          <TypewriterText key={primaryLine} text={primaryLine} speed={90} enableSound />
-        )}
+        <div className="w-full flex justify-center">
+          <div className="max-w-xl w-full text-left">
+            {hasMultipleLines ? (
+              <MultiTypewriter lines={lines} speed={90} gapMs={440} />
+            ) : (
+              <TypewriterText key={primaryLine} text={primaryLine} speed={90} enableSound />
+            )}
+          </div>
+        </div>
 
         {showIndicators ? (
           <div className="mt-6 text-left">
@@ -120,19 +124,6 @@ export default function ReflectionScreen({
                 <RadarIndicators data={indicatorEntries} maxValue={1} size="lg" />
               </div>
               <div className="min-w-0 w-full space-y-4 text-left md:justify-self-start">
-                <ul className="grid w-full gap-3 text-sm">
-                  {indicatorEntries.map(({ key, label, rawCount }) => (
-                    <li
-                      key={key}
-                      className="flex flex-col gap-1 rounded-[12px] border border-[#F0E2D4] bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <span className="break-words text-[#5C4F45]">{label}</span>
-                      <span className="text-xs font-semibold text-[#1F1F1F] sm:text-sm">
-                        {rawCount}/{displayTotal}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
                 <div className="rounded-[12px] border border-[#F5E7DA] bg-[#FFFBF7] px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
                     {getString(t, "wizard.highlightedThemes", isRO ? "Teme evidențiate" : "Highlighted themes")}

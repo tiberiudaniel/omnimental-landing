@@ -4,7 +4,7 @@ import type { Step } from "./useWizardSteps";
 
 const PROGRESS_STEPS = [
   { id: "context", labelRo: "Context", labelEn: "Context" },
-  { id: "themes", labelRo: "Intenții & Cloud", labelEn: "Intent & Cloud" },
+  { id: "themes", labelRo: "Scop și intenție", labelEn: "Scope & Intent" },
   { id: "resources", labelRo: "Motivație & Resurse", labelEn: "Motivation & Resources" },
   { id: "recommendation", labelRo: "Recomandare", labelEn: "Recommendation" },
 ];

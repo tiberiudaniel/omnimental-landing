@@ -15,56 +15,39 @@ interface TypewriterTextProps {
 
 export default function TypewriterText({
   text,
-  speed = 60,
+  speed = 60, // ~50–70ms/char țintă
   enableSound = false,
   onComplete,
-  wrapperClassName = "mb-6 w-full bg-[#F6F2EE] px-6 py-5",
+  wrapperClassName = "mb-6 w-full bg-[#F6F2EE] px-6 py-5 text-left",
   cursorClassName = "typewriter-cursor",
-  // target pause after a short sentence: 1.0–1.5s
-  pauseAtEndMs = 1200,
+  pauseAtEndMs = 1200, // ~1–1.5s pauză înainte de onComplete
   skipEnabled = true,
 }: TypewriterTextProps) {
-  // Revert to simple "test only" static mode to avoid accidental skips
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const staticMode = (typeof window !== 'undefined' && window.location.search.includes('e2e=1')) || reducedMotion;
-  const [displayedText, setDisplayedText] = useState(staticMode ? text : "");
-  const [index, setIndex] = useState(staticMode ? text.length : 0);
-  const [showCursor, setShowCursor] = useState(!staticMode);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [displayedText, setDisplayedText] = useState("");
+  const [index, setIndex] = useState(0);
+  const [showCursor, setShowCursor] = useState(true);
+
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cursorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completionRef = useRef(false);
+
   const audioContextRef = useRef<AudioContext | null>(null);
   const noiseBufferRef = useRef<AudioBuffer | null>(null);
-  const cursorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Respect system reduced-motion
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const mq: MediaQueryList = window.matchMedia('(prefers-reduced-motion: reduce)');
-      const handler = () => setReducedMotion(!!mq.matches);
-      handler();
-      if ('addEventListener' in mq) (mq as unknown as { addEventListener: (type: 'change', listener: () => void) => void }).addEventListener('change', handler);
-      else if ('addListener' in mq) (mq as unknown as { addListener: (listener: () => void) => void }).addListener(handler);
-      return () => {
-        if ('removeEventListener' in mq) (mq as unknown as { removeEventListener: (type: 'change', listener: () => void) => void }).removeEventListener('change', handler);
-        else if ('removeListener' in mq) (mq as unknown as { removeListener: (listener: () => void) => void }).removeListener(handler);
-      };
-    } catch {
-      // noop: keep default reducedMotion=false
-    }
-  }, []);
 
+  // -----------------------------
+  // Sunet typewriter
+  // -----------------------------
   useEffect(() => {
     if (!enableSound) {
       if (audioContextRef.current) {
         void audioContextRef.current.close().catch(() => undefined);
       }
       audioContextRef.current = null;
-      return undefined;
+      noiseBufferRef.current = null;
+      return;
     }
 
-    if (typeof window === "undefined") {
-      return undefined;
-    }
+    if (typeof window === "undefined") return;
 
     try {
       const maybeWindow = window as typeof window & {
@@ -72,19 +55,23 @@ export default function TypewriterText({
       };
       const AudioContextCtor =
         window.AudioContext ?? maybeWindow.webkitAudioContext;
+
       if (!AudioContextCtor) {
         console.warn("AudioContext is not supported in this browser.");
-        return undefined;
+        return;
       }
+
       const context = new AudioContextCtor();
       audioContextRef.current = context;
 
       const frameCount = Math.max(Math.round(context.sampleRate * 0.08), 1);
       const buffer = context.createBuffer(1, frameCount, context.sampleRate);
       const data = buffer.getChannelData(0);
+
       for (let i = 0; i < data.length; i += 1) {
         data[i] = (Math.random() * 2 - 1) * 0.45;
       }
+
       noiseBufferRef.current = buffer;
     } catch (error) {
       console.warn("Could not create AudioContext:", error);
@@ -103,9 +90,7 @@ export default function TypewriterText({
 
   const playClick = () => {
     const context = audioContextRef.current;
-    if (!context) {
-      return;
-    }
+    if (!context) return;
 
     const resumePromise =
       context.state === "suspended" ? context.resume() : Promise.resolve();
@@ -169,39 +154,68 @@ export default function TypewriterText({
       });
   };
 
+  // -----------------------------
+  // Reset animatia când se schimbă textul
+  // -----------------------------
   useEffect(() => {
-    if (staticMode) return;
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+    // clear timeouts vechi
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
     }
-
-    if (!text) {
-      if (!completionRef.current && onComplete) {
-        completionRef.current = true;
-        onComplete();
-      }
-      return;
-    }
-
-    if (index >= text.length) {
-      if (!completionRef.current && onComplete) {
-        completionRef.current = true;
-        // small natural variance around the pause window (1000–1500ms)
-        const endPause = Math.max(1000, Math.min(1500, Math.round(pauseAtEndMs + (Math.random() * 500 - 250))));
-        const timeout = setTimeout(() => {
-          setShowCursor(false);
-        }, endPause);
-        cursorTimeoutRef.current = timeout;
-        onComplete();
-      }
-      return;
+    if (cursorTimeoutRef.current) {
+      clearTimeout(cursorTimeoutRef.current);
+      cursorTimeoutRef.current = null;
     }
 
     completionRef.current = false;
+    // Schedule state resets to avoid synchronous setState in effect
+    const id = (typeof window !== 'undefined' ? window.requestAnimationFrame : (fn: () => void) => setTimeout(fn, 0))(() => {
+      setDisplayedText("");
+      setIndex(0);
+      setShowCursor(true);
+
+      if (!text || text.trim().length === 0) {
+        setShowCursor(false);
+        completionRef.current = true;
+        onComplete?.();
+      }
+    });
+    return () => {
+      if (typeof window !== 'undefined' && typeof id === 'number' && 'cancelAnimationFrame' in window) {
+        window.cancelAnimationFrame(id as number);
+      }
+    };
+  }, [text, onComplete]);
+
+  // -----------------------------
+  // Efectul de typewriter
+  // -----------------------------
+  useEffect(() => {
+    if (!text || text.trim().length === 0) return;
+
+    // dacă am terminat toate caracterele
+    if (index >= text.length) {
+      if (!completionRef.current) {
+        completionRef.current = true;
+
+        const jitter = Math.random() * 500 - 250; // ±250ms
+        const endPause = Math.max(
+          800,
+          Math.min(1600, Math.round(pauseAtEndMs + jitter))
+        );
+
+        cursorTimeoutRef.current = setTimeout(() => {
+          setShowCursor(false);
+          onComplete?.();
+        }, endPause);
+      }
+      return;
+    }
 
     const char = text[index];
-    const baseSpeed = Math.max(speed, 30); // 50–70ms target (default 60)
-    const jitter = 12; // ±10–15ms variation → pick 12ms
+    const baseSpeed = Math.max(speed, 30);
+    const jitter = 12;
     let delay = baseSpeed + (Math.random() * (jitter * 2) - jitter);
 
     if (char === "," || char === ";") {
@@ -212,59 +226,83 @@ export default function TypewriterText({
       delay *= 1.9;
     }
 
-    timeoutRef.current = setTimeout(() => {
+    const safeDelay = Math.max(delay, 24);
+
+    typingTimeoutRef.current = setTimeout(() => {
       setDisplayedText((prev) => prev + char);
       setIndex((prev) => prev + 1);
 
       if (enableSound && char.trim()) {
         playClick();
       }
-    }, Math.max(delay, 24));
+    }, safeDelay);
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
       }
     };
-  }, [index, text, speed, enableSound, onComplete, pauseAtEndMs, staticMode]);
+  }, [index, text, speed, enableSound, pauseAtEndMs, onComplete]);
 
+  // -----------------------------
+  // Cleanup general
+  // -----------------------------
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
       }
       if (cursorTimeoutRef.current) {
         clearTimeout(cursorTimeoutRef.current);
       }
+      if (audioContextRef.current) {
+        void audioContextRef.current.close().catch(() => undefined);
+      }
     };
   }, []);
 
+  // -----------------------------
+  // Skip pe click (arată tot textul)
+  // -----------------------------
   const handleSkip = () => {
     if (!skipEnabled) return;
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    if (cursorTimeoutRef.current) {
+      clearTimeout(cursorTimeoutRef.current);
+      cursorTimeoutRef.current = null;
+    }
+
     setDisplayedText(text);
     setIndex(text.length);
     setShowCursor(false);
-    if (!completionRef.current && onComplete) {
+
+    if (!completionRef.current) {
       completionRef.current = true;
-      onComplete();
+      onComplete?.();
     }
   };
 
   return (
     <div className={wrapperClassName} onClick={handleSkip} role="presentation">
-      <h2
-        className="text-center text-2xl font-semibold leading-snug text-[#1F1F1F] md:text-[28px]"
-        style={{
-          letterSpacing: "0.04em",
-          fontFamily: '"Courier Prime", monospace',
-          minHeight: "3.2rem",
-        }}
-      >
-        <span aria-label={text} role="text" className="inline-block">
-          {displayedText}
-          {showCursor ? <span className={cursorClassName}>|</span> : null}
-        </span>
-      </h2>
+      <div className="min-h-[7.5rem] flex items-start">
+        <h2
+          className="text-2xl font-semibold leading-snug text-[#1F1F1F] md:text-[28px] text-left"
+          style={{
+            letterSpacing: "0.04em",
+            fontFamily: '"Courier Prime", monospace',
+          }}
+        >
+          <span aria-label={text} role="text" className="block w-full">
+            {displayedText}
+            {showCursor ? <span className={cursorClassName}>|</span> : null}
+          </span>
+        </h2>
+      </div>
       <style jsx>{`
         .typewriter-cursor {
           display: inline-block;

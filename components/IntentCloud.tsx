@@ -182,7 +182,11 @@ export default function IntentCloud({
   return (
     <section data-testid="wizard-step-intent" className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-12">
       <div className="w-full max-w-5xl space-y-6 rounded-[16px] border border-[#E4D8CE] bg-white/92 px-6 py-10 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
-        <TypewriterText text={title} speed={90} enableSound key={title} />
+        <div className="w-full flex justify-center">
+          <div className="max-w-xl w-full text-left">
+            <TypewriterText text={title} speed={90} enableSound key={title} />
+          </div>
+        </div>
         {helper ? (
           <div className="mx-auto max-w-3xl text-[#2C2C2C]/80">
             <p className="t-body text-center">{helper}</p>
