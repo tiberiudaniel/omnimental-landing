@@ -639,26 +639,26 @@
   "navOnboarding": "Inițiere",
   "wizard": {
     "intro": [
-      "Trăim într-o perioadă în care mintea e bombardată non-stop de știri, notificări și presiune.",
+      "Trăim într-o perioadă în care mintea e bombardată non-stop de informații și și presiune.",
       "Ajungi să iei decizii pe fugă, cu un creier obosit și un corp care cere pauză.",
       "OmniMental este gândit ca un spațiu în care îți antrenezi mintea, nu doar o repari după ce cedează."
     ],
     "firstInput": [
-      "Înainte să îți spun ce poate face proiectul ăsta, vreau să văd cum arată obiectivul, problema prin ochii tăi.",
-      "Scrie în câteva cuvinte ce te preocupa cel mai tare acum, fără să cauți formularea perfectă.",
-      "De aici pornește harta antrenamentului tău mental."
+      "Înainte să-ți vorbesc despre drum, vreau să-ți văd punctul de plecare.",
+      "Scrie în câteva cuvinte ce te preocupa acum, fără să cauți formularea perfectă.",
+      "Așa începe orice transformare: cu un adevăr rostit."
     ],
     "reflectionPrompt": [
-      "Ce ai scris nu e doar o idee, e o fotografie sinceră a minții tale, azi.",
-      "În spatele acelor cuvinte sunt tipare de stres, presiune și felul în care te tratezi pe tine.",
-      "Aici nu te judecăm; folosim aceste semnale ca să construim ceva cu adevărat util pentru tine."
+      "Cuvintele tale sunt o oglindă: arată felul în care te porți cu tine.",
+      "În ele se ascund tensiuni, frici, oboseală — dar și direcția..",
+      "Noi folosim aceste semnale ca să-ți desenăm harta."
     ],
     "intent": [
-      "Mintea ta nu stă doar în creier: și inima, și intestinul trimit semnale când iei decizii importante.",
+      "Nu ai o singură minte. Ai trei: capul, inima și instinctul.",
       "Când aceste trei ‘minți’ nu sunt aliniate, apar blocajele, ezitările și exploziile de stres.",
-      "OmniMental folosește educație, biohacking (somn, energie, obiceiuri) și biofeedback, iar totul pornește de la direcția pe care o alegi acum."
+      "OmniMental pune ordine între ele — prin mental coaching, educație, biohacking și biofeedback."
     ],
-    "intentInstruction": "Alege 7 afirmații care descriu cel mai bine ce trăiești acum.",
+    "intentInstruction": "Alege 7 afirmații care te descriu cel mai bine acum.",
     "reflectionSummary": [
       "Ai spus ce te preocupa și ai ales o direcție: acesta este punctul tău de start în OmniMental.",
       "Scopul este să devii mai clar, mai flexibil și mai greu de doborât decât erai în ziua anterioara."
