@@ -32,6 +32,11 @@ export default function TypewriterText({
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cursorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completionRef = useRef(false);
+  // Keep latest onComplete in a ref so effects don't re-run when handler identity changes
+  const onCompleteRef = useRef<(() => void) | undefined>(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const noiseBufferRef = useRef<AudioBuffer | null>(null);
@@ -180,7 +185,7 @@ export default function TypewriterText({
       if (!text || text.trim().length === 0) {
         setShowCursor(false);
         completionRef.current = true;
-        onComplete?.();
+        onCompleteRef.current?.();
       }
     });
     return () => {
@@ -188,7 +193,7 @@ export default function TypewriterText({
         window.cancelAnimationFrame(id as number);
       }
     };
-  }, [text, onComplete]);
+  }, [text]);
 
   // -----------------------------
   // Efectul de typewriter
@@ -209,7 +214,7 @@ export default function TypewriterText({
 
         cursorTimeoutRef.current = setTimeout(() => {
           setShowCursor(false);
-          onComplete?.();
+          onCompleteRef.current?.();
         }, endPause);
       }
       return;
@@ -245,7 +250,7 @@ export default function TypewriterText({
         typingTimeoutRef.current = null;
       }
     };
-  }, [index, text, speed, enableSound, pauseAtEndMs, onComplete]);
+  }, [index, text, speed, enableSound, pauseAtEndMs]);
 
   // -----------------------------
   // Cleanup general
@@ -293,7 +298,7 @@ export default function TypewriterText({
     <div className={wrapperClassName} onClick={handleSkip} role="presentation">
       <div className="min-h-[7.5rem] flex items-start">
         <h2
-          className={`${headingClassName ?? 'text-2xl md:text-[28px]'} font-semibold leading-snug text-[#1F1F1F] text-left`}
+          className={`${headingClassName ?? 'text-xl md:text-2xl'} font-semibold leading-snug text-[#1F1F1F] text-left`}
           style={{
             letterSpacing: "0.04em",
             fontFamily: '"Courier Prime", monospace',

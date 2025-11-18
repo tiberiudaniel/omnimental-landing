@@ -1,5 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import GroupInfoPage from "../group-info/page";
+export default function GroupPage() {
+  redirect("/group-info");
+}
 
-export default GroupInfoPage;

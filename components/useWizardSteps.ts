@@ -11,6 +11,9 @@ export type Step =
   | "reflectionPrompt"
   | "intent"
   | "reflectionSummary"
+  | "needMain"
+  | "needConfidence"
+  | "microLessonInfo"
   | "intentMotivation" // new canonical name
   | "intentSummary" // legacy alias accepted in URL
   | "cards"
@@ -23,6 +26,9 @@ const ORDERED_STEPS: Step[] = [
   "reflectionPrompt",
   "intent",
   "reflectionSummary",
+  "needMain",
+  "needConfidence",
+  "microLessonInfo",
   "intentMotivation",
   "cards",
   "details",

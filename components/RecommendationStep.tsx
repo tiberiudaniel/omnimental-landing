@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import FirstOfferPanel from "./recommendations/FirstOfferPanel";
+import { choosePrimaryProduct } from "@/lib/primaryProduct";
 import { useSearchParams } from "next/navigation";
 import TypewriterText from "./TypewriterText";
-import CardOption from "./CardOption";
 import { useI18n } from "./I18nProvider";
 import { getString } from "@/lib/i18nGetString";
 import { buildIndicatorSummary, INDICATOR_CHART_KEYS, INDICATOR_LABELS } from "@/lib/indicators";
@@ -13,9 +15,7 @@ import { CATEGORY_LABELS } from "@/lib/categoryLabels";
 import CTAButton from "./CTAButton";
 import { useProfile } from "./ProfileProvider";
 import { useProgressFacts } from "./useProgressFacts";
-import { recordRecommendationProgressFact, recordRecentEntry } from "@/lib/progressFacts";
-import { areWritesDisabled } from "@/lib/firebase";
-import { serverTimestamp } from "firebase/firestore";
+import { recordRecentEntry } from "@/lib/progressFacts";
 import Toast from "./Toast";
 import type {
   BudgetPreference,
@@ -100,12 +100,12 @@ export function RecommendationStep(props: Props) {
     showAccountPrompt,
     onAccountRequest,
     recommendedPath: recommendedPathProp,
-    recommendedBadgeLabel: recommendedBadgeLabelProp,
-    onCardSelect,
+    // recommendedBadgeLabel: recommendedBadgeLabelProp,
+    // onCardSelect,
     accountPromptMessage,
     accountPromptButton,
     isSavingChoice,
-    savingChoiceType,
+    // savingChoiceType,
     errorMessage,
     savingLabel,
     categoryLabels,
@@ -121,7 +121,7 @@ export function RecommendationStep(props: Props) {
     // learnFromOthers,
     // scheduleFit,
     // formatPreference,
-    recommendationReasonKey: recommendationReasonKeyProp,
+    recommendationReasonKey: _recommendationReasonKeyProp,
     initialStatement,
   } = props;
 
@@ -132,8 +132,8 @@ export function RecommendationStep(props: Props) {
   const getCopy = (key: string, fallback: string) => getString(t, key, fallback);
   // Prefer unified recommendation object when provided
   const effectiveRecommendedPath = recommendation?.path ?? recommendedPathProp;
-  const effectiveReasonKey = recommendation?.reasonKey ?? recommendationReasonKeyProp;
-  const effectiveBadge = recommendation?.badgeLabel ?? recommendedBadgeLabelProp;
+  // const effectiveReasonKey = recommendation?.reasonKey ?? recommendationReasonKeyProp;
+  // badge not shown in this minimalist panel
 
   const sortedCategories = [...categories]
     .filter((entry) => entry.count > 0)
@@ -374,6 +374,11 @@ export function RecommendationStep(props: Props) {
           </div>
 
           {/* Optional quick clarity note (non-blocking) */}
+          <p className="mx-auto w-full max-w-[60ch] text-[12px] text-[#7B6B60] mb-1">
+            {lang === "ro"
+              ? "Eu îți sugerez direcția; tu alegi pasul următor."
+              : "I suggest the direction; you choose the next step."}
+          </p>
           <div className="mx-auto mt-2 w-full max-w-[56ch] rounded-[12px] border border-[#E4D8CE] bg-white px-3 py-2 text-left">
             <textarea
               data-testid="quick-clarity-note"
@@ -419,57 +424,13 @@ export function RecommendationStep(props: Props) {
               </span>
             </div>
           </div>
-          <p className="mx-auto w-full max-w-[60ch] text-[12px] text-[#7B6B60]">
-            {lang === "ro"
-              ? "Eu îți sugerez direcția; tu alegi pasul următor."
-              : "I suggest the direction; you choose the next step."}
-          </p>
-          <div ref={cardsRef} className="mt-2 flex w-full flex-col flex-wrap items-center justify-center gap-5 md:flex-row md:items-stretch md:justify-center md:gap-6 md:max-w-[820px] md:mx-auto">
-          {(["individual", "group"] as const).map((type) => (
-            <div key={type} className="w-full md:flex-1">
-                  <CardOption
-                    type={type}
-                    title={type === 'individual' ? (lang === 'ro' ? 'Sesiuni individuale' : 'Individual sessions') : (lang === 'ro' ? 'Grup online' : 'Online group')}
-                    className="h-full"
-                    onClick={() => {
-                      const algo = props.algoVersion ?? "v1.2";
-                    const dim: DimensionScores | undefined = recommendation?.dimensionScores ?? props.dimensionScores ?? undefined;
-                    const fmt = recommendation?.formatPreference ?? props.formatPreference ?? undefined;
-                      if (!areWritesDisabled()) {
-                        void recordRecommendationProgressFact({
-                          path: type,
-                          reasonKey: effectiveReasonKey,
-                          selectedPath: type,
-                          dimensionScores: dim ?? null,
-                          algoVersion: algo,
-                          formatPreference: (fmt as string | null) ?? null,
-                          badgeLabel: effectiveBadge ?? null,
-                          selectedAt: serverTimestamp(),
-                        });
-                        setToastMessage(
-                          typeof t("recommendation.choiceSaved") === "string"
-                            ? (t("recommendation.choiceSaved") as string)
-                            : lang === "ro"
-                            ? "Alegerea a fost salvată."
-                            : "Your choice has been saved.",
-                        );
-                      } else {
-                        console.info("Writes disabled in development");
-                        setToastMessage(
-                          lang === "ro" ? "Mod demo: alegerea a fost reținută local." : "Demo mode: choice noted locally.",
-                        );
-                      }
-                      void onCardSelect(type);
-                    }}
-                isRecommended={effectiveRecommendedPath === type}
-                recommendedLabel={effectiveBadge}
-                isSelected={progressFacts?.recommendation?.selectedPath === type}
-                disabled={isSavingChoice}
-                isLoading={isSavingChoice && savingChoiceType === type}
-                loadingLabel={savingLabel}
-              />
-            </div>
-            ))}
+          <div ref={cardsRef} className="mt-2">
+            {(() => {
+              const budget = budgetPreference; // already normalized enum
+              const urgencyVal = intentUrgency;
+              const primary = choosePrimaryProduct({ budget, urgency: urgencyVal });
+              return <FirstOfferPanel primaryProduct={primary} lang={lang} />;
+            })()}
           </div>
           {isSavingChoice ? (
             <p className="text-xs text-[#2C2C2C]">{savingLabel}</p>
@@ -478,59 +439,17 @@ export function RecommendationStep(props: Props) {
             <p className="text-xs text-[#B8000E]">{errorMessage}</p>
           ) : null}
 
-          {/* Soft upsell: Beta tiers (subtle, optional) */}
-          <div className="mx-auto mt-6 w-full max-w-4xl rounded-[14px] border border-[#E4D8CE] bg-white px-4 py-4 text-left shadow-[0_12px_28px_rgba(0,0,0,0.05)]">
-            <p className="text-sm font-semibold text-[#2C2C2C]">
-              {lang === 'ro' ? 'Vrei să continui cu acces Beta?' : 'Want to continue with Beta access?'}
-            </p>
-            <p className="mt-1 text-[13px] text-[#4A3A30]/80">
-              {lang === 'ro'
-                ? 'Încearcă platforma acum. Îți rămâne recapitularea și un mini‑plan. Poți decide ulterior.'
-                : 'Try the platform now. You keep your recap and a mini plan. Decide later.'}
-            </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3">
-                <p className="text-sm font-semibold text-[#2C2C2C]">{lang === 'ro' ? 'Beta Access' : 'Beta Access'} <span className="opacity-70">• 2€</span></p>
-                <ul className="mt-1 list-disc pl-5 text-[13px] text-[#4A3A30]">
-                  <li>{lang === 'ro' ? 'Acces simplu + recap' : 'Basic access + recap'}</li>
-                  <li>{lang === 'ro' ? 'Mini‑plan pentru 24h' : 'Mini plan for 24h'}</li>
-                </ul>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void recordRecommendationProgressFact({
-                      reasonKey: effectiveReasonKey,
-                      badgeLabel: 'beta_basic',
-                    }).catch(() => undefined);
-                    onAccountRequest();
-                  }}
-                  className="mt-2 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
-                >
-                  {lang === 'ro' ? 'Activează' : 'Activate'}
-                </button>
-              </div>
-              <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3">
-                <p className="text-sm font-semibold text-[#2C2C2C]">{lang === 'ro' ? 'Beta + OmniSensei' : 'Beta + OmniSensei'} <span className="opacity-70">• 5€</span></p>
-                <ul className="mt-1 list-disc pl-5 text-[13px] text-[#4A3A30]">
-                  <li>{lang === 'ro' ? 'Tot din Beta' : 'Everything in Beta'}</li>
-                  <li>{lang === 'ro' ? 'Indicații ghidaj + semnale' : 'Guidance cues + signals'}</li>
-                </ul>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void recordRecommendationProgressFact({
-                      reasonKey: effectiveReasonKey,
-                      badgeLabel: 'beta_omnisensei',
-                    }).catch(() => undefined);
-                    onAccountRequest();
-                  }}
-                  className="mt-2 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
-                >
-                  {lang === 'ro' ? 'Activează' : 'Activate'}
-                </button>
-              </div>
-            </div>
+          {/* CTA către hub-ul de recomandări */}
+          <div className="mt-2 flex justify-center">
+            <Link
+              href="/recommendation"
+              className="text-[11px] text-[#7B6B60] underline hover:text-[#2C2C2C]"
+              data-testid="wizard-to-recommendation-cta"
+            >
+              {lang === 'ro' ? 'Vezi hub‑ul tău de recomandări' : 'Open your recommendations hub'}
+            </Link>
           </div>
+
           {topReflection ? (
             <div className="mx-auto mt-2 max-w-4xl rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-2.5 text-left text-[13px] text-[#2C2C2C]">
               {topReflection}

@@ -16,6 +16,9 @@ const STEP_MAPPING: Record<Step, number> = {
   reflectionPrompt: 0,
   intent: 1,
   reflectionSummary: 1,
+  needMain: 1,
+  needConfidence: 1,
+  microLessonInfo: 1,
   intentMotivation: 2,
   intentSummary: 2, // legacy alias
   cards: 3,

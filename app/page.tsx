@@ -15,6 +15,8 @@ import { useWizardData } from "../components/useWizardData";
 import { WizardProgress } from "../components/WizardProgress";
 import WizardRouter from "../components/WizardRouter";
 import { clearWizardState } from "../components/wizardStorage";
+import { areWritesDisabled, getDb } from "@/lib/firebase";
+import { addDoc, collection } from "firebase/firestore";
 import Toast from "../components/Toast";
 import { recordWizardReset, recordWizardResetCanceled, recordWizardResetNoticeDismissed } from "../lib/progressFacts";
 // Types imported previously for local step wrappers; no longer needed here
@@ -88,17 +90,26 @@ function PageContent() {
     setScheduleFit,
   } = useWizardData({ lang, profileId: profile?.id ?? null });
 
-  const [dimensionScores, setDimensionScores] = useState<DimensionScores>(() => ({
-    calm: 0,
-    focus: 0,
-    energy: 0,
-    relationships: 0,
-    performance: 0,
-    health: 0,
-  }));
-  const [recommendedPath, setRecommendedPath] = useState<SessionType>("group");
+  const cachedReco = useMemo(() => {
+    try {
+      const stepParam = searchParams?.get('step');
+      if (stepParam === 'cards') return readRecommendationCache();
+    } catch {}
+    return null;
+  }, [searchParams]);
+  const [dimensionScores, setDimensionScores] = useState<DimensionScores>(() => (
+    (cachedReco?.dimensionScores as DimensionScores | undefined) ?? {
+      calm: 0,
+      focus: 0,
+      energy: 0,
+      relationships: 0,
+      performance: 0,
+      health: 0,
+    }
+  ));
+  const [recommendedPath, setRecommendedPath] = useState<SessionType>(() => (cachedReco?.recommendation?.path as SessionType | undefined) ?? "group");
   const [recommendationReasonKey, setRecommendationReasonKey] =
-    useState<string>("reason_default");
+    useState<string>(() => cachedReco?.recommendation?.reasonKey ?? "reason_default");
   const viewportWidth = useWindowWidth();
   const cloudWordCount = useMemo(() => {
     if (viewportWidth === 0) return 25;
@@ -124,10 +135,21 @@ function PageContent() {
     [adaptiveCloudWords],
   );
 
+  // No set-state-in-effect for cache restore: initialize state lazily above
+
   useEffect(() => {
     if ((step === "cards" || step === "details") && intentCategories.length === 0) {
-      goToStep("firstInput");
-      return;
+      // Allow direct access if we have a cached recommendation snapshot
+      try {
+        const cached = readRecommendationCache();
+        if (!cached) {
+          goToStep("firstInput");
+          return;
+        }
+      } catch {
+        goToStep("firstInput");
+        return;
+      }
     }
     if ((step === "intentMotivation" || step === "intentSummary") && intentCategories.length === 0) {
       goToStep("intent");
@@ -284,6 +306,36 @@ function PageContent() {
         console.warn("journey choice could not be persisted; staying on recommendation");
         return;
       }
+      // Write an initial recommendation entry (userRecommendations)
+      try {
+        if (!areWritesDisabled() && profile?.id) {
+          const db = getDb();
+          const colRef = collection(db, 'userRecommendations', profile.id, 'items');
+          const title = type === 'group'
+            ? (lang === 'ro' ? 'Începe cu programul de grup OmniMental' : 'Start with the OmniMental group program')
+            : (lang === 'ro' ? 'Începe cu ședințe individuale' : 'Start with individual sessions');
+          const shortLabel = type === 'group' ? 'Pasul 1 – Grup' : 'Pasul 1 – Individual';
+          await addDoc(colRef, {
+            userId: profile.id,
+            title,
+            shortLabel,
+            type: 'onboarding',
+            status: 'new',
+            priority: 1,
+            createdAt: new Date().toISOString(),
+            estimatedMinutes: 10,
+            tags: ['onboarding'],
+            body: lang === 'ro'
+              ? 'Bazat pe răspunsurile tale, acesta este pasul recomandat. Vezi detalii și începe cu un prim pas simplu.'
+              : 'Based on your answers, this is the suggested step. See details and start with one simple action.',
+            ctaLabel: lang === 'ro' ? 'Vezi recomandările' : 'See recommendations',
+            ctaHref: '/recommendation',
+            source: 'onboarding',
+          });
+        }
+      } catch (e) {
+        console.warn('write initial recommendation failed', e);
+      }
       try {
         // Update local cache so /recommendation reflects chosen path for guests
         const cached = readRecommendationCache();
@@ -293,7 +345,7 @@ function PageContent() {
       } catch {}
       navigateToStep("details");
     },
-    [dimensionScores, navigateToStep, persistJourneyChoice, recommendationReasonKey, recommendedPath],
+    [dimensionScores, navigateToStep, persistJourneyChoice, recommendationReasonKey, recommendedPath, profile?.id, lang],
   );
 
   const openAccountModal = () => {

@@ -1,5 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import IndividualSessionsPage from "../sessions/individual/page";
+export default function IndividualAliasPage() {
+  redirect("/sessions/individual");
+}
 
-export default IndividualSessionsPage;

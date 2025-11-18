@@ -18,6 +18,7 @@ import InitiationStepKunoContext from "./steps/InitiationStepKunoContext";
 import InitiationStepOmniScope from "./steps/InitiationStepOmniScope";
 import InitiationStepDailyState from "./steps/InitiationStepDailyState";
 import InitiationStepLesson from "./steps/InitiationStepLesson";
+import InitiationStepLessonQuiz from "./steps/InitiationStepLessonQuiz";
 
 export type StepId =
   | "intro"
@@ -35,6 +36,7 @@ type InitiationStepId =
   | "journal"
   | "omniscope"
   | "daily-state"
+  | "omnikuno-lesson-quiz"
   | "omnikuno-lesson";
 
 function ExperienceOnboardingContent() {
@@ -173,7 +175,10 @@ function ExperienceOnboardingContent() {
               <InitiationStepDailyState />
             )}
             {step === 'omnikuno-lesson' && (
-              <InitiationStepLesson userId={profile?.id ?? null} />
+              <InitiationStepLesson userId={profile?.id ?? null} onNext={() => go('omnikuno-lesson-quiz')} />
+            )}
+            {step === 'omnikuno-lesson-quiz' && (
+              <InitiationStepLessonQuiz onDone={() => router.push('/progress?from=initiation&completed=1')} />
             )}
           </>
         )}

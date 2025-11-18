@@ -196,12 +196,78 @@ export default function ProgressDashboard({
       ...sessions.map((s: { startedAt?: unknown }) => toMsLocal(s.startedAt)),
     ) ||
     1;
-  const weekly = computeWeeklyBuckets(sessions, refMs, lang);
-  const weeklyCounts = computeWeeklyCounts(sessions, refMs, lang);
+  // Anchor weekly/monthly windows to 'today' so charts include AZI + ultimele zile
+  const nowMs = Date.now();
+  const weekly = computeWeeklyBuckets(sessions, nowMs, lang);
+  const weeklyCounts = computeWeeklyCounts(sessions, nowMs, lang);
   // const today = computeTodayBucket(sessions, refMs, lang);
   // const todayCounts = computeTodayCounts(sessions, refMs, lang); // unused
-  const monthDays = computeMonthlyDailyMinutes(sessions, refMs, lang);
-  const monthCounts = computeMonthlyDailyCounts(sessions, refMs, lang);
+  const monthDays = computeMonthlyDailyMinutes(sessions, nowMs);
+  const monthCounts = computeMonthlyDailyCounts(sessions, nowMs);
+
+  // Merge explicit activityEvents (knowledge/practice/reflection) into Minutes and Sessions trends
+  type RawAE = { startedAt?: unknown; source?: string; category?: 'knowledge'|'practice'|'reflection'; units?: number; durationMin?: number; focusTag?: string | null };
+  const rawEvents: RawAE[] = (facts as { activityEvents?: RawAE[] } | undefined)?.activityEvents ?? [];
+  const getMs = (v: unknown): number => {
+    if (!v) return 0;
+    if (typeof v === 'number') return v;
+    if (v instanceof Date) return v.getTime();
+    if (typeof v === 'string') { const t = Date.parse(v); return Number.isFinite(t) ? t : 0; }
+    if ((v as { toDate?: () => Date })?.toDate) {
+      try { return ((v as { toDate: () => Date }).toDate()).getTime(); } catch { return 0; }
+    }
+    return 0;
+  };
+  const startOfDayLocal = (ms: number) => { const d = new Date(ms); d.setHours(0,0,0,0); return d.getTime(); };
+  const DAY = 24*60*60*1000;
+  const DEFAULT_MIN_PER_UNIT: Record<'knowledge'|'practice'|'reflection', number> = { knowledge: 6, practice: 8, reflection: 4 };
+
+  // Helper to add events to an array of day buckets
+  const addEventsToBuckets = (buckets: { day: number; totalMin: number; label: string }[], startMs: number, days: number) => {
+    rawEvents.forEach((r) => {
+      if (!r.category) return;
+      const ms = getMs(r.startedAt);
+      if (!ms) return;
+      const sod = startOfDayLocal(ms);
+      const endMs = startMs + days * DAY - 1;
+      if (sod < startMs || sod > endMs) return;
+      const idx = Math.floor((sod - startMs) / DAY);
+      if (idx < 0 || idx >= buckets.length) return;
+      const addMin = typeof r.durationMin === 'number' && Number.isFinite(r.durationMin)
+        ? Math.max(0, Math.round(r.durationMin))
+        : Math.max(0, (r.units ?? 1) * DEFAULT_MIN_PER_UNIT[r.category]);
+      buckets[idx].totalMin += addMin;
+    });
+    return buckets;
+  };
+  const addEventsToCounts = (buckets: { day: number; totalMin: number; label: string }[], startMs: number, days: number) => {
+    rawEvents.forEach((r) => {
+      if (!r.category) return;
+      const ms = getMs(r.startedAt);
+      if (!ms) return;
+      const sod = startOfDayLocal(ms);
+      const endMs = startMs + days * DAY - 1;
+      if (sod < startMs || sod > endMs) return;
+      const idx = Math.floor((sod - startMs) / DAY);
+      if (idx < 0 || idx >= buckets.length) return;
+      buckets[idx].totalMin += 1; // count each activity event as a session unit
+    });
+    return buckets;
+  };
+
+  // Build merged weekly/minute and weekly/count buckets
+  const weekStart = startOfDayLocal(nowMs - 6 * DAY);
+  const weeklyWithEvents = addEventsToBuckets(weekly.map(x => ({...x})), weekStart, 7);
+  const weeklyCountsWithEvents = addEventsToCounts(weeklyCounts.map(x => ({...x})), weekStart, 7);
+
+  // Build merged month/minute and month/count buckets (month-to-date)
+  const monthStart = ((): number => { const d = new Date(nowMs); d.setDate(1); d.setHours(0,0,0,0); return d.getTime(); })();
+  const daysInMonth = ((): number => { const d = new Date(nowMs); return new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); })();
+  // Align events merge with monthly buckets start (rolling window end today)
+  const monthBucketsStart = (monthDays[0]?.day as number | undefined) ?? monthStart;
+  const monthBucketsLen = monthDays.length || daysInMonth;
+  const monthWithEvents = addEventsToBuckets(monthDays.map(x => ({...x})), monthBucketsStart, monthBucketsLen);
+  const monthCountsWithEvents = addEventsToCounts(monthCounts.map(x => ({...x})), monthBucketsStart, monthBucketsLen);
 
   // (legacy weighted minutes scaffolding removed — we now rely on action trend scoring)
   const formatRelative = (ms: number) => {
@@ -455,10 +521,18 @@ export default function ProgressDashboard({
                 <Card className="flex items-center gap-2 rounded-xl border border-[#E4DAD1] bg-white p-1.5 shadow-sm sm:gap-3 sm:p-2.5">
                   <div className="flex-1">
                     <div className="mb-0.5 flex items-center justify-between sm:mb-1">
-                      <h3 className="text-xs font-semibold text-[#2C2C2C] sm:text-sm">
-                      {lang === 'ro' ? 'KPI — Gândire • Emoție • Energie' : 'KPI — Thinking • Emotion • Energy'}
+                      <h3 className="text-[13px] font-semibold tracking-[0.02em] text-[#6E5F55] sm:text-[14px]">
+                        {lang === 'ro' ? 'KPI — Gândire • Emoție • Energie' : 'KPI — Thinking • Emotion • Energy'}
                       </h3>
-                      <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[10px] sm:text-[11px]">
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-[#8C7C70] sm:text-[11px]">
+                        {lang === 'ro' ? 'Evoluția indicatorilor interni în timp.' : 'Evolution of internal indicators over time.'}
+                      </p>
+                    </div>
+                    {/* Row: Week/Month toggle, aligned like in trend card */}
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[9px] sm:text-[10px]">
                         <button
                           type="button"
                           onClick={() => setTimeframe('week')}
@@ -479,9 +553,6 @@ export default function ProgressDashboard({
                         </button>
                       </div>
                     </div>
-                    <p className="text-[10px] text-[#7B6B60] sm:text-[11px]">
-                      {lang === 'ro' ? 'Evoluția indicatorilor interni în timp.' : 'Evolution of internal indicators over time.'}
-                    </p>
                     {/* Donut removed; focus on linear evolution + legend */}
                     {(() => {
                       try {
@@ -499,7 +570,7 @@ export default function ProgressDashboard({
                                 </p>
                                 <div className="flex items-center gap-3">
                                   <a href="/experience-onboarding?flow=initiation&step=daily-state" className="text-[#2C2C2C] underline hover:text-[#C07963]" data-testid="internal-cta-sliders">
-                                    {lang === 'ro' ? 'Deschide sliderele' : 'Open sliders'}
+                                    {lang === 'ro' ? 'Actualizează (1–10)' : 'Update (1–10)'}
                                   </a>
                                   <a href="/progress?open=journal&tab=NOTE_LIBERE" className="text-[#2C2C2C] underline hover:text-[#C07963]" data-testid="internal-cta-journal">
                                     {lang === 'ro' ? 'Adaugă o notă rapidă' : 'Add a quick note'}
@@ -531,37 +602,62 @@ export default function ProgressDashboard({
                           { data: take.map((e) => ({ day: e.ts, totalMin: e.energy, label: new Date(e.ts).getDate().toString() })), accent: '#C07963', strokeWidth: 2 },
                         ];
                         return (
-                          <div className="mt-2 border-t border-[#F0E8E0] pt-2 sm:pt-2.5">
-                            <div className="mb-1 flex items-center gap-3 text-[9px] text-[#7B6B60]">
-                      <span className="inline-flex items-center gap-1" title={INDICATORS.mental_clarity.label + ' — ' + INDICATORS.mental_clarity.description}>
-                        <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#7A6455' }} />
-                        {INDICATORS.mental_clarity.label}
-                      </span>
-                      <span className="inline-flex items-center gap-1" title={INDICATORS.emotional_balance.label + ' — ' + INDICATORS.emotional_balance.description}>
-                        <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#4D3F36' }} />
-                        {INDICATORS.emotional_balance.label}
-                      </span>
-                      <span className="inline-flex items-center gap-1" title={INDICATORS.physical_energy.label + ' — ' + INDICATORS.physical_energy.description}>
-                        <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#C07963' }} />
-                        {INDICATORS.physical_energy.label}
-                      </span>
-                            </div>
-                            <div className="h-[70px] sm:h-[80px]">
+                          <div className="mt-1.5 border-t border-[#F0E8E0] pt-1.5 sm:pt-2">
+                            {/* Legend removed — chips below show labels + values + delta */}
+                            <div className="h-[100px] sm:h-[110px]">
                               <WeeklyTrendsChart
                                 data={data}
                                 series={series}
                                 showBars={false}
                                 showValues={false}
-                                showXAxisBaseline={true}
-                                yAxisWidth={16}
+                                showXAxisBaseline={false}
+                                yAxisWidth={14}
                                 ariaLabel={lang === 'ro' ? 'Evoluție indicatori interni' : 'Internal indicators evolution'}
                               />
                             </div>
-                            <div className="mt-1 flex justify-end">
-                              <a href="/progress?open=journal&tab=NOTE_LIBERE" className="text-[9px] underline text-[#7B6B60] hover:text-[#2C2C2C]" data-testid="internal-link-quick-note">
-                                {lang === 'ro' ? 'Adaugă o notă rapidă' : 'Add a quick note'}
-                              </a>
-                            </div>
+                            {(() => {
+                              try {
+                                const last = take[take.length - 1] || { clarity: 0, calm: 0, energy: 0 } as unknown as { clarity: number; calm: number; energy: number };
+                                const prev = take.length >= 2 ? (take[take.length - 2] as { clarity: number; calm: number; energy: number }) : last;
+                                const Delta = ({ d }: { d: number }) => {
+                                  const col = d > 0 ? '#1F7A53' : d < 0 ? '#8C2B2F' : '#7B6B60';
+                                  const arrow = d > 0 ? '▲' : d < 0 ? '▼' : '•';
+                                  const sign = d > 0 ? '+' : '';
+                                  return <span className="ml-1 text-[10px]" style={{ color: col }}>{arrow} {sign}{Math.round(d)}</span>;
+                                };
+                                const Chip = ({ color, label, value, delta }: { color: string; label: string; value: number; delta: number }) => (
+                                  <span className="inline-flex items-center gap-1 rounded-[10px] border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-[2px] text-[10px] text-[#6E5F55]">
+                                    <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden />
+                                    <span>{label}</span>
+                                    <span className="font-semibold text-[#5A4C43]">{Math.round(value)}</span>
+                                    <Delta d={delta} />
+                                  </span>
+                                );
+                                return (
+                                  <div className="mt-0.5 flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Chip color="#9A8578" label={INDICATORS.mental_clarity.label} value={last.clarity} delta={last.clarity - prev.clarity} />
+                                      <Chip color="#766659" label={INDICATORS.emotional_balance.label} value={last.calm} delta={last.calm - prev.calm} />
+                                      <Chip color="#B98C7C" label={INDICATORS.physical_energy.label} value={last.energy} delta={last.energy - prev.energy} />
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <a href="/experience-onboarding?flow=initiation&step=daily-state" className="text-[9px] underline text-[#7B6B60] hover:text-[#2C2C2C]" data-testid="kpi-open-sliders">
+                                        {lang === 'ro' ? 'Actualizează (1–10)' : 'Update (1–10)'}
+                                      </a>
+                                      <a href="/progress?open=journal&tab=NOTE_LIBERE" className="text-[9px] underline text-[#7B6B60] hover:text-[#2C2C2C]" data-testid="internal-link-quick-note">
+                                        {lang === 'ro' ? 'Adaugă o notă rapidă' : 'Add a quick note'}
+                                      </a>
+                                    </div>
+                                  </div>
+                                );
+                              } catch { return (
+                                <div className="mt-1 flex justify-end">
+                                  <a href="/progress?open=journal&tab=NOTE_LIBERE" className="text-[9px] underline text-[#7B6B60] hover:text-[#2C2C2C]" data-testid="internal-link-quick-note">
+                                    {lang === 'ro' ? 'Adaugă o notă rapidă' : 'Add a quick note'}
+                                  </a>
+                                </div>
+                              ); }
+                            })()}
                           </div>
                         );
                       } catch { return null; }
@@ -574,23 +670,8 @@ export default function ProgressDashboard({
               <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
                 <div id="actions-trend">
                 <Card className="h-[200px] overflow-hidden rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm sm:h-[240px] sm:p-4 lg:h-[280px]">
-                  <h3 className="mb-1 flex items-center gap-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
-                    <span>
-                      {(() => {
-                        const label = metric === 'count'
-                          ? (lang === 'ro' ? 'Sesiuni' : 'Sessions')
-                          : metric === 'score'
-                          ? (lang === 'ro' ? 'Scor' : 'Score')
-                          : '';
-                        return (
-                          <>
-                            {trendsTitle}
-                            {label ? ' • ' : ''}
-                            {label}
-                          </>
-                        );
-                      })()}
-                    </span>
+                  <h3 className="mb-1 flex items-center gap-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
+                    <span>{trendsTitle}</span>
                     <InfoTooltip
                       label={lang === 'ro' ? 'Despre trend' : 'About trends'}
                       items={lang === 'ro'
@@ -613,7 +694,7 @@ export default function ProgressDashboard({
                     />
                   </h3>
                   <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-[10px] text-[#7B6B60] sm:text-[11px]">
+                    <p className="text-[10px] text-[#8C7C70] sm:text-[11px]">
                       {metric === 'score'
                         ? (lang === 'ro' ? 'Scor activitate (0–100)' : 'Activity score (0–100)')
                         : (lang === 'ro' ? 'Evoluția activităților' : 'Activities evolution')}
@@ -747,14 +828,21 @@ export default function ProgressDashboard({
                               });
                             });
                           } catch {}
-                          const days = timeframe === 'week' ? 7 : 30;
-                          return computeActionTrend(evs, refMs, lang, days, currentFocusTag);
+                          const now = Date.now();
+                          const days = (() => {
+                            if (timeframe === 'week') return 7;
+                            const d = new Date(now);
+                            // days in current month (28/29/30/31)
+                            return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+                          })();
+                          // Use 'now' so chart ends with today; month uses month-to-date length
+                          return computeActionTrend(evs, now, lang, days, currentFocusTag);
                         }
                         if (metric === 'min') {
-                          return timeframe === 'week' ? weekly : monthDays;
+                          return timeframe === 'week' ? weeklyWithEvents : monthWithEvents;
                         }
                         // sessions count
-                        return timeframe === 'week' ? weeklyCounts : monthCounts;
+                        return timeframe === 'week' ? weeklyCountsWithEvents : monthCountsWithEvents;
                       })()}
                       showBars={metric === 'score' || metric === 'count' || metric === 'min'}
                       showValues={true}
@@ -809,7 +897,7 @@ export default function ProgressDashboard({
                         })();
                         evs.push({ startedAt: started, durationMin: typeof r.durationMin==='number'?r.durationMin:undefined, units: typeof r.units==='number'?r.units:1, source: src, category: r.category, focusTag: r.focusTag ?? undefined });
                       });
-                      const last7 = computeActionTrend(evs, refMs, lang, 7, currentFocusTag);
+                      const last7 = computeActionTrend(evs, Date.now(), lang, 7, currentFocusTag);
                       const gaps = last7.filter((d) => (d.totalMin || 0) === 0).map(d=> d.day);
                       const hasGaps = gaps.length > 0;
                       // rounding helper no longer needed
@@ -893,7 +981,7 @@ export default function ProgressDashboard({
               className={`order-3 md:order-3 md:col-span-2 ${debugGrid ? "outline outline-1 outline-[#C24B17]/40" : ""}`}
             >
               <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
-                <h3 className="mb-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
+                <h3 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
                   {lang === "ro" ? "Profile indices" : "Profile indices"}
                 </h3>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4 md:gap-3">
@@ -1034,7 +1122,7 @@ export default function ProgressDashboard({
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0, transition: { duration: 0.35 } }}
                         exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
-                        className="mb-0.5 text-xs font-semibold text-[#2C2C2C] sm:mb-1 sm:text-sm"
+                        className="mb-0.5 text-xs font-semibold text-[#7B6B60] sm:mb-1 sm:text-sm"
                       >
                         {getString(
                           t,
@@ -1502,7 +1590,7 @@ export default function ProgressDashboard({
             {/* Insight of the Day (moved above Today’s quest) */}
             <motion.div variants={fadeDelayed(0.16)} {...hoverScale}>
               <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
-                <h3 className="mb-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
+                <h3 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
                   {getString(
                     t,
                     "dashboard.insightTitle",
@@ -1534,7 +1622,7 @@ export default function ProgressDashboard({
             >
               <Card className="min-w-0 rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3.5">
                 <div className="mb-1 flex items-center justify-between sm:mb-2">
-                  <h4 className="text-xs font-semibold text-[#2C2C2C] sm:text-sm">
+                  <h4 className="text-xs font-semibold text-[#7B6B60] sm:text-sm">
                     {lang === "ro"
                       ? "Însemnări recente"
                       : "Recent Entries"}
@@ -1657,7 +1745,7 @@ export default function ProgressDashboard({
               {...hoverScale}
             >
               <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
-                <h4 className="mb-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
+                <h4 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
                   Practice snapshot
                 </h4>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
@@ -1687,7 +1775,7 @@ export default function ProgressDashboard({
               <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
                 <div className="mb-1 flex items-center justify-between sm:mb-2">
                   <div>
-                    <h4 className="text-xs font-semibold text-[#2C2C2C] sm:text-sm">
+                    <h4 className="text-xs font-semibold text-[#7B6B60] sm:text-sm">
                       {lang === "ro" ? "Omni Kuno Edu" : "Omni Kuno Edu"}
                     </h4>
                     <div className="mt-0.5 flex items-baseline gap-2">
@@ -1839,7 +1927,7 @@ export default function ProgressDashboard({
             {/* Quest of the Day – moved last in sidebar */}
             <motion.div variants={fadeDelayed(0.32)} {...hoverScale}>
               <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-white px-3 py-2 shadow-sm sm:px-4 sm:py-3 h-auto">
-                <h3 className="mb-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
+                <h3 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
                   {getString(
                     t,
                     "dashboard.todayQuest",
@@ -1921,7 +2009,7 @@ export default function ProgressDashboard({
                 className="mt-1 sm:mt-2"
               >
                 <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2 shadow-sm sm:p-3">
-                  <h3 className="mb-1 text-xs font-semibold text-[#2C2C2C] sm:mb-2 sm:text-sm">
+                  <h3 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
                     {getString(
                       t,
                       "dashboard.initialInsights",

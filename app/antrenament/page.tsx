@@ -18,6 +18,7 @@ import { recordEvaluationTabChange } from "../../lib/progressFacts";
 import { useProgressFacts } from "../../components/useProgressFacts";
 import QuestsList from "../../components/QuestsList";
 import InfoTooltip from "../../components/InfoTooltip";
+import WizardSondajCBT from "@/components/WizardSondajCBT";
 import { JournalDrawer } from "../../components/journal/JournalDrawer";
 import { JournalPanel } from "../../components/journal/JournalPanel";
 import type { JournalContext } from "../../components/journal/useJournal";
@@ -174,11 +175,16 @@ function AntrenamentContent() {
         };
         const questItems = (progress?.quests?.items ?? []) as QuestItem[];
         return (
-          <QuestsList
-            lang={normalizedLang}
-            categories={progress?.intent?.categories ?? []}
-            items={questItems}
-          />
+          <>
+            <div className="rounded-[16px] border border-[#D8C6B6] bg-white/95 px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
+              <WizardSondajCBT userId={profile?.id ?? null} onContinue={() => { /* stay on tab */ }} />
+            </div>
+            <QuestsList
+              lang={normalizedLang}
+              categories={progress?.intent?.categories ?? []}
+              items={questItems}
+            />
+          </>
         );
       }
       case "oa":

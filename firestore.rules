@@ -104,6 +104,16 @@ service cloud.firestore {
       allow create, update: if isOwner(docId);
     }
 
+    // User recommendations: owner-only access
+    match /userRecommendations/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+      match /items/{recId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId);
+      }
+    }
+
     // Fallback: deny everything else.
     match /{document=**} {
       allow read, write: if false;

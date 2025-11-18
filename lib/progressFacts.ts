@@ -1029,6 +1029,93 @@ export async function recordConsistencyPing() {
   });
 }
 
+// Onboarding: store familiarity with Mental Coaching (knew/heard/unknown)
+export async function recordFamiliarityMentalCoaching(level: 'knew' | 'heard' | 'unknown', ownerId?: string | null) {
+  return mergeProgressFact({
+    onboarding: {
+      familiarityMentalCoaching: level,
+      updatedAt: serverTimestamp(),
+    },
+  }, ownerId);
+}
+
+// Onboarding analytics: generic event logger for wizard steps
+export async function recordOnboardingEvent(payload: {
+  step: string;
+  dwellMs?: number;
+  selection?: string;
+  skipped?: boolean;
+}, ownerId?: string | null) {
+  try {
+    const entry = {
+      step: String(payload.step || 'unknown'),
+      dwellMs: typeof payload.dwellMs === 'number' ? Math.max(0, Math.round(payload.dwellMs)) : undefined,
+      selection: payload.selection ? String(payload.selection) : undefined,
+      skipped: typeof payload.skipped === 'boolean' ? payload.skipped : undefined,
+      at: serverTimestamp(),
+    } as Record<string, unknown>;
+    return mergeProgressFact({ onboarding: { events: arrayUnion(entry) } }, ownerId);
+  } catch {
+    return null;
+  }
+}
+
+// CBT survey: store answers under onboarding.cbtSurvey
+export async function recordCbtSurvey(payload: {
+  emotion?: string;
+  distortions?: string[];
+  triggers?: string;
+  coping?: string[];
+  beliefStrength?: number;
+  avoidanceLevel?: number;
+  readiness?: number;
+}, ownerId?: string | null) {
+  try {
+    return mergeProgressFact({
+      onboarding: {
+        cbtSurvey: {
+          ...payload,
+          updatedAt: serverTimestamp(),
+        },
+      },
+    }, ownerId);
+  } catch {
+    return null;
+  }
+}
+
+// Store a chosen onboarding lesson hint to guide the next micro‑lesson selection
+export async function recordLessonHint(payload: { lessonKey: string; focusTag?: string | null }, ownerId?: string | null) {
+  try {
+    return mergeProgressFact({
+      onboarding: {
+        lessonHint: {
+          lessonKey: String(payload.lessonKey || ''),
+          focusTag: (payload.focusTag ?? null) as string | null,
+          updatedAt: serverTimestamp(),
+        },
+      },
+    }, ownerId);
+  } catch {
+    return null;
+  }
+}
+
+// Need survey: store computed profile under onboarding.needProfile
+export async function recordNeedProfile(payload: {
+  primaryOptionId: string | null;
+  secondaryOptionId: string | null;
+  primaryTag: string | null;
+  allTags: string[];
+  selfEfficacyScore: number | null;
+}, ownerId?: string | null) {
+  try {
+    return mergeProgressFact({ onboarding: { needProfile: payload, updatedAt: serverTimestamp() } }, ownerId);
+  } catch {
+    return null;
+  }
+}
+
 // Activity event log for action trend (knowledge/practice/reflection)
 export type ActivityEventLog = {
   startedAt: Date;

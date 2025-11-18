@@ -236,14 +236,7 @@ export default function SiteHeader({
           >
             {typeof t("navProgres") === "string" ? (t("navProgres") as string) : progressLabel}
           </Link>
-          <Link
-            href="/antrenament?tab=ose"
-            className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-              isActive("/antrenament") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
-            }`}
-          >
-            {typeof t("senseiTitle") === "string" ? (t("senseiTitle") as string) : (lang === "ro" ? "Omni Sensei" : "Omni Sensei")}
-          </Link>
+          {/* Sensei tab removed */}
           <Link
             href="/recommendation"
             className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
@@ -255,11 +248,11 @@ export default function SiteHeader({
           </Link>
           {showOnboardingNav ? (
             <Link
-              href="/onboarding"
+              href={{ pathname: "/experience-onboarding", query: { flow: "initiation", step: "intro" } }}
               className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-                isActive("/onboarding") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
+                isActive("/experience-onboarding") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
               }`}
-              aria-current={isActive("/onboarding") ? "page" : undefined}
+              aria-current={isActive("/experience-onboarding") ? "page" : undefined}
             >
               {typeof t("navOnboarding") === "string" ? (t("navOnboarding") as string) : (lang === "ro" ? "Onboarding" : "Onboarding")}
             </Link>

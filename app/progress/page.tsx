@@ -383,11 +383,20 @@ function ProgressContent() {
             {lang === 'ro' ? 'Ai scris în jurnal.' : 'You wrote in your journal.'}
           </div>
         ) : null}
-        {afterParam === 'abil' ? (
-          <div className="mb-3 rounded-[12px] border border-[#E4DAD1] bg-white px-4 py-3 text-sm text-[#4A3A30]">
-            {lang === 'ro' ? 'Ai încheiat un exercițiu OmniAbil.' : 'You finished an OmniAbil exercise.'}
+      {afterParam === 'abil' ? (
+        <div className="mb-3 rounded-[12px] border border-[#E4DAD1] bg-white px-4 py-3 text-sm text-[#4A3A30]">
+          {lang === 'ro' ? 'Ai încheiat un exercițiu OmniAbil.' : 'You finished an OmniAbil exercise.'}
+        </div>
+      ) : null}
+      {/* Quick link to Recommendations */}
+      <div className="mx-auto mb-3 w-full max-w-5xl px-4">
+        <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p>{lang === 'ro' ? 'Vezi recomandările tale actuale.' : 'See your current recommendations.'}</p>
+            <a href="/recommendation" className="rounded-[10px] border border-[#2C2C2C] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]">{lang === 'ro' ? 'Deschide' : 'Open'}</a>
           </div>
-        ) : null}
+        </div>
+      </div>
         <section className="mx-auto w-full">
           <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-[1fr_minmax(160px,200px)]">
           <NextBestStep

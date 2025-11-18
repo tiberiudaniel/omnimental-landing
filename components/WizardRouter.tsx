@@ -15,6 +15,12 @@ import type { IntentPrimaryCategory, IntentCloudWord } from "@/lib/intentExpress
 import type { ResolutionSpeed, BudgetPreference, GoalType, EmotionalState, FormatPreference } from "@/lib/evaluation";
 import { useState } from "react";
 import MultiTypewriter from "./MultiTypewriter";
+import TypewriterText from "./TypewriterText";
+import { motion } from "framer-motion";
+import { recordFamiliarityMentalCoaching } from "@/lib/progressFacts";
+import StepNeedMain from "./wizard/StepNeedMain";
+import StepNeedConfidence from "./wizard/StepNeedConfidence";
+import type { NeedOptionId } from "@/config/needSurveyConfig";
 
 export type Step =
   | "preIntro"
@@ -25,6 +31,9 @@ export type Step =
   | "intentMotivation" // canonical name
   | "intentSummary" // legacy alias supported
   | "reflectionSummary"
+  | "needMain"
+  | "needConfidence"
+  | "microLessonInfo"
   | "cards"
   | "details";
 
@@ -279,7 +288,7 @@ export default function WizardRouter(props: Props) {
         <div className="relative" data-testid="wizard-step-reflection">
           <WizardReflection
             lines={lines}
-            onContinue={() => navigateToStep("intentMotivation")}
+            onContinue={() => navigateToStep("needMain")}
             categories={intentCategories}
             maxSelection={maxSelection}
             categoryLabels={categoryLabels}
@@ -306,6 +315,43 @@ export default function WizardRouter(props: Props) {
               J
             </button>
           </div>
+        </div>
+      );
+    }
+    case "needMain": {
+      return (
+        <div className="mx-auto w-full max-w-4xl px-4 md:px-6">
+          <StepNeedMain onNext={(sel, other) => {
+            const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+            params.set('needSel', sel.join(','));
+            if (other) params.set('needOther', other);
+            const qs = params.toString();
+            if (typeof window !== 'undefined') window.history.replaceState(null, '', qs ? `?${qs}` : '');
+            navigateToStep('needConfidence');
+          }} />
+        </div>
+      );
+    }
+    case "needConfidence": {
+      const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+      const raw = (params.get('needSel') || '').split(',').filter(Boolean);
+      const allowed: ReadonlyArray<NeedOptionId> = [
+        'need_info','need_plan','need_examples','need_social','need_beliefs','need_benefits','need_motivation','need_consistency','need_other',
+      ];
+      const sel: NeedOptionId[] = raw.filter((v): v is NeedOptionId => (allowed as readonly string[]).includes(v));
+      return (
+        <div className="mx-auto w-full max-w-4xl px-4 md:px-6">
+          <StepNeedConfidence selectedOptions={sel} onDone={() => {
+            try {
+              if (typeof window !== 'undefined') {
+                const p = new URLSearchParams(window.location.search);
+                p.set('sub', '1');
+                const qs = p.toString();
+                window.history.replaceState(null, '', qs ? `?${qs}` : '');
+              }
+            } catch {}
+            navigateToStep('intentMotivation');
+          }} />
         </div>
       );
     }
@@ -343,6 +389,112 @@ export default function WizardRouter(props: Props) {
           onAuthRequest={onAuthRequest}
           primaryAreaLabel={primaryAreaLabel}
         />
+      );
+    }
+    case "microLessonInfo": {
+      const title = lang === 'ro' ? 'Probabil ai auzit deja,  că mintea se poate antrena ca un mușchi?' : 'Did you know the mind can be trained like a muscle?';
+      const body = (
+        lang === 'ro'
+          ? [
+              'Știai că Mental Coaching a apărut la intersecția dintre psihologie sportivă și pregătirea pentru performanță de vârf?',
+              'Antrenorii mentali au început să lucreze cu sportivi de elită ca să își gestioneze stresul, emoțiile și concentrarea, iar apoi metodele au fost adaptate pentru antreprenori, profesioniști și, mai nou, pentru traderi.',
+            ]
+          : [
+              'Did you know Mental Coaching emerged at the crossroads of sport psychology and elite performance training?',
+              'Mental coaches first worked with top athletes to manage stress, emotions and focus, then the methods were adapted for entrepreneurs and professionals — and more recently for traders.',
+            ]
+      );
+      const definition = lang === 'ro'
+        ? 'Mental Coaching înseamnă un antrenament structurat al atenției, emoțiilor și dialogului interior, astfel încât să poți lua decizii mai lucide, să rămâi stabil în stres și să folosești la maxim resursele tale mentale.'
+        : 'Mental Coaching means a structured training of attention, emotions and inner dialogue so you can decide more clearly, stay stable under stress and use your mental resources better.';
+      const familiarity = lang === 'ro' ? 'Tu cât de familiar ești cu Mental Coaching?' : 'How familiar are you with Mental Coaching?';
+      const btns = (
+        lang === 'ro'
+          ? ['Știam','Am auzit ceva','Nu știam']
+          : ['I knew','Heard about it','Didn’t know']
+      );
+      return (
+        <div className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8">
+        <section className="mx-auto w-full max-w-4xl px-4 md:px-6">
+          {/* Eyebrow */}
+          <div className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#C07963]">
+            {lang === 'ro' ? 'Mini‑lecție' : 'Micro‑lesson'}
+          </div>
+          {/* Card consistent with wizard cards */}
+          <div className="rounded-[12px] border border-[#E4D8CE] bg-white/92 px-6 py-5 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+            <div className="mb-1">
+              <div onClick={() => { /* detect skip in parent via bubbling */ }}>
+                <TypewriterText
+                  text={title}
+                  wrapperClassName="mb-0 w-full bg-[#FFFBF7] px-4 py-3 text-center rounded-[10px] border border-[#F0E6DA]"
+                  headingClassName="text-xl md:text-2xl"
+                />
+              </div>
+              <p className="mt-1 text-center text-[10px] text-[#8C7C70]">{lang === 'ro' ? 'Apasă pentru a afișa tot textul' : 'Tap to reveal quickly'}</p>
+            </div>
+            {/* Sub-head: Știai că…? */}
+            <div className="mb-1 text-center text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">
+              {lang === 'ro' ? 'Știai că…?' : 'Did you know…?'}
+            </div>
+            <motion.div
+              className="mx-auto max-w-[64ch] space-y-2 text-[14px] leading-[1.7] text-[#2C2C2C]"
+              initial="hidden"
+              animate="show"
+              variants={{
+                hidden: { opacity: 0, y: 4 },
+                show: { opacity: 1, y: 0, transition: { staggerChildren: 0.06, delayChildren: 0.08 } },
+              }}
+            >
+              {body.map((p, i) => (
+                <motion.p key={i} variants={{ hidden: { opacity: 0, y: 3 }, show: { opacity: 1, y: 0 } }}>{p}</motion.p>
+              ))}
+            </motion.div>
+            {/* Definition in a soft box */}
+            <motion.div
+              className="mx-auto mt-4 max-w-[64ch] rounded-[10px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-3 text-[13px] leading-relaxed text-[#4A3A30] border-l-2 border-l-[#C07963]"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.28, delay: 0.25 }}
+            >
+              <div className="mb-1 flex items-center gap-2 text-[12px] font-semibold text-[#2C2C2C]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <circle cx="12" cy="12" r="10" stroke="#C07963" strokeWidth="1.2"/>
+                  <path d="M12 7.5v.8M11.3 10.8h1.4v5h-1.4z" stroke="#C07963" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+                {lang === 'ro' ? 'Definiție:' : 'Definition:'}
+              </div>
+              <div>{definition}</div>
+            </motion.div>
+            <div className="mt-5">
+              <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">{familiarity}</p>
+              <div className="mx-auto grid max-w-xl grid-cols-1 gap-2 sm:grid-cols-3">
+                {btns.map((label, idx) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const map: ('knew'|'heard'|'unknown')[] = ['knew','heard','unknown'];
+                        await recordFamiliarityMentalCoaching(map[idx] ?? 'unknown', profileCtx?.profile?.id);
+                      } catch {}
+                      navigateToStep('intentMotivation');
+                    }}
+                    className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                    data-testid="wizard-microlesson-btn"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mx-auto mt-3 max-w-[64ch] text-center text-[10px] text-[#8C7C70]">
+              {lang === 'ro'
+                ? 'Primele studii: Norman Triplett (1898) — efectul competiției la cicliști; termenul „sport psychology” (1900) — Pierre de Coubertin; anii 1920–1930 — Coleman Griffith lucrează cu echipe (ex. Chicago Cubs).'
+                : 'Early studies: Norman Triplett (1898) — cyclists and competition; “sport psychology” term (1900) — Pierre de Coubertin; 1920s–1930s — Coleman Griffith works with teams (e.g., Chicago Cubs).'}
+            </div>
+          </div>
+        </section>
+        </div>
       );
     }
     case "cards": {

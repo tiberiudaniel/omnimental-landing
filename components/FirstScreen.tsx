@@ -189,7 +189,6 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
                 speed={60}
                 gapMs={420}
                 wrapperClassName="mb-5 w-full bg-transparent px-0 py-0"
-                headingClassName="text-lg md:text-xl"
                 onDone={() => {
                   handleQuestionComplete();
                 }}
