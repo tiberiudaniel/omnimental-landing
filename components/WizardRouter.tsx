@@ -350,7 +350,7 @@ export default function WizardRouter(props: Props) {
                 window.history.replaceState(null, '', qs ? `?${qs}` : '');
               }
             } catch {}
-            navigateToStep('intentMotivation');
+            navigateToStep('microLessonInfo');
           }} />
         </div>
       );
@@ -396,12 +396,10 @@ export default function WizardRouter(props: Props) {
       const body = (
         lang === 'ro'
           ? [
-              'Știai că Mental Coaching a apărut la intersecția dintre psihologie sportivă și pregătirea pentru performanță de vârf?',
-              'Antrenorii mentali au început să lucreze cu sportivi de elită ca să își gestioneze stresul, emoțiile și concentrarea, iar apoi metodele au fost adaptate pentru antreprenori, profesioniști și, mai nou, pentru traderi.',
+              'Știai că Mental Coaching a apărut la intersecția dintre psihologie sportivă și pregătirea pentru performanță de vârf? Antrenorii mentali au început să lucreze cu sportivi de elită ca să își gestioneze stresul, emoțiile și concentrarea, iar apoi metodele au fost adaptate pentru antreprenori, profesioniști și, mai nou, pentru traderi.',
             ]
           : [
-              'Did you know Mental Coaching emerged at the crossroads of sport psychology and elite performance training?',
-              'Mental coaches first worked with top athletes to manage stress, emotions and focus, then the methods were adapted for entrepreneurs and professionals — and more recently for traders.',
+              'Did you know Mental Coaching emerged at the crossroads of sport psychology and elite performance training? Mental coaches first worked with top athletes to manage stress, emotions and focus, then the methods were adapted for entrepreneurs and professionals — and more recently for traders.',
             ]
       );
       const definition = lang === 'ro'
@@ -437,7 +435,7 @@ export default function WizardRouter(props: Props) {
               {lang === 'ro' ? 'Știai că…?' : 'Did you know…?'}
             </div>
             <motion.div
-              className="mx-auto max-w-[64ch] space-y-2 text-[14px] leading-[1.7] text-[#2C2C2C]"
+              className="mx-auto max-w-[64ch] space-y-2 text-[15px] md:text-[16px] leading-[1.8] text-[#2C2C2C]"
               initial="hidden"
               animate="show"
               variants={{
@@ -451,7 +449,7 @@ export default function WizardRouter(props: Props) {
             </motion.div>
             {/* Definition in a soft box */}
             <motion.div
-              className="mx-auto mt-4 max-w-[64ch] rounded-[10px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-3 text-[13px] leading-relaxed text-[#4A3A30] border-l-2 border-l-[#C07963]"
+              className="mx-auto mt-4 max-w-[64ch] rounded-[10px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-3 text-[14px] md:text-[15px] leading-relaxed text-[#4A3A30] border-l-2 border-l-[#C07963]"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28, delay: 0.25 }}

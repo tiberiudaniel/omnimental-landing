@@ -40,7 +40,8 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
           lines={introLines}
           speed={60}
           gapMs={500}
-          wrapperClassName="typewriter-display mb-6 w-full bg-[#F6F2EE] px-6 py-5"
+          wrapperClassName="typewriter-display mb-6 w-full max-w-[62ch] mx-auto bg-[#F6F2EE] px-6 py-5"
+          headingClassName="text-base md:text-lg"
         />
 
         {/* Ce urmează */}

@@ -6,7 +6,7 @@ import Typewriter from "@/components/onboarding/Typewriter";
 import { useI18n } from "@/components/I18nProvider";
 import { getDb, areWritesDisabled, ensureAuth } from "@/lib/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { recordPracticeEvent, recordPracticeSession, recordRecentEntry } from "@/lib/progressFacts";
+import { recordPracticeSession, recordRecentEntry } from "@/lib/progressFacts";
 
 export default function StepJournal({ userId, onSaved, onSkip }: { userId: string | null; onSaved: () => void; onSkip: () => void }) {
   const { lang } = useI18n();
@@ -28,8 +28,7 @@ export default function StepJournal({ userId, onSaved, onSkip }: { userId: strin
             ts: serverTimestamp(),
             source: "experience-onboarding",
           });
-          // Update progress facts counters and timeline so dashboard reflects activity
-          await recordPracticeEvent("reflection", effectiveUserId);
+          // Update progress facts timeline so dashboard reflects activity
           await recordPracticeSession(
             "reflection",
             startedAt,

@@ -5,7 +5,7 @@ import ScoreCard from "@/components/onboarding/ScoreCard";
 import { useI18n } from "@/components/I18nProvider";
 import { getDb, areWritesDisabled } from "@/lib/firebase";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { recordOmniPatch, recordPracticeEvent, recordPracticeSession, recordActivityEvent } from "@/lib/progressFacts";
+import { recordOmniPatch, recordPracticeSession, recordActivityEvent } from "@/lib/progressFacts";
 import { applyKunoGamification } from "@/lib/kunoGamification";
 import Link from "next/link";
 import { useEffect } from "react";
@@ -138,7 +138,6 @@ export default function StepMiniTestScore({ answers, score, userId, topicKey, qu
         try {
           const reflectionsAnswered = (questionsMeta || []).filter((m, idx) => (m?.style === 'reflection') && typeof answers[idx] === 'number' && answers[idx]! >= 0).length;
           if (reflectionsAnswered > 0) {
-            await recordPracticeEvent('reflection', userId ?? undefined, reflectionsAnswered);
             const now = Date.now();
             await recordPracticeSession('reflection', now - 60 * reflectionsAnswered * 1000, 45 * reflectionsAnswered, userId ?? undefined);
           }

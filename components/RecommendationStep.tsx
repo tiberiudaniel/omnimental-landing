@@ -368,7 +368,7 @@ export function RecommendationStep(props: Props) {
                 showValues={false}
               />
             </div>
-            <div className="w-full max-w-[56ch] rounded-[10px] border border-[#F5E7DA] bg-[#FFFBF7] px-4 py-3 text-left t-body-sm text-[#4A3A30]">
+            <div className="w-full max-w-[56ch] rounded-[10px] border border-[#F5E7DA] bg-[#FFFBF7] px-4 py-3 text-left text-[14px] sm:text-[15px] leading-relaxed text-[#4A3A30]">
               {summaryMessage}
             </div>
           </div>

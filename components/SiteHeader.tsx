@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useI18n } from "./I18nProvider";
 import { useAuth } from "./AuthProvider";
 import { useProfile } from "./ProfileProvider";
@@ -32,6 +32,7 @@ export default function SiteHeader({
   canWizardReset = false,
 }: SiteHeaderProps) {
   const { lang, setLang, t } = useI18n();
+  const router = useRouter();
   const { user, signOutUser, linkSentTo, authNotice, clearAuthNotice } = useAuth();
   const { profile } = useProfile();
   const pathname = usePathname();
@@ -163,9 +164,7 @@ export default function SiteHeader({
                     onAuthRequest();
                     return;
                   }
-                  if (typeof window !== "undefined") {
-                    window.location.href = "/progress";
-                  }
+                  router.push('/progress');
                 }
           }
           className="hover:text-[#E60012]"
@@ -267,7 +266,7 @@ export default function SiteHeader({
               label={lang === "ro" ? "Jurnal" : "Journal"}
               onRequireAuth={() => {
                 if (onAuthRequest) onAuthRequest();
-                else if (typeof window !== "undefined") window.location.href = "/progress";
+                else router.push('/progress');
               }}
             />
           )}

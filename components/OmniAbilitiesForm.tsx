@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { computeOmniAbilities, type OmniAbilityLevels } from "@/lib/omniAbilities";
 import { submitOmniAbilitiesAssessment } from "@/lib/submitEvaluation";
-import { recordAbilityPracticeFact, recordOmniPatch, recordPracticeEvent, recordPracticeSession } from "@/lib/progressFacts";
+import { recordAbilityPracticeFact, recordOmniPatch, recordPracticeSession } from "@/lib/progressFacts";
 
 const levelLabels = ["0", "1", "2", "3"];
 
@@ -130,7 +130,6 @@ export default function OmniAbilitiesForm({ lang }: Props) {
               const durationSec = Math.max(0, Math.round((end - start) / 1000));
               setP1Active(false);
               setP1StartMs(null);
-              void recordPracticeEvent("breathing");
               void recordPracticeSession("breathing", start, durationSec);
             }}
             className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#F6F2EE]"
@@ -296,7 +295,6 @@ export default function OmniAbilitiesForm({ lang }: Props) {
               const durationSec = Math.max(0, Math.round((end - start) / 1000));
               setP4Active(false);
               setP4StartMs(null);
-              void recordPracticeEvent("drill");
               void recordPracticeSession("drill", start, durationSec);
             }}
             className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#F6F2EE]"

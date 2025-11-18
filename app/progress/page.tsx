@@ -30,14 +30,16 @@ function ProgressContent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navLinks = useNavigationLinks();
   const { profile } = useProfile();
-  const { data: progress } = useProgressFacts(profile?.id);
+  const { data: progress, loading: progressLoading } = useProgressFacts(profile?.id);
   const search = useSearchParams();
   const demoParam = search?.get("demo");
   const e2e = (search?.get('e2e') === '1') || (demoParam === '1');
   const debugGrid = search?.get("grid") === "1" || search?.get("debug") === "grid";
   const demoVariant = demoParam ? (Number(demoParam) === 2 ? 2 : Number(demoParam) === 3 ? 3 : 1) : null;
   const fromParam = search?.get("from");
-  const autoDemo = demoVariant || e2e || fromParam === 'experience-onboarding' || fromParam === 'onboarding-test' ? (demoVariant ?? 1) : null;
+  const returnToParam = search?.get('returnTo');
+  // Auto-demo only when explicitly requested via demo=1/2/3 or e2e=1; not via from=...
+  const autoDemo = demoVariant || e2e ? (demoVariant ?? 1) : null;
   const demoFacts = autoDemo ? getDemoProgressFacts(lang === "en" ? "en" : "ro", autoDemo as 1 | 2 | 3) : undefined;
   // fromParam used elsewhere as well
   const afterParam = search?.get("after");
@@ -107,10 +109,8 @@ function ProgressContent() {
     }
   }, [authLoading, user, profile?.id]);
 
-  // React to open=journal in URL: open the drawer, then clean the param
+  // React to open=journal in URL: open the drawer immediately, then clean the param
   useEffect(() => {
-    const uidAvailable = Boolean(profile?.id || anonUid);
-    if (!uidAvailable) return;
     if (search?.get('open') === 'journal') {
       const id = window.setTimeout(() => setJournalOpen(true), 0);
       const params = new URLSearchParams(search?.toString() ?? '');
@@ -118,7 +118,7 @@ function ProgressContent() {
       router.replace(params.toString() ? `/progress?${params.toString()}` : '/progress');
       return () => window.clearTimeout(id);
     }
-  }, [profile?.id, anonUid, router, search, user]);
+  }, [router, search]);
 
   // Absence (72h) nudge: compute asynchronously in effect to satisfy lint rules
   const [absenceNudge, setAbsenceNudge] = useState(false);
@@ -268,6 +268,23 @@ function ProgressContent() {
         />
       ) : null}
       <main className="mx-auto max-w-5xl px-4 py-6 md:px-8">
+        {fromParam === 'onboarding-auth' ? (
+          <div className="mb-3 rounded-[12px] border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-3 text-sm text-[#1F3C2F]" data-testid="onboarding-auth-banner">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p>
+                {lang === 'ro'
+                  ? 'Pentru a continua experiența, conectează-te. Te vom întoarce exact unde erai.'
+                  : 'To continue the experience, please sign in. We will return you to your last step.'}
+              </p>
+              <a
+                href={`/auth${returnToParam ? `?returnTo=${encodeURIComponent(returnToParam)}` : ''}`}
+                className="rounded-[10px] border border-[#1F3C2F] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#1F3C2F] hover:bg-[#1F3C2F] hover:text-white"
+              >
+                {lang === 'ro' ? 'Conectează-te' : 'Sign in'}
+              </a>
+            </div>
+          </div>
+        ) : null}
         {absenceNudge ? (
           <div className="mb-3 rounded-[12px] border border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]" data-testid="absence-nudge">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -438,7 +455,7 @@ function ProgressContent() {
           </div>
           </div>
         </section>
-        <ProgressDashboard profileId={profile.id} demoFacts={demoFacts} debugGrid={debugGrid} hideOmniIntel />
+        <ProgressDashboard profileId={profile.id} demoFacts={demoFacts} facts={progress} loading={progressLoading} debugGrid={debugGrid} hideOmniIntel />
       </main>
     </div>
   );

@@ -53,10 +53,17 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
           : null;
 
         // Determine if we need backfill (intent/motivation/evaluation missing)
-        const hasIntent = Boolean(latestProfile?.intent);
-        const hasMotivation = Boolean(latestProfile?.motivation);
-        const hasEvaluation = Boolean(latestProfile?.evaluation);
-        const needsBackfill = !latestProfile || !hasIntent || !hasMotivation || !hasEvaluation;
+        const hasProfileIntent = Boolean(latestProfile?.intent);
+        const hasProfileMotivation = Boolean(latestProfile?.motivation);
+        const hasProfileEvaluation = Boolean(latestProfile?.evaluation);
+        const hasFactsIntent = Boolean(latestFacts?.intent);
+        const hasFactsMotivation = Boolean(latestFacts?.motivation);
+        const hasFactsEvaluation = Boolean(latestFacts?.evaluation);
+        const needsBackfill = !(
+          (hasProfileIntent || hasFactsIntent) &&
+          (hasProfileMotivation || hasFactsMotivation) &&
+          (hasProfileEvaluation || hasFactsEvaluation)
+        );
 
         if (needsBackfill && !backfillRequested.current) {
           setState((prev) => ({ data: latestProfile ?? prev.data, loading: true, error: prev.error }));

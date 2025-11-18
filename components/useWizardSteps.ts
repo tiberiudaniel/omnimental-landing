@@ -60,6 +60,18 @@ export function useWizardSteps(initialStep: Step = "preIntro") {
     return localStep;
   }, [localStep, searchParams]);
 
+  // Keep localStep in sync with URL changes (e.g., Back/Forward navigation)
+  useEffect(() => {
+    const paramStep = searchParams?.get("step");
+    if (isStep(paramStep)) {
+      const normalized = LEGACY_ALIASES[paramStep as string] ?? (paramStep as Step);
+      if (normalized !== localStep) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        setLocalStep(normalized);
+      }
+    }
+  }, [searchParams, localStep]);
+
   const goToStep = useCallback(
     (next: Step) => {
       setLocalStep(next);

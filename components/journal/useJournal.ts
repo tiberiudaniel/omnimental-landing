@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { JournalDoc, JournalTabId } from "@/lib/journal";
 import { getJournalByUser, updateJournalTab } from "@/lib/journal";
-import { recordPracticeEvent } from "@/lib/progressFacts";
 import { recordTextSignals } from "@/lib/textSignals";
 
 export type JournalContext = {
@@ -164,8 +163,6 @@ export function useJournal(userId: string | null | undefined) {
         } catch {}
         // Fire-and-forget text analytics (best-effort)
         void recordTextSignals({ text, source: `journal:${tabId}`, context: context as Record<string, unknown> | undefined });
-        // Increment reflection practice counter (best-effort)
-        void recordPracticeEvent("reflection", userId ?? null);
         // Add a lightweight practice session so trends reflect journal activity
         try {
           const started = Date.now() - 120000;

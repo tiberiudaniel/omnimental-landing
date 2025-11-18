@@ -39,9 +39,6 @@ export default function StepNeedMain({ onNext }: { onNext: (sel: NeedOptionId[],
               data-testid={`need-opt-${opt.id}`}
             >
               <p className="text-sm font-semibold text-[#2C2C2C]">{lang === 'ro' ? opt.label.ro : opt.label.en}</p>
-              {opt.subtitle ? (
-                <p className="mt-1 text-[12px] text-[#7B6B60]">{lang === 'ro' ? opt.subtitle.ro : opt.subtitle.en}</p>
-              ) : null}
             </button>
           ))}
         </div>

@@ -115,6 +115,11 @@ if (typeof window !== "undefined") {
   onAuthStateChanged(auth, (user) => {
     // If a real user is present, clear any pending anon timer
     if (user) {
+      try {
+        if (user.isAnonymous) {
+          window.localStorage.setItem('OMNI_LAST_ANON_UID', user.uid);
+        }
+      } catch {}
       if (anonTimer) {
         try { window.clearTimeout(anonTimer); } catch {}
         anonTimer = null;

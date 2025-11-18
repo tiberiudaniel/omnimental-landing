@@ -242,6 +242,21 @@ export async function backfillProgressFacts(profileId: string) {
   const db = getDb();
   const effectiveId = profileId || auth?.uid || null;
   if (!effectiveId) return null;
+  // If facts already have core sections, skip backfill entirely
+  try {
+    const existingFactsSnap = await getDocs(
+      query(
+        collection(db, "userProgressFacts"),
+        where("__name__", "==", effectiveId as unknown as string),
+      ),
+    );
+    if (!existingFactsSnap.empty) {
+      const data0 = existingFactsSnap.docs[0].data() as ProgressFact;
+      if (data0?.intent && data0?.motivation && data0?.evaluation) {
+        return data0;
+      }
+    }
+  } catch {}
   let latestSnapshot = await getDocs(
     query(
       collection(db, "userIntentSnapshots"),
@@ -497,12 +512,89 @@ export async function backfillProgressFacts(profileId: string) {
   } catch {}
   const factRef = doc(getDb(), "userProgressFacts", effectiveId);
   const profileRef = doc(getDb(), "userProfiles", effectiveId);
-  await Promise.all([
-    setDoc(factRef, fact, { merge: true }).catch((error) =>
-      console.warn("progress fact backfill primary write failed", error),
-    ),
-    setDoc(profileRef, { progressFacts: fact }, { merge: true }),
-  ]);
+  // Read current docs and avoid overwriting newer data
+  try {
+    let currentFacts: ProgressFact | null = null;
+    let currentProfileFacts: ProgressFact | null = null;
+    try {
+      const curFactSnap = await (await import("firebase/firestore")).getDoc(factRef);
+      if (curFactSnap.exists()) currentFacts = (curFactSnap.data() as ProgressFact) ?? null;
+    } catch {}
+    try {
+      const curProfileSnap = await (await import("firebase/firestore")).getDoc(profileRef);
+      if (curProfileSnap.exists()) {
+        const pf = (curProfileSnap.data() as { progressFacts?: ProgressFact } | undefined)?.progressFacts ?? null;
+        if (pf) currentProfileFacts = pf;
+      }
+    } catch {}
+    const pickNewer = <T extends { updatedAt?: unknown } | null | undefined>(src: T, dst: T): T => {
+      const toMs = (v: unknown): number => {
+        try {
+          if (!v) return 0;
+          if (typeof v === 'number') return v;
+          if (v instanceof Date) return v.getTime();
+          const ts = v as { toDate?: () => Date };
+          return typeof ts?.toDate === 'function' ? ts.toDate().getTime() : 0;
+        } catch { return 0; }
+      };
+      const sMs = toMs(src?.updatedAt);
+      const dMs = toMs(dst?.updatedAt);
+      return (!dst || sMs > dMs) ? src : dst;
+    };
+    const merged: ProgressFact = { ...(currentFacts ?? {}), ...(currentProfileFacts ?? {}) } as ProgressFact;
+    const next: ProgressFact = { ...(fact as ProgressFact) } as ProgressFact;
+    // Only apply sections if newer than existing
+    const intentMerged = pickNewer(fact.intent ?? undefined, merged.intent ?? undefined);
+    if (intentMerged) next.intent = intentMerged;
+    const motivationMerged = pickNewer(fact.motivation ?? undefined, merged.motivation ?? undefined);
+    if (motivationMerged) next.motivation = motivationMerged;
+    const evaluationMerged = pickNewer(fact.evaluation ?? undefined, merged.evaluation ?? undefined);
+    if (evaluationMerged) next.evaluation = evaluationMerged;
+    const recommendationMerged = pickNewer(fact.recommendation ?? undefined, merged.recommendation ?? undefined);
+    if (recommendationMerged) next.recommendation = recommendationMerged;
+    const qaMerged = pickNewer(fact.quickAssessment ?? undefined, merged.quickAssessment ?? undefined);
+    if (qaMerged) next.quickAssessment = qaMerged;
+    // Merge arrays conservatively
+    if (Array.isArray(merged.practiceSessions) && Array.isArray(fact.practiceSessions)) {
+      const seen = new Set<string>();
+      const toKey = (x: unknown) => {
+        try {
+          const o = x as { type?: string; startedAt?: unknown };
+          const ms = ((): number => {
+            const v = o?.startedAt as unknown;
+            if (!v) return 0;
+            if (v instanceof Date) return v.getTime();
+            if (typeof v === 'number') return v;
+            const ts = v as { toDate?: () => Date };
+            return typeof ts?.toDate === 'function' ? ts.toDate().getTime() : 0;
+          })();
+          return `${o?.type ?? 'x'}@${ms}`;
+        } catch { return Math.random().toString(36).slice(2); }
+      };
+      const combined = [...merged.practiceSessions, ...fact.practiceSessions];
+      const dedup = combined.filter((it) => {
+        const k = toKey(it);
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      next.practiceSessions = dedup;
+    }
+    await Promise.all([
+      setDoc(factRef, next, { merge: true }).catch((error) =>
+        console.warn("progress fact backfill primary write failed", error),
+      ),
+      setDoc(profileRef, { progressFacts: next }, { merge: true }),
+    ]);
+  } catch {
+    // Fallback to previous behavior if merge safeguards fail
+    await Promise.all([
+      setDoc(factRef, fact, { merge: true }).catch((error) =>
+        console.warn("progress fact backfill primary write failed", error),
+      ),
+      setDoc(profileRef, { progressFacts: fact }, { merge: true }),
+    ]);
+  }
   try {
     // Simple dev log to confirm backfill ran and what it found
     // Note: latestSnapshot.size reflects the last query result set

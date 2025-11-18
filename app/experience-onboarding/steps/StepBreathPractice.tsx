@@ -4,7 +4,7 @@ import BreathAnimation from "@/components/onboarding/BreathAnimation";
 import Typewriter from "@/components/onboarding/Typewriter";
 import { getDb, areWritesDisabled } from "@/lib/firebase";
 import { doc, setDoc, increment } from "firebase/firestore";
-import { recordPracticeEvent, recordPracticeSession } from "@/lib/progressFacts";
+import { recordPracticeSession } from "@/lib/progressFacts";
 import { useEffect, useRef } from "react";
 import { useI18n } from "@/components/I18nProvider";
 
@@ -44,7 +44,6 @@ export default function StepBreathPractice({ userId, onDone, onSkip }: { userId?
                   } catch {}
                 }
                 // Record breathing practice so dashboard counters/timeline update
-                await recordPracticeEvent("breathing");
                 await recordPracticeSession("breathing", startRef.current, 120);
               } catch {
                 // ignore

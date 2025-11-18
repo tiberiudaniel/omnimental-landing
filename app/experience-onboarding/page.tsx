@@ -6,6 +6,7 @@ import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useProfile } from "@/components/ProfileProvider";
+import { useI18n } from "@/components/I18nProvider";
 import StepIntro from "./steps/StepIntro";
 import StepMiniTest from "./steps/StepMiniTest";
 import StepMiniTestScore from "./steps/StepMiniTestScore";
@@ -44,8 +45,12 @@ function ExperienceOnboardingContent() {
   const search = useSearchParams();
   const navLinks = useNavigationLinks();
   const { profile } = useProfile();
+  const { lang } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
+  const requireLogin = process.env.NEXT_PUBLIC_REQUIRE_LOGIN_FOR_ONBOARDING === '1';
+  const [blocked, setBlocked] = useState(false);
 
+  // Read/normalize navigation state and step hooks BEFORE any early return to keep hook order stable
   const start = search?.get("start") === "1";
   const flow = (search?.get("flow") || "default").toLowerCase();
   const stepParamRaw = search?.get("step") as string | null;
@@ -54,6 +59,26 @@ function ExperienceOnboardingContent() {
     : (stepParamRaw as StepId | null)
   ) ?? null;
   const [step, setStep] = useState<string>(stepParam ?? (start ? "intro" : "intro"));
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [score, setScore] = useState<{ raw: number; max: number }>({ raw: 0, max: 0 });
+  const [miniMeta, setMiniMeta] = useState<{ topicKey?: string; questions?: Array<{ id: string; correctIndex: number; style?: string }> } | undefined>();
+
+  // Optional gate: require login before onboarding/initiation
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!requireLogin) return;
+    if (profile?.id) return;
+    try {
+      const returnTo = window.location.href;
+      setBlocked(true);
+      const target = `/progress?from=onboarding-auth&returnTo=${encodeURIComponent(returnTo)}`;
+      router.replace(target);
+    } catch {
+      // Best-effort fallback
+      router.replace('/progress?from=onboarding-auth');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requireLogin, profile?.id]);
 
   // Normalize entry: if start=1 and no explicit step, set intro once
   useEffect(() => {
@@ -66,6 +91,12 @@ function ExperienceOnboardingContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [start]);
 
+  // NAV-02: keep local step in sync with URL at mount/refresh
+  useEffect(() => {
+    if (!stepParam) return;
+    if (stepParam !== step) setStep(stepParam);
+  }, [stepParam, step]);
+
   const go = (next: string, extra?: Record<string, string>) => {
     const params = new URLSearchParams(search?.toString() ?? "");
     params.set("step", next);
@@ -73,19 +104,33 @@ function ExperienceOnboardingContent() {
     if (extra) {
       for (const [k, v] of Object.entries(extra)) params.set(k, String(v));
     }
+    // Initiation: replace without creating per-step history
     router.replace(`?${params.toString()}`, { scroll: false });
     setStep(next);
   };
 
-  const [answers, setAnswers] = useState<number[]>([]);
-  const [score, setScore] = useState<{ raw: number; max: number }>({ raw: 0, max: 0 });
-  const [miniMeta, setMiniMeta] = useState<{ topicKey?: string; questions?: Array<{ id: string; correctIndex: number; style?: string }> } | undefined>();
+  if (requireLogin && !profile?.id && blocked) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
       <SiteHeader compact />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <main className="mx-auto max-w-4xl px-4 py-8 md:px-8">
+        {/* Breadcrumb for Initiation flow */}
+        {flow === 'initiation' ? (
+          (() => {
+            const order: InitiationStepId[] = ['intro','omnikuno-test','omnikuno-context','journal','omniscope','daily-state','omnikuno-lesson','omnikuno-lesson-quiz'];
+            const idx = Math.max(0, order.indexOf((step as InitiationStepId))) + 1;
+            const total = order.length;
+            return (
+              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">
+                {lang === 'ro' ? `Pas ${idx}/${total}` : `Step ${idx}/${total}`}
+              </div>
+            );
+          })()
+        ) : null}
         {flow !== 'initiation' ? (
           <>
             {step === "intro" && (

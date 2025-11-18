@@ -9,7 +9,7 @@ import { getOnboardingQuestions } from "@/lib/omniKunoOnboarding";
 import type { OmniKunoTopicKey } from "@/lib/omniKunoTypes";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
-import { recordPracticeEvent, recordPracticeSession } from "@/lib/progressFacts";
+import { recordPracticeSession } from "@/lib/progressFacts";
 
 export default function InitiationStepKunoContext({ userId, onContinue }: { userId: string | null; onContinue: () => void }) {
   const { lang } = useI18n();
@@ -44,7 +44,6 @@ export default function InitiationStepKunoContext({ userId, onContinue }: { user
     try {
       const reflections = pool.filter((q) => q.style === 'reflection').length;
       if (reflections) {
-        await recordPracticeEvent('reflection', userId ?? undefined, reflections);
         await recordPracticeSession('reflection', Date.now() - reflections * 60000, 45 * reflections, userId ?? undefined);
       }
     } catch {}

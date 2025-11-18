@@ -1,6 +1,5 @@
 "use client";
 import { Card } from "@/components/ui/card";
-import { useProgressFacts } from "@/components/useProgressFacts";
 import type { ProgressFact } from "@/lib/progressFacts";
 import { adaptProgressFacts } from "@/lib/progressAdapter";
 import { getDailyInsight } from "@/lib/insights";
@@ -56,23 +55,26 @@ const hoverScale = {
 export default function ProgressDashboard({
   profileId,
   demoFacts,
+  facts: factsProp,
+  loading: loadingProp,
   debugGrid,
   hideOmniIntel,
 }: {
   profileId: string;
   demoFacts?: ProgressFact;
+  facts?: ProgressFact | null;
+  loading?: boolean;
   debugGrid?: boolean;
   hideOmniIntel?: boolean;
 }) {
-  const { data: liveFacts, loading: liveLoading } = useProgressFacts(profileId);
   const { profile } = useProfile();
-  const facts = demoFacts ?? liveFacts;
-  const loading = demoFacts ? false : liveLoading;
+  const facts = demoFacts ?? factsProp ?? null;
+  const loading = demoFacts ? false : Boolean(loadingProp);
   const { t, lang } = useI18n();
   // Read debug flag from URL early to keep hook order stable across renders
   const search = useSearchParams();
   const debugMode = (search?.get('debug') === '1');
-  const [timeframe, setTimeframe] = useState<"week" | "month">("week");
+  const [timeframe, setTimeframe] = useState<"day" | "week" | "month">("week");
   const [qaOpen, setQaOpen] = useState(false);
   const [qaCategory, setQaCategory] = useState<'practice' | 'reflection' | 'knowledge'>('practice');
   const [qaMinutes, setQaMinutes] = useState<number>(10);
@@ -196,8 +198,8 @@ export default function ProgressDashboard({
       ...sessions.map((s: { startedAt?: unknown }) => toMsLocal(s.startedAt)),
     ) ||
     1;
-  // Anchor weekly/monthly windows to 'today' so charts include AZI + ultimele zile
-  const nowMs = Date.now();
+  // Anchor weekly/monthly windows to refMs derived from facts/sessions
+  const nowMs = refMs; // anchor to latest data reference, not always Date.now()
   const weekly = computeWeeklyBuckets(sessions, nowMs, lang);
   const weeklyCounts = computeWeeklyCounts(sessions, nowMs, lang);
   // const today = computeTodayBucket(sessions, refMs, lang);
@@ -271,7 +273,7 @@ export default function ProgressDashboard({
 
   // (legacy weighted minutes scaffolding removed — we now rely on action trend scoring)
   const formatRelative = (ms: number) => {
-    const now = Date.now();
+    const now = refMs || Date.now();
     const diff = Math.max(0, now - ms);
     const min = Math.floor(diff / 60000);
     if (min < 1) return lang === 'ro' ? 'acum' : 'just now';
@@ -477,10 +479,34 @@ export default function ProgressDashboard({
     return { area, desc };
   })();
   const trendsTitle = (() => {
-    if (lang === "ro") {
-      return timeframe === "week" ? "Trendul acțiunilor / săptămână" : "Trendul acțiunilor / lună";
+    // Normalize title to match E2E expectations
+    if (lang === 'ro') {
+      if (timeframe === 'day') return 'Trend zilnic';
+      if (timeframe === 'week') return 'Trend săptămânal';
+      return 'Trend lunar';
     }
-    return timeframe === "week" ? "Actions trend / week" : "Actions trend / month";
+    if (timeframe === 'day') return 'Daily trend';
+    if (timeframe === 'week') return 'Weekly trend';
+    return 'Monthly trend';
+  })();
+  // Optional: emit compact debug JSON for E2E when ?debug=1
+  const debugJson = (() => {
+    try {
+      if (!(typeof window !== 'undefined' && (new URL(window.location.href).searchParams.get('debug') === '1'))) return null;
+      const out: Record<string, unknown> = {};
+      if (facts?.intent) out.intent = { categories: (facts.intent.categories || []).length, lang: (facts.intent.lang || 'ro') };
+      if (facts?.evaluation) out.evaluation = { stage: (facts.evaluation.stageValue || 't0') };
+      if (facts?.quickAssessment) {
+        const qaUpd = (facts.quickAssessment as { updatedAt?: unknown } | undefined)?.updatedAt;
+        out.quickAssessment = { updated: Boolean(qaUpd) };
+      }
+      const sess = Array.isArray(facts?.practiceSessions) ? (facts!.practiceSessions as Array<{ startedAt?: unknown }>).length : 0;
+      out.sessions = sess;
+      type AE = { activityEvents?: unknown[] };
+      const evs = Array.isArray((facts as AE | undefined)?.activityEvents) ? ((facts as AE).activityEvents as unknown[]).length : 0;
+      out.events = evs;
+      return JSON.stringify(out);
+    } catch { return null; }
   })();
   return (
     <motion.section
@@ -489,6 +515,9 @@ export default function ProgressDashboard({
       className="w-full bg-[#FDFCF9] px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-5"
     >
       <Card className="mx-auto max-w-6xl rounded-2xl border border-[#E4DAD1] bg-white/90 px-3 py-4 shadow-[0_4px_18px_rgba(0,0,0,0.04)] sm:px-4 sm:py-5">
+        {debugJson ? (
+          <pre data-testid="debug-progress-facts" style={{ display: 'none' }}>{debugJson}</pre>
+        ) : null}
         {/* WRAPPER: MAIN AREA (stânga+centru) + SIDEBAR (dreapta independentă) */}
         {loading ? (
           <div className="text-sm text-[#6A6A6A]">{lang==='ro'?'Se încarcă datele…':'Loading data…'}</div>
@@ -701,7 +730,19 @@ export default function ProgressDashboard({
                     </p>
                     <div className="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2">
                       <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[10px] sm:text-[11px]">
-                        {/* Day toggle removed per product decision: show only Week/Month */}
+                        <button
+                          type="button"
+                          onClick={() => setTimeframe('day')}
+                          className={`rounded px-1.5 py-0.5 transition ${
+                            timeframe === 'day'
+                              ? 'bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold'
+                              : 'text-[#5C4F45]'
+                          }`}
+                          aria-label="Toggle to day view"
+                          data-testid="trend-toggle-day"
+                        >
+                          {lang === 'ro' ? 'Azi' : 'Today'}
+                        </button>
                         <button
                           type="button"
                           onClick={() => setTimeframe("week")}
@@ -828,20 +869,22 @@ export default function ProgressDashboard({
                               });
                             });
                           } catch {}
-                          const now = Date.now();
+                          const now = refMs || Date.now();
                           const days = (() => {
+                            if (timeframe === 'day') return 1;
                             if (timeframe === 'week') return 7;
                             const d = new Date(now);
-                            // days in current month (28/29/30/31)
                             return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
                           })();
                           // Use 'now' so chart ends with today; month uses month-to-date length
                           return computeActionTrend(evs, now, lang, days, currentFocusTag);
                         }
                         if (metric === 'min') {
+                          if (timeframe === 'day') return weeklyWithEvents.slice(-1);
                           return timeframe === 'week' ? weeklyWithEvents : monthWithEvents;
                         }
                         // sessions count
+                        if (timeframe === 'day') return weeklyCountsWithEvents.slice(-1);
                         return timeframe === 'week' ? weeklyCountsWithEvents : monthCountsWithEvents;
                       })()}
                       showBars={metric === 'score' || metric === 'count' || metric === 'min'}
@@ -897,7 +940,7 @@ export default function ProgressDashboard({
                         })();
                         evs.push({ startedAt: started, durationMin: typeof r.durationMin==='number'?r.durationMin:undefined, units: typeof r.units==='number'?r.units:1, source: src, category: r.category, focusTag: r.focusTag ?? undefined });
                       });
-                      const last7 = computeActionTrend(evs, Date.now(), lang, 7, currentFocusTag);
+                      const last7 = computeActionTrend(evs, refMs || Date.now(), lang, 7, currentFocusTag);
                       const gaps = last7.filter((d) => (d.totalMin || 0) === 0).map(d=> d.day);
                       const hasGaps = gaps.length > 0;
                       // rounding helper no longer needed
@@ -1414,9 +1457,9 @@ export default function ProgressDashboard({
                     const last = (facts?.quickAssessment ?? null) as
                       | { energy?: number; stress?: number; clarity?: number; confidence?: number; focus?: number; updatedAt?: unknown }
                       | null;
-                    const energy = Math.max(0, Math.min(10, Number(last?.energy ?? 0)));
-                    const stress = Math.max(0, Math.min(10, Number(last?.stress ?? 0)));
-                    const clarity = Math.max(0, Math.min(10, Number(last?.clarity ?? 0)));
+                    const energyQA = Math.max(0, Math.min(10, Number(last?.energy ?? 0)));
+                    const stressQA = Math.max(0, Math.min(10, Number(last?.stress ?? 0)));
+                    const clarityQA = Math.max(0, Math.min(10, Number(last?.clarity ?? 0)));
                     // Pull last 3 days scope.history for energy/clarity/calm if available
                     type ScopeHist = Record<string, { clarity?: number; calm?: number; energy?: number; updatedAt?: unknown }>;
                     const scopeHist = ((facts as { omni?: { scope?: { history?: ScopeHist } } } | undefined)?.omni?.scope?.history ?? {}) as ScopeHist;
@@ -1428,6 +1471,10 @@ export default function ProgressDashboard({
                     const energy3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.energy ?? 0)));
                     const clarity3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.clarity ?? 0)));
                     const calm3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.calm ?? 0)));
+                    const toMs = (v: unknown) => { try { if (!v) return 0; if (typeof v === 'number') return v; if (v instanceof Date) return v.getTime(); const ts = v as { toDate?: () => Date }; return typeof ts?.toDate === 'function' ? ts.toDate().getTime() : 0; } catch { return 0; } };
+                    const qaMs = toMs(last?.updatedAt);
+                    const histMs = (() => { const lastKey = lastKeys[lastKeys.length - 1]; const u = lastKey ? scopeHist[lastKey]?.updatedAt : undefined; return toMs(u); })();
+                    const preferQA = qaMs && (!histMs || qaMs >= histMs);
                     // Build action score today from events
                     const evs: ActivityEvent[] = (() => {
                       const base: ActivityEvent[] = sessions.map((s) => ({
@@ -1463,13 +1510,16 @@ export default function ProgressDashboard({
                       } catch {}
                       return base;
                     })();
-                    const todayScore = computeActionTrend(evs, Date.now(), lang, 1, currentFocusTag)[0]?.totalMin ?? 0;
+                    const todayScore = computeActionTrend(evs, refMs || Date.now(), lang, 1, currentFocusTag)[0]?.totalMin ?? 0;
                     const makeBar = (val01: number, accent: string) => (
                       <div className="h-2 w-full rounded-full bg-[#E8DED4]">
                         <div className="h-2 rounded-full" style={{ width: `${Math.max(0, Math.min(100, Math.round(val01 * 10)))}%`, background: accent }} />
                       </div>
                     );
-                    const state: 'low' | 'tense' | 'ready' = (energy <= 4 || energy3 <= 4) ? 'low' : ( (10 - stress) <= 3 || calm3 <= 4 ? 'tense' : 'ready');
+                    const energy = preferQA ? energyQA : energy3;
+                    const stress = preferQA ? stressQA : (10 - calm3);
+                    const clarity = preferQA ? clarityQA : clarity3;
+                    const state: 'low' | 'tense' | 'ready' = (energy <= 4) ? 'low' : ( (10 - stressQA) <= 3 && preferQA ? 'tense' : ((preferQA ? (10 - stressQA) : calm3) <= 4 ? 'tense' : 'ready'));
                     const badge = (() => {
                       if (state === 'low') return { text: lang==='ro' ? 'ENERGIE SCĂZUTĂ' : 'LOW ENERGY', cls: 'bg-[#FFF1ED] text-[#B8472B] border-[#F3D3C6]' };
                       if (state === 'tense') return { text: lang==='ro' ? 'STARE TENSIONATĂ' : 'TENSE STATE', cls: 'bg-[#FFEFF3] text-[#B82B4F] border-[#F6D0DA]' };
@@ -1523,16 +1573,16 @@ export default function ProgressDashboard({
                           {/* Left: internal indicators + why */}
                           <div>
                             <div className="mb-2">
-                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Claritate mentală' : 'Mental clarity'}</p>
-                              {makeBar(clarity3 || clarity, '#7A6455')}
+                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Claritate mentală' : 'Mental clarity'}{preferQA ? (lang==='ro' ? ' · starea de azi' : ' · today') : ''}</p>
+                              {makeBar(clarity, '#7A6455')}
                             </div>
                             <div className="mb-2">
-                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Echilibru emoțional' : 'Emotional balance'}</p>
-                              {makeBar((10 - stress) || (calm3 || 0), '#4D3F36')}
+                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Echilibru emoțional' : 'Emotional balance'}{preferQA ? (lang==='ro' ? ' · starea de azi' : ' · today') : ''}</p>
+                              {makeBar(preferQA ? (10 - stressQA) : (calm3 || 0), '#4D3F36')}
                             </div>
                             <div>
-                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Energie fizică' : 'Physical energy'}</p>
-                              {makeBar(energy3 || energy, '#5C4F45')}
+                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Energie fizică' : 'Physical energy'}{preferQA ? (lang==='ro' ? ' · starea de azi' : ' · today') : ''}</p>
+                              {makeBar(energy, '#5C4F45')}
                             </div>
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               <span className="rounded-[10px] border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]">

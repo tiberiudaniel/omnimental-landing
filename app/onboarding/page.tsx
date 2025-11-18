@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import { useI18n } from "@/components/I18nProvider";
 import { useProfile } from "@/components/ProfileProvider";
@@ -15,7 +15,25 @@ function OnboardingContent() {
   const { lang } = useI18n();
   const { profile } = useProfile();
   const search = useSearchParams();
+  const aliasEnabled =
+    (process.env.NEXT_PUBLIC_ONBOARDING_ALIAS === '1') ||
+    (process.env.NEXT_PUBLIC_ONBOARDING_ALIAS?.toLowerCase?.() === 'true');
+  // Declare step state before any conditional return so hooks order is stable
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  // NAV-05: Optional alias to experience-onboarding, preserving query
+  useEffect(() => {
+    if (!aliasEnabled) return;
+    const params = new URLSearchParams(search?.toString() ?? '');
+    params.set('flow', 'initiation');
+    params.set('start', '1');
+    // Do not force a step here; EO will normalize to intro when start=1
+    router.replace(`/experience-onboarding?${params.toString()}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aliasEnabled]);
+  if (aliasEnabled) {
+    return null;
+  }
 
   if (!profile?.id) {
     const demo = search?.get('demo');

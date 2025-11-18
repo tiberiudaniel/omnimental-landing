@@ -18,6 +18,7 @@ import {
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth } from "../lib/firebase";
+import { migrateAnonToUser } from "@/lib/migrateUserData";
 
 const AUTH_EMAIL_STORAGE_KEY = "omnimental_auth_email";
 const KEEP_SIGNED_IN_KEY = "omnimental_keep_signed_in_until";
@@ -55,6 +56,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
+      // If we have a stored anonymous uid and now a real user, migrate data once
+      try {
+        if (typeof window !== 'undefined' && firebaseUser && !firebaseUser.isAnonymous) {
+          const anon = window.localStorage.getItem('OMNI_LAST_ANON_UID');
+          if (anon && anon !== firebaseUser.uid) {
+            void migrateAnonToUser(anon, firebaseUser.uid)
+              .then(() => {
+                try { window.localStorage.removeItem('OMNI_LAST_ANON_UID'); } catch {}
+              })
+              .catch((e) => console.warn('migrateAnonToUser failed', e));
+          }
+        }
+      } catch {}
     });
     return unsubscribe;
   }, []);
