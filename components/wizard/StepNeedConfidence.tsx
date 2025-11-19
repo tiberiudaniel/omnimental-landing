@@ -68,9 +68,16 @@ export default function StepNeedConfidence({ selectedOptions, onDone }: { select
             </div>
           ) : null}
         </div>
-        <div className="mt-4 flex items-center justify-between">
-          <a href="/experience-onboarding?flow=initiation&step=omnikuno-test" className="text-[12px] underline text-[#7B6B60] hover:text-[#2C2C2C]">{lang === 'ro' ? 'Începe mini‑Kuno' : 'Start mini‑Kuno'}</a>
-          <button type="button" disabled={saving} onClick={save} className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]" data-testid="need-confidence-continue">{lang === 'ro' ? 'Continuă' : 'Continue'}</button>
+        <div className="mt-4 flex items-center justify-end">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={save}
+            className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
+            data-testid="need-confidence-continue"
+          >
+            {lang === 'ro' ? 'Continuă' : 'Continue'}
+          </button>
         </div>
       </GuideCard>
     </section>

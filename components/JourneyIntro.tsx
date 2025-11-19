@@ -24,7 +24,7 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
       : [
           'We live in a time where the mind is bombarded non-stop by news, notifications and pressure.',
           'You end up deciding in a rush, with a tired brain and a body asking for a break.',
-          'OmniMental is built as a space where you train your mind — not just fix it after it breaks.',
+          'OmniMental is built as a space where you train your mind — not just fix it after it breaks. >>',
         ]);
   })();
   // optional title reserved for future use (removed to keep lint clean)
@@ -48,9 +48,10 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
         <div className="mx-auto mt-2 max-w-xl text-left">
           <h2 className="mb-2 text-base font-semibold text-[#1F1F1F]">{s("journeyWhatsNext", lang === 'ro' ? "Ce urmează" : "What’s next") as string}</h2>
           <ul className="space-y-2 text-sm leading-relaxed text-[#2C2C2C]">
-            <li>{lang === 'ro' ? '• Alegi 5–7 intenții care te reprezintă acum.' : '• Pick 5–7 intents that fit you right now.'}</li>
+            <li>{lang === 'ro' ? '• Alegi 5–7 expresii care te reprezintă acum.' : '• Pick 5–7 intents that fit you right now.'}</li>
             <li>{lang === 'ro' ? '• Răspunzi la câteva întrebări scurte despre ritm, resurse și obiective.' : '• Answer a few short questions about pace, resources, and goals.'}</li>
-            <li>{lang === 'ro' ? '• Primești o recomandare clară (individual vs. grup) cu pași pentru următoarele 24h.' : '• Get a clear recommendation (individual vs. group) plus next 24h steps.'}</li>
+            <li>{lang === 'ro' ? '• Primești o recomandare clară cu pașii potriviti tie.' : '• Get a clear recommendation plus next 24h steps.'}</li>
+            <li>{lang === 'ro' ? '• Faci primul pas într-un nou teritoriu: propriul tău Mental Performance Training System.' : '• Get a clear recommendation plus next 24h steps.'}</li>
           </ul>
         </div>
 
@@ -59,8 +60,8 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
           <h3 className="mb-1 text-sm font-semibold text-[#1F1F1F]">{s("journeyWhatNot", lang === 'ro' ? "Ce NU este / Garanții" : "What it isn’t / Guarantees") as string}</h3>
           <p className="text-sm leading-relaxed text-[#2C2C2C]/80">
             {lang === 'ro'
-              ? 'Nu e diagnostic medical și nu promite rezultate peste noapte. E o orientare practică, bazată pe datele tale, ca să începi cu claritate.'
-              : 'It’s not a medical diagnosis, and it doesn’t promise overnight results. It’s a practical orientation, based on your data, to start with clarity.'}
+              ? 'Nu e diagnostic medical și nu promite rezultate peste noapte. E o orientare practică, bazată pe stiinta, ca să începi cu claritate.'
+              : 'It’s not a medical diagnosis, and it doesn’t promise overnight results. It’s a practical orientation, based on science, to start with clarity.'}
           </p>
         </div>
 

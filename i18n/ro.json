@@ -523,7 +523,7 @@
   "recommendationReason_default": "Structura grupului oferă cel mai bun raport claritate/suport",
   "recommendationReasonFallback": "Continuă evaluările pentru a rafina recomandarea",
   "antrenamentTabHelp": {
-    "os": "Aici clarifici ce te preocupă acum și de ce contează. Te ajută să formulezi direcția și motivația personală pentru pașii următori.",
+    "os": "Aici clarifici ce te preocupă acum și de ce contează. Te ajută să formulezi direcția și motivația personală pentru pașii următori. >>",
     "oc": "Completezi scale obiective (stres, prezență, energie etc.). Obții scoruri care calibrează recomandările și progresul.",
     "ose": "Primești quest‑uri/ provocări scurte adaptate profilului tău. Construiesc ritmul și continuitatea practică.",
     "oa": "Exersezi abilități concrete (reglare, claritate, obiceiuri). Marchezi ce ai făcut ca să vezi impactul în timp.",
@@ -578,11 +578,11 @@
     "tabs": {
       "scop_intentie": {
         "label": "Scop și intenție",
-        "placeholder": "Ce vrei să fie diferit pentru tine în 4–6 săptămâni?\nDe ce contează asta pentru tine acum?"
+        "placeholder": "Ce vrei să fie diferit pentru tine în 4–6 săptămâni?\nDe ce contează asta pentru tine acum? >>"
       },
       "motivatie_resurse": {
         "label": "Motivație și resurse",
-        "placeholder": "De ce merită efortul pentru tine?\nCe resurse ai deja (timp, oameni, obiceiuri, bani) și le poți folosi mai bine?"
+        "placeholder": "De ce merită efortul pentru tine?\nCe resurse ai deja (timp, oameni, obiceiuri, bani) și le poți folosi mai bine? >>"
       },
       "plan_recomandari": {
         "label": "Plan și recomandări",
@@ -641,27 +641,27 @@
     "intro": [
       "Trăim într-o perioadă în care mintea e bombardată non-stop de informații și și presiune.",
       "Ajungi să iei decizii pe fugă, cu un creier obosit și un corp care cere pauză.",
-      "OmniMental este gândit ca un spațiu în care îți antrenezi mintea, nu doar o repari după ce cedează."
+      "OmniMental este gândit ca un spațiu în care îți antrenezi mintea, nu doar o repari după ce cedează. >>"
     ],
     "firstInput": [
       "Înainte să-ți vorbesc despre drum, vreau să-ți văd punctul de plecare.",
       "Scrie în câteva cuvinte ce te preocupa acum, fără să cauți formularea perfectă.",
-      "Așa începe orice transformare: cu un adevăr rostit."
+      "Așa începe orice transformare: cu un adevăr rostit. >>"
     ],
     "reflectionPrompt": [
       "Cuvintele tale sunt o oglindă: arată felul în care te porți cu tine.",
       "În ele se ascund tensiuni, frici, oboseală — dar și direcția..",
-      "Noi folosim aceste semnale ca să-ți desenăm harta."
+      "Noi folosim aceste semnale ca să-ți desenăm harta. >>"
     ],
     "intent": [
       "Nu ai o singură minte. Ai trei: capul, inima și instinctul.",
       "Când aceste trei ‘minți’ nu sunt aliniate, apar blocajele, ezitările și exploziile de stres.",
-      "OmniMental pune ordine între ele — prin mental coaching, educație, biohacking și biofeedback."
+      "OmniMental pune ordine între ele — prin mental coaching, educație, biohacking și biofeedback. >>"
     ],
-    "intentInstruction": "Alege 7 afirmații care te descriu cel mai bine acum.",
+    "intentInstruction": "Alege 7 afirmații care te descriu cel mai bine acum. >>",
     "reflectionSummary": [
       "Ai spus ce te preocupa și ai ales o direcție: acesta este punctul tău de start în OmniMental.",
-      "Scopul este să devii mai clar, mai flexibil și mai greu de doborât decât erai în ziua anterioara."
+      "Scopul este să devii mai clar, mai flexibil și mai greu de doborât decât erai în ziua anterioara. >>"
     ]
   },
   "onboarding.intro.title": "În diverse perioade, viața ne provoacă la adaptare.",
@@ -677,7 +677,7 @@
   "experience.title": "Hai să vedem cum ar fi…",
   "experience.body": "Imaginează-ți că tocmai ai participat la o sesiune. Ce crezi că ai primit din acea experiență?",
   "experience.continue": "Continuă",
-  "journeyIntroNarrative": "Trăim într-o perioadă în care mintea e bombardată constant: știri, presiune, decizii greu de amânat. Dacă nu o antrenezi, ea decide pentru tine – de obicei în favoarea fricii și oboselii, nu a clarității. Acest mic traseu te ajută să înțelegi rapid unde ești acum și ce tip de antrenament mental ți-ar folosi cel mai mult.",
+  "journeyIntroNarrative": "Trăim într-o perioadă în care mintea e bombardată constant: știri, presiune, decizii greu de amânat. Dacă nu o antrenezi, ea decide pentru tine – de obicei în favoarea fricii și oboselii, nu a clarității. Acest mic traseu te ajută să înțelegi rapid unde ești acum și ce tip de antrenament mental ți-ar folosi cel mai mult. >>",
   "journeyWhatsNext": "Ce urmează",
   "journeyWhatNot": "Ce NU este / Garanții",
   "dashboard.trendsToggle.day": "Azi",

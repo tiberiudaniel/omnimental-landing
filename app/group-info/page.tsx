@@ -36,7 +36,7 @@ const groupCopy = {
       },
     ],
     resetBenefits: [
-      "Identify ce te consumă energetic.",
+      "Identifici ce te consumă energetic.",
       "Ieși din bucla stresului și recâștigă focus.",
       "Regenerează-ți resursele fără stimulente.",
       "Reînvață să te simți în siguranță și în control.",
