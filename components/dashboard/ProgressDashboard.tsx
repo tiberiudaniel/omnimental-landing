@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useI18n } from "@/components/I18nProvider";
 import { getString } from "@/lib/i18nGetString";
 import { useProfile } from "@/components/ProfileProvider";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import WeeklyTrendsChart from "@/components/charts/WeeklyTrendsChart";
 import { INDICATORS } from "@/lib/indicators";
@@ -379,6 +379,11 @@ export default function ProgressDashboard({
     0) as number;
   const omniFlexComp = computeOmniFlex(facts as unknown as Record<string, unknown>);
   const omniFlexScore = omniFlexComp.score;
+  const kunoReadiness = useMemo(() => {
+    const raw = (omni?.kuno as { readinessIndex?: number } | undefined)?.readinessIndex;
+    if (typeof raw !== "number") return null;
+    return Math.round(Math.max(0, Math.min(100, raw)));
+  }, [omni?.kuno]);
   const quest = (() => {
     // Prefer item whose script areas match user's main focus area
     const items = Array.isArray(facts?.quests?.items) ? (facts!.quests!.items as Array<{ title?: string; body?: string; scriptId?: string }>) : [];
@@ -407,6 +412,7 @@ export default function ProgressDashboard({
         "Alege un moment concret din următoarele 24 de ore în care să aplici o tehnică de respirație sau de focus și notează ce observi în corp și în minte.",
     };
   })();
+  type LessonStatus = "done" | "active" | "upNext" | "locked";
   const questPreview = useMemo(() => {
     const txt = (quest?.text || "").trim();
     if (!txt) return "";
@@ -417,6 +423,145 @@ export default function ProgressDashboard({
     const lastSpace = slice.lastIndexOf(" ");
     return (lastSpace > 60 ? slice.slice(0, lastSpace) : slice).trimEnd() + "…";
   }, [quest?.text]);
+  const kunoLessonPath = useMemo(() => {
+    type LessonNode = { id: string; title: string; status: LessonStatus };
+    const nodes: LessonNode[] = [];
+    try {
+      type RawLesson = {
+        id?: string;
+        title?: string;
+        status?: string;
+        locked?: boolean;
+        isActive?: boolean;
+        completed?: boolean;
+      };
+      const rawPath = ((omni?.kuno as { lessonPath?: RawLesson[] } | undefined)?.lessonPath) ?? [];
+      if (Array.isArray(rawPath) && rawPath.length) {
+        rawPath.forEach((lesson, idx) => {
+          const status: LessonStatus =
+            lesson.status === "active" || lesson.isActive
+              ? "active"
+              : lesson.status === "upNext"
+                ? "upNext"
+                : lesson.locked
+                  ? "locked"
+                  : "done";
+          nodes.push({
+            id: lesson.id ?? `lesson-${idx}`,
+            title:
+              lesson.title ??
+              (lang === "ro" ? `Lecția ${idx + 1}` : `Lesson ${idx + 1}`),
+            status,
+          });
+        });
+      } else {
+        const signals = (omni?.kuno as { signals?: { lastLessonsCsv?: string } } | undefined)?.signals;
+        const legacy = (omni?.kuno as { lastLessons?: string[] } | undefined)?.lastLessons;
+        const csv = signals?.lastLessonsCsv ?? (Array.isArray(legacy) ? legacy.join("|") : "");
+        const doneTitles = csv
+          .split("|")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        doneTitles.slice(-2).forEach((title, idx) =>
+          nodes.push({ id: `done-${idx}`, title, status: "done" }),
+        );
+        const lastDone = doneTitles[doneTitles.length - 1];
+        const activeTitle = lastDone
+          ? lastDone
+          : getString(
+              t,
+              "dashboard.kuno.activeLesson",
+              lang === "ro" ? "Lecția activă" : "Active lesson",
+            );
+        nodes.push({ id: "active", title: activeTitle, status: "active" });
+        const upNextTitle = getString(
+          t,
+          "dashboard.kuno.nextLesson",
+          lang === "ro" ? "Următoarea lecție" : "Next lesson",
+        );
+        nodes.push({ id: "up-next", title: upNextTitle, status: "upNext" });
+      }
+    } catch {}
+    if (!nodes.length) {
+      nodes.push({
+        id: "fallback",
+        title: getString(
+          t,
+          "dashboard.kuno.startLesson",
+          lang === "ro" ? "Începe drumul Omni Kuno" : "Start your Omni Kuno path",
+        ),
+        status: "active",
+      });
+    }
+    return nodes.slice(0, 5);
+  }, [omni?.kuno, lang, t]);
+  const lessonStatusStyles: Record<LessonStatus, { wrapper: string; badge: string; statusTag: string; titleColor: string }> = {
+    done: {
+      wrapper: "border border-[#E4DAD1] bg-white",
+      badge: "bg-[#F1EAE3] text-[#7B6B60]",
+      statusTag: "bg-[#F8F1EA] text-[#A08F82]",
+      titleColor: "text-[#2C2C2C]",
+    },
+    active: {
+      wrapper: "border border-[#C07963] bg-[#FFF9F5] shadow-[0_10px_28px_rgba(192,121,99,0.18)]",
+      badge: "bg-[#2C2C2C] text-white",
+      statusTag: "bg-[#2C2C2C] text-white",
+      titleColor: "text-[#2C2C2C]",
+    },
+    upNext: {
+      wrapper: "border border-dashed border-[#E4DAD1] bg-white",
+      badge: "bg-[#EFE7E0] text-[#7B6B60]",
+      statusTag: "bg-[#EFE7E0] text-[#7B6B60]",
+      titleColor: "text-[#2C2C2C]",
+    },
+    locked: {
+      wrapper: "border border-[#E4DAD1] bg-white opacity-70",
+      badge: "bg-[#F3EEE8] text-[#B9B1A9]",
+      statusTag: "bg-[#F3EEE8] text-[#B9B1A9]",
+      titleColor: "text-[#A08F82]",
+    },
+  };
+  const lessonStatusText = (status: LessonStatus) => {
+    if (status === "done") return lang === "ro" ? "Finalizată" : "Completed";
+    if (status === "active") return lang === "ro" ? "Activă" : "Active";
+    if (status === "locked") return lang === "ro" ? "Blocată" : "Locked";
+    return lang === "ro" ? "Urmează" : "Up next";
+  };
+  const lessonHintText = (status: LessonStatus) => {
+    if (status === "done") {
+      return lang === "ro"
+        ? "Aplicată deja în OmniAbil."
+        : "Already applied via OmniAbil.";
+    }
+    if (status === "active") {
+      return lang === "ro"
+        ? "Exersează ideea azi, apoi notează în OmniAbil."
+        : "Practice this idea today, then log it in OmniAbil.";
+    }
+    if (status === "locked") {
+      return lang === "ro"
+        ? "Se deblochează după lecția precedentă."
+        : "Unlocks after the previous lesson.";
+    }
+    return lang === "ro"
+      ? "Pregătește-te pentru lecția următoare."
+      : "Get ready for the next lesson.";
+  };
+  const kunoUpdatedText = useMemo(() => {
+    try {
+      const stamp = toMsLocal((facts as { updatedAt?: unknown } | undefined)?.updatedAt);
+      const ms = stamp || refMs || Date.now();
+      return formatRelative(ms);
+    } catch {
+      return null;
+    }
+  }, [facts, refMs, lang, formatRelative]);
+  const orderedLessons = useMemo(() => [...kunoLessonPath].reverse(), [kunoLessonPath]);
+  const getLessonLevelLabel = (position: number) => {
+    const levelIndex = Math.floor((position - 1) / 5) + 1;
+    const slotIndex = ((position - 1) % 5) + 1;
+    return `${levelIndex}.${slotIndex}`;
+  };
   const focusTheme = (() => {
     type EvalBlock = {
       mainAreaLabel?: string;
@@ -477,17 +622,6 @@ export default function ProgressDashboard({
         ? "Este directia prioritara pe care lucrezi acum."
         : "This is the main theme you’re working on right now.");
     return { area, desc };
-  })();
-  const trendsTitle = (() => {
-    // Normalize title to match E2E expectations
-    if (lang === 'ro') {
-      if (timeframe === 'day') return 'Trend zilnic';
-      if (timeframe === 'week') return 'Trend săptămânal';
-      return 'Trend lunar';
-    }
-    if (timeframe === 'day') return 'Daily trend';
-    if (timeframe === 'week') return 'Weekly trend';
-    return 'Monthly trend';
   })();
   // Optional: emit compact debug JSON for E2E when ?debug=1
   const debugJson = (() => {
@@ -700,7 +834,7 @@ export default function ProgressDashboard({
                 <div id="actions-trend">
                 <Card className="h-[200px] overflow-hidden rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm sm:h-[240px] sm:p-4 lg:h-[280px]">
                   <h3 className="mb-1 flex items-center gap-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
-                    <span>{trendsTitle}</span>
+                    <span>{lang === 'ro' ? 'Trendul acțiunilor' : 'Actions trend'}</span>
                     <InfoTooltip
                       label={lang === 'ro' ? 'Despre trend' : 'About trends'}
                       items={lang === 'ro'
@@ -730,19 +864,6 @@ export default function ProgressDashboard({
                     </p>
                     <div className="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2">
                       <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[10px] sm:text-[11px]">
-                        <button
-                          type="button"
-                          onClick={() => setTimeframe('day')}
-                          className={`rounded px-1.5 py-0.5 transition ${
-                            timeframe === 'day'
-                              ? 'bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold'
-                              : 'text-[#5C4F45]'
-                          }`}
-                          aria-label="Toggle to day view"
-                          data-testid="trend-toggle-day"
-                        >
-                          {lang === 'ro' ? 'Azi' : 'Today'}
-                        </button>
                         <button
                           type="button"
                           onClick={() => setTimeframe("week")}
@@ -1015,6 +1136,136 @@ export default function ProgressDashboard({
                 </Card>
                 </div>
               </motion.div>
+              {/* Motivation / Resources */}
+              <motion.div variants={fadeDelayed(0.15)} {...hoverScale}>
+                <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-2 shadow-sm sm:p-2">
+                  <h2
+                    className="mb-1 whitespace-nowrap text-[12px] font-semibold text-[#2C2C2C] sm:mb-1.5 sm:text-[13px]"
+                    title={lang === "ro" ? "Motivație / Resurse" : "Motivation / Resources"}
+                  >
+                    {lang === "ro" ? "Motivație / Resurse" : "Motivation / Resources"}
+                  </h2>
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-[11px] text-[#7B6B60] sm:text-xs">
+                        {getString(
+                          t,
+                          "dashboard.motivation.index",
+                          lang === "ro" ? "Indice motivație" : "Motivation index",
+                        )}
+                      </span>
+                      {(() => {
+                        const val = Math.max(0, Math.min(100, Math.round(omniScopeScore)));
+                        return (
+                          <span className="flex items-baseline gap-1 text-sm font-bold text-[#2C2C2C] sm:text-base">
+                            {val}
+                            {motivationDelta != null && Number.isFinite(motivationDelta) ? (
+                              <span
+                                className={`text-[10px] font-semibold ${
+                                  motivationDelta >= 0 ? "text-[#1F7A43]" : "text-[#B8000E]"
+                                }`}
+                                title={getString(
+                                  t,
+                                  "dashboard.delta.vsLast",
+                                  lang === "ro" ? "față de ultima vizită" : "vs last visit",
+                                )}
+                              >
+                                {motivationDelta >= 0 ? "+" : ""}
+                                {Math.round(motivationDelta)}
+                              </span>
+                            ) : null}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    <div
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.max(0, Math.min(100, Math.round(omniScopeScore)))}
+                      className="h-1.5 w-full rounded bg-[#F7F2EC]"
+                    >
+                      <div
+                        className="h-1.5 rounded bg-[#D8B6A3]"
+                        style={{ width: `${Math.max(0, Math.min(100, Math.round(omniScopeScore)))}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-1.5 sm:mt-2">
+                    {(() => {
+                      const m = (facts?.motivation ?? {}) as Record<string, unknown>;
+                      const hours = Number(m.hoursPerWeek ?? 0);
+                      const tz = String(m.timeHorizon ?? "");
+                      const budget = String(m.budgetLevel ?? "");
+                      const mapBudget: Record<string, string> = {
+                        low: getString(
+                          t,
+                          "dashboard.budget.low",
+                          lang === "ro" ? "Buget minim" : "Low budget",
+                        ),
+                        medium: getString(
+                          t,
+                          "dashboard.budget.medium",
+                          lang === "ro" ? "Buget mediu" : "Medium budget",
+                        ),
+                        high: getString(
+                          t,
+                          "dashboard.budget.high",
+                          lang === "ro" ? "Buget maxim" : "High budget",
+                        ),
+                      };
+                      const mapTz: Record<string, string> = {
+                        days: getString(
+                          t,
+                          "dashboard.tz.days",
+                          lang === "ro" ? "Zile" : "Days",
+                        ),
+                        weeks: getString(
+                          t,
+                          "dashboard.tz.weeks",
+                          lang === "ro" ? "Săptămâni" : "Weeks",
+                        ),
+                        months: getString(
+                          t,
+                          "dashboard.tz.months",
+                          lang === "ro" ? "Luni" : "Months",
+                        ),
+                      };
+                      const chips: string[] = [];
+                      if (hours && Number.isFinite(hours)) chips.push(`${hours}h/săpt`);
+                      if (budget) chips.push(mapBudget[budget] ?? budget);
+                      if (tz) chips.push(mapTz[tz] ?? tz);
+                      if (!chips.length) {
+                        return (
+                          <span
+                            className="rounded-[10px] border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]"
+                            title={getString(
+                              t,
+                              "dashboard.motivation.completeTooltip",
+                              lang === "ro" ? "Completează motivația pentru detalii." : "Complete motivation for details.",
+                            )}
+                          >
+                            {getString(
+                              t,
+                              "dashboard.motivation.complete",
+                              lang === "ro" ? "Completează motivația pentru detalii." : "Complete motivation for details.",
+                            )}
+                          </span>
+                        );
+                      }
+                      return <p className="text-[10px] text-[#7B6B60]">{chips.join(" · ")}</p>;
+                    })()}
+                  </div>
+                  <div className="mt-2 flex items-center justify-end">
+                    <Link
+                      href="/wizard?step=intentMotivation"
+                      className="text-[10px] text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline"
+                    >
+                      {lang === "ro" ? "Schimbă" : "Change"}
+                    </Link>
+                  </div>
+                </Card>
+              </motion.div>
             </div>
 
             {/* Profile indices – directly under Trends (span left + center) */}
@@ -1245,21 +1496,13 @@ export default function ProgressDashboard({
                   </motion.div>
                 )}
                 {/* Focus theme */}
-                <motion.div
-                  variants={fadeDelayed(0.09)}
-                  {...hoverScale}
-                  className="h-full"
-                >
+                <motion.div variants={fadeDelayed(0.11)} {...hoverScale} className="h-full md:col-span-2">
                   <Card className="flex h-full flex-col justify-between rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-2 shadow-sm sm:p-2">
                     <h2 className="mb-1 text-[12px] font-semibold text-[#2C2C2C] sm:mb-1.5 sm:text-[13px]">
                       {lang === "ro" ? "Tematica în focus" : "Focus theme"}
                     </h2>
-                    <p className="text-[13px] font-bold text-[#2C2C2C] sm:text-sm">
-                      {focusTheme.area}
-                    </p>
-                    <p className="mt-0.5 text-[10px] text-[#7B6B60] sm:mt-1 sm:text-[11px]">
-                      {focusTheme.desc}
-                    </p>
+                    <p className="text-[13px] font-bold text-[#2C2C2C] sm:text-sm">{focusTheme.area}</p>
+                    <p className="mt-0.5 text-[10px] text-[#7B6B60] sm:mt-1 sm:text-[11px]">{focusTheme.desc}</p>
                     <div className="mt-1.5 flex items-center justify-end">
                       <Link
                         href="/wizard?step=intent"
@@ -1270,362 +1513,105 @@ export default function ProgressDashboard({
                     </div>
                   </Card>
                 </motion.div>
-                {/* Motivation / Resources */}
-                <motion.div
-                  variants={fadeDelayed(0.11)}
-                  {...hoverScale}
-                  className="h-full"
-                >
-                  <Card className="flex h-full flex-col justify-between rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-2 shadow-sm sm:p-2">
-                    <h2
-                      className="mb-1 whitespace-nowrap text-[12px] font-semibold text-[#2C2C2C] sm:mb-1.5 sm:text-[13px]"
-                      title={
-                        lang === "ro"
-                          ? "Motivație / Resurse"
-                          : "Motivation / Resources"
-                      }
-                    >
-                      {lang === "ro"
-                        ? "Motivație / Resurse"
-                        : "Motivation / Resources"}
-                    </h2>
-                    <div>
-                      <div className="mb-1 flex items-center justify-between">
-                        <span className="text-[11px] text-[#7B6B60] sm:text-xs">
-                          {getString(
-                            t,
-                            "dashboard.motivation.index",
-                            lang === "ro"
-                              ? "Indice motivație"
-                              : "Motivation index",
-                          )}
-                        </span>
-                        {(() => {
-                          const val = Math.max(
-                            0,
-                            Math.min(100, Math.round(omniScopeScore)),
-                          );
-                          return (
-                            <span className="flex items-baseline gap-1 text-sm font-bold text-[#2C2C2C] sm:text-base">
-                              {val}
-                              {motivationDelta != null &&
-                              Number.isFinite(motivationDelta) ? (
-                                <span
-                                  className={`text-[10px] font-semibold ${
-                                    motivationDelta >= 0
-                                      ? "text-[#1F7A43]"
-                                      : "text-[#B8000E]"
-                                  }`}
-                                  title={getString(
-                                    t,
-                                    "dashboard.delta.vsLast",
-                                    lang === "ro"
-                                      ? "față de ultima vizită"
-                                      : "vs last visit",
-                                  )}
-                                >
-                                  {motivationDelta >= 0 ? "+" : ""}
-                                  {Math.round(motivationDelta)}
-                                </span>
-                              ) : null}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                      <div
-                        role="progressbar"
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={Math.max(
-                          0,
-                          Math.min(100, Math.round(omniScopeScore)),
-                        )}
-                        className="h-1.5 w-full rounded bg-[#F7F2EC]"
-                      >
-                        <div
-                          className="h-1.5 rounded bg-[#D8B6A3]"
-                          style={{
-                            width: `${Math.max(
-                              0,
-                              Math.min(100, Math.round(omniScopeScore)),
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-1.5 sm:mt-2">
-                      {(() => {
-                        const m = (facts?.motivation ?? {}) as Record<
-                          string,
-                          unknown
-                        >;
-                        const hours = Number(m.hoursPerWeek ?? 0);
-                        const tz = String(m.timeHorizon ?? "");
-                        const budget = String(m.budgetLevel ?? "");
-                        const mapBudget: Record<string, string> = {
-                          low: getString(
-                            t,
-                            "dashboard.budget.low",
-                            lang === "ro"
-                              ? "Buget minim"
-                              : "Low budget",
-                          ),
-                          medium: getString(
-                            t,
-                            "dashboard.budget.medium",
-                            lang === "ro"
-                              ? "Buget mediu"
-                              : "Medium budget",
-                          ),
-                          high: getString(
-                            t,
-                            "dashboard.budget.high",
-                            lang === "ro"
-                              ? "Buget maxim"
-                              : "High budget",
-                          ),
-                        };
-                        const mapTz: Record<string, string> = {
-                          days: getString(
-                            t,
-                            "dashboard.tz.days",
-                            lang === "ro" ? "Zile" : "Days",
-                          ),
-                          weeks: getString(
-                            t,
-                            "dashboard.tz.weeks",
-                            lang === "ro"
-                              ? "Săptămâni"
-                              : "Weeks",
-                          ),
-                          months: getString(
-                            t,
-                            "dashboard.tz.months",
-                            lang === "ro" ? "Luni" : "Months",
-                          ),
-                        };
-                        const chips: string[] = [];
-                        if (hours && Number.isFinite(hours))
-                          chips.push(`${hours}h/săpt`);
-                        if (budget) chips.push(mapBudget[budget] ?? budget);
-                        if (tz) chips.push(mapTz[tz] ?? tz);
-                        if (!chips.length) {
-                          return (
-                            <span
-                              className="rounded-[10px] border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]"
-                              title={getString(
-                                t,
-                                "dashboard.motivation.completeTooltip",
-                                lang === "ro"
-                                  ? "Completează motivația pentru detalii."
-                                  : "Complete motivation for details.",
-                              )}
-                            >
-                              {getString(
-                                t,
-                                "dashboard.motivation.complete",
-                                lang === "ro"
-                                  ? "Completează motivația pentru detalii."
-                                  : "Complete motivation for details.",
-                              )}
-                            </span>
-                          );
-                        }
-                        return (
-                          <p className="text-[10px] text-[#7B6B60]">
-                            {chips.join(" · ")}
-                          </p>
-                        );
-                      })()}
-                    </div>
-                    <div className="mt-2 flex items-center justify-end">
-                      <Link
-                        href="/wizard?step=intentMotivation"
-                        className="text-[10px] text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline"
-                      >
-                        {lang === "ro" ? "Schimbă" : "Change"}
-                      </Link>
-                    </div>
-                  </Card>
-                </motion.div>
               </div>
               {/* Insight full-width in center column */}
               <div className="grid grid-cols-1 items-stretch gap-2 md:gap-3 lg:gap-3">
-                {/* Guidance card (now primary center card) */}
-                <motion.div variants={fadeDelayed(0.20)} {...hoverScale}>
-                  {(() => {
-                    const last = (facts?.quickAssessment ?? null) as
-                      | { energy?: number; stress?: number; clarity?: number; confidence?: number; focus?: number; updatedAt?: unknown }
-                      | null;
-                    const energyQA = Math.max(0, Math.min(10, Number(last?.energy ?? 0)));
-                    const stressQA = Math.max(0, Math.min(10, Number(last?.stress ?? 0)));
-                    const clarityQA = Math.max(0, Math.min(10, Number(last?.clarity ?? 0)));
-                    // Pull last 3 days scope.history for energy/clarity/calm if available
-                    type ScopeHist = Record<string, { clarity?: number; calm?: number; energy?: number; updatedAt?: unknown }>;
-                    const scopeHist = ((facts as { omni?: { scope?: { history?: ScopeHist } } } | undefined)?.omni?.scope?.history ?? {}) as ScopeHist;
-                    const lastKeys = Object.keys(scopeHist)
-                      .filter((k) => /^d\d{8}$/.test(k))
-                      .sort()
-                      .slice(-3);
-                    const avg = (arr: number[]) => (arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0);
-                    const energy3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.energy ?? 0)));
-                    const clarity3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.clarity ?? 0)));
-                    const calm3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.calm ?? 0)));
-                    const toMs = (v: unknown) => { try { if (!v) return 0; if (typeof v === 'number') return v; if (v instanceof Date) return v.getTime(); const ts = v as { toDate?: () => Date }; return typeof ts?.toDate === 'function' ? ts.toDate().getTime() : 0; } catch { return 0; } };
-                    const qaMs = toMs(last?.updatedAt);
-                    const histMs = (() => { const lastKey = lastKeys[lastKeys.length - 1]; const u = lastKey ? scopeHist[lastKey]?.updatedAt : undefined; return toMs(u); })();
-                    const preferQA = qaMs && (!histMs || qaMs >= histMs);
-                    // Build action score today from events
-                    const evs: ActivityEvent[] = (() => {
-                      const base: ActivityEvent[] = sessions.map((s) => ({
-                        startedAt: ((): number | string | Date => {
-                          const v = (s as { startedAt?: unknown })?.startedAt;
-                          if (typeof v === 'number' || v instanceof Date || typeof v === 'string') return v as number | string | Date;
-                          return Date.now();
-                        })(),
-                        durationMin: Math.max(0, Math.round((s.durationSec ?? 0) / 60)),
-                        units: 1,
-                        source: (s.type === 'breathing' ? 'breathing' : s.type === 'drill' ? 'drill' : 'journal') as ActivityEvent['source'],
-                        category: (s.type === 'reflection' ? 'reflection' : 'practice') as ActivityEvent['category'],
-                      }));
-                      try {
-                        type RawAE = { startedAt?: unknown; source?: string; category?: 'knowledge'|'practice'|'reflection'; units?: number; durationMin?: number; focusTag?: string | null };
-                        const raws = (facts as { activityEvents?: RawAE[] } | undefined)?.activityEvents ?? [];
-                        raws.forEach((r) => {
-                          if (!r.category) return;
-                          const started: number | string | Date = (typeof r.startedAt === 'number' || r.startedAt instanceof Date || typeof r.startedAt === 'string') ? (r.startedAt as number | string | Date) : Date.now();
-                          const src: ActivityEvent['source'] = ((): ActivityEvent['source'] => {
-                            const s = r.source || 'other';
-                            return ['omnikuno','omniabil','breathing','journal','drill','slider','other'].includes(s) ? (s as ActivityEvent['source']) : 'other';
-                          })();
-                          base.push({
-                            startedAt: started,
-                            durationMin: typeof r.durationMin === 'number' ? r.durationMin : undefined,
-                            units: typeof r.units === 'number' ? r.units : 1,
-                            source: src,
-                            category: r.category,
-                            focusTag: r.focusTag ?? undefined,
-                          });
-                        });
-                      } catch {}
-                      return base;
-                    })();
-                    const todayScore = computeActionTrend(evs, refMs || Date.now(), lang, 1, currentFocusTag)[0]?.totalMin ?? 0;
-                    const makeBar = (val01: number, accent: string) => (
-                      <div className="h-2 w-full rounded-full bg-[#E8DED4]">
-                        <div className="h-2 rounded-full" style={{ width: `${Math.max(0, Math.min(100, Math.round(val01 * 10)))}%`, background: accent }} />
+                {/* Omni Kuno Edu — moved above Today guidance; full width */}
+                <motion.div variants={fadeDelayed(0.18)} {...hoverScale}>
+                  <Card className="rounded-xl border border-[#E4DAD1] bg-[#FFF4EC] p-2.5 shadow-sm sm:p-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#A08F82] sm:text-[10px]">
+                          Omni Kuno
+                        </p>
+                        <h4 className="text-[14px] font-semibold text-[#2C2C2C] sm:text-[15px]">
+                          {lang === "ro"
+                            ? "Cunoștințe specifice obiectivului tău"
+                            : "Cunoștințe specifice obiectivului tău"}
+                        </h4>
                       </div>
-                    );
-                    const energy = preferQA ? energyQA : energy3;
-                    const stress = preferQA ? stressQA : (10 - calm3);
-                    const clarity = preferQA ? clarityQA : clarity3;
-                    const state: 'low' | 'tense' | 'ready' = (energy <= 4) ? 'low' : ( (10 - stressQA) <= 3 && preferQA ? 'tense' : ((preferQA ? (10 - stressQA) : calm3) <= 4 ? 'tense' : 'ready'));
-                    const badge = (() => {
-                      if (state === 'low') return { text: lang==='ro' ? 'ENERGIE SCĂZUTĂ' : 'LOW ENERGY', cls: 'bg-[#FFF1ED] text-[#B8472B] border-[#F3D3C6]' };
-                      if (state === 'tense') return { text: lang==='ro' ? 'STARE TENSIONATĂ' : 'TENSE STATE', cls: 'bg-[#FFEFF3] text-[#B82B4F] border-[#F6D0DA]' };
-                      return { text: lang==='ro' ? 'PREGĂTIT' : 'READY', cls: 'bg-[#ECF8F0] text-[#1F7A43] border-[#CFEBDD]' };
-                    })();
-                    const primary = (() => {
-                      if (state === 'low') return { title: lang==='ro' ? 'Respirație 5 minute pentru reset' : '5‑min breath reset', href: { pathname: '/antrenament', query: { tab: 'ose' } }, dur: '~5 min' } as const;
-                      if (state === 'tense') return { title: lang==='ro' ? 'Jurnal ghidat: descarcă emoțiile (5 min)' : 'Guided journal: release tension (5 min)', href: { pathname: '/progress', query: { open: 'journal', tab: 'NOTE_LIBERE' } }, dur: '~5 min' } as const;
-                      return { title: lang==='ro' ? 'Mini‑lecție OmniKuno pe tema ta' : 'OmniKuno micro‑lesson on your theme', href: { pathname: '/antrenament', query: { tab: 'oc' } }, dur: lang==='ro' ? '3–7 min' : '3–7 min' } as const;
-                    })();
-                    const primaryDesc = (() => {
-                      if (state === 'tense') {
-                        return lang==='ro'
-                          ? 'Scrie 2–3 rânduri despre ce te apasă acum. Nu analiza — doar descarcă tensiunea; va ușura claritatea.'
-                          : 'Write 2–3 lines about what feels heavy right now. Don’t analyze — just offload the tension to regain clarity.';
-                      }
-                      if (state === 'low') {
-                        return lang==='ro'
-                          ? 'Ritm simplu 4–4 (sau 4–6): inspiră 4s, ține 4s, expiră 4s, ține 4s. 3–5 cicluri, cu atenția pe expirație.'
-                          : 'Simple 4–4 (or 4–6) rhythm: inhale 4s, hold 4s, exhale 4s, hold 4s. Do 3–5 cycles, focus on the exhale.';
-                      }
-                      return lang==='ro'
-                        ? '3–7 minute: parcurgi o idee-cheie aplicată pe tema ta din focus. 1 concept + 1 exemplu concret.'
-                        : '3–7 minutes: review a key idea applied to your focus theme. 1 concept + 1 concrete example.';
-                    })();
-                    const alt1 = lang==='ro' ? 'Somn: checklist scurt (2 min)' : 'Sleep: short checklist (2 min)';
-                    const alt2 = lang==='ro' ? 'Jurnal: o notă rapidă' : 'Journal: a quick note';
-                    const why = (() => {
-                      const e = Math.round((energy3 || energy) * 10) / 10;
-                      const c = Math.round((10 - stress) * 10) / 10;
-                      const a = todayScore;
-                      if (lang==='ro') return `Îți recomandăm asta pentru că, în ultimele zile, energia ta a fost ~${e}/10, echilibrul emoțional ~${c}/10, iar scorul de acțiune azi este ${a}/100.`;
-                      return `We recommend this because, in recent days, your energy was ~${e}/10, emotional balance ~${c}/10, and today’s action score is ${a}/100.`;
-                    })();
-                    return (
-                      <Card className="min-h-[220px] rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-3 shadow-sm sm:min-h-[255px] sm:p-4 lg:min-h-[280px]">
-                        <div className="mb-1 flex items-start justify-between sm:mb-2">
-                          <div>
-                            <h4 className="text-[13px] font-bold text-[#2C2C2C] sm:text-[15px]">
-                              {lang==='ro' ? 'Antrenamentul tău de azi' : 'Today\'s guidance'}
-                            </h4>
-                            <div className="text-[9px] uppercase tracking-[0.16em] text-[#7B6B60] sm:text-[10px]">
-                              {lang==='ro' ? 'Pași mici, impact real' : 'Small steps, real impact'}
-                            </div>
-                          </div>
-                          <span className={`ml-2 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>
-                            {badge.text}
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[9px] uppercase tracking-[0.16em] text-[#A08F82]">
+                          {lang === "ro" ? "Punctaj" : "Score"}
+                        </span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-bold text-[#C07963] sm:text-3xl">
+                            {Math.max(0, Math.min(100, Math.round(omniCunoScore)))}
                           </span>
+                          {kunoDelta != null && Number.isFinite(kunoDelta) ? (
+                            <span
+                              className={`text-[10px] font-semibold ${kunoDelta >= 0 ? "text-[#1F7A43]" : "text-[#B8000E]"}`}
+                              title={lang === "ro" ? "față de ultima vizită" : "vs last visit"}
+                            >
+                              {kunoDelta >= 0 ? "+" : ""}
+                              {Math.round(kunoDelta)}
+                            </span>
+                          ) : null}
                         </div>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] sm:gap-4">
-                          {/* Left: internal indicators + why */}
-                          <div>
-                            <div className="mb-2">
-                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Claritate mentală' : 'Mental clarity'}{preferQA ? (lang==='ro' ? ' · starea de azi' : ' · today') : ''}</p>
-                              {makeBar(clarity, '#7A6455')}
-                            </div>
-                            <div className="mb-2">
-                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Echilibru emoțional' : 'Emotional balance'}{preferQA ? (lang==='ro' ? ' · starea de azi' : ' · today') : ''}</p>
-                              {makeBar(preferQA ? (10 - stressQA) : (calm3 || 0), '#4D3F36')}
-                            </div>
-                            <div>
-                              <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Energie fizică' : 'Physical energy'}{preferQA ? (lang==='ro' ? ' · starea de azi' : ' · today') : ''}</p>
-                              {makeBar(energy, '#5C4F45')}
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                              <span className="rounded-[10px] border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]">
-                                {lang==='ro' ? 'Acțiuni azi' : 'Actions today'}: {todayScore}/100
-                              </span>
-                              {focusTheme?.area ? (
-                                <span className="rounded-[10px] border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]">
-                                  {lang==='ro' ? 'Focus' : 'Focus'}: {focusTheme.area}
+                        {kunoReadiness != null ? (
+                          <span className="rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-0.5 text-[10px] text-[#7B6B60]">
+                            {lang === "ro" ? "Disponibilitate" : "Readiness"}: {kunoReadiness}%
+                          </span>
+                        ) : null}
+                        {kunoUpdatedText ? (
+                          <span className="text-[10px] text-[#A08F82]">
+                            {lang === "ro" ? "Actualizat" : "Updated"}: {kunoUpdatedText}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-col gap-2">
+                      {orderedLessons.map((lesson, idx) => {
+                        const styles = lessonStatusStyles[lesson.status];
+                        const isActive = lesson.status === "active";
+                        const orderNumber = orderedLessons.length - idx;
+                        const levelLabel = getLessonLevelLabel(orderNumber);
+                        return (
+                          <div
+                            key={lesson.id}
+                            className={`rounded-2xl transition ${styles.wrapper} ${isActive ? "px-3 py-3" : "px-3 py-2"}`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold ${styles.badge}`}>
+                                  {orderNumber}
                                 </span>
-                              ) : null}
-                            </div>
-                            {/* Why section on left */}
-                            <div className="mt-3">
-                              <p className="mb-1 text-[11px] font-semibold text-[#2C2C2C] sm:text-xs">{lang==='ro' ? 'De ce asta?' : 'Why this?'}</p>
-                              <p className="text-[11px] text-[#2C2C2C] sm:text-xs">{why}</p>
-                            </div>
-                          </div>
-                          {/* Right: main step + light alternatives */}
-                          <div className="flex flex-col justify-between sm:border-l sm:border-[#E8DACE] sm:pl-4">
-                            <div>
-                              <p className="mb-1 text-[12px] font-semibold text-[#2C2C2C] sm:text-sm">{lang==='ro' ? 'Pasul principal' : 'Primary step'}</p>
-                              <p className="mb-1 text-[13px] font-bold leading-snug text-[#2C2C2C] sm:text-[14px]">{primary.title}</p>
-                              <p className="mb-2 text-[11px] text-[#7B6B60] sm:text-[12px]">{primaryDesc}</p>
-                              <Link href={primary.href} className="group inline-flex w-full items-center justify-between rounded-[12px] border border-[#D3C1B2] bg-[#EADCCC] px-4 py-3 text-[#2C2C2C] shadow-sm transition hover:border-[#C9B8A8]">
-                                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] sm:text-[12px]">{lang==='ro' ? 'Începe acum' : 'Start now'}</span>
-                                <span className="text-[10px] text-[#7B6B60]">{primary.dur}</span>
-                              </Link>
-                            </div>
-                            <div className="mt-2">
-                              <div className="mb-1 flex items-baseline justify-between">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#A08F82]">{lang==='ro' ? 'Variante light' : 'Light options'}</p>
-                                <span className="text-[10px] text-[#7B6B60]">— 5 min</span>
+                                <div className="flex flex-col">
+                                  <span className={`text-sm font-semibold ${styles.titleColor}`}>
+                                    {lesson.title}
+                                  </span>
+                                  <span className="text-[10px] text-[#B9B1A9]">{levelLabel}</span>
+                                </div>
                               </div>
-                              <div className="flex flex-col gap-1">
-                                <Link href={{ pathname: '/antrenament', query: { tab: 'oc' } }} className="text-[11px] text-[#2C2C2C] underline-offset-2 hover:text-[#C07963] hover:underline sm:text-xs">• {alt1}</Link>
-                                <Link href={{ pathname: '/progress', query: { open: 'journal', tab: 'NOTE_LIBERE' } }} className="text-[11px] text-[#2C2C2C] underline-offset-2 hover:text-[#C07963] hover:underline sm:text-xs">• {alt2}</Link>
-                              </div>
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${styles.statusTag}`}>
+                                {lessonStatusText(lesson.status)}
+                              </span>
                             </div>
+                            {isActive ? (
+                              <>
+                                <p className="mt-2 text-[11px] text-[#7B6B60]">
+                                  {lessonHintText(lesson.status)}
+                                </p>
+                                <div className="mt-2 flex justify-end">
+                                  <Link
+                                    href="/kuno/learn"
+                                    className="rounded-full border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2C2C2C] transition hover:border-[#C24B17] hover:text-[#C24B17]"
+                                  >
+                                    {lang === "ro" ? "Start acum" : "Start now"}
+                                  </Link>
+                                </div>
+                              </>
+                            ) : null}
                           </div>
-                        </div>
-                      </Card>
-                    );
-                  })()}
+                        );
+                      })}
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                      <Link href="/kuno/learn" className="text-[10px] text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline">
+                        {lang === "ro" ? "Continuă" : "Continue"}
+                      </Link>
+                    </div>
+                  </Card>
                 </motion.div>
               </div>
             </div>
@@ -1637,6 +1623,168 @@ export default function ProgressDashboard({
               debugGrid ? "outline outline-1 outline-[#C24B17]/40" : ""
             }`}
           >
+            {/* Guidance card – moved here above Insight of the Day */}
+            <motion.div variants={fadeDelayed(0.155)} {...hoverScale}>
+              {(() => {
+                const last = (facts?.quickAssessment ?? null) as
+                  | { energy?: number; stress?: number; clarity?: number; confidence?: number; focus?: number; updatedAt?: unknown }
+                  | null;
+                const energyQA = Math.max(0, Math.min(10, Number(last?.energy ?? 0)));
+                const stressQA = Math.max(0, Math.min(10, Number(last?.stress ?? 0)));
+                const clarityQA = Math.max(0, Math.min(10, Number(last?.clarity ?? 0)));
+                type ScopeHist = Record<string, { clarity?: number; calm?: number; energy?: number; updatedAt?: unknown }>;
+                const scopeHist = ((facts as { omni?: { scope?: { history?: ScopeHist } } } | undefined)?.omni?.scope?.history ?? {}) as ScopeHist;
+                const lastKeys = Object.keys(scopeHist).filter((k) => /^d\d{8}$/.test(k)).sort().slice(-3);
+                const avg = (arr: number[]) => (arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0);
+                const energy3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.energy ?? 0)));
+                const clarity3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.clarity ?? 0)));
+                const calm3 = avg(lastKeys.map((k) => Number(scopeHist[k]?.calm ?? 0)));
+                const toMs = (v: unknown) => { try { if (!v) return 0; if (typeof v === 'number') return v; if (v instanceof Date) return v.getTime(); const ts = v as { toDate?: () => Date }; return typeof ts?.toDate === 'function' ? ts.toDate().getTime() : 0; } catch { return 0; } };
+                const qaMs = toMs(last?.updatedAt);
+                const histMs = (() => { const lastKey = lastKeys[lastKeys.length - 1]; const u = lastKey ? scopeHist[lastKey]?.updatedAt : undefined; return toMs(u); })();
+                const preferQA = qaMs && (!histMs || qaMs >= histMs);
+                const evs: ActivityEvent[] = (() => {
+                  const base: ActivityEvent[] = sessions.map((s) => ({
+                    startedAt: ((): number | string | Date => {
+                      const v = (s as { startedAt?: unknown })?.startedAt;
+                      if (typeof v === 'number' || v instanceof Date || typeof v === 'string') return v as number | string | Date;
+                      return Date.now();
+                    })(),
+                    durationMin: Math.max(0, Math.round((s.durationSec ?? 0) / 60)),
+                    units: 1,
+                    source: (s.type === 'breathing' ? 'breathing' : s.type === 'drill' ? 'drill' : 'journal') as ActivityEvent['source'],
+                    category: (s.type === 'reflection' ? 'reflection' : 'practice') as ActivityEvent['category'],
+                  }));
+                  try {
+                    type RawAE = { startedAt?: unknown; source?: string; category?: 'knowledge'|'practice'|'reflection'; units?: number; durationMin?: number; focusTag?: string | null };
+                    const raws = (facts as { activityEvents?: RawAE[] } | undefined)?.activityEvents ?? [];
+                    raws.forEach((r) => {
+                      if (!r.category) return;
+                      const started: number | string | Date = (typeof r.startedAt === 'number' || r.startedAt instanceof Date || typeof r.startedAt === 'string') ? (r.startedAt as number | string | Date) : Date.now();
+                      const src: ActivityEvent['source'] = ((): ActivityEvent['source'] => {
+                        const s = r.source || 'other';
+                        return ['omnikuno','omniabil','breathing','journal','drill','slider','other'].includes(s) ? (s as ActivityEvent['source']) : 'other';
+                      })();
+                      base.push({ startedAt: started, durationMin: typeof r.durationMin==='number'?r.durationMin:undefined, units: typeof r.units==='number'?r.units:1, source: src, category: r.category, focusTag: r.focusTag ?? undefined });
+                    });
+                  } catch {}
+                  return base;
+                })();
+                const todayScore = computeActionTrend(evs, refMs || Date.now(), lang, 1, currentFocusTag)[0]?.totalMin ?? 0;
+                const makeBar = (val01: number, accent: string) => (
+                  <div className="h-2 w-full rounded-full bg-[#E8DED4]">
+                    <div className="h-2 rounded-full" style={{ width: `${Math.max(0, Math.min(100, Math.round(val01 * 10)))}%`, background: accent }} />
+                  </div>
+                );
+                const energy = preferQA ? energyQA : energy3;
+                const stress = preferQA ? stressQA : (10 - calm3);
+                const clarity = preferQA ? clarityQA : clarity3;
+                const state: 'low' | 'tense' | 'ready' = (energy <= 4) ? 'low' : ( (10 - stressQA) <= 3 && preferQA ? 'tense' : ((preferQA ? (10 - stressQA) : calm3) <= 4 ? 'tense' : 'ready'));
+                const badge = (() => {
+                  if (state === 'low') return { text: lang==='ro' ? 'ENERGIE SCĂZUTĂ' : 'LOW ENERGY', cls: 'bg-[#FFF1ED] text-[#B8472B] border-[#F3D3C6]' };
+                  if (state === 'tense') return { text: lang==='ro' ? 'STARE TENSIONATĂ' : 'TENSE STATE', cls: 'bg-[#FFEFF3] text-[#B82B4F] border-[#F6D0DA]' };
+                  return { text: lang==='ro' ? 'PREGĂTIT' : 'READY', cls: 'bg-[#ECF8F0] text-[#1F7A43] border-[#CFEBDD]' };
+                })();
+                const primary = (() => {
+                  if (state === 'low') return { title: lang==='ro' ? 'Respirație 5 minute pentru reset' : '5‑min breath reset', href: { pathname: '/antrenament', query: { tab: 'ose' } }, dur: '~5 min' } as const;
+                  if (state === 'tense') return { title: lang==='ro' ? 'Jurnal ghidat: descarcă emoțiile (5 min)' : 'Guided journal: release tension (5 min)', href: { pathname: '/progress', query: { open: 'journal', tab: 'NOTE_LIBERE' } }, dur: '~5 min' } as const;
+                  return { title: lang==='ro' ? 'Lecție OmniKuno pe tema ta' : 'OmniKuno lesson on your theme', href: { pathname: '/antrenament', query: { tab: 'oc' } }, dur: lang==='ro' ? '3–7 min' : '3–7 min' } as const;
+                })();
+                const primaryDesc = (() => {
+                  if (state === 'tense') {
+                    return lang==='ro'
+                      ? 'Scrie 2–3 rânduri despre ce te apasă acum. Nu analiza — doar descarcă tensiunea; va ușura claritatea.'
+                      : 'Write 2–3 lines about what feels heavy right now. Don’t analyze — just offload the tension to regain clarity.';
+                  }
+                  if (state === 'low') {
+                    return lang==='ro'
+                      ? 'Ritm simplu 4–4 (sau 4–6): inspiră 4s, ține 4s, expiră 4s, ține 4s. 3–5 cicluri, cu atenția pe expirație.'
+                      : 'Simple 4–4 (or 4–6) rhythm: inhale 4s, hold 4s, exhale 4s, hold 4s. Do 3–5 cycles, focus on the exhale.';
+                  }
+                  return lang==='ro'
+                    ? '3–7 minute: parcurgi o idee-cheie aplicată pe tema ta din focus. 1 concept + 1 exemplu concret.'
+                    : '3–7 minutes: review a key idea applied to your focus theme. 1 concept + 1 concrete example.';
+                })();
+                const alt1 = lang==='ro' ? 'Somn: checklist scurt (2 min)' : 'Sleep: short checklist (2 min)';
+                const alt2 = lang==='ro' ? 'Jurnal: o notă rapidă' : 'Journal: a quick note';
+                const why = (() => {
+                  const e = Math.round((energy3 || energy) * 10) / 10;
+                  const c = Math.round((10 - stress) * 10) / 10;
+                  const a = todayScore;
+                  if (lang==='ro') return `Îți recomandăm asta pentru că, în ultimele zile, energia ta a fost ~${e}/10, echilibrul emoțional ~${c}/10, iar scorul de acțiune azi este ${a}/100.`;
+                  return `We recommend this because, in recent days, your energy was ~${e}/10, emotional balance ~${c}/10, and today’s action score is ${a}/100.`;
+                })();
+                return (
+                  <Card className="min-h-[220px] rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-3 shadow-sm sm:min-h-[255px] sm:p-4 lg:min-h-[280px]">
+                    <div className="mb-1 flex items-start justify-between sm:mb-2">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-[#2C2C2C] sm:text-[15px]">
+                          {lang==='ro' ? 'Antrenamentul tău cu Omni-Abil' : 'Your Omni-Abil training'}
+                        </h4>
+                        <div className="text-[9px] uppercase tracking-[0.16em] text-[#7B6B60] sm:text-[10px]">
+                          {lang==='ro' ? 'Pași mici, impact real' : 'Small steps, real impact'}
+                        </div>
+                      </div>
+                      <span className={`ml-2 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>
+                        {badge.text}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] sm:gap-4">
+                      <div>
+                        <div className="mb-2">
+                          <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Claritate mentală' : 'Mental clarity'}{preferQA ? (lang==='ro' ? ' · starea de azi' : ' · today') : ''}</p>
+                          {makeBar(clarity, '#7A6455')}
+                        </div>
+                        <div className="mb-2">
+                          <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Echilibru emoțional' : 'Emotional balance'}{preferQA ? (lang==='ro' ? ' · starea de azi' : ' · today') : ''}</p>
+                          {makeBar(preferQA ? (10 - stressQA) : (calm3 || 0), '#4D3F36')}
+                        </div>
+                        <div>
+                          <p className="mb-0.5 text-[10px] text-[#7B6B60]">{lang==='ro' ? 'Energie fizică' : 'Physical energy'}{preferQA ? (lang==='ro' ? ' · starea de azi' : ' · today') : ''}</p>
+                          {makeBar(energy, '#5C4F45')}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <span className="rounded-[10px] border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]">
+                            {lang==='ro' ? 'Acțiuni azi' : 'Actions today'}: {todayScore}/100
+                          </span>
+                          {focusTheme?.area ? (
+                            <span className="rounded-[10px] border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]">
+                              {lang==='ro' ? 'Focus' : 'Focus'}: {focusTheme.area}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-3">
+                          <p className="mb-1 text-[11px] font-semibold text-[#2C2C2C] sm:text-xs">{lang==='ro' ? 'De ce asta?' : 'Why this?'}</p>
+                          <p className="text-[11px] text-[#2C2C2C] sm:text-xs">{why}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col justify-between sm:border-l sm:border-[#E8DACE] sm:pl-4">
+                        <div>
+                          <p className="mb-1 text-[12px] font-semibold text-[#2C2C2C] sm:text-sm">{lang==='ro' ? 'Pasul principal' : 'Primary step'}</p>
+                          <p className="mb-1 text-[13px] font-bold leading-snug text-[#2C2C2C] sm:text-[14px]">{primary.title}</p>
+                          <p className="mb-2 text-[11px] text-[#7B6B60] sm:text-[12px]">{primaryDesc}</p>
+                          <Link href={primary.href} className="group inline-flex w-full items-center justify-between rounded-[12px] border border-[#D3C1B2] bg-[#EADCCC] px-4 py-3 text-[#2C2C2C] shadow-sm transition hover:border-[#C9B8A8]">
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] sm:text-[12px]">{lang==='ro' ? 'Începe acum' : 'Start now'}</span>
+                            <span className="text-[10px] text-[#7B6B60]">{primary.dur}</span>
+                          </Link>
+                        </div>
+                        <div className="mt-2">
+                          <div className="mb-1 flex items-baseline justify-between">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#A08F82]">{lang==='ro' ? 'Variante light' : 'Light options'}</p>
+                            <span className="text-[10px] text-[#7B6B60]">— 5 min</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Link href={{ pathname: '/antrenament', query: { tab: 'oc' } }} className="text-[11px] text-[#2C2C2C] underline-offset-2 hover:text-[#C07963] hover:underline sm:text-xs">• {alt1}</Link>
+                            <Link href={{ pathname: '/progress', query: { open: 'journal', tab: 'NOTE_LIBERE' } }} className="text-[11px] text-[#2C2C2C] underline-offset-2 hover:text-[#C07963] hover:underline sm:text-xs">• {alt2}</Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })()}
+            </motion.div>
+            
             {/* Insight of the Day (moved above Today’s quest) */}
             <motion.div variants={fadeDelayed(0.16)} {...hoverScale}>
               <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
@@ -1820,159 +1968,8 @@ export default function ProgressDashboard({
               </Card>
             </motion.div>
 
-            {/* Omni Kuno Edu (moved below Recent entries) */}
-            <motion.div variants={fadeDelayed(0.30)} {...hoverScale}>
-              <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
-                <div className="mb-1 flex items-center justify-between sm:mb-2">
-                  <div>
-                    <h4 className="text-xs font-semibold text-[#7B6B60] sm:text-sm">
-                      {lang === "ro" ? "Omni Kuno Edu" : "Omni Kuno Edu"}
-                    </h4>
-                    <div className="mt-0.5 flex items-baseline gap-2">
-                      <span className="text-lg font-bold text-[#C24B17] sm:text-xl">
-                        {Math.max(0, Math.min(100, Math.round(omniCunoScore)))}
-                      </span>
-                      {kunoDelta != null && Number.isFinite(kunoDelta) ? (
-                        <span
-                          className={`text-[10px] font-semibold ${kunoDelta >= 0 ? "text-[#1F7A43]" : "text-[#B8000E]"}`}
-                          title={lang === "ro" ? "față de ultima vizită" : "vs last visit"}
-                        >
-                          {kunoDelta >= 0 ? "+" : ""}
-                          {Math.round(kunoDelta)}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {(() => {
-                      const ms = (() => {
-                        const f = facts as unknown as { updatedAt?: unknown };
-                        const t = toMsLocal(f?.updatedAt);
-                        return t || refMs || Date.now();
-                      })();
-                      return (
-                        <span className="rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-0.5 text-[10px] text-[#7B6B60]" title={lang === 'ro' ? 'Actualizat' : 'Updated'}>
-                          {lang === 'ro' ? 'Actualizat' : 'Updated'}: {formatRelative(ms)}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  {(() => {
-                    type KunoLite = { readinessIndex?: number } | undefined;
-                    const kunoObj = omni?.kuno as KunoLite;
-                    const r = kunoObj?.readinessIndex as number | undefined;
-                    if (typeof r !== "number") return null;
-                    return (
-                      <span
-                        className="rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-0.5 text-[10px] text-[#7B6B60]"
-                        title={lang === "ro" ? "Disponibilitate pentru învățare azi" : "Learning readiness today"}
-                      >
-                        {lang === "ro" ? "Readiness" : "Readiness"}: {Math.round(Math.max(0, Math.min(100, r)))}
-                      </span>
-                    );
-                  })()}
-                </div>
-                {(() => {
-                  type MasteryMap = Record<string, number>;
-                  const kuno = omni?.kuno as
-                    | { masteryByCategory?: MasteryMap; lastLessons?: string[]; signals?: { lastLessonsCsv?: string } }
-                    | undefined;
-                  let mastery: MasteryMap | undefined = kuno?.masteryByCategory;
-                  if ((!mastery || Object.keys(mastery).length === 0) && typeof window !== "undefined") {
-                    try {
-                      const raw = window.localStorage.getItem("omnimental_kuno_guest_mastery");
-                      if (raw) mastery = JSON.parse(raw) as MasteryMap;
-                    } catch {}
-                  }
-                  let masteryPrev: MasteryMap | undefined;
-                  if (typeof window !== "undefined") {
-                    try {
-                      const rawPrev = window.localStorage.getItem("omnimental_kuno_guest_mastery_prev");
-                      if (rawPrev) masteryPrev = JSON.parse(rawPrev) as MasteryMap;
-                      if (mastery && Object.keys(mastery).length) window.localStorage.setItem("omnimental_kuno_guest_mastery_prev", JSON.stringify(mastery));
-                    } catch {}
-                  }
-                  const catLabel: Record<string, string> = {
-                    clarity: lang === "ro" ? "Claritate mentală" : "Clarity",
-                    calm: lang === "ro" ? "Echilibru emoțional" : "Calm",
-                    energy: lang === "ro" ? "Energie fizică" : "Energy",
-                    relationships: lang === "ro" ? "Relații" : "Relationships",
-                    performance: lang === "ro" ? "Performanță" : "Performance",
-                    health: lang === "ro" ? "Sănătate" : "Health",
-                  };
-                  const items: Array<{ key: string; label: string; value: number }> = [];
-                  if (mastery && Object.keys(mastery).length) {
-                    const sorted = Object.entries(mastery)
-                      .filter(([, v]) => typeof v === "number")
-                      .sort((a, b) => Number(b[1]) - Number(a[1]))
-                      .slice(0, 3);
-                    sorted.forEach(([k, v]) => items.push({ key: k, label: catLabel[k] ?? k, value: Math.round(Number(v)) }));
-                  }
-                  const list: ReactNode[] = [];
-                  if (items.length) {
-                    list.push(
-                      <div key="mk" className="mt-1 space-y-1.5">
-                        {items.map((it, i) => (
-                          <div key={`${it.key}-${i}`} className="flex items-center gap-2">
-                            <span className="w-24 truncate text-[11px] text-[#7B6B60]">{it.label}</span>
-                            <div className="relative h-2 w-full rounded bg-[#F1EAE3]">
-                              <div className="absolute left-0 top-0 h-2 rounded bg-[#C07963]" style={{ width: `${Math.max(0, Math.min(100, it.value))}%` }} />
-                            </div>
-                            <span className="w-12 text-right text-[11px] text-[#7B6B60]">
-                              {Math.max(0, Math.min(100, it.value))}%
-                              {(() => {
-                                const prev = masteryPrev?.[it.key];
-                                if (typeof prev !== "number") return null;
-                                const d = Math.round(Number(it.value) - Number(prev));
-                                if (!Number.isFinite(d) || d === 0) return null;
-                                return <span className={`ml-1 text-[10px] ${d > 0 ? "text-[#1F7A43]" : "text-[#B8000E]"}`}>{d > 0 ? "↑" : "↓"}{Math.abs(d)}</span>;
-                              })()}
-                            </span>
-                          </div>
-                        ))}
-                      </div>,
-                    );
-                  }
-                  let lessons: string[] = Array.isArray(kuno?.lastLessons) ? (kuno!.lastLessons as string[]) : [];
-                  if (!lessons.length) {
-                    const csv = kuno?.signals?.lastLessonsCsv;
-                    if (typeof csv === "string") lessons = csv.split("|").map((s) => s.trim()).filter(Boolean);
-                  }
-                  if (lessons.length) {
-                    list.push(
-                      <div key="ll" className="mt-2">
-                        <div className="flex flex-wrap gap-1.5">
-                          {lessons.slice(0, 4).map((l, i) => (
-                            <span key={`${l}-${i}`} className="rounded-[10px] border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-0.5 text-[10px] text-[#7B6B60]">{l}</span>
-                          ))}
-                        </div>
-                      </div>,
-                    );
-                  }
-                  if (!list.length) {
-                    list.push(
-                      <p key="empty" className="rounded-[10px] border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-1.5 text-[11px] text-[#7B6B60]">
-                        {lang === "ro" ? "Începe cu lecțiile Omni-Kuno pentru a vedea progresul aici." : "Start Omni-Kuno lessons to see progress here."}
-                      </p>,
-                    );
-                  }
-                  return <>{list}</>;
-                })()}
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Link href="/kuno" className="rounded-[10px] border border-[#2C2C2C] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2C2C2C] transition hover:border-[#C24B17] hover:text-[#C24B17]">
-                      {lang === "ro" ? "Exersează 3 min" : "Practice 3 min"}
-                    </Link>
-                    <Link href="/kuno/learn" className="rounded-[10px] border border-[#2C2C2C] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2C2C2C] transition hover:border-[#C24B17] hover:text-[#C24B17]">
-                      {lang === "ro" ? "Învață 1 lecție" : "Learn 1 lesson"}
-                    </Link>
-                  </div>
-                  <Link href="/kuno/learn" className="text-[10px] text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline">
-                    {lang === "ro" ? "Continuă" : "Continue"}
-                  </Link>
-                </div>
-              </Card>
-            </motion.div>
+            {/* Omni Kuno Edu moved to center column above guidance — legacy sidebar card removed */}
+            
 
             {/* Quest of the Day – moved last in sidebar */}
             <motion.div variants={fadeDelayed(0.32)} {...hoverScale}>

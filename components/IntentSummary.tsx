@@ -669,25 +669,7 @@ export default function IntentSummary({
               <h3 className="text-lg font-semibold text-[#2C2C2C]">{stepHeadings[step]}</h3>
             </div>
 
-            {/* Sub‑pași numerici pentru navigare rapidă */}
-            <div className="mb-4 flex items-center gap-2" data-testid="summary-subnav">
-              {[1, 2, 3].map((n, idx) => (
-                <button
-                  key={n}
-                  type="button"
-                  data-testid={`summary-sub-${n}`}
-                  onClick={() => setStep(idx)}
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-sm ${
-                    step === idx
-                      ? 'border-[#2C2C2C] bg-[#2C2C2C] text-white'
-                      : 'border-[#E4D8CE] bg-white text-[#2C2C2C] hover:border-[#C9B8A8]'
-                  }`}
-                  aria-current={step === idx ? 'step' : undefined}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+            {/* Sub‑pași numerici eliminați la cerere; păstrăm doar titlul secțiunii */}
 
             {stepContent}
 

@@ -84,13 +84,13 @@ export default function OmniPathRow({ lang: _langProp, progress }: Props) {
           onClick: () => router.push("/antrenament?tab=oc"),
         })}
         {Card({
-          title: Label.sensei,
+          title: Label.abil,
           unlocked: false,
           hint: lang === 'ro' ? 'În curând' : 'Coming soon',
           onClick: () => {},
         })}
         {Card({
-          title: Label.abil,
+          title: Label.sensei,
           unlocked: false,
           hint: lang === 'ro' ? 'În curând' : 'Coming soon',
           onClick: () => {},

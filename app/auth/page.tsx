@@ -1,9 +1,17 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  isSignInWithEmailLink,
+  signInWithCustomToken,
+  signInWithEmailAndPassword,
+  signInWithEmailLink,
+  signInWithPopup,
+} from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
@@ -14,24 +22,46 @@ const AUTH_EMAIL_STORAGE_KEY = "omnimental_auth_email";
 const KEEP_SIGNED_IN_KEY = "omnimental_keep_signed_in_until";
 const KEEP_SIGNED_IN_DURATION_MS = 10 * 24 * 60 * 60 * 1000;
 
+type LinkStatus = "idle" | "checking" | "signing" | "ok" | "error";
+
 function AuthContent() {
   const router = useRouter();
   const search = useSearchParams();
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [emailInput, setEmailInput] = useState<string>("");
-  const [status, setStatus] = useState<"idle" | "checking" | "signing" | "ok" | "error">("checking");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [linkStatus, setLinkStatus] = useState<LinkStatus>("idle");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  // no user state needed here
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const linkUrl = useMemo(() => (typeof window !== "undefined" ? window.location.href : ""), []);
+  // Email + cod
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
 
+  // Email + parolă
+  const [pwdEmail, setPwdEmail] = useState("");
+  const [pwdPassword, setPwdPassword] = useState("");
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdMode, setPwdMode] = useState<"login" | "register">("login");
+
+  const isRo = typeof navigator !== "undefined" && navigator.language?.startsWith("ro");
+
+  // Consumă magic link când userul vine din email Firebase
   useEffect(() => {
     const auth = getFirebaseAuth();
     if (typeof window === "undefined") return;
-    if (!isSignInWithEmailLink(auth, window.location.href)) return;
-    // Try to auto-consume using stored or query email
+    const href = window.location.href;
+
+    if (!isSignInWithEmailLink(auth, href)) {
+      setLinkStatus("idle");
+      return;
+    }
+
+    setLinkStatus("checking");
+
     const stored = (() => {
       try {
         const raw = window.localStorage.getItem(AUTH_EMAIL_STORAGE_KEY);
@@ -42,8 +72,12 @@ function AuthContent() {
     })();
     const emailFromUrl = search?.get("auth_email");
     const email = (emailFromUrl || stored?.email || "").trim();
-    if (!email) return;
-    void signInWithEmailLink(auth, email, window.location.href)
+    if (!email) {
+      setLinkStatus("error");
+      return;
+    }
+
+    void signInWithEmailLink(auth, email, href)
       .then(() => {
         try {
           window.localStorage.removeItem(AUTH_EMAIL_STORAGE_KEY);
@@ -54,105 +88,321 @@ function AuthContent() {
             window.localStorage.removeItem(KEEP_SIGNED_IN_KEY);
           }
         } catch {}
-        // Clean URL
+
         try {
           const clean = new URL(window.location.origin + window.location.pathname);
           window.history.replaceState({}, document.title, clean.toString());
         } catch {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
-        router.push("/progress");
+
+        setLinkStatus("ok");
+        const msg = isRo
+          ? "Te-ai autentificat cu succes. Redirecționez spre Progres…"
+          : "Signed in successfully. Redirecting to Progress…";
+        setToastMessage(msg);
+        setTimeout(() => router.push("/progress"), 800);
       })
       .catch((err: unknown) => {
-        try { window.localStorage.removeItem(AUTH_EMAIL_STORAGE_KEY); } catch {}
-        const code = (err as { code?: string })?.code ?? '';
+        try {
+          window.localStorage.removeItem(AUTH_EMAIL_STORAGE_KEY);
+        } catch {}
+
+        const code = (err as { code?: string })?.code ?? "";
         const isInvalid = /invalid-action-code/i.test(code);
-        const ro = isInvalid ? 'Link-ul este invalid sau expirat. Te rog cere unul nou.' : 'Nu am putut valida linkul.';
-        const en = isInvalid ? 'The link is invalid or expired. Please request a new one.' : 'Could not validate the link.';
-        setErrorMessage(navigator.language?.startsWith('ro') ? ro : en);
-        setToastMessage(navigator.language?.startsWith('ro') ? ro : en);
-        setStatus('error');
-        // Clean noisy params so the effect does not re-fire endlessly
+        const ro = isInvalid
+          ? "Link-ul este invalid sau expirat. Te rog cere unul nou."
+          : "Nu am putut valida linkul.";
+        const en = isInvalid
+          ? "The link is invalid or expired. Please request a new one."
+          : "Could not validate the link.";
+
+        const msg = isRo ? ro : en;
+        setErrorMessage(msg);
+        setToastMessage(msg);
+        setLinkStatus("error");
+
         try {
           const clean = new URL(window.location.origin + window.location.pathname);
           window.history.replaceState({}, document.title, clean.toString());
-        } catch {}
+        } catch {
+          // ignore
+        }
       });
-  }, [router, search]);
+  }, [router, search, isRo]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailInput.trim()) return;
-    if (typeof window === "undefined") return;
+  const handleGoogleSignIn = async () => {
     const auth = getFirebaseAuth();
-    setStatus("signing");
+    const provider = new GoogleAuthProvider();
     try {
-      await signInWithEmailLink(auth, emailInput.trim(), linkUrl);
-      try {
-        window.localStorage.removeItem(AUTH_EMAIL_STORAGE_KEY);
-      } catch {}
-      setStatus("ok");
-      setToastMessage(
-        navigator.language?.startsWith("ro")
-          ? "Te-ai autentificat cu succes. Redirecționez spre Progres…"
-          : "Signed in successfully. Redirecting to Progress…",
-      );
-      setTimeout(() => router.push("/progress"), 800);
-    } catch (err: unknown) {
-      const code = (err as { code?: string })?.code ?? "";
-      const msg = code || "sign-in failed";
+      await signInWithPopup(auth, provider);
+      router.push("/progress");
+    } catch (err) {
+      console.error("Google sign-in error", err);
+      const msg = isRo ? "Nu am putut face autentificarea cu Google." : "Google sign-in failed.";
+      setToastMessage(msg);
+    }
+  };
+
+  const handleSendOtp = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!otpEmail.trim()) return;
+    setOtpSending(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch("/api/auth/request-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: otpEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = (data?.error as string) || "Eroare la trimiterea codului.";
+        setErrorMessage(msg);
+        setToastMessage(msg);
+      } else {
+        setOtpSent(true);
+        const msg = isRo
+          ? "Ți-am trimis un cod pe email. Îl poți citi de pe orice device și îl introduci aici."
+          : "We sent you a code by email. You can read it on any device and type it here.";
+        setToastMessage(msg);
+      }
+    } catch (err) {
+      console.error("send OTP error", err);
+      const msg = isRo ? "Nu am putut trimite codul." : "Could not send the code.";
       setErrorMessage(msg);
       setToastMessage(msg);
-      setStatus("error");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyOtp = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!otpEmail.trim() || !otpCode.trim()) return;
+    setOtpVerifying(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: otpEmail.trim(), code: otpCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.customToken) {
+        const msg = (data?.error as string) || "Cod invalid.";
+        setErrorMessage(msg);
+        setToastMessage(msg);
+        setOtpVerifying(false);
+        return;
+      }
+
+      const auth = getFirebaseAuth();
+      await signInWithCustomToken(auth, data.customToken);
+      const msg = isRo
+        ? "Te-ai autentificat cu succes. Te duc la Progres…"
+        : "Signed in successfully. Redirecting to Progress…";
+      setToastMessage(msg);
+      setTimeout(() => router.push("/progress"), 800);
+    } catch (err) {
+      console.error("verify OTP error", err);
+      const msg = isRo ? "Nu am putut verifica codul." : "Could not verify the code.";
+      setErrorMessage(msg);
+      setToastMessage(msg);
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
+
+  const handleEmailPassword = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!pwdEmail.trim() || !pwdPassword.trim()) return;
+    const auth = getFirebaseAuth();
+    setPwdLoading(true);
+    setErrorMessage(null);
+
+    try {
+      if (pwdMode === "login") {
+        await signInWithEmailAndPassword(auth, pwdEmail.trim(), pwdPassword);
+      } else {
+        await createUserWithEmailAndPassword(auth, pwdEmail.trim(), pwdPassword);
+      }
+      router.push("/progress");
+    } catch (error) {
+      console.error("email+password error", error);
+      const err = error as { code?: string };
+      let msg = isRo ? "Nu am putut face autentificarea." : "Email/password sign-in failed.";
+      if (err?.code === "auth/user-not-found" && pwdMode === "login") {
+        msg = isRo
+          ? "Nu există un cont cu acest email. Poți încerca să creezi unul."
+          : "No account with this email. Try registering.";
+      } else if (err?.code === "auth/email-already-in-use" && pwdMode === "register") {
+        msg = isRo
+          ? "Există deja un cont cu acest email. Încearcă Autentificare."
+          : "Account already exists. Try logging in.";
+      }
+      setErrorMessage(msg);
+      setToastMessage(msg);
+    } finally {
+      setPwdLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
-      <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => { /* noop */ }} />
+      <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => {}} />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <main className="mx-auto max-w-md px-4 py-12">
         <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.06)]">
-          <h1 className="text-xl font-semibold text-[#1F1F1F]">Autentificare cu link</h1>
-          {status === "checking" && (
-            <p className="text-sm text-[#4A3A30]">Verific linkul…</p>
+          <h1 className="text-xl font-semibold text-[#1F1F1F]">
+            {isRo ? "Autentificare" : "Sign in"}
+          </h1>
+
+          {linkStatus === "checking" && (
+            <p className="text-sm text-[#4A3A30]">{isRo ? "Verific linkul…" : "Checking link…"}</p>
           )}
-          {status === "signing" && (
-            <p className="text-sm text-[#4A3A30]">Se conectează…</p>
+          {linkStatus === "signing" && (
+            <p className="text-sm text-[#4A3A30]">
+              {isRo ? "Se conectează…" : "Signing in…"}
+            </p>
           )}
-          {status === "ok" && (
-            <p className="text-sm text-emerald-700">Gata. Te redirecționez spre progres…</p>
-          )}
-          {(status === "idle" || status === "error") && (
-            <>
-              <p className="text-sm text-[#4A3A30]">
-                Introdu emailul folosit pentru autentificare și reconfirmă linkul.
-              </p>
-              <form onSubmit={handleSubmit} className="mx-auto mt-2 flex max-w-sm flex-col gap-2">
+          {linkStatus === "error" && errorMessage ? (
+            <p className="text-sm text-[#8C2B2F]">{errorMessage}</p>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            className="w-full rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+          >
+            {isRo ? "Continuă cu Google" : "Continue with Google"}
+          </button>
+
+          <div className="space-y-2 border-t border-[#F0E4D9] pt-4 text-left">
+            <p className="text-xs text-[#4A3A30]">
+              {isRo ? "Email + cod (15 minute)" : "Email + code (15 minutes)"}
+            </p>
+            <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-2">
+              <input
+                type="email"
+                value={otpEmail}
+                onChange={(e) => setOtpEmail(e.target.value)}
+                placeholder="email@exemplu.com"
+                className="w-full rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
+                required
+              />
+              {otpSent ? (
                 <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
+                  type="text"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  placeholder={isRo ? "Codul primit" : "Your code"}
+                  className="w-full rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
                   required
-                  placeholder="email@exemplu.com"
-                  className="rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
                 />
-                <button
-                  type="submit"
-                  className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
-                >
-                  Confirmă emailul
-                </button>
-              </form>
-              {errorMessage ? (
-                <p className="text-xs text-[#8C2B2F]">{errorMessage}</p>
               ) : null}
-              <p className="text-xs text-[#7A6455]">
-                Nu ai linkul? <Link href="/" className="underline">Cere un link nou</Link>
+              <button
+                type="submit"
+                disabled={otpSending || otpVerifying}
+                className="w-full rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
+              >
+                {otpSending
+                  ? isRo
+                    ? "Trimit codul…"
+                    : "Sending code…"
+                  : otpVerifying
+                  ? isRo
+                    ? "Verific codul…"
+                    : "Verifying code…"
+                  : otpSent
+                  ? isRo
+                    ? "Verifică codul"
+                    : "Verify code"
+                  : isRo
+                  ? "Trimite codul"
+                  : "Send code"}
+              </button>
+            </form>
+          </div>
+
+          <div className="space-y-2 border-t border-[#F0E4D9] pt-4 text-left">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-[#4A3A30]">
+                {isRo ? "Preferi o parolă clasică?" : "Prefer a classic password?"}
               </p>
-            </>
-          )}
+              <button
+                type="button"
+                onClick={() => setPwdMode((mode) => (mode === "login" ? "register" : "login"))}
+                className="text-[11px] font-semibold text-[#2C2C2C] underline"
+              >
+                {pwdMode === "login"
+                  ? isRo
+                    ? "Creează cont"
+                    : "Create account"
+                  : isRo
+                  ? "Autentificare"
+                  : "Log in"}
+              </button>
+            </div>
+
+            <form onSubmit={handleEmailPassword} className="space-y-2">
+              <input
+                type="email"
+                value={pwdEmail}
+                onChange={(e) => setPwdEmail(e.target.value)}
+                placeholder="email@exemplu.com"
+                className="w-full rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
+              />
+              <input
+                type="password"
+                value={pwdPassword}
+                onChange={(e) => setPwdPassword(e.target.value)}
+                placeholder={isRo ? "Parolă" : "Password"}
+                className="w-full rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
+              />
+              <button
+                type="submit"
+                disabled={pwdLoading}
+                className="w-full rounded-[10px] border border-[#A08C7A] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7A6455] hover:bg-[#A08C7A] hover:text-white disabled:opacity-60"
+              >
+                {pwdLoading
+                  ? isRo
+                    ? "Se conectează…"
+                    : "Signing in…"
+                  : pwdMode === "login"
+                  ? isRo
+                    ? "Autentificare email + parolă"
+                    : "Sign in with email + password"
+                  : isRo
+                  ? "Creează cont cu email + parolă"
+                  : "Create account with email + password"}
+              </button>
+            </form>
+          </div>
+
+          <p className="text-[10px] text-[#7A6455]">
+            {isRo ? (
+              <>
+                Dacă ai un link vechi de autentificare primit pe email, îl poți folosi în continuare.
+                Când îl deschizi, te vom redirecționa automat aici.
+              </>
+            ) : (
+              <>
+                If you still have an older sign-in link by email, you can use it. Opening it will
+                automatically redirect you here.
+              </>
+            )}
+          </p>
+
+          <p className="text-[10px] text-[#7A6455]">
+            <Link href="/" className="underline">
+              {isRo ? "Înapoi la pagina principală" : "Back to home"}
+            </Link>
+          </p>
         </section>
+
         {toastMessage ? (
           <div className="fixed bottom-4 left-0 right-0 mx-auto max-w-md px-4">
             <Toast message={toastMessage} okLabel="OK" onClose={() => setToastMessage(null)} />

@@ -92,8 +92,8 @@ export default function OmniPathInline({ lang, progress }: { lang: "ro" | "en"; 
       <div className="relative z-10 grid grid-cols-2 gap-1.5 sm:grid-cols-5 sm:gap-2">
         <PathBtn lang={lang} title={Label.scope} unlocked={unlock.scopeUnlocked} onClick={() => router.push("/?step=intent&source=omni-path-inline")} />
         <PathBtn lang={lang} title={Label.kuno} unlocked={unlock.kunoUnlocked} hint={Hint.kuno} onClick={() => router.push("/antrenament?tab=oc")} />
-        <PathBtn lang={lang} title={Label.sensei} unlocked={false} hint={lang === 'ro' ? 'În curând' : 'Coming soon'} onClick={() => {}} />
         <PathBtn lang={lang} title={Label.abil} unlocked={false} hint={lang === 'ro' ? 'În curând' : 'Coming soon'} onClick={() => {}} />
+        <PathBtn lang={lang} title={Label.sensei} unlocked={false} hint={lang === 'ro' ? 'În curând' : 'Coming soon'} onClick={() => {}} />
         <PathBtn lang={lang} title={Label.intel} unlocked={unlock.intelUnlocked} hint={Hint.intel} onClick={() => router.push("/antrenament?tab=oi")} />
       </div>
     </div>

@@ -65,12 +65,9 @@ export function useWizardSteps(initialStep: Step = "preIntro") {
     const paramStep = searchParams?.get("step");
     if (isStep(paramStep)) {
       const normalized = LEGACY_ALIASES[paramStep as string] ?? (paramStep as Step);
-      if (normalized !== localStep) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        setLocalStep(normalized);
-      }
+      setLocalStep((prev) => (normalized !== prev ? normalized : prev));
     }
-  }, [searchParams, localStep]);
+  }, [searchParams]);
 
   const goToStep = useCallback(
     (next: Step) => {
@@ -90,9 +87,6 @@ export function useWizardSteps(initialStep: Step = "preIntro") {
     }
     const stored = readWizardState();
     if (stored?.step && isStep(stored.step)) {
-      // We intentionally restore the step after hydration to avoid SSR/CSR mismatch.
-      // This mirrors a subscription-style update and runs only once.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalStep(stored.step as Step);
     }
   }, []);

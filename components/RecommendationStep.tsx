@@ -121,7 +121,6 @@ export function RecommendationStep(props: Props) {
     // learnFromOthers,
     // scheduleFit,
     // formatPreference,
-    recommendationReasonKey: _recommendationReasonKeyProp,
     initialStatement,
   } = props;
 
