@@ -30,6 +30,13 @@ export type OmniBlock = {
         number
       >
     >;
+    lessons?: Record<
+      string,
+      {
+        completedIds?: string[];
+        lastUpdated?: Date | { toDate: () => Date };
+      }
+    >;
     gamification?: {
       xp?: number;
       badges?: string[];

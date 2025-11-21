@@ -10,14 +10,10 @@ import { useI18n } from "@/components/I18nProvider";
 import { getString } from "@/lib/i18nGetString";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
-import NextBestStep from "@/components/NextBestStep";
-import OmniPathInline from "@/components/OmniPathInline";
 import ProgressDashboard from "@/components/dashboard/ProgressDashboard";
 import type { JournalTabId } from "@/lib/journal";
-import { recordEvaluationTabChange } from "@/lib/progressFacts";
 import DemoUserSwitcher from "@/components/DemoUserSwitcher";
 import { getDemoProgressFacts } from "@/lib/demoData";
-import InfoTooltip from "@/components/InfoTooltip";
 import { useAuth } from "@/components/AuthProvider";
 import RequireAuth from "@/components/auth/RequireAuth";
 
@@ -69,13 +65,6 @@ function ProgressContent() {
       return { open: !JOURNAL_GATE_ENABLED || allowed || allowBySource, blocked: JOURNAL_GATE_ENABLED && !allowed && !allowBySource };
     }
     return { open: false, blocked: false };
-  })();
-  const omniIntelDisplay = (() => {
-    try {
-      const pf = (demoFacts ?? progress) as { omni?: { omniIntelScore?: number } } | undefined;
-      const val = Number(pf?.omni?.omniIntelScore ?? 0);
-      return Number.isFinite(val) ? Math.round(val) : 0;
-    } catch { return 0; }
   })();
   // After 2 minutes, nudge user to do a quick mini‑report (sliders) if last one is stale
   const [showDailyNudge, setShowDailyNudge] = useState(false);
@@ -173,19 +162,6 @@ function ProgressContent() {
                 </div>
               </div>
             ) : null}
-            <section className="mx-auto w-full">
-              <NextBestStep
-                progress={demoFacts ?? undefined}
-                lang={lang === "en" ? "en" : "ro"}
-                className="rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-3 shadow-[0_10px_22px_rgba(0,0,0,0.06)] md:py-4"
-                onGoToKuno={() => router.push('/antrenament?tab=oc&source=progress')}
-                onGoToSensei={() => { /* inactive */ }}
-                onGoToAbil={() => { /* inactive */ }}
-                onGoToIntel={() => router.push('/antrenament?tab=oi&source=progress')}
-              >
-                <OmniPathInline lang={lang === "en" ? "en" : "ro"} progress={demoFacts ?? undefined} />
-              </NextBestStep>
-            </section>
             <ProgressDashboard profileId={"demo-user"} demoFacts={demoFacts} debugGrid={debugGrid} />
           </main>
         </div>
@@ -421,56 +397,7 @@ function ProgressContent() {
           {lang === 'ro' ? 'Ai încheiat un exercițiu OmniAbil.' : 'You finished an OmniAbil exercise.'}
         </div>
       ) : null}
-      {/* Quick link to Recommendations */}
-      <div className="mx-auto mb-3 w-full max-w-5xl px-4">
-        <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p>{lang === 'ro' ? 'Vezi recomandările tale actuale.' : 'See your current recommendations.'}</p>
-            <a href="/recommendation" className="rounded-[10px] border border-[#2C2C2C] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]">{lang === 'ro' ? 'Deschide' : 'Open'}</a>
-          </div>
-        </div>
-      </div>
-        <section className="mx-auto w-full">
-          <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-[1fr_minmax(160px,200px)]">
-          <NextBestStep
-            progress={(demoFacts ?? progress) ?? undefined}
-            lang={lang === "en" ? "en" : "ro"}
-            className="h-full rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-3 shadow-[0_10px_22px_rgba(0,0,0,0.06)] md:py-4"
-            onGoToKuno={() => {
-              void recordEvaluationTabChange("oc");
-              const qs = new URLSearchParams({ tab: "oc", source: "progress" }).toString();
-              router.push(`/antrenament?${qs}`);
-            }}
-            onGoToSensei={() => { /* inactive */ }}
-            onGoToAbil={() => { /* inactive */ }}
-            onGoToIntel={() => {
-              void recordEvaluationTabChange("oi");
-              const qs = new URLSearchParams({ tab: "oi", source: "progress" }).toString();
-              router.push(`/antrenament?${qs}`);
-            }}
-          >
-            <OmniPathInline lang={lang === "en" ? "en" : "ro"} progress={(demoFacts ?? progress) ?? undefined} />
-          </NextBestStep>
-          {/* Omni‑Intel small counter beside OmniPath */}
-          <div className="flex h-full flex-col items-center justify-center rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-3 shadow-[0_10px_22px_rgba(0,0,0,0.06)]">
-            <div className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#7B6B60]">
-              {lang === 'ro' ? 'Omni‑Intel' : 'Omni‑Intel'}
-              <InfoTooltip
-                items={[
-                  lang === 'ro'
-                    ? 'Index compus din inteligența minții din cap, a minții din inimă, a minții din intestin.'
-                    : 'Composite index from the head mind, heart mind, and gut mind intelligence.',
-                ]}
-                label={lang === 'ro' ? 'Detalii Omni‑Intel' : 'Omni‑Intel details'}
-              />
-            </div>
-            <p className="text-2xl font-bold text-[#C24B17]">{omniIntelDisplay}</p>
-            <p className="mt-0.5 text-center text-[10px] text-[#7B6B60]">
-              {lang === 'ro' ? 'Nivel de Omni‑Inteligență' : 'Omni‑Intelligence level'}
-            </p>
-          </div>
-          </div>
-        </section>
+
         <ProgressDashboard profileId={profile.id} demoFacts={demoFacts} facts={progress} loading={progressLoading} debugGrid={debugGrid} hideOmniIntel />
       </main>
     </div>

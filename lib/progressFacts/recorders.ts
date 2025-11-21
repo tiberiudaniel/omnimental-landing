@@ -526,6 +526,35 @@ export async function recordOmniPatch(patch: DeepPartial<OmniBlock>, ownerId?: s
   }, ownerId);
 }
 
+export async function recordKunoLessonProgress({
+  moduleId,
+  completedIds,
+  ownerId,
+}: {
+  moduleId: string;
+  completedIds: string[];
+  ownerId?: string | null;
+}) {
+  try {
+    await recordOmniPatch(
+      {
+        kuno: {
+          lessons: {
+            [moduleId]: {
+              completedIds,
+              lastUpdated: serverTimestamp(),
+            },
+          },
+        },
+      },
+      ownerId,
+    );
+  } catch (e) {
+    console.warn("recordKunoLessonProgress failed", e);
+    throw e;
+  }
+}
+
 // Quick self-assessment (lightweight, onboarding). Stores 1–10 sliders for immediate feedback.
 export async function recordQuickAssessment(payload: {
   energy: number;
