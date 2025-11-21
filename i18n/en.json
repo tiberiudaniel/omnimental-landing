@@ -640,13 +640,23 @@
     "panasNeg": { "items": [
       "Irritable", "Anxious", "Down", "Tense", "Impatient"
     ]},
-    "svs": { "items": [
+  "svs": { "items": [
       "I feel full of vitality",
       "I have energy for what matters",
       "I feel alive and engaged",
       "I can mobilize quickly",
       "I generally feel in good shape"
     ]}
+  },
+  "antrenament": {
+    "oc": {
+      "cardTitle": "OmniKuno – your knowledge missions",
+      "cardDescription": "Dive into adaptive lessons and short quizzes that adjust difficulty as you learn.",
+      "missionCta": "Enter OmniKuno missions",
+      "quizCta": "Take the general knowledge test (Beta)",
+      "quizHeading": "OmniMental General Knowledge Test (Beta)",
+      "quizDescription": "This longer exam estimates your overall knowledge score and seeds the OmniKuno mission engine."
+    }
   },
   "omnikuno": {
     "difficulty": {

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 // I18nProvider is now in RootLayout; no page-level wrapper needed
 import SiteHeader from "@/components/SiteHeader";
@@ -12,7 +13,6 @@ import { useI18n } from "@/components/I18nProvider";
 import { useTStrings } from "@/components/useTStrings";
 import OmniAbilitiesForm from "@/components/OmniAbilitiesForm";
 import OmniIntentForm from "@/components/OmniIntentForm";
-import OmniKnowledgeQuiz from "@/components/OmniKnowledgeQuiz";
 import EvaluationWizard from "@/components/evaluation/EvaluationWizard";
 import { recordEvaluationTabChange } from "@/lib/progressFacts";
 import { useProgressFacts } from "@/components/useProgressFacts";
@@ -157,8 +157,24 @@ function AntrenamentContent() {
         );
       case "oc":
         return (
-          <div className="rounded-[16px] border border-[#D8C6B6] bg-white/95 px-8 py-8 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
-            <OmniKnowledgeQuiz lang={normalizedLang} />
+          <div className="rounded-[18px] border border-[#D8C6B6] bg-white/95 px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)] lg:px-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#B08A78]">OmniKuno</p>
+            <h2 className="mt-1 text-2xl font-bold text-[#2C2C2C]">{String(t("antrenament.oc.cardTitle"))}</h2>
+            <p className="mt-2 text-sm text-[#5A4B43]">{String(t("antrenament.oc.cardDescription"))}</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href="/omni-kuno"
+                className="inline-flex items-center rounded-full bg-[#2C2C2C] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#C07963]"
+              >
+                {String(t("antrenament.oc.missionCta"))}
+              </Link>
+              <Link
+                href="/knowledge-exam"
+                className="inline-flex items-center rounded-full border border-[#C07963] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#C07963] transition hover:bg-[#FFF2EB]"
+              >
+                {String(t("antrenament.oc.quizCta"))}
+              </Link>
+            </div>
           </div>
         );
       case "ose": {

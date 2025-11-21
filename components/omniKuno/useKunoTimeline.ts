@@ -24,7 +24,9 @@ export function computeLessonsStatus(
     perfSnapshot,
   );
   const fallbackActiveId = ordered.find((lesson) => !completed.has(lesson.id))?.id ?? null;
-  const activeId = adaptiveLesson?.id ?? fallbackActiveId;
+  const canUseAdaptive =
+    completed.size > 0 || perfSnapshot.recentScores.length > 0 || perfSnapshot.recentTimeSpent.length > 0;
+  const activeId = canUseAdaptive && adaptiveLesson?.id ? adaptiveLesson.id : fallbackActiveId;
 
   return ordered.map((lesson) => {
     if (completed.has(lesson.id)) {

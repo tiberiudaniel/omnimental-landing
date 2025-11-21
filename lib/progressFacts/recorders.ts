@@ -542,23 +542,27 @@ export async function recordKunoLessonProgress({
   };
 }) {
   try {
+    const modulePayload = {
+      completedIds,
+      lastUpdated: serverTimestamp() as unknown as Date,
+      ...(performance
+        ? {
+            performance: {
+              recentScores: performance.recentScores ?? [],
+              recentTimeSpent: performance.recentTimeSpent ?? [],
+              difficultyBias: performance.difficultyBias ?? 0,
+            },
+          }
+        : {}),
+    };
     await recordOmniPatch(
       {
         kuno: {
+          modules: {
+            [moduleId]: modulePayload,
+          },
           lessons: {
-            [moduleId]: {
-              completedIds,
-              lastUpdated: serverTimestamp() as unknown as Date,
-              ...(performance
-                ? {
-                    performance: {
-                      recentScores: performance.recentScores ?? [],
-                      recentTimeSpent: performance.recentTimeSpent ?? [],
-                      difficultyBias: performance.difficultyBias ?? 0,
-                    },
-                  }
-                : {}),
-            },
+            [moduleId]: modulePayload,
           },
         },
       },

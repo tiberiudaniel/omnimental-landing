@@ -1,5 +1,6 @@
 import { computeConsistencyIndexFromDates } from "./omniIntel";
 import { computeDistribution, type PracticeSessionLite } from "./progressAnalytics";
+import { normalizeKunoFacts } from "./kunoFacts";
 
 export type KunoAggregate = {
   lastPercent: number;
@@ -173,8 +174,8 @@ export function computeOmniScope(fact: Record<string, unknown> | null | undefine
   const prepared = Math.round(0.6 * planLenScore + 0.3 * recencyBoost + 0.1 * support);
 
   // 4) Knowledge baseline (Omni Kuno)
-  const kuno = (f?.omni?.kuno ?? {}) as Partial<{ knowledgeIndex: number; generalIndex: number; averagePercent: number }>;
-  const knowledge = Math.round(Math.max(0, Math.min(100, Number(kuno.generalIndex ?? kuno.knowledgeIndex ?? kuno.averagePercent ?? 0))));
+  const kunoFacts = normalizeKunoFacts(f?.omni?.kuno);
+  const knowledge = Math.round(Math.max(0, Math.min(100, Number(kunoFacts.primaryScore ?? 0))));
 
   // 5) Consistency (last 7 days sessions count)
   const sessions = Array.isArray(f?.practiceSessions) ? (f.practiceSessions as PracticeSessionLite[]) : [];
@@ -206,7 +207,8 @@ export function computeOmniFlex(fact: Record<string, unknown> | null | undefined
 }): { score: number; components: { cognitive: number; behavioral: number; adaptation: number; openness: number } } {
   const f = (fact || {}) as FactLike;
   // Cognitive: Kuno mastery breadth + intent richness/clarity
-  const mastery = (f?.omni?.kuno?.masteryByCategory ?? {}) as Record<string, number>;
+  const kunoFacts = normalizeKunoFacts(f?.omni?.kuno);
+  const mastery = kunoFacts.masteryByCategory ?? {};
   const masteryVals = Object.values(mastery).map((v) => Number(v)).filter((v) => Number.isFinite(v));
   const breadth = (() => {
     if (!masteryVals.length) return 0;

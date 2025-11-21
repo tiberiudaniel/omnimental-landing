@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
+import { normalizeKunoFacts } from "@/lib/kunoFacts";
 
 type ProgressFactLite = {
   intent?: { tags: string[]; urgency: number } | null;
   motivation?: Record<string, unknown> | null;
   evaluation?: { scores?: Record<string, number> | null } | null;
   omni?: {
-    kuno?: { completedTests: number };
+    kuno?: unknown;
     sensei?: { unlocked: boolean; completedQuestsCount?: number };
     abil?: { unlocked: boolean };
   } | null;
@@ -26,7 +27,10 @@ type Props = {
 
 export default function NextBestStep({ progress, lang, onGoToKuno, onGoToSensei, onGoToAbil, onGoToIntel, className, children }: Props) {
   const { label, action } = useMemo(() => {
-    const kunoCompleted = Number(progress?.omni?.kuno?.completedTests ?? 0) >= 1;
+    const kunoFacts = normalizeKunoFacts(progress?.omni?.kuno);
+    const kunoCompleted =
+      (kunoFacts.completedLessonsCount ?? 0) > 0 ||
+      Number(kunoFacts.legacyScores.completedTests ?? 0) >= 1;
     const senseiUnlocked = Boolean(progress?.omni?.sensei?.unlocked) || kunoCompleted;
     const abilUnlocked = Boolean(progress?.omni?.abil?.unlocked) || Number(progress?.omni?.sensei?.completedQuestsCount ?? 0) >= 1;
     const hasEval = Boolean(progress?.evaluation?.scores && Object.keys(progress?.evaluation?.scores ?? {}).length);

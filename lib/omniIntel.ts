@@ -15,10 +15,10 @@ export type OmniBlock = {
     motivationIndex?: number; // 0-100 (enhanced)
   };
   kuno: {
-    completedTests: number;
-    totalTestsAvailable: number;
-    scores: Record<string, number>;
-    knowledgeIndex: number; // 0-100 (latest)
+    completedTests?: number;
+    totalTestsAvailable?: number;
+    scores?: Record<string, number>;
+    knowledgeIndex?: number; // 0-100 (latest)
     averagePercent?: number; // 0-100 (EWMA/mean)
     runsCount?: number;
     // Optional EDU activity: number of micro-lessons completed
@@ -35,8 +35,38 @@ export type OmniBlock = {
       {
         completedIds?: string[];
         lastUpdated?: Date | { toDate: () => Date };
+        performance?: {
+          recentScores?: number[];
+          recentTimeSpent?: number[];
+          difficultyBias?: number;
+        };
       }
     >;
+    modules?: Record<
+      string,
+      {
+        completedIds?: string[];
+        lastUpdated?: Date | { toDate: () => Date };
+        xp?: number;
+        performance?: {
+          recentScores?: number[];
+          recentTimeSpent?: number[];
+          difficultyBias?: number;
+        };
+      }
+    >;
+    recommendedModuleId?: string;
+    recommendedArea?: string;
+    exam?: {
+      lastTakenAt?: number;
+      score?: number;
+      breakdown?: Record<string, number>;
+    };
+    global?: {
+      totalXp?: number;
+      completedLessons?: number;
+      currentDifficulty?: 'easy' | 'medium' | 'hard';
+    };
     gamification?: {
       xp?: number;
       badges?: string[];

@@ -672,6 +672,16 @@
   "dashboard.trendsToggle.week": "Săptămână",
   "dashboard.initialInsights": "Insight‑uri inițiale",
   "dashboard.themeLabel": "Temă",
+  "antrenament": {
+    "oc": {
+      "cardTitle": "OmniKuno – misiunile tale de cunoștințe",
+      "cardDescription": "Parcurge lecții adaptive și quiz-uri scurte care îți ajustează ritmul în timp real.",
+      "missionCta": "Intră în OmniKuno (misiuni)",
+      "quizCta": "Fă testul general de cunoștințe (Beta)",
+      "quizHeading": "Test general de cunoștințe OmniMental (Beta)",
+      "quizDescription": "Acest test mai lung estimează nivelul tău general de cunoștințe și setează baza pentru misiunile OmniKuno."
+    }
+  },
   "omnikuno": {
     "difficulty": {
       "easyLabel": "Ușor",

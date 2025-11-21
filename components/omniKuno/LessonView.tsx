@@ -14,7 +14,10 @@ export type LessonViewProps = {
   existingCompletedIds: readonly string[];
   ownerId?: string | null;
   performanceSnapshot: KunoPerformanceSnapshot;
-  onCompleted?: (lessonId: string, meta?: { timeSpentSec: number; updatedPerformance: KunoPerformanceSnapshot }) => void;
+  onCompleted?: (
+    lessonId: string,
+    meta?: { timeSpentSec: number; updatedPerformance: KunoPerformanceSnapshot; note?: string },
+  ) => void;
 };
 
 export default function LessonView({
@@ -26,21 +29,23 @@ export default function LessonView({
   performanceSnapshot,
   onCompleted,
 }: LessonViewProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const difficultyKey = asDifficulty(lesson.difficulty);
   const chipText = String(t(`omnikuno.difficulty.${difficultyKey}Chip`));
   const chipClass = DIFFICULTY_STYLES[difficultyKey].chip;
   const durationText = lesson.durationMin ? `~${lesson.durationMin} min` : null;
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(existingCompletedIds.includes(lesson.id));
+  const [reflection, setReflection] = useState("");
   const startRef = useRef(Date.now());
   useEffect(() => {
     setDone(existingCompletedIds.includes(lesson.id));
     startRef.current = Date.now();
+    setReflection("");
   }, [existingCompletedIds, lesson.id]);
 
   const handleComplete = async () => {
-    if (busy || done) return;
+    if (busy || done || reflection.trim().length < 10) return;
     setBusy(true);
     try {
       const merged = Array.from(new Set([...existingCompletedIds, lesson.id]));
@@ -49,7 +54,7 @@ export default function LessonView({
       await recordKunoLessonProgress({ moduleId, completedIds: merged, ownerId, performance: updatedPerformance });
       applyKunoXp(areaKey, getLessonXp());
       setDone(true);
-      onCompleted?.(lesson.id, { timeSpentSec, updatedPerformance });
+      onCompleted?.(lesson.id, { timeSpentSec, updatedPerformance, note: reflection.trim() });
     } finally {
       setBusy(false);
     }
@@ -71,10 +76,33 @@ export default function LessonView({
       <div className="rounded-2xl border border-dashed border-[#E4DAD1] bg-[#FFFBF7] p-4 text-[#4D3F36]">
         Conținut placeholder. Aici vom reda lecția detaliată.
       </div>
+      <div className="space-y-1">
+        <label className="text-[12px] font-semibold text-[#7B6B60]">
+          {lang === "ro"
+            ? "Notează ce ai înțeles din această lecție (minim 10 caractere)."
+            : "Write what you’re taking away from this lesson (min 10 characters)."}
+        </label>
+        <textarea
+          value={reflection}
+          onChange={(e) => setReflection(e.target.value)}
+          rows={3}
+          className="w-full rounded-2xl border border-[#E4DAD1] bg-white px-3 py-2 text-sm text-[#2C2C2C] focus:border-[#C07963] focus:outline-none"
+          placeholder={lang === "ro" ? "Ex: ce tehnică aplici, ce ai observat..." : "e.g. what you’ll apply, what you noticed..."}
+        />
+        <p className="text-[11px] text-[#7B6B60]">
+          {reflection.trim().length < 10
+            ? lang === "ro"
+              ? `Mai ai nevoie de ${Math.max(0, 10 - reflection.trim().length)} caractere.`
+              : `Need ${Math.max(0, 10 - reflection.trim().length)} more characters.`
+            : lang === "ro"
+              ? "Perfect, poți salva lecția."
+              : "Great, you can mark the lesson complete."}
+        </p>
+      </div>
       <button
         type="button"
         onClick={handleComplete}
-        disabled={busy || done}
+        disabled={busy || done || reflection.trim().length < 10}
         className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
       >
         {done ? "Lecție completă" : busy ? "Se salvează..." : "Marchează lecția ca finalizată"}

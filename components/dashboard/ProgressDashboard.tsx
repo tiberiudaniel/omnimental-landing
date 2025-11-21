@@ -20,7 +20,7 @@ import {
   computeMonthlyDailyCounts,
 } from "@/lib/progressAnalytics";
 import { toMsLocal, getCurrentFocusTag } from "@/lib/dashboard/progressSelectors";
-import { OMNIKUNO_MODULES } from "@/config/omniKunoLessons";
+import { OMNIKUNO_MODULES, type OmniKunoModuleConfig } from "@/config/omniKunoLessons";
 import { normalizePerformance } from "@/lib/omniKunoAdaptive";
 import InternalKpiCard from "@/components/dashboard/InternalKpiCard";
 import ActionTrendsCard from "@/components/dashboard/ActionTrendsCard";
@@ -29,6 +29,7 @@ import ProfileIndicesCard from "@/components/dashboard/ProfileIndicesCard";
 import CenterColumnCards, { type FocusThemeInfo } from "@/components/dashboard/CenterColumnCards";
 import SidebarCards from "@/components/dashboard/SidebarCards";
 import type { KunoMissionCardData } from "@/components/dashboard/KunoMissionCard";
+import { normalizeKunoFacts } from "@/lib/kunoFacts";
 
 export default function ProgressDashboard({
   profileId,
@@ -52,6 +53,7 @@ export default function ProgressDashboard({
   // Read debug flag from URL early to keep hook order stable across renders
   const search = useSearchParams();
   const debugMode = (search?.get('debug') === '1');
+  const kunoFacts = useMemo(() => normalizeKunoFacts(facts?.omni?.kuno), [facts?.omni?.kuno]);
   const [timeframe, setTimeframe] = useState<"day" | "week" | "month">("week");
   const [qaOpen, setQaOpen] = useState(false);
   const [qaCategory, setQaCategory] = useState<'practice' | 'reflection' | 'knowledge'>('practice');
@@ -78,10 +80,7 @@ export default function ProgressDashboard({
         (facts?.omni?.scope?.motivationIndex as number | undefined) ??
         (facts?.omni?.scope?.directionMotivationIndex as number | undefined) ??
         0;
-      const currentKuno =
-        (facts?.omni?.kuno?.averagePercent as number | undefined) ??
-        (facts?.omni?.kuno?.knowledgeIndex as number | undefined) ??
-        0;
+      const currentKuno = typeof kunoFacts.primaryScore === "number" ? kunoFacts.primaryScore : 0;
       const prevO = window.localStorage.getItem(`omni_intel_prev_${pid}`);
       const prevM = window.localStorage.getItem(`motivation_idx_prev_${pid}`);
       const prevK = window.localStorage.getItem(`omni_kuno_prev_${pid}`);
@@ -95,7 +94,7 @@ export default function ProgressDashboard({
     } catch {
       return { omniIntelDelta: null, motivationDelta: null, kunoDelta: null };
     }
-  }, [loading, profileId, facts?.omni]);
+  }, [facts?.omni, kunoFacts.primaryScore, loading, profileId]);
   // const [insightExpanded] = useState(false);
   const [questExpanded, setQuestExpanded] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
@@ -106,17 +105,14 @@ export default function ProgressDashboard({
   }, []);
   const showAchv = useMemo(() => {
     if (typeof window === "undefined") return false;
-    const omni = (facts?.omni as OmniBlock | undefined) ?? undefined;
-    const score = (omni?.kuno?.averagePercent ??
-      omni?.kuno?.knowledgeIndex ??
-      0) as number;
+    const score = typeof kunoFacts.primaryScore === "number" ? kunoFacts.primaryScore : 0;
     const hasInsights =
       Array.isArray(profile?.simulatedInsights) &&
       (profile?.simulatedInsights?.length ?? 0) > 0;
     const dismissed =
       window.localStorage.getItem("omni_onboarding_achv_dismissed") === "1";
     return score > 0 && hasInsights && !dismissed && !achvDismissed;
-  }, [facts, profile?.simulatedInsights, achvDismissed]);
+  }, [achvDismissed, kunoFacts.primaryScore, profile?.simulatedInsights]);
   // Persist current snapshot for next visit (no setState inside effect)
   useEffect(() => {
     if (typeof window === "undefined" || loading) return;
@@ -128,10 +124,7 @@ export default function ProgressDashboard({
         (facts?.omni?.scope?.motivationIndex as number | undefined) ??
         (facts?.omni?.scope?.directionMotivationIndex as number | undefined) ??
         0;
-      const currentKuno =
-        (facts?.omni?.kuno?.averagePercent as number | undefined) ??
-        (facts?.omni?.kuno?.knowledgeIndex as number | undefined) ??
-        0;
+      const currentKuno = typeof kunoFacts.primaryScore === "number" ? kunoFacts.primaryScore : 0;
       window.localStorage.setItem(
         `omni_intel_prev_${pid}`,
         String(currentOmni),
@@ -145,7 +138,7 @@ export default function ProgressDashboard({
         String(currentKuno),
       );
     } catch {}
-  }, [loading, profileId, facts?.omni]);
+  }, [facts?.omni, kunoFacts.primaryScore, loading, profileId]);
   // Loading state handled inline in render to keep hooks order stable
   // No hard gating: safe fallbacks (no hooks here to avoid order changes with loading early return)
   const prog = adaptProgressFacts(facts);
@@ -241,49 +234,41 @@ export default function ProgressDashboard({
     Math.round(
       (prog.indices.clarity + prog.indices.calm + prog.indices.energy) / 3,
     );
-  let omniCunoScore = ((omni?.kuno as unknown as { generalIndex?: number })?.generalIndex ??
-    omni?.kuno?.averagePercent ??
-    omni?.kuno?.knowledgeIndex ??
-    0) as number;
+  const kunoPercents: number[] = [];
+  const primaryPercent = typeof kunoFacts.primaryScore === "number" ? Math.round(kunoFacts.primaryScore) : null;
+  if (primaryPercent && primaryPercent > 0) kunoPercents.push(primaryPercent);
+  const avgPercent =
+    typeof kunoFacts.legacyScores.averagePercent === "number" ? Math.round(kunoFacts.legacyScores.averagePercent) : null;
+  if (avgPercent && avgPercent > 0) kunoPercents.push(avgPercent);
+  const legacyIndex =
+    typeof kunoFacts.legacyScores.knowledgeIndex === "number" ? Math.round(kunoFacts.legacyScores.knowledgeIndex) : null;
+  if (legacyIndex && legacyIndex > 0) kunoPercents.push(legacyIndex);
+  const kunoComposite = computeKunoComposite({
+    percents: kunoPercents,
+    masteryByCategory: kunoFacts.masteryByCategory ?? null,
+    lessonsCompleted: kunoFacts.completedLessonsCount,
+  });
+  let omniCunoScore = kunoComposite.generalIndex;
   if (!omniCunoScore) {
-    try {
-      const k = (omni?.kuno as unknown as { knowledgeIndex?: number; averagePercent?: number; masteryByCategory?: Record<string, number>; lessonsCompletedCount?: number } | undefined);
-      const percents: number[] = [];
-      if (typeof k?.averagePercent === 'number' && k.averagePercent > 0) percents.push(Math.round(k.averagePercent));
-      if (typeof k?.knowledgeIndex === 'number' && k.knowledgeIndex > 0) percents.push(Math.round(k.knowledgeIndex));
-      const comp = computeKunoComposite({
-        percents,
-        masteryByCategory: k?.masteryByCategory ?? null,
-        lessonsCompleted: Number(k?.lessonsCompletedCount ?? 0),
-      });
-      if (comp.generalIndex > 0) omniCunoScore = comp.generalIndex;
-    } catch {}
+    omniCunoScore = primaryPercent ?? kunoPercents[0] ?? 0;
   }
   // Build dynamic tooltip for Omni Kuno components if data is available
   const omniKunoTooltipDynamic = (() => {
     try {
-      const k = (omni?.kuno as unknown as { knowledgeIndex?: number; averagePercent?: number; masteryByCategory?: Record<string, number>; lessonsCompletedCount?: number } | undefined);
-      const percents: number[] = [];
-      if (typeof k?.averagePercent === 'number' && k.averagePercent > 0) percents.push(Math.round(k.averagePercent));
-      if (typeof k?.knowledgeIndex === 'number' && k.knowledgeIndex > 0) percents.push(Math.round(k.knowledgeIndex));
-      const comp = computeKunoComposite({
-        percents,
-        masteryByCategory: k?.masteryByCategory ?? null,
-        lessonsCompleted: Number(k?.lessonsCompletedCount ?? 0),
-      });
-      const masteryMean = (() => {
-        const m = k?.masteryByCategory ? Object.values(k.masteryByCategory).filter((v) => Number.isFinite(v)) as number[] : [];
-        return m.length ? Math.round(m.reduce((a,b)=>a+b,0)/m.length) : 0;
-      })();
-      const lessons = Number(k?.lessonsCompletedCount ?? 0);
+      const ew = kunoComposite.components.ewma || (kunoPercents[0] ?? 0);
+      const masteryMean = kunoComposite.components.masteryMean;
+      const lessons = kunoFacts.completedLessonsCount;
+      if (!ew && !masteryMean && !lessons) {
+        return null;
+      }
       const tooltipItems = lang === 'ro'
         ? [
-            `70% EWMA/medie teste: ${comp.components.ewma || (percents[0] ?? 0)}%`,
+            `70% EWMA/medie teste: ${ew}%`,
             `25% Măiestrie medie: ${masteryMean}%`,
             `5% Lecții terminate: ${lessons}`,
           ]
         : [
-            `70% EWMA/mean quizzes: ${comp.components.ewma || (percents[0] ?? 0)}%`,
+            `70% EWMA/mean quizzes: ${ew}%`,
             `25% Category mastery mean: ${masteryMean}%`,
             `5% Lessons completed: ${lessons}`,
           ];
@@ -296,21 +281,10 @@ export default function ProgressDashboard({
   const omniKunoDebugBadge = (() => {
     if (!debugMode) return undefined;
     try {
-      const k = (omni?.kuno as unknown as { knowledgeIndex?: number; averagePercent?: number; masteryByCategory?: Record<string, number>; lessonsCompletedCount?: number } | undefined);
-      const percents: number[] = [];
-      if (typeof k?.averagePercent === 'number' && k.averagePercent > 0) percents.push(Math.round(k.averagePercent));
-      if (typeof k?.knowledgeIndex === 'number' && k.knowledgeIndex > 0) percents.push(Math.round(k.knowledgeIndex));
-      const comp = computeKunoComposite({
-        percents,
-        masteryByCategory: k?.masteryByCategory ?? null,
-        lessonsCompleted: Number(k?.lessonsCompletedCount ?? 0),
-      });
-      const masteryMean = (() => {
-        const m = k?.masteryByCategory ? Object.values(k.masteryByCategory).filter((v) => Number.isFinite(v)) as number[] : [];
-        return m.length ? Math.round(m.reduce((a,b)=>a+b,0)/m.length) : 0;
-      })();
-      const lessons = Number(k?.lessonsCompletedCount ?? 0);
-      const ew = comp.components.ewma || (percents[0] ?? 0);
+      const ew = kunoComposite.components.ewma || (kunoPercents[0] ?? 0);
+      const masteryMean = kunoComposite.components.masteryMean;
+      const lessons = kunoFacts.completedLessonsCount;
+      if (!ew && !masteryMean && !lessons) return undefined;
       return `e:${ew}% m:${masteryMean}% l:${lessons}`;
     } catch {
       return undefined;
@@ -422,16 +396,22 @@ export default function ProgressDashboard({
     return (lastSpace > 60 ? slice.slice(0, lastSpace) : slice).trimEnd() + "…";
   }, [quest?.text]);
   const kunoMissionData: KunoMissionCardData | null = useMemo(() => {
-    const kunoBlock =
-      (facts?.omni?.kuno as {
-        recommendedModuleId?: string;
-        lessons?: Record<string, { completedIds?: string[]; performance?: unknown }>;
-        gamification?: { xp?: number };
-      } | undefined) ?? undefined;
     const pairs = Object.entries(OMNIKUNO_MODULES);
-    const recommended = kunoBlock?.recommendedModuleId
-      ? pairs.find(([, module]) => module.moduleId === kunoBlock.recommendedModuleId)
-      : undefined;
+    const explicitArea = (() => {
+      if (kunoFacts.recommendedArea && Object.hasOwn(OMNIKUNO_MODULES, kunoFacts.recommendedArea)) {
+        return kunoFacts.recommendedArea as keyof typeof OMNIKUNO_MODULES;
+      }
+      return null;
+    })();
+    const recommended = (() => {
+      if (kunoFacts.recommendedModuleId) {
+        return pairs.find(([, module]) => module.moduleId === kunoFacts.recommendedModuleId);
+      }
+      if (explicitArea) {
+        return [explicitArea, OMNIKUNO_MODULES[explicitArea]] as [keyof typeof OMNIKUNO_MODULES, OmniKunoModuleConfig];
+      }
+      return undefined;
+    })();
     const fallbackArea = (() => {
       const key = (focusTheme.categoryKey || "calm") as keyof typeof OMNIKUNO_MODULES;
       if (OMNIKUNO_MODULES[key]) return key;
@@ -439,18 +419,19 @@ export default function ProgressDashboard({
     })();
     const [areaKey, module] = recommended ?? [fallbackArea, OMNIKUNO_MODULES[fallbackArea]];
     if (!module) return null;
-    const lessonBlock = kunoBlock?.lessons?.[module.moduleId] ?? null;
-    const completedIds =
-      (lessonBlock?.completedIds?.filter((id): id is string => typeof id === "string") ?? []) as string[];
-    const xp = Number(kunoBlock?.gamification?.xp ?? 0);
+    const moduleSnapshot = kunoFacts.modules[module.moduleId];
+    const completedIds = moduleSnapshot?.completedIds ?? [];
+    const xp = Number((kunoFacts.gamification as { xp?: number } | null)?.xp ?? 0);
     return {
       areaKey,
       module,
       completedIds,
       xp: Number.isFinite(xp) ? xp : 0,
-      performance: normalizePerformance((lessonBlock?.performance as Partial<{ recentScores: number[]; recentTimeSpent: number[]; difficultyBias: number }>) ?? null),
+      performance: normalizePerformance(
+        (moduleSnapshot?.performance as Partial<{ recentScores: number[]; recentTimeSpent: number[]; difficultyBias: number }> | null) ?? null,
+      ),
     };
-  }, [facts?.omni?.kuno, focusTheme.categoryKey]);
+  }, [focusTheme.categoryKey, kunoFacts]);
   // Optional: emit compact debug JSON for E2E when ?debug=1
   const debugJson = (() => {
     try {

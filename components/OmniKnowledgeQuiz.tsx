@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import {
   omniKnowledgeModules,
@@ -9,6 +10,34 @@ import {
 import { submitOmniKnowledgeAssessment } from "@/lib/submitEvaluation";
 import { recordKnowledgeViewSummary, recordOmniPatch } from "@/lib/progressFacts";
 import { useProfile } from "./ProfileProvider";
+import { OMNIKUNO_MODULES } from "@/config/omniKunoLessons";
+
+type KunoAreaKey = keyof typeof OMNIKUNO_MODULES;
+
+const AREA_LABELS_RO: Record<KunoAreaKey, string> = {
+  calm: "Calm emoțional",
+  energy: "Energie & Somn",
+  relations: "Relații & susținere",
+  performance: "Performanță",
+  sense: "Sens & identitate",
+};
+
+const AREA_LABELS_EN: Record<KunoAreaKey, string> = {
+  calm: "Calm & regulation",
+  energy: "Energy & sleep",
+  relations: "Relationships & support",
+  performance: "Performance",
+  sense: "Meaning & identity",
+};
+
+const KNOWLEDGE_MODULE_TO_AREA: Record<string, KunoAreaKey> = {
+  hrv: "calm",
+  breath: "calm",
+  sleep: "energy",
+  cbt: "relations",
+  ooda: "performance",
+  mindfulness: "sense",
+};
 
 const buildDefaultAnswers = () => {
   const map: Record<string, number | null> = {};
@@ -39,6 +68,7 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [lastDurationMs, setLastDurationMs] = useState<number | null>(null);
   const [flagSuspicious, setFlagSuspicious] = useState(false);
+  const [recommendedArea, setRecommendedArea] = useState<KunoAreaKey | null>(null);
   const quizStartRef = useRef<number>(Date.now());
   const summaryRef = useRef<HTMLDivElement | null>(null);
   const score = useMemo(() => computeOmniKnowledgeScore(answers), [answers]);
@@ -61,6 +91,7 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
     setError(null);
     setLastDurationMs(null);
     setFlagSuspicious(false);
+    setRecommendedArea(null);
     quizStartRef.current = Date.now();
   };
 
@@ -88,6 +119,10 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
         }
         return acc;
       }, {});
+      const areaAggregate = aggregateAreaStats(score);
+      const recommendedFocus = areaAggregate.bestArea;
+      const breakdown = buildExamBreakdown(score);
+      const recommendedModuleId = OMNIKUNO_MODULES[recommendedFocus]?.moduleId;
       await submitOmniKnowledgeAssessment({
         lang,
         score,
@@ -108,16 +143,30 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
       setFlagSuspicious(suspicious);
       // Patch Omni: knowledgeIndex + mark at least one test completed
       try {
-        await recordOmniPatch({
-          kuno: { knowledgeIndex: score.percent, completedTests: 1 },
-        }, profile?.id);
+        await recordOmniPatch(
+          {
+            kuno: {
+              knowledgeIndex: score.percent,
+              completedTests: 1,
+              ...(recommendedModuleId ? { recommendedModuleId } : {}),
+              recommendedArea: recommendedFocus,
+              exam: {
+                score: score.percent,
+                lastTakenAt: now,
+                breakdown,
+              },
+            },
+          },
+          profile?.id,
+        );
       } catch (patchErr) {
         console.warn("omni patch (knowledgeIndex) failed", patchErr);
       }
+      setRecommendedArea(recommendedFocus);
       setMessage(
         lang === "ro"
-          ? "Scorul Omni-Cunoaștere a fost salvat."
-          : "Omni-Knowledge score saved successfully.",
+          ? `Scorul Omni-Cunoaștere a fost salvat. Începe cu misiunile din zona ${AREA_LABELS_RO[recommendedFocus]}.`
+          : `Your Omni-Knowledge score is saved. Start with missions in ${AREA_LABELS_EN[recommendedFocus]}.`,
       );
     } catch (submitError) {
       console.error("OC submit failed", submitError);
@@ -170,8 +219,16 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
         <div className="border border-[#E60012] bg-[#FBE9EB] px-4 py-3 text-sm text-[#2C2C2C]">{error}</div>
       )}
       {message && (
-        <div className="border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-3 text-sm text-[#1F3C2F]">
-          {message}
+        <div className="space-y-3 border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-3 text-sm text-[#1F3C2F]">
+          <p>{message}</p>
+          {recommendedArea ? (
+            <Link
+              href="/omni-kuno"
+              className="inline-flex items-center rounded-full border border-[#1F3C2F] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#1F3C2F] transition hover:bg-[#1F3C2F] hover:text-white"
+            >
+              {lang === "ro" ? "Deschide OmniKuno" : "Open OmniKuno"}
+            </Link>
+          ) : null}
         </div>
       )}
 
@@ -363,6 +420,42 @@ function ModuleBreakdown({ score }: { score: OmniKnowledgeScores }) {
       </div>
     </section>
   );
+}
+
+function aggregateAreaStats(score: OmniKnowledgeScores) {
+  const stats: Record<KunoAreaKey, { raw: number; max: number; percent: number }> = {
+    calm: { raw: 0, max: 0, percent: 0 },
+    energy: { raw: 0, max: 0, percent: 0 },
+    relations: { raw: 0, max: 0, percent: 0 },
+    performance: { raw: 0, max: 0, percent: 0 },
+    sense: { raw: 0, max: 0, percent: 0 },
+  };
+  Object.entries(score.breakdown).forEach(([moduleKey, value]) => {
+    const area = KNOWLEDGE_MODULE_TO_AREA[moduleKey] ?? "calm";
+    stats[area].raw += value.raw;
+    stats[area].max += value.max;
+  });
+  let bestArea: KunoAreaKey = "calm";
+  let bestPct = -1;
+  (Object.keys(stats) as KunoAreaKey[]).forEach((area) => {
+    const areaData = stats[area];
+    areaData.percent = areaData.max ? Math.round((areaData.raw / areaData.max) * 100) : 0;
+    if (areaData.percent > bestPct) {
+      bestPct = areaData.percent;
+      bestArea = area;
+    }
+  });
+  return { stats, bestArea };
+}
+
+function buildExamBreakdown(score: OmniKnowledgeScores) {
+  const map: Record<string, number> = {};
+  Object.entries(score.breakdown).forEach(([moduleKey, data]) => {
+    const ratio = data.max ? data.raw / data.max : 0;
+    const clamped = Number.isFinite(ratio) ? Math.max(0, Math.min(1, ratio)) : 0;
+    map[moduleKey] = Number(clamped.toFixed(4));
+  });
+  return map;
 }
 
 function DurationBadge({

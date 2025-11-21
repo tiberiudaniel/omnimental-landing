@@ -1,6 +1,7 @@
 "use client";
 
 import type { ProgressFact } from "./progressFacts";
+import { normalizeKunoFacts } from "./kunoFacts";
 
 export type UnlockState = {
   scopeUnlocked: boolean;
@@ -15,7 +16,10 @@ export function getUnlockState(progress?: ProgressFact | null): UnlockState {
   const tagsCount = Number(progress?.intent?.tags?.length ?? 0);
   const scopeMin = tagsCount >= 5; // proxy pentru minCharsMet
 
-  const kunoCompleted = Number(progress?.omni?.kuno?.completedTests ?? 0) >= 1;
+  const kunoFacts = normalizeKunoFacts(progress?.omni?.kuno);
+  const kunoCompleted =
+    (kunoFacts.completedLessonsCount ?? 0) > 0 ||
+    Number(kunoFacts.legacyScores.completedTests ?? 0) >= 1;
   const senseiCompleted = Number(progress?.omni?.sensei?.completedQuestsCount ?? 0) >= 1;
   const abilUnlocked = Boolean(progress?.omni?.abil?.unlocked) || senseiCompleted;
   const evalCount = Number(progress?.omni?.intel?.evaluationsCount ?? 0);
