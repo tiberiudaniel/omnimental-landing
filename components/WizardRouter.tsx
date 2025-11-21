@@ -13,7 +13,6 @@ import { recordEvaluationTabChange } from "@/lib/progressFacts";
 import SessionDetails from "./SessionDetails";
 import type { IntentPrimaryCategory, IntentCloudWord } from "@/lib/intentExpressions";
 import type { ResolutionSpeed, BudgetPreference, GoalType, EmotionalState, FormatPreference } from "@/lib/evaluation";
-import { useState } from "react";
 import MultiTypewriter from "./MultiTypewriter";
 import TypewriterText from "./TypewriterText";
 import { motion } from "framer-motion";
@@ -21,28 +20,14 @@ import { recordFamiliarityMentalCoaching } from "@/lib/progressFacts";
 import StepNeedMain from "./wizard/StepNeedMain";
 import StepNeedConfidence from "./wizard/StepNeedConfidence";
 import type { NeedOptionId } from "@/config/needSurveyConfig";
-
-export type Step =
-  | "preIntro"
-  | "intro"
-  | "firstInput"
-  | "reflectionPrompt"
-  | "intent"
-  | "intentMotivation" // canonical name
-  | "intentSummary" // legacy alias supported
-  | "reflectionSummary"
-  | "needMain"
-  | "needConfidence"
-  | "microLessonInfo"
-  | "cards"
-  | "details";
+import { getWizardStepTestId, type WizardStepId } from "./useWizardSteps";
 
 export type IntentCategoryCount = { category: string; count: number };
 
 type Props = {
-  step: Step;
+  step: WizardStepId;
   lang: string;
-  navigateToStep: (s: Step) => void;
+  navigateToStep: (s: WizardStepId) => void;
 
   // First input
   onFirstInputSubmit: (text: string, meta?: { expressionId?: string; category?: IntentPrimaryCategory }) => Promise<void | boolean> | void | boolean;
@@ -179,10 +164,6 @@ export default function WizardRouter(props: Props) {
     returnLabel,
   } = props;
 
-  // Local guide sequencing for the Intent step (second instruction waits the first sequence)
-  const [intentInstructionDone, setIntentInstructionDone] = useState(false);
-  // Single typewriter now; intro gate removed
-
   switch (step) {
     case "preIntro":
       return <IntroAnimation onComplete={() => navigateToStep("intro")} />;
@@ -217,12 +198,13 @@ export default function WizardRouter(props: Props) {
         <WizardReflection
           lines={lines}
           onContinue={() => navigateToStep("intent")}
-          cardTestId="wizard-step-reflection-card"
+          cardTestId={`${getWizardStepTestId("reflectionPrompt")}-card`}
           compact
         />
       );
     }
     case "intent": {
+      const intentTestId = getWizardStepTestId("intent");
       const linesRaw = s('wizard.intent');
       const lines = Array.isArray(linesRaw)
         ? (linesRaw as string[])
@@ -239,30 +221,28 @@ export default function WizardRouter(props: Props) {
               ]);
       // Instruction removed — we run only the scaffold lines
       return (
-        <div className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8">
+        <section data-testid={intentTestId} className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8">
           <div className="w-full max-w-5xl rounded-[12px] border border-[#E4D8CE] bg-white/92 px-6 py-5 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
             {/* Single typewriter: use the scaffold lines in the lower position */}
             <div className="mb-4 w-full flex justify-center">
               <div className="max-w-xl text-left w-full">
-                <MultiTypewriter lines={lines} speed={60} gapMs={500} onDone={() => setIntentInstructionDone(true)} />
+                <MultiTypewriter lines={lines} speed={60} gapMs={500} />
               </div>
             </div>
-            {intentInstructionDone ? (
-              <div className="mt-2">
-                <IntentCloud
-                  key={cloudKey}
-                  minSelection={minSelection}
-                  maxSelection={maxSelection}
-                  onComplete={(result) => {
-                    onIntentComplete(result);
-                    navigateToStep("reflectionSummary");
-                  }}
-                  words={words}
-                />
-              </div>
-            ) : null}
+            <div className="mt-2">
+              <IntentCloud
+                key={cloudKey}
+                minSelection={minSelection}
+                maxSelection={maxSelection}
+                onComplete={(result) => {
+                  onIntentComplete(result);
+                  navigateToStep("reflectionSummary");
+                }}
+                words={words}
+              />
+            </div>
           </div>
-        </div>
+        </section>
       );
     }
     case "reflectionSummary": {
@@ -284,15 +264,16 @@ export default function WizardRouter(props: Props) {
         profileCtx?.profile?.id &&
           (profileCtx.profile.selection === "individual" || profileCtx.profile.selection === "group"),
       );
+      const summaryTestId = getWizardStepTestId("reflectionSummary");
       return (
-        <div className="relative" data-testid="wizard-step-reflection">
+        <div className="relative" data-testid={summaryTestId}>
           <WizardReflection
             lines={lines}
             onContinue={() => navigateToStep("needMain")}
             categories={intentCategories}
             maxSelection={maxSelection}
             categoryLabels={categoryLabels}
-            testId="wizard-step-reflection-card"
+            cardTestId={`${summaryTestId}-card`}
           />
           {/* Mobile FAB: Journal only if selection allows; else prompts account/choice */}
           <div className="pointer-events-none fixed bottom-4 right-4 z-40 block sm:hidden">
@@ -355,8 +336,7 @@ export default function WizardRouter(props: Props) {
         </div>
       );
     }
-    case "intentMotivation":
-    case "intentSummary": {
+    case "intentMotivation": {
       const sorted = [...intentCategories].filter(c => c.count > 0).sort((a,b) => b.count - a.count);
       const primary = sorted[0];
       const primaryAreaLabel = primary ? (categoryLabels[primary.category] ?? primary.category) : '';
@@ -511,8 +491,6 @@ export default function WizardRouter(props: Props) {
           recommendedPath={recommendedPath}
           onCardSelect={onCardSelect}
           cardLabels={{ individual: s("cardIndividualLabel", "Individual"), group: s("cardGroupLabel", "Group") }}
-          accountPromptMessage={s("accountPromptMessage", lang === 'ro' ? "Salvează-ți progresul și vezi istoricul evaluărilor." : "Save your progress and see your evaluation history.")}
-          accountPromptButton={s("accountPromptButton", lang === 'ro' ? "Creează cont" : "Create account")}
           isSavingChoice={isSavingChoice}
           savingChoiceType={savingChoiceType}
           errorMessage={saveError}

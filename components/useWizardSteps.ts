@@ -4,22 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { readWizardState, writeWizardState } from "./wizardStorage";
 
-export type Step =
-  | "preIntro"
-  | "intro"
-  | "firstInput"
-  | "reflectionPrompt"
-  | "intent"
-  | "reflectionSummary"
-  | "needMain"
-  | "needConfidence"
-  | "microLessonInfo"
-  | "intentMotivation" // new canonical name
-  | "intentSummary" // legacy alias accepted in URL
-  | "cards"
-  | "details";
-
-const ORDERED_STEPS: Step[] = [
+export const WIZARD_STEP_IDS = [
   "preIntro",
   "intro",
   "firstInput",
@@ -32,45 +17,44 @@ const ORDERED_STEPS: Step[] = [
   "intentMotivation",
   "cards",
   "details",
-];
+] as const;
 
-const LEGACY_ALIASES: Record<string, Step> = {
+export type WizardStepId = (typeof WIZARD_STEP_IDS)[number];
+
+const LEGACY_ALIASES: Record<string, WizardStepId> = {
   intentSummary: "intentMotivation",
 };
 
-const isStep = (value: string | null): value is Step => {
+export function getWizardStepTestId(step: WizardStepId) {
+  return `wizard-step-${step}` as const;
+}
+
+const ORDERED_STEPS: WizardStepId[] = [...WIZARD_STEP_IDS];
+
+const isStep = (value: string | null): value is WizardStepId => {
   if (!value) return false;
-  if (ORDERED_STEPS.includes(value as Step)) return true;
+  if (ORDERED_STEPS.includes(value as WizardStepId)) return true;
   return Boolean(LEGACY_ALIASES[value]);
 };
 
-export function useWizardSteps(initialStep: Step = "preIntro") {
+export function useWizardSteps(initialStep: WizardStepId = "preIntro") {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialParamStep = searchParams?.get("step");
   const hasQueryStepRef = useRef(isStep(initialParamStep));
-  const [localStep, setLocalStep] = useState<Step>(
-    isStep(initialParamStep) ? (initialParamStep as Step) : initialStep,
+  const [localStep, setLocalStep] = useState<WizardStepId>(
+    isStep(initialParamStep) ? (initialParamStep as WizardStepId) : initialStep,
   );
   const step = useMemo(() => {
     const paramStep = searchParams?.get("step");
     if (isStep(paramStep)) {
-      return (LEGACY_ALIASES[paramStep as string] ?? (paramStep as Step));
+      return LEGACY_ALIASES[paramStep as string] ?? (paramStep as WizardStepId);
     }
     return localStep;
   }, [localStep, searchParams]);
 
-  // Keep localStep in sync with URL changes (e.g., Back/Forward navigation)
-  useEffect(() => {
-    const paramStep = searchParams?.get("step");
-    if (isStep(paramStep)) {
-      const normalized = LEGACY_ALIASES[paramStep as string] ?? (paramStep as Step);
-      setLocalStep((prev) => (normalized !== prev ? normalized : prev));
-    }
-  }, [searchParams]);
-
   const goToStep = useCallback(
-    (next: Step) => {
+    (next: WizardStepId) => {
       setLocalStep(next);
       const params = new URLSearchParams(searchParams?.toString() ?? "");
       params.set("step", next);
@@ -82,14 +66,28 @@ export function useWizardSteps(initialStep: Step = "preIntro") {
   );
 
   useEffect(() => {
-    if (hasQueryStepRef.current) {
+    const paramStep = searchParams?.get("step");
+    if (isStep(paramStep)) {
+      const normalized = LEGACY_ALIASES[paramStep as string] ?? (paramStep as WizardStepId);
+      if (normalized !== localStep) {
+        queueMicrotask(() => setLocalStep((prev) => (prev !== normalized ? normalized : prev)));
+      }
+      if (!hasQueryStepRef.current) {
+        hasQueryStepRef.current = true;
+      }
       return;
     }
-    const stored = readWizardState();
-    if (stored?.step && isStep(stored.step)) {
-      setLocalStep(stored.step as Step);
+    if (!hasQueryStepRef.current) {
+      queueMicrotask(() => {
+        if (hasQueryStepRef.current) return;
+        const stored = readWizardState();
+        if (stored?.step && isStep(stored.step)) {
+          setLocalStep(stored.step as WizardStepId);
+        }
+        hasQueryStepRef.current = true;
+      });
     }
-  }, []);
+  }, [localStep, searchParams]);
 
   useEffect(() => {
     writeWizardState({ step });

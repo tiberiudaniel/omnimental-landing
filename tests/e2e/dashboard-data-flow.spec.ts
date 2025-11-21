@@ -89,7 +89,7 @@ test.describe('Beta flows', () => {
   test('Flow 1: New user → onboarding → progress', async ({ page }) => {
     await resetSession(page);
     // Drive minimal wizard
-    await go(page, '/wizard?step=intent&lang=ro');
+    await go(page, '/wizard?step=intent&lang=ro&e2e=1');
     await fillWizardForUserProfile(page, {
       name: 'Flow1', urgency: 7, determination: 4, weeklyHours: 4, speed: 'Săptămâni', budget: 'Buget mediu', picks: 6,
     });

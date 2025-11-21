@@ -1,0 +1,81 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - button "Autentificare" [ref=e5]
+        - generic "H7ihwU19wYTg6uCiev5bLrh4Sys1" [ref=e6]: Oaspete
+        - generic [ref=e7]:
+          - button "RO" [pressed] [ref=e8]
+          - generic [ref=e9]: "-"
+          - button "EN" [ref=e10]
+          - generic "Salvare automată" [ref=e11]
+      - generic [ref=e12]:
+        - link "OmniMental" [ref=e13] [cursor=pointer]:
+          - /url: /intro
+          - img "OmniMental logo" [ref=e14]
+          - generic [ref=e15]: OmniMental
+        - button "Opțiuni wizard" [ref=e18]: ⋯
+    - main [ref=e19]:
+      - generic [ref=e22]:
+        - paragraph [ref=e23]: Pasul 2 din 4
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - generic "Pasul 1" [ref=e26]
+            - generic [ref=e27]: Context
+          - generic [ref=e29]:
+            - generic "Pasul 2" [ref=e30]
+            - generic [ref=e31]: Scop și intenție
+          - generic [ref=e33]:
+            - generic "Pasul 3" [ref=e34]
+            - generic [ref=e35]: Motivație & Resurse
+          - generic [ref=e37]:
+            - generic "Pasul 4" [ref=e38]
+            - generic [ref=e39]: Recomandare
+      - generic [ref=e45]:
+        - heading "În continuare vei primi combinații scurte de explicații, exerciții și reflecții, nu doar sfaturi generale." [level=2] [ref=e49]:
+          - generic "În continuare vei primi combinații scurte de explicații, exerciții și reflecții, nu doar sfaturi generale." [ref=e50]:
+            - text: În continuare vei primi comb
+            - generic [ref=e51]: "|"
+        - button "Continuă" [ref=e52]
+  - contentinfo [ref=e53]:
+    - generic [ref=e55]:
+      - paragraph [ref=e56]: © 2025 OmniMental
+      - navigation [ref=e57]:
+        - generic [ref=e58]:
+          - link "Despre" [ref=e59] [cursor=pointer]:
+            - /url: /about
+          - generic [ref=e60]: ·
+        - generic [ref=e61]:
+          - link "Contact" [ref=e62] [cursor=pointer]:
+            - /url: /contact
+          - generic [ref=e63]: ·
+        - generic [ref=e64]:
+          - link "Politica de confidențialitate" [ref=e65] [cursor=pointer]:
+            - /url: /privacy
+          - generic [ref=e66]: ·
+        - generic [ref=e67]:
+          - link "Termeni și condiții" [ref=e68] [cursor=pointer]:
+            - /url: /terms
+          - generic [ref=e69]: ·
+        - generic [ref=e70]:
+          - link "Politica cookies" [ref=e71] [cursor=pointer]:
+            - /url: /cookies
+          - generic [ref=e72]: ·
+        - link "Dezabonare" [ref=e74] [cursor=pointer]:
+          - /url: /unsubscribe
+  - generic [ref=e79] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e80]:
+      - img [ref=e81]
+    - generic [ref=e84]:
+      - button "Open issues overlay" [ref=e85]:
+        - generic [ref=e86]:
+          - generic [ref=e87]: "0"
+          - generic [ref=e88]: "1"
+        - generic [ref=e89]: Issue
+      - button "Collapse issues badge" [ref=e90]:
+        - img [ref=e91]
+  - alert [ref=e93]
+```

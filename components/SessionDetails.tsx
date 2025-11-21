@@ -3,20 +3,20 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { recordRecommendationProgressFact } from "@/lib/progressFacts";
 import { motion } from "framer-motion";
 import { useI18n } from "../components/I18nProvider";
 import TypewriterText from "./TypewriterText";
 import CTAButton from "./CTAButton";
-import AccountModal from "./AccountModal";
 
 interface SessionDetailsProps {
   type: "individual" | "group";
 }
 
 export default function SessionDetails({ type }: SessionDetailsProps) {
-  const [guestOpen, setGuestOpen] = useState(false);
+  const router = useRouter();
   const { t } = useI18n();
   const ctaValue = t("signup");
   const reassuranceTitleValue = t("reassuranceTitle");
@@ -140,8 +140,8 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
             <button
               type="button"
               onClick={() => {
-                void recordRecommendationProgressFact({ badgeLabel: 'magic_open' }).catch(() => undefined);
-                setGuestOpen(true);
+                void recordRecommendationProgressFact({ badgeLabel: "auth_redirect" }).catch(() => undefined);
+                router.push("/auth");
               }}
               className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
             >
@@ -149,13 +149,6 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
             </button>
           </div>
           {metaBadge}
-          <AccountModal
-            open={guestOpen}
-            onClose={() => {
-              void recordRecommendationProgressFact({ badgeLabel: 'magic_close' }).catch(() => undefined);
-              setGuestOpen(false);
-            }}
-          />
         </div>
 
         {reassuranceBlock}
@@ -406,8 +399,8 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
           <button
             type="button"
             onClick={() => {
-              void recordRecommendationProgressFact({ badgeLabel: 'magic_open' }).catch(() => undefined);
-              setGuestOpen(true);
+              void recordRecommendationProgressFact({ badgeLabel: "auth_redirect" }).catch(() => undefined);
+              router.push("/auth");
             }}
             className="group inline-flex items-center gap-3 rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
           >
@@ -416,13 +409,6 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
           </button>
         </div>
         {metaBadge}
-        <AccountModal
-          open={guestOpen}
-          onClose={() => {
-            void recordRecommendationProgressFact({ badgeLabel: 'magic_close' }).catch(() => undefined);
-            setGuestOpen(false);
-          }}
-        />
       </div>
       {faqItems.length > 0 && (
         <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">

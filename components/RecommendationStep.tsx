@@ -45,8 +45,6 @@ type Props = {
   recommendedPath: RecommendationCardChoice;
   recommendedBadgeLabel?: string;
   onCardSelect: (type: RecommendationCardChoice) => Promise<void> | void;
-  accountPromptMessage: string;
-  accountPromptButton: string;
   cardLabels: Record<RecommendationCardChoice, string>;
   isSavingChoice: boolean;
   savingChoiceType: RecommendationCardChoice | null;
@@ -102,8 +100,6 @@ export function RecommendationStep(props: Props) {
     recommendedPath: recommendedPathProp,
     // recommendedBadgeLabel: recommendedBadgeLabelProp,
     // onCardSelect,
-    accountPromptMessage,
-    accountPromptButton,
     isSavingChoice,
     // savingChoiceType,
     errorMessage,
@@ -321,14 +317,36 @@ export function RecommendationStep(props: Props) {
       <div className="mx-auto max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
         <div className="mx-auto flex max-w-4xl flex-col gap-5 text-center">
           {!profile && showAccountPrompt ? (
-            <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-              <p className="mb-3">{accountPromptMessage}</p>
+            <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-5 py-4 text-left text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+              <p className="text-base font-semibold text-[#1F1F1F]">
+                {lang === "ro" ? "Salvează-ți progresul" : "Save your progress"}
+              </p>
+              <p className="mt-2 text-sm text-[#2C2C2C]/90">
+                {lang === "ro"
+                  ? "Ca să păstrăm testele și recomandările tale, ai nevoie de un cont OmniMental. Poți continua în trei moduri:"
+                  : "To keep your tests and recommendations, you need an OmniMental account. You can continue in three ways:"}
+              </p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[#2C2C2C]">
+                {lang === "ro" ? (
+                  <>
+                    <li>Conectare rapidă cu Google.</li>
+                    <li>Primești un cod pe email și îl introduci în pagină (poate fi citit de pe orice device).</li>
+                    <li>Email + parolă, dacă preferi această variantă.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Quick sign-in with Google.</li>
+                    <li>Receive a code by email and type it here (you can read it from any device).</li>
+                    <li>Email + password if you prefer the classic option.</li>
+                  </>
+                )}
+              </ul>
               <button
                 type="button"
                 onClick={onAccountRequest}
-                className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
               >
-                {accountPromptButton}
+                {lang === "ro" ? "Mergi la autentificare" : "Go to sign-in"}
               </button>
             </div>
           ) : null}

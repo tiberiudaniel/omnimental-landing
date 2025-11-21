@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import SegmentedControl from "./ui/SegmentedControl";
 import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
+import { getWizardStepTestId } from "./useWizardSteps";
 import type {
   GoalType,
   EmotionalState,
@@ -652,7 +653,7 @@ export default function IntentSummary({
   }, [nudge]);
 
   return (
-    <section data-testid="wizard-step-summary" className="bg-[#FDFCF9] px-4 md:px-6 py-10">
+    <section data-testid={getWizardStepTestId("intentMotivation")} className="bg-[#FDFCF9] px-4 md:px-6 py-10">
       <div className="page-wrap w-full flex flex-col items-center gap-6 md:gap-8">
         {step === 0 ? (
           <div className="panel-ghost px-8 py-8 text-left">

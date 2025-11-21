@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
   experimental: {
     turbopackUseSystemTlsCerts: true,
   },
+  serverExternalPackages: ["firebase-admin"],
 };
 
 export default nextConfig;

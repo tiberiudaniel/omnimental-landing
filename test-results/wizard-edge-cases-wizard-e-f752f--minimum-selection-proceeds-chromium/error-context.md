@@ -1,0 +1,107 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - button "Autentificare" [ref=e5]
+        - generic "guest" [ref=e6]: Oaspete
+        - generic [ref=e7]:
+          - button "RO" [pressed] [ref=e8]
+          - generic [ref=e9]: "-"
+          - button "EN" [ref=e10]
+          - generic "Salvare automată" [ref=e11]
+      - generic [ref=e12]:
+        - link "OmniMental" [ref=e13] [cursor=pointer]:
+          - /url: /intro
+          - img "OmniMental logo" [ref=e14]
+          - generic [ref=e15]: OmniMental
+        - button "Opțiuni wizard" [ref=e18]: ⋯
+    - main [ref=e19]:
+      - generic [ref=e22]:
+        - paragraph [ref=e23]: Pasul 2 din 4
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - generic "Pasul 1" [ref=e26]
+            - generic [ref=e27]: Context
+          - generic [ref=e29]:
+            - generic "Pasul 2" [ref=e30]
+            - generic [ref=e31]: Scop și intenție
+          - generic [ref=e33]:
+            - generic "Pasul 3" [ref=e34]
+            - generic [ref=e35]: Motivație & Resurse
+          - generic [ref=e37]:
+            - generic "Pasul 4" [ref=e38]
+            - generic [ref=e39]: Recomandare
+      - generic [ref=e44]:
+        - 'heading "Mintea ta nu stă doar în creier: și inima, și intestinul trimit semnale când iei decizii importante." [level=2] [ref=e48]':
+          - 'generic "Mintea ta nu stă doar în creier: și inima, și intestinul trimit semnale când iei decizii importante." [ref=e49]':
+            - generic [ref=e50]: "|"
+        - generic [ref=e53]:
+          - paragraph [ref=e56]: Alege 7 afirmații care descriu cel mai bine ce trăiești acum.
+          - paragraph [ref=e58]: Aceste cuvinte ne ajută să calibrăm următorul pas.
+          - generic [ref=e59]:
+            - generic [ref=e60]:
+              - generic [ref=e61]: 0/7 selectate
+              - generic [ref=e62]: "Țintă: 5–7"
+            - paragraph [ref=e64]: 0%
+          - generic [ref=e65]:
+            - button "Nu știu să spun nu" [ref=e66]
+            - button "Simt că trebuie să controlez totul" [ref=e67]
+            - button "Mă cert des cu partenerul" [ref=e68]
+            - button "Îmi este greu să am încredere în oameni" [ref=e69]
+            - button "Vreau să-mi găsesc direcția" [ref=e70]
+            - button "Nu știu ce vreau cu adevărat" [ref=e71]
+            - button "Nu mai am o viziune clară asupra vieții" [ref=e72]
+            - button "Vreau să am mai multă răbdare" [ref=e73]
+            - button "Simt că merg în cerc" [ref=e74]
+            - button "Vreau să fiu mai productiv" [ref=e75]
+            - button "Simt că pierd controlul" [ref=e76]
+            - button "Mă simt copleșit de responsabilități" [ref=e77]
+            - button "Mi-e teamă să greșesc" [ref=e78]
+            - button "Nu pot să mă relaxez" [ref=e79]
+            - button "Mă epuizează relațiile din jur" [ref=e80]
+            - button "Mă simt epuizat" [ref=e81]
+            - button "Vreau să scap de stres" [ref=e82]
+            - button "Vreau să mă simt capabil și stabil" [ref=e83]
+            - button "Mă tem că o să dezamăgesc" [ref=e84]
+            - button "Vreau să am mai multă încredere în mine" [ref=e85]
+            - button "Vreau relații mai autentice" [ref=e86]
+            - button "Simt că m-am deconectat de mine" [ref=e87]
+            - button "Nu mai am energie" [ref=e88]
+            - button "Vreau mai mult echilibru" [ref=e89]
+            - button "Îmi pierd motivația ușor" [ref=e90]
+          - generic [ref=e91]:
+            - button "Continuă" [disabled] [ref=e92]
+            - paragraph [ref=e93]: Selectează 5–7 opțiuni pentru a continua.
+  - contentinfo [ref=e94]:
+    - generic [ref=e96]:
+      - paragraph [ref=e97]: © 2025 OmniMental
+      - navigation [ref=e98]:
+        - generic [ref=e99]:
+          - link "Despre" [ref=e100] [cursor=pointer]:
+            - /url: /about
+          - generic [ref=e101]: ·
+        - generic [ref=e102]:
+          - link "Contact" [ref=e103] [cursor=pointer]:
+            - /url: /contact
+          - generic [ref=e104]: ·
+        - generic [ref=e105]:
+          - link "Politica de confidențialitate" [ref=e106] [cursor=pointer]:
+            - /url: /privacy
+          - generic [ref=e107]: ·
+        - generic [ref=e108]:
+          - link "Termeni și condiții" [ref=e109] [cursor=pointer]:
+            - /url: /terms
+          - generic [ref=e110]: ·
+        - generic [ref=e111]:
+          - link "Politica cookies" [ref=e112] [cursor=pointer]:
+            - /url: /cookies
+          - generic [ref=e113]: ·
+        - link "Dezabonare" [ref=e115] [cursor=pointer]:
+          - /url: /unsubscribe
+  - button "Open Next.js Dev Tools" [ref=e121] [cursor=pointer]:
+    - img [ref=e122]
+  - alert [ref=e125]
+```

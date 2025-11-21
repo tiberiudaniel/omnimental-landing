@@ -1,6 +1,6 @@
 "use client";
 
-import type { Step } from "./useWizardSteps";
+import type { WizardStepId } from "./useWizardSteps";
 
 const PROGRESS_STEPS = [
   { id: "context", labelRo: "Context", labelEn: "Context" },
@@ -9,7 +9,7 @@ const PROGRESS_STEPS = [
   { id: "recommendation", labelRo: "Recomandare", labelEn: "Recommendation" },
 ];
 
-const STEP_MAPPING: Record<Step, number> = {
+const STEP_MAPPING: Record<WizardStepId, number> = {
   preIntro: -1,
   intro: -1,
   firstInput: 0,
@@ -20,13 +20,12 @@ const STEP_MAPPING: Record<Step, number> = {
   needConfidence: 1,
   microLessonInfo: 1,
   intentMotivation: 2,
-  intentSummary: 2, // legacy alias
   cards: 3,
   details: 3,
 };
 
 type WizardProgressProps = {
-  currentStep: Step;
+  currentStep: WizardStepId;
   lang: "ro" | "en";
   onReset?: () => void;
   onExit?: () => void;

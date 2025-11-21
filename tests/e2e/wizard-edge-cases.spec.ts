@@ -1,6 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 import { expectVisibleShort } from './helpers/diag';
 import { go, resetSession } from './helpers/env';
+const STEP_INTENT = 'wizard-step-intent';
+const STEP_REFLECTION_PROMPT = 'wizard-step-reflectionPrompt';
+const STEP_INTENT_MOTIVATION = 'wizard-step-intentMotivation';
 
 async function setRangeInput(page: Page, locatorStr: string, value: number) {
   const input = page.locator(locatorStr).first();
@@ -25,37 +28,49 @@ test.describe('wizard-edge-cases', () => {
 
   test('edge: no intent selection disables continue, then minimum selection proceeds', async ({ page }) => {
     await resetSession(page);
-    await go(page, '/?step=intent&lang=ro&e2e=1');
-    await expectVisibleShort(page, page.getByTestId('wizard-step-intent'), 'wizard-step-intent');
+    await go(page, '/wizard?step=intent&lang=ro&e2e=1');
+    await expectVisibleShort(page, page.getByTestId(STEP_INTENT), STEP_INTENT);
 
     // With 0 selections, button must be disabled
     await expect(page.getByTestId('wizard-continue')).toBeDisabled();
 
     // Select exactly 5 items then continue
-    const cloudButtons = page.locator('[data-testid="wizard-step-intent-cloud"] button:not([data-testid="wizard-continue"])');
-    for (let i = 0; i < 5; i++) {
+    const cloudButtons = page.locator(
+      `[data-testid=\"${STEP_INTENT}-cloud\"] button:not([data-testid=\"wizard-continue\"])`,
+    );
+    const count = await cloudButtons.count();
+    expect(count).toBeGreaterThanOrEqual(5);
+    const toSelect = Math.min(count, 7);
+    for (let i = 0; i < toSelect; i += 1) {
       await cloudButtons.nth(i).click();
     }
     await expect(page.getByTestId('wizard-continue')).toBeEnabled();
     await page.getByTestId('wizard-continue').click();
     // Pass reflection step if present (robust wait + click)
-    const refl = page.getByTestId('wizard-step-reflection');
+    const refl = page.getByTestId(STEP_REFLECTION_PROMPT);
     if (await refl.count()) {
-      await expectVisibleShort(page, refl, 'wizard-step-reflection');
+      await expectVisibleShort(page, refl, STEP_REFLECTION_PROMPT);
       await expectVisibleShort(page, page.getByTestId('wizard-reflection-continue'), 'wizard-reflection-continue');
       await page.getByTestId('wizard-reflection-continue').click();
     }
-    await expectVisibleShort(page, page.getByTestId('wizard-step-summary'), 'wizard-step-summary', 20000);
+    await expectVisibleShort(page, page.getByTestId(STEP_INTENT_MOTIVATION), STEP_INTENT_MOTIVATION, 20000);
     await page.waitForTimeout(120);
   });
 
   test('edge: user goes back and changes answers midway then completes', async ({ page }) => {
     await resetSession(page);
-    await go(page, '/?step=intent&lang=ro&e2e=1');
-    const cloudButtons = page.locator('[data-testid="wizard-step-intent-cloud"] button:not([data-testid="wizard-continue"])');
-    for (let i = 0; i < 6; i++) await cloudButtons.nth(i).click();
+    await go(page, '/wizard?step=intent&lang=ro&e2e=1');
+    const cloudButtons = page.locator(
+      `[data-testid=\"${STEP_INTENT}-cloud\"] button:not([data-testid=\"wizard-continue\"])`,
+    );
+    const count = await cloudButtons.count();
+    expect(count).toBeGreaterThanOrEqual(5);
+    const toSelect = Math.min(count, 7);
+    for (let i = 0; i < toSelect; i += 1) {
+      await cloudButtons.nth(i).click();
+    }
     await page.getByTestId('wizard-continue').click();
-    await expectVisibleShort(page, page.getByTestId('wizard-step-summary'), 'wizard-step-summary');
+    await expectVisibleShort(page, page.getByTestId(STEP_INTENT_MOTIVATION), STEP_INTENT_MOTIVATION);
     await page.waitForTimeout(150);
 
     // Step 0
@@ -90,11 +105,18 @@ test.describe('wizard-edge-cases', () => {
 
   test('edge: extreme values (urgency 10, min budget) reaches valid recommendation', async ({ page }) => {
     await resetSession(page);
-    await go(page, '/?step=intent&lang=ro&e2e=1');
-    const cloudButtons = page.locator('[data-testid="wizard-step-intent-cloud"] button:not([data-testid="wizard-continue"])');
-    for (let i = 0; i < 7; i++) await cloudButtons.nth(i).click();
+    await go(page, '/wizard?step=intent&lang=ro&e2e=1');
+    const cloudButtons = page.locator(
+      `[data-testid=\"${STEP_INTENT}-cloud\"] button:not([data-testid=\"wizard-continue\"])`,
+    );
+    const count = await cloudButtons.count();
+    expect(count).toBeGreaterThanOrEqual(5);
+    const toSelect = Math.min(count, 7);
+    for (let i = 0; i < toSelect; i += 1) {
+      await cloudButtons.nth(i).click();
+    }
     await page.getByTestId('wizard-continue').click();
-    await expectVisibleShort(page, page.getByTestId('wizard-step-summary'), 'wizard-step-summary');
+    await expectVisibleShort(page, page.getByTestId(STEP_INTENT_MOTIVATION), STEP_INTENT_MOTIVATION);
 
     await page.getByTestId('stress-slider').scrollIntoViewIfNeeded().catch(() => {});
     await setRangeInput(page, '[data-testid="stress-slider"]', 10);

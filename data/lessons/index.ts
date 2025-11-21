@@ -3,6 +3,9 @@ import { microLesson as initiationStressClarityRo } from './initiation-stress-cl
 import { microLesson as initiationStressClarityEn } from './initiation-stress-clarity.en';
 import { microLesson as initiationClarityDecisionsRo } from './initiation-clarity-decisions.ro';
 import { microLesson as initiationCalmBreathRo } from './initiation-calm-breath.ro';
+import { microLesson as initiationCalmGroundingRo } from './initiation-calm-grounding.ro';
+import { microLesson as initiationCalmEmotionLabelRo } from './initiation-calm-emotion-label.ro';
+import { microLesson as initiationCalmEveningResetRo } from './initiation-calm-evening-reset.ro';
 import { microLesson as initiationEnergyRoutineRo } from './initiation-energy-routine.ro';
 import { microLesson as initiationRelationshipsConflictRo } from './initiation-relationships-conflict.ro';
 import { microLesson as initiationPerformanceFlowRo } from './initiation-performance-flow.ro';
@@ -14,6 +17,9 @@ const microLessons: Record<string, MicroLesson> = {
   [key(initiationStressClarityEn.id, initiationStressClarityEn.locale)]: initiationStressClarityEn,
   [key(initiationClarityDecisionsRo.id, initiationClarityDecisionsRo.locale)]: initiationClarityDecisionsRo,
   [key(initiationCalmBreathRo.id, initiationCalmBreathRo.locale)]: initiationCalmBreathRo,
+  [key(initiationCalmGroundingRo.id, initiationCalmGroundingRo.locale)]: initiationCalmGroundingRo,
+  [key(initiationCalmEmotionLabelRo.id, initiationCalmEmotionLabelRo.locale)]: initiationCalmEmotionLabelRo,
+  [key(initiationCalmEveningResetRo.id, initiationCalmEveningResetRo.locale)]: initiationCalmEveningResetRo,
   [key(initiationEnergyRoutineRo.id, initiationEnergyRoutineRo.locale)]: initiationEnergyRoutineRo,
   [key(initiationRelationshipsConflictRo.id, initiationRelationshipsConflictRo.locale)]: initiationRelationshipsConflictRo,
   [key(initiationPerformanceFlowRo.id, initiationPerformanceFlowRo.locale)]: initiationPerformanceFlowRo,

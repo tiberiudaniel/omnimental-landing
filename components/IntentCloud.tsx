@@ -7,6 +7,7 @@ import { useI18n } from "./I18nProvider";
 import { getDb, areWritesDisabled } from "../lib/firebase";
 import type { IntentCloudWord, IntentPrimaryCategory } from "@/lib/intentExpressions";
 import { INTENT_MIN_SELECTION, INTENT_MAX_SELECTION, computeCategoryCounts, type IntentSelectionWord } from "@/lib/intentSelection";
+import { getWizardStepTestId } from "./useWizardSteps";
 
 type IntentWord = {
   key: string;
@@ -21,6 +22,17 @@ export type IntentCloudResult = {
   categories: Array<{ category: IntentPrimaryCategory; count: number }>;
   selectionIds: string[];
 };
+
+const FALLBACK_WORDS: IntentCloudWord[] = [
+  { id: "clarity_focus", label: "Claritate mentală", category: "clarity" },
+  { id: "stress_relief", label: "Reduc stresul", category: "stress" },
+  { id: "energy_reset", label: "Resetare energie", category: "balance" },
+  { id: "confidence_boost", label: "Încredere sub presiune", category: "confidence" },
+  { id: "relationships", label: "Relații sănătoase", category: "relationships" },
+  { id: "calm_body", label: "Calm în corp", category: "stress" },
+  { id: "focus_flow", label: "Focus în flux", category: "clarity" },
+  { id: "habits", label: "Obiceiuri stabile", category: "balance" },
+];
 
 type IntentCloudProps = {
   onComplete: (result: IntentCloudResult) => void;
@@ -60,7 +72,16 @@ export default function IntentCloud({
   const progress = Math.min(selected.length / maxSelection, 1);
 
   const words = useMemo<IntentWord[]>(() => {
-    const sourceList: IntentCloudWord[] =
+    const ensureMinimumWords = (list: IntentCloudWord[], min = 7) => {
+      if (list.length >= min) return list;
+      const fallbackPool = FALLBACK_WORDS.filter(
+        (entry) => !list.some((item) => item.id === entry.id || item.label === entry.label),
+      );
+      const needed = Math.max(min - list.length, 0);
+      return [...list, ...fallbackPool.slice(0, needed)];
+    };
+
+    const sourceListRaw: IntentCloudWord[] =
       Array.isArray(presetWords) && presetWords.length > 0
         ? presetWords
         : Array.isArray(rawList)
@@ -89,6 +110,7 @@ export default function IntentCloud({
             })
             .filter((entry): entry is IntentCloudWord => entry !== null) as IntentCloudWord[])
         : [];
+    const sourceList = ensureMinimumWords(sourceListRaw);
 
     return sourceList.map((item, index) => {
       const base = item.label;
@@ -179,7 +201,7 @@ export default function IntentCloud({
   };
 
   return (
-    <section data-testid="wizard-step-intent" className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-12">
+    <section className="flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-12">
       <div className="w-full max-w-5xl space-y-6 rounded-[16px] border border-[#E4D8CE] bg-white/92 px-6 py-10 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[2px]">
         <div className="w-full flex justify-center">
           <div className="max-w-xl w-full text-left">
@@ -213,7 +235,7 @@ export default function IntentCloud({
           </p>
         </div>
 
-        <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-2 md:gap-3" data-testid="wizard-step-intent-cloud">
+        <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-2 md:gap-3" data-testid={`${getWizardStepTestId("intent")}-cloud`}>
           {words.map(({ key, label }) => {
             const isActive = selected.includes(key);
             return (

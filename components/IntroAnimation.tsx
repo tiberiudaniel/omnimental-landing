@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useAuth } from "./AuthProvider";
 import { Cormorant_Garamond, Bodoni_Moda } from "next/font/google";
 
 const garamondFont = Cormorant_Garamond({
@@ -25,6 +27,8 @@ declare global {
 export default function IntroAnimation({ onComplete }: { onComplete: () => void }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const completedRef = useRef(false);
+  const router = useRouter();
+  const { user } = useAuth();
 
   const safeComplete = useCallback(() => {
     if (completedRef.current) {
@@ -157,13 +161,22 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
       <div className="words-overlay absolute inset-0 overflow-hidden pointer-events-none" />
 
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none translate-y-14">
-        <button
-          className="pointer-events-auto rounded-[14px] border border-[#2C2C2C] bg-white/95 px-12 py-4 sm:px-16 sm:py-5 text-xl sm:text-2xl font-semibold tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] font-['Courier_Prime',monospace]"
-          onClick={safeComplete}
-          aria-label="Pornește animația"
-        >
-          START
-        </button>
+        <div className="pointer-events-auto flex flex-col gap-3 sm:flex-row">
+          <button
+            className="rounded-[14px] border border-[#2C2C2C] bg-white/95 px-12 py-4 sm:px-16 sm:py-5 text-xl sm:text-2xl font-semibold tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] font-['Courier_Prime',monospace]"
+            onClick={safeComplete}
+            aria-label="Pornește animația"
+          >
+            START
+          </button>
+          <button
+            className="rounded-[14px] border border-[#2C2C2C] bg-white/85 px-10 py-3 text-base font-semibold tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] font-['Courier_Prime',monospace]"
+            onClick={() => router.push(user && !user.isAnonymous ? "/progress" : "/auth")}
+            aria-label="Deschide autentificarea"
+          >
+            AM CONT
+          </button>
+        </div>
       </div>
     </div>
   );

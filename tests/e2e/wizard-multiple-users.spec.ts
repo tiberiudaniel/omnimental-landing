@@ -44,7 +44,7 @@ test.describe('wizard-multiple-users', () => {
     test(`scenario: ${user.name}`, async ({ page }) => {
       await resetSession(page);
       // Direct root navigation avoids alias redirect delays
-      await go(page, '/?step=intent&lang=ro&e2e=1');
+      await go(page, '/wizard?step=intent&lang=ro&e2e=1');
       await fillWizardForUserProfile(page, user);
       // Also ensure no obvious error messages in UI
       await expect(page.getByText(/Nu am putut|eroare|error/i)).toHaveCount(0);

@@ -8,6 +8,9 @@ service cloud.firestore {
     function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
     function isValidSessionType(v) { return v == null || v == 'individual' || v == 'group'; }
     function isValidSelection(v) { return v == null || v == 'none' || v == 'individual' || v == 'group'; }
+    function isValidLang(lang) { return lang == 'ro' || lang == 'en'; }
+    function hasTimestamp(field) { return field == null || field is timestamp; }
+    function isValidJournal(text) { return text is string && text.size() > 0 && text.size() <= 1000; }
 
     // User profile remains owner-scoped even in dev.
     match /userProfiles/{userId} {
@@ -33,12 +36,19 @@ service cloud.firestore {
     // Snapshots and journeys: owner-only access. Allow create if profileId matches auth uid.
     // Accept either `evaluation` or legacy `answers`, and flexible timestamps.
     match /userIntentSnapshots/{docId} {
-      allow create: if signedIn() && request.resource.data.profileId == request.auth.uid;
+      allow create: if signedIn() &&
+        request.resource.data.profileId == request.auth.uid &&
+        isValidLang(request.resource.data.lang) &&
+        hasTimestamp(request.resource.data.timestamp);
       allow read, update, delete: if signedIn() && resource.data.profileId == request.auth.uid;
     }
 
     match /userJourneys/{docId} {
-      allow create: if signedIn() && request.resource.data.profileId == request.auth.uid;
+      allow create: if signedIn() &&
+        request.resource.data.profileId == request.auth.uid &&
+        isValidSessionType(request.resource.data.choice) &&
+        isValidLang(request.resource.data.lang) &&
+        hasTimestamp(request.resource.data.timestamp);
       allow read, update, delete: if signedIn() && resource.data.profileId == request.auth.uid;
     }
 
@@ -60,9 +70,13 @@ service cloud.firestore {
       allow read, update, delete: if signedIn() && resource.data.profileId == request.auth.uid;
     }
 
-    // Suggestions/inputs: relax limits during dev; require auth only.
+    // Suggestions/inputs: enforce basic validation.
     match /userInterests/{doc} {
-      allow read, write: if signedIn();
+      allow create: if signedIn() &&
+        isValidJournal(request.resource.data.text) &&
+        isValidLang(request.resource.data.lang);
+      allow read: if signedIn();
+      allow update, delete: if false;
     }
     match /userSuggestions/{docId} {
       allow read, write: if signedIn();

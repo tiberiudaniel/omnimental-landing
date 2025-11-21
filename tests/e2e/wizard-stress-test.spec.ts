@@ -1,6 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 import { expectVisibleShort } from './helpers/diag';
 import { go, resetSession } from './helpers/env';
+const STEP_INTENT = 'wizard-step-intent';
+const STEP_REFLECTION_PROMPT = 'wizard-step-reflectionPrompt';
+const STEP_INTENT_MOTIVATION = 'wizard-step-intentMotivation';
 
 function randInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -35,12 +38,12 @@ test('rulare repetată până la recomandare, fără erori de consolă', async (
   for (let i = 0; i < 20; i += 1) {
     // Always start clean
     await resetSession(page);
-    await go(page, '/?step=intent&lang=ro&e2e=1');
+    await go(page, '/wizard?step=intent&lang=ro&e2e=1');
 
     // Wait for intent step and pick 5–7 words
-    await expect(page.getByTestId('wizard-step-intent')).toBeVisible();
+    await expect(page.getByTestId(STEP_INTENT)).toBeVisible();
     // Use stable intent cloud container
-    const cloudButtons = page.locator('[data-testid="wizard-step-intent-cloud"] button:not([data-testid="wizard-continue"])');
+    const cloudButtons = page.locator(`[data-testid=\"${STEP_INTENT}-cloud\"] button:not([data-testid=\"wizard-continue\"])`);
     await expect(cloudButtons.first()).toBeVisible();
     const total = await cloudButtons.count();
     const picks = Math.min(7, Math.max(5, randInt(5, 7)));
@@ -60,9 +63,9 @@ test('rulare repetată până la recomandare, fără erori de consolă', async (
     await expect(continueBtn).toBeEnabled();
     await continueBtn.click();
     // New intermediate step before summary: reflection
-    await expect(page.getByTestId('wizard-step-reflection')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId(STEP_REFLECTION_PROMPT)).toBeVisible({ timeout: 15000 });
     await page.getByTestId('wizard-reflection-continue').click();
-    await expect(page.getByTestId('wizard-step-summary')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId(STEP_INTENT_MOTIVATION)).toBeVisible({ timeout: 15000 });
 
     // Step 0: urgency, speed, determination (use stable testids)
     await setRangeInput(page, '[data-testid="stress-slider"]', randInt(1, 10));

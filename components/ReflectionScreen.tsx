@@ -6,6 +6,7 @@ import MultiTypewriter from "./MultiTypewriter";
 import { useI18n } from "./I18nProvider";
 import { getString } from "@/lib/i18nGetString";
 import RadarIndicators from "./RadarIndicators";
+import { getWizardStepTestId } from "./useWizardSteps";
 import {
   buildIndicatorSummary,
   INDICATOR_CHART_KEYS,
@@ -99,7 +100,7 @@ export default function ReflectionScreen({
     ? "flex w-full items-start justify-start bg-[#FDFCF9] px-5 pt-4 pb-8"
     : "flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-5 py-12";
   return (
-    <section data-testid={testId ?? "wizard-step-reflection"} className={sectionClasses}>
+    <section data-testid={testId ?? getWizardStepTestId("reflectionPrompt")} className={sectionClasses}>
       <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right w-full max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white/92 px-7 py-10 text-center shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[2px]" data-testid={cardTestId}>
         <div className="w-full flex justify-center">
           <div className="max-w-xl w-full text-left">

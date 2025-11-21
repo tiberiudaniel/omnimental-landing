@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Roboto, Cormorant_Garamond, Courier_Prime } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "../components/AuthProvider";
-import { ProfileProvider } from "../components/ProfileProvider";
-import { I18nProvider } from "../components/I18nProvider";
-import QueryLangSync from "../components/QueryLangSync";
+import { AuthProvider } from "@/components/AuthProvider";
+import { ProfileProvider } from "@/components/ProfileProvider";
+import { I18nProvider } from "@/components/I18nProvider";
+import QueryLangSync from "@/components/QueryLangSync";
 import { Suspense } from "react";
 import Script from "next/script";
-import SiteFooter from "../components/SiteFooter";
 
 // Font setup
 const geistSans = Geist({
@@ -23,7 +22,9 @@ const geistMono = Geist_Mono({
 const roboto = Roboto({
   variable: "--font-roboto",
   subsets: ["latin"],
-  weight: "300",
+  weight: ["300", "400", "500", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 const cormorant = Cormorant_Garamond({
@@ -106,7 +107,6 @@ export default function RootLayout({
           src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
           strategy="afterInteractive"
         />
-        <SiteFooter />
       </body>
     </html>
   );

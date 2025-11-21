@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import type { IntentCloudResult } from "./IntentCloud";
-import { getDb, ensureAuth, areWritesDisabled } from "../lib/firebase";
+import { getDb, ensureAuth, areWritesDisabled } from "@/lib/firebase";
 import {
   type ResolutionSpeed,
   type BudgetPreference,
@@ -11,20 +11,20 @@ import {
   type EmotionalState,
   type FormatPreference,
   type EvaluationAnswers,
-} from "../lib/evaluation";
-import type { DimensionScores } from "../lib/scoring";
-import type { SessionType } from "../lib/recommendation";
-import { computeDirectionMotivationIndex, computeOmniIntelScore, type OmniBlock } from "../lib/omniIntel";
+} from "@/lib/evaluation";
+import type { DimensionScores } from "@/lib/scoring";
+import type { SessionType } from "@/lib/recommendation";
+import { computeDirectionMotivationIndex, computeOmniIntelScore, type OmniBlock } from "@/lib/omniIntel";
 import {
   detectCategoryFromRawInput,
   type IntentPrimaryCategory,
-} from "../lib/intentExpressions";
+} from "@/lib/intentExpressions";
 import { detectCategory as detectCategoryJSON } from "@/lib/detectCategory";
 import {
   recordIntentProgressFact,
   recordMotivationProgressFact,
   recordRecommendationProgressFact,
-} from "../lib/progressFacts";
+} from "@/lib/progressFacts";
 
 const db = getDb();
 const MAX_JOURNAL_LENGTH = 1000;
@@ -32,6 +32,7 @@ const GENERIC_SAVE_ERROR = "A apărut o problemă la salvare. Poți încerca din
 
 export type IntentCategoryCount = { category: string; count: number };
 export type WizardCardChoice = "individual" | "group";
+
 const sanitizeTags = (tags: string[]) =>
   tags
     .map((tag) => tag.trim())
@@ -78,47 +79,23 @@ type JourneyExtras = {
   dimensionScores?: DimensionScores;
 };
 
-export function useWizardData({ lang, profileId }: UseWizardDataParams) {
+type JournalHookArgs = {
+  lang: string;
+  setSaveError: (value: string | null) => void;
+  requestAccountPrompt: (value: boolean) => void;
+};
+
+type JournalHookState = {
+  journalEntry: string;
+  firstIntentExpression: string | null;
+  firstIntentCategory: IntentPrimaryCategory | null;
+  handleFirstInputSubmit: (text: string, meta?: FirstExpressionMeta) => Promise<boolean>;
+};
+
+export function useWizardJournalState({ lang, setSaveError, requestAccountPrompt }: JournalHookArgs): JournalHookState {
   const [journalEntry, setJournalEntry] = useState("");
   const [firstIntentExpression, setFirstIntentExpression] = useState<string | null>(null);
   const [firstIntentCategory, setFirstIntentCategory] = useState<IntentPrimaryCategory | null>(null);
-  const [intentTags, setIntentTags] = useState<string[]>([]);
-  const [intentCategories, setIntentCategories] = useState<IntentCategoryCount[]>([]);
-  const [intentSelectionIds, setIntentSelectionIds] = useState<string[]>([]);
-  const [intentCategoryScores, setIntentCategoryScores] = useState<Record<IntentPrimaryCategory, number>>({
-    clarity: 0,
-    relationships: 0,
-    stress: 0,
-    confidence: 0,
-    balance: 0,
-  });
-  const [intentUrgency, setIntentUrgency] = useState(6);
-  const [selectedCard, setSelectedCard] = useState<WizardCardChoice | null>(null);
-  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [isSavingIntentSnapshot, setIsSavingIntentSnapshot] = useState(false);
-  const [isSavingJourney, setIsSavingJourney] = useState(false);
-  const [journeySavingChoice, setJourneySavingChoice] = useState<WizardCardChoice | null>(null);
-  const [resolutionSpeed, setResolutionSpeed] = useState<ResolutionSpeed>("weeks");
-  const [determination, setDetermination] = useState(3);
-  const [timeCommitmentHours, setTimeCommitmentHours] = useState(3);
-  const [budgetPreference, setBudgetPreference] = useState<BudgetPreference>("medium");
-  const [goalType, setGoalType] = useState<GoalType>("few");
-  const [emotionalState, setEmotionalState] = useState<EmotionalState>("stable");
-  const [groupComfort, setGroupComfort] = useState(5);
-  const [learnFromOthers, setLearnFromOthers] = useState(5);
-  const [scheduleFit, setScheduleFit] = useState(6);
-  const [formatPreference, setFormatPreference] = useState<FormatPreference>("unsure");
-
-  useEffect(() => {
-    if (profileId) {
-      setShowAccountPrompt(false);
-    }
-  }, [profileId]);
-
-  const resetError = useCallback(() => {
-    setSaveError(null);
-  }, []);
 
   const handleFirstInputSubmit = useCallback(
     async (text: string, meta?: FirstExpressionMeta) => {
@@ -140,9 +117,8 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
             lang === "ro"
               ? "Te rugăm să te conectezi pentru a salva și continua."
               : "Please sign in to save and continue.";
-        setSaveError(message);
-        setShowAccountPrompt(true);
-          // Signal to caller not to advance without throwing to console
+          setSaveError(message);
+          requestAccountPrompt(true);
           return false;
         }
         if (!areWritesDisabled()) {
@@ -152,7 +128,6 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
             timestamp: serverTimestamp(),
           });
         }
-        // Text analytics (best-effort)
         try {
           const { recordTextSignals } = await import("@/lib/textSignals");
           void recordTextSignals({ text: cleanText, lang: lang === "en" ? "en" : "ro", source: "firstInput" });
@@ -176,9 +151,38 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
         setSaveError(GENERIC_SAVE_ERROR);
         return false;
       }
+      return true;
     },
-    [lang],
+    [lang, setSaveError, requestAccountPrompt],
   );
+
+  return {
+    journalEntry,
+    firstIntentExpression,
+    firstIntentCategory,
+    handleFirstInputSubmit,
+  };
+}
+
+type IntentHookState = {
+  intentTags: string[];
+  intentCategories: IntentCategoryCount[];
+  intentSelectionIds: string[];
+  intentCategoryScores: Record<IntentPrimaryCategory, number>;
+  handleIntentComplete: (result: IntentCloudResult) => void;
+};
+
+export function useWizardIntentState(): IntentHookState {
+  const [intentTags, setIntentTags] = useState<string[]>([]);
+  const [intentCategories, setIntentCategories] = useState<IntentCategoryCount[]>([]);
+  const [intentSelectionIds, setIntentSelectionIds] = useState<string[]>([]);
+  const [intentCategoryScores, setIntentCategoryScores] = useState<Record<IntentPrimaryCategory, number>>({
+    clarity: 0,
+    relationships: 0,
+    stress: 0,
+    confidence: 0,
+    balance: 0,
+  });
 
   const handleIntentComplete = useCallback((result: IntentCloudResult) => {
     const tags = sanitizeTags(result.tags);
@@ -205,6 +209,90 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
     setIntentCategoryScores(totals);
   }, []);
 
+  return {
+    intentTags,
+    intentCategories,
+    intentSelectionIds,
+    intentCategoryScores,
+    handleIntentComplete,
+  };
+}
+
+type JourneyHookArgs = {
+  lang: string;
+  profileId: string | null;
+  setSaveError: (value: string | null) => void;
+  requestAccountPrompt: (value: boolean) => void;
+  journalEntry: string;
+  firstIntentExpression: string | null;
+  firstIntentCategory: IntentPrimaryCategory | null;
+  intentTags: string[];
+  intentCategories: IntentCategoryCount[];
+  intentSelectionIds: string[];
+  intentCategoryScores: Record<IntentPrimaryCategory, number>;
+};
+
+type JourneyHookState = {
+  intentUrgency: number;
+  setIntentUrgency: (value: number) => void;
+  selectedCard: WizardCardChoice | null;
+  handleIntentSummaryComplete: (urgency: number, extra?: IntentSnapshotExtras) => Promise<boolean>;
+  handleCardSelect: (type: WizardCardChoice, extra?: JourneyExtras) => Promise<boolean>;
+  isSavingIntentSnapshot: boolean;
+  isSavingJourney: boolean;
+  journeySavingChoice: WizardCardChoice | null;
+  resolutionSpeed: ResolutionSpeed;
+  determination: number;
+  timeCommitmentHours: number;
+  budgetPreference: BudgetPreference;
+  goalType: GoalType;
+  emotionalState: EmotionalState;
+  groupComfort: number;
+  learnFromOthers: number;
+  scheduleFit: number;
+  formatPreference: FormatPreference;
+  setResolutionSpeed: (value: ResolutionSpeed) => void;
+  setDetermination: (value: number) => void;
+  setTimeCommitmentHours: (value: number) => void;
+  setBudgetPreference: (value: BudgetPreference) => void;
+  setGoalType: (value: GoalType) => void;
+  setEmotionalState: (value: EmotionalState) => void;
+  setGroupComfort: (value: number) => void;
+  setLearnFromOthers: (value: number) => void;
+  setScheduleFit: (value: number) => void;
+  setFormatPreference: (value: FormatPreference) => void;
+};
+
+export function useWizardJourneyState({
+  lang,
+  profileId,
+  setSaveError,
+  requestAccountPrompt,
+  journalEntry,
+  firstIntentExpression,
+  firstIntentCategory,
+  intentTags,
+  intentCategories,
+  intentSelectionIds,
+  intentCategoryScores,
+}: JourneyHookArgs): JourneyHookState {
+  const [intentUrgency, setIntentUrgency] = useState(6);
+  const [selectedCard, setSelectedCard] = useState<WizardCardChoice | null>(null);
+  const [isSavingIntentSnapshot, setIsSavingIntentSnapshot] = useState(false);
+  const [isSavingJourney, setIsSavingJourney] = useState(false);
+  const [journeySavingChoice, setJourneySavingChoice] = useState<WizardCardChoice | null>(null);
+  const [resolutionSpeed, setResolutionSpeed] = useState<ResolutionSpeed>("weeks");
+  const [determination, setDetermination] = useState(3);
+  const [timeCommitmentHours, setTimeCommitmentHours] = useState(3);
+  const [budgetPreference, setBudgetPreference] = useState<BudgetPreference>("medium");
+  const [goalType, setGoalType] = useState<GoalType>("few");
+  const [emotionalState, setEmotionalState] = useState<EmotionalState>("stable");
+  const [groupComfort, setGroupComfort] = useState(5);
+  const [learnFromOthers, setLearnFromOthers] = useState(5);
+  const [scheduleFit, setScheduleFit] = useState(6);
+  const [formatPreference, setFormatPreference] = useState<FormatPreference>("unsure");
+  const selectGuardRef = useRef<{ busy: boolean; last?: WizardCardChoice } | null>(null);
+
   const handleIntentSummaryComplete = useCallback(
     async (urgency: number, extra: IntentSnapshotExtras = {}) => {
       setIntentUrgency(urgency);
@@ -219,7 +307,6 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
         ? Math.min(7, Math.max(5, selectionCount))
         : 5;
 
-      // Derive top category and share (pondere din selecții)
       const { shares } = await import("@/lib/indicators").then((m) => m.buildIndicatorSummary(categories));
       const topShare = Math.max(
         Number(shares.clarity ?? 0),
@@ -246,7 +333,6 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
         Boolean(extra.recommendationReasonKey) ||
         typeof extra.algoVersion !== "undefined";
 
-      // Dev-only integrity check: sum of category counts should equal selection count
       if (process.env.NODE_ENV !== "production") {
         try {
           const sum = categories.reduce((s, e) => s + (Number(e.count) || 0), 0);
@@ -278,9 +364,9 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           determination,
           hoursPerWeek: timeCommitmentHours,
         });
-        const knowledgeIndex = 0; // se va actualiza după Kuno
-        const skillsIndex = 0; // se va actualiza după Abil
-        const consistencyIndex = 0; // se va calcula din activitate
+        const knowledgeIndex = 0;
+        const skillsIndex = 0;
+        const consistencyIndex = 0;
         const omniIntelScore = computeOmniIntelScore({
           knowledgeIndex,
           skillsIndex,
@@ -363,17 +449,20 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
 
       try {
         await attemptSnapshotSave(includeExtras);
-        void recordIntentProgressFact({
-          tags,
-          categories,
-          urgency,
-          lang,
-          firstExpression: firstIntentExpression ?? null,
-          firstCategory: firstIntentCategory ?? null,
-          selectionTotal: selectionCount,
-          topCategory,
-          topShare,
-        }, snapshotOwnerId).catch((progressError) => {
+        void recordIntentProgressFact(
+          {
+            tags,
+            categories,
+            urgency,
+            lang,
+            firstExpression: firstIntentExpression ?? null,
+            firstCategory: firstIntentCategory ?? null,
+            selectionTotal: selectionCount,
+            topCategory,
+            topShare,
+          },
+          snapshotOwnerId,
+        ).catch((progressError) => {
           console.error("progress fact intent failed", progressError);
         });
         void recordMotivationProgressFact(evaluationAnswerPayload, snapshotOwnerId).catch((progressError) => {
@@ -389,7 +478,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           });
         }
         if (!profileId) {
-          setShowAccountPrompt(true);
+          requestAccountPrompt(true);
         }
         return true;
       } catch (error) {
@@ -398,7 +487,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           try {
             await attemptSnapshotSave(false);
             if (!profileId) {
-              setShowAccountPrompt(true);
+              requestAccountPrompt(true);
             }
             return true;
           } catch (fallbackError) {
@@ -412,13 +501,13 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       }
     },
     [
+      profileId,
       intentTags,
       intentCategories,
       intentSelectionIds,
       intentCategoryScores,
       firstIntentExpression,
       firstIntentCategory,
-      profileId,
       lang,
       resolutionSpeed,
       determination,
@@ -430,17 +519,16 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       learnFromOthers,
       scheduleFit,
       formatPreference,
+      setSaveError,
+      requestAccountPrompt,
     ],
   );
-
-  const selectGuardRef = useRef<{ busy: boolean; last?: WizardCardChoice } | null>(null);
 
   const handleCardSelect = useCallback(
     async (type: WizardCardChoice, extra: JourneyExtras = {}) => {
       if (isSavingJourney) {
         return false;
       }
-      // Simple guard to prevent accidental double submit
       if (selectGuardRef.current?.busy) return false;
       selectGuardRef.current = { busy: true, last: type };
       setSaveError(null);
@@ -487,7 +575,6 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
           await addDoc(collection(db, "userJourneys"), buildJourneyPayload(includeExtras));
         }
         setSelectedCard(type);
-        // Gate unlock: persist selection on profile (best-effort)
         try {
           const { updateProfileSelection } = await import("@/lib/selection");
           void updateProfileSelection(type);
@@ -544,30 +631,21 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       intentCategories,
       intentSelectionIds,
       intentCategoryScores,
-      intentUrgency,
       firstIntentExpression,
       firstIntentCategory,
+      intentUrgency,
       profileId,
       lang,
+      setSaveError,
     ],
   );
 
-  const dismissAccountPrompt = useCallback(() => {
-    setShowAccountPrompt(false);
-  }, []);
-
   return {
-    journalEntry,
-    firstIntentExpression,
-    firstIntentCategory,
-    intentSelectionIds,
-    intentCategoryScores,
-    intentTags,
-    intentCategories,
     intentUrgency,
+    setIntentUrgency,
     selectedCard,
-    showAccountPrompt,
-    saveError,
+    handleIntentSummaryComplete,
+    handleCardSelect,
     isSavingIntentSnapshot,
     isSavingJourney,
     journeySavingChoice,
@@ -581,13 +659,6 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
     learnFromOthers,
     scheduleFit,
     formatPreference,
-    handleFirstInputSubmit,
-    handleIntentComplete,
-    handleIntentSummaryComplete,
-    handleCardSelect,
-    dismissAccountPrompt,
-    resetError,
-    setIntentUrgency,
     setResolutionSpeed,
     setDetermination,
     setTimeCommitmentHours,
@@ -598,5 +669,79 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
     setLearnFromOthers,
     setScheduleFit,
     setFormatPreference,
+  };
+}
+
+export function useWizardData({ lang, profileId }: UseWizardDataParams) {
+  const [accountPromptRequested, setAccountPromptRequested] = useState(false);
+  const showAccountPrompt = accountPromptRequested && !profileId;
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const journal = useWizardJournalState({ lang, setSaveError, requestAccountPrompt: setAccountPromptRequested });
+  const intent = useWizardIntentState();
+  const journey = useWizardJourneyState({
+    lang,
+    profileId,
+    setSaveError,
+    requestAccountPrompt: setAccountPromptRequested,
+    journalEntry: journal.journalEntry,
+    firstIntentExpression: journal.firstIntentExpression,
+    firstIntentCategory: journal.firstIntentCategory,
+    intentTags: intent.intentTags,
+    intentCategories: intent.intentCategories,
+    intentSelectionIds: intent.intentSelectionIds,
+    intentCategoryScores: intent.intentCategoryScores,
+  });
+
+  const resetError = useCallback(() => {
+    setSaveError(null);
+  }, []);
+
+  const dismissAccountPrompt = useCallback(() => {
+    setAccountPromptRequested(false);
+  }, []);
+
+  return {
+    journalEntry: journal.journalEntry,
+    firstIntentExpression: journal.firstIntentExpression,
+    firstIntentCategory: journal.firstIntentCategory,
+    intentSelectionIds: intent.intentSelectionIds,
+    intentCategoryScores: intent.intentCategoryScores,
+    intentTags: intent.intentTags,
+    intentCategories: intent.intentCategories,
+    intentUrgency: journey.intentUrgency,
+    setIntentUrgency: journey.setIntentUrgency,
+    selectedCard: journey.selectedCard,
+    showAccountPrompt,
+    saveError,
+    isSavingIntentSnapshot: journey.isSavingIntentSnapshot,
+    isSavingJourney: journey.isSavingJourney,
+    journeySavingChoice: journey.journeySavingChoice,
+    resolutionSpeed: journey.resolutionSpeed,
+    determination: journey.determination,
+    timeCommitmentHours: journey.timeCommitmentHours,
+    budgetPreference: journey.budgetPreference,
+    goalType: journey.goalType,
+    emotionalState: journey.emotionalState,
+    groupComfort: journey.groupComfort,
+    learnFromOthers: journey.learnFromOthers,
+    scheduleFit: journey.scheduleFit,
+    formatPreference: journey.formatPreference,
+    handleFirstInputSubmit: journal.handleFirstInputSubmit,
+    handleIntentComplete: intent.handleIntentComplete,
+    handleIntentSummaryComplete: journey.handleIntentSummaryComplete,
+    handleCardSelect: journey.handleCardSelect,
+    dismissAccountPrompt,
+    resetError,
+    setResolutionSpeed: journey.setResolutionSpeed,
+    setDetermination: journey.setDetermination,
+    setTimeCommitmentHours: journey.setTimeCommitmentHours,
+    setBudgetPreference: journey.setBudgetPreference,
+    setGoalType: journey.setGoalType,
+    setEmotionalState: journey.setEmotionalState,
+    setGroupComfort: journey.setGroupComfort,
+    setLearnFromOthers: journey.setLearnFromOthers,
+    setScheduleFit: journey.setScheduleFit,
+    setFormatPreference: journey.setFormatPreference,
   };
 }

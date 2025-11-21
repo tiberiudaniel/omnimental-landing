@@ -3,6 +3,8 @@
 import MultiTypewriter from "./MultiTypewriter";
 import { useTStrings } from "./useTStrings";
 import { useI18n } from "./I18nProvider";
+import { useRouter } from "next/navigation";
+import { useAuth } from "./AuthProvider";
 
 interface JourneyIntroProps {
   onStart: () => void;
@@ -11,6 +13,8 @@ interface JourneyIntroProps {
 export default function JourneyIntro({ onStart }: JourneyIntroProps) {
   const { s } = useTStrings();
   const { lang } = useI18n();
+  const router = useRouter();
+  const { user } = useAuth();
   // New narrative intro (typewriter): 2–3 scurte fraze
   const introLines = (() => {
     const v = s('wizard.intro');
@@ -69,14 +73,23 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]">
             {microcopy}
           </p>
-          <button
-            type="button"
-            onClick={onStart}
-            className="inline-flex w-full items-center justify-center rounded-[12px] border border-[#2C2C2C] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:opacity-90 focus:outline-none focus:ring-1 focus:ring-[#E60012] sm:w-auto"
-            style={{ background: "linear-gradient(135deg,#2C2C2C,#C24B17)" }}
-          >
-            {buttonLabel}
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={onStart}
+              className="inline-flex w-full items-center justify-center rounded-[12px] border border-[#2C2C2C] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:opacity-90 focus:outline-none focus:ring-1 focus:ring-[#E60012] sm:w-auto"
+              style={{ background: "linear-gradient(135deg,#2C2C2C,#C24B17)" }}
+            >
+              {buttonLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push(user && !user.isAnonymous ? "/progress" : "/auth")}
+              className="inline-flex w-full items-center justify-center rounded-[12px] border border-[#2C2C2C] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012] sm:w-auto"
+            >
+              {lang === "ro" ? "Am cont" : "I have an account"}
+            </button>
+          </div>
         </div>
       </div>
     </section>

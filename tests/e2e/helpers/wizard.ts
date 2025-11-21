@@ -1,5 +1,9 @@
 import { expect, Page } from '@playwright/test';
 import { expectVisibleShort } from './diag';
+const STEP_INTENT = 'wizard-step-intent';
+const STEP_REFLECTION_PROMPT = 'wizard-step-reflectionPrompt';
+const STEP_INTENT_MOTIVATION = 'wizard-step-intentMotivation';
+
 
 export type WizardProfile = {
   name: string;
@@ -21,14 +25,14 @@ export async function setRangeInput(page: Page, locatorStr: string, value: numbe
 }
 
 /**
- * Drives the wizard for a given profile. Assumes starting at /wizard?step=intent&lang=ro
+ * Drives the wizard for a given profile. Assumes starting at /wizard?step=intent&lang=ro&e2e=1
  * Returns when the recommendation page is visible.
  */
 export async function fillWizardForUserProfile(page: Page, prof: WizardProfile) {
   // Intent cloud: pick N words
-  await expectVisibleShort(page, page.getByTestId('wizard-step-intent'), 'wizard-step-intent');
+  await expectVisibleShort(page, page.getByTestId(STEP_INTENT), STEP_INTENT);
   // Prefer stable container testId over class-based selector
-  const cloudButtons = page.locator('[data-testid="wizard-step-intent-cloud"] button:not([data-testid="wizard-continue"])');
+  const cloudButtons = page.locator(`[data-testid=\"${STEP_INTENT}-cloud\"] button:not([data-testid=\"wizard-continue\"])`);
   const toPick = Math.max(5, Math.min(7, prof.picks ?? 6));
   const total = await cloudButtons.count();
   for (let i = 0; i < Math.min(toPick, total); i++) {
@@ -42,9 +46,9 @@ export async function fillWizardForUserProfile(page: Page, prof: WizardProfile) 
   await expect(continueBtn).toBeEnabled({ timeout: 15000 });
   await continueBtn.click();
   // New flow: intent -> reflectionSummary -> intentSummary
-  await expectVisibleShort(page, page.getByTestId('wizard-step-reflection'), 'wizard-step-reflection');
+  await expectVisibleShort(page, page.getByTestId(STEP_REFLECTION_PROMPT), STEP_REFLECTION_PROMPT);
   await page.getByTestId('wizard-reflection-continue').click();
-  await expectVisibleShort(page, page.getByTestId('wizard-step-summary'), 'wizard-step-summary');
+  await expectVisibleShort(page, page.getByTestId(STEP_INTENT_MOTIVATION), STEP_INTENT_MOTIVATION);
 
   // Step 0: urgency + speed + determination
   await setRangeInput(page, '[data-testid="stress-slider"]', prof.urgency);
