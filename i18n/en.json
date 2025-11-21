@@ -647,5 +647,33 @@
       "I can mobilize quickly",
       "I generally feel in good shape"
     ]}
+  },
+  "omnikuno": {
+    "difficulty": {
+      "easyLabel": "Easy",
+      "mediumLabel": "Medium",
+      "hardLabel": "Hard",
+      "easyChip": "Level: Easy",
+      "mediumChip": "Level: Medium",
+      "hardChip": "Level: Hard",
+      "easyShort": "Gentle step to solidify the fundamentals.",
+      "mediumShort": "Balanced pace to integrate confidently.",
+      "hardShort": "A tougher challenge for accelerated growth."
+    },
+    "adaptive": {
+      "headerExplainer": "OmniKuno tracks how you learn and adjusts lesson difficulty so you never feel stuck or bored.",
+      "headerExplainerShort": "Difficulty adapts to your pace.",
+      "tooltip": "If things feel heavy, we send easier missions so you regain clarity. When you advance fast, we raise the stakes to keep you challenged.",
+      "easierMessage": "We’ve delivered an easier step so you can consolidate the last concepts comfortably.",
+      "easierMessageAlt": "We’re briefly revisiting the basics to protect your learning rhythm.",
+      "harderMessage": "Great momentum! Difficulty just increased to keep you engaged.",
+      "harderMessageAlt": "You’re doing great, so here’s a more intense mission.",
+      "mediumMessage": "Back to medium difficulty — a balanced pace for fast integration."
+    },
+    "quizSummary": {
+      "easyCompleted": "You completed an easy practice quiz. When you feel steady, the next one will be more challenging.",
+      "mediumCompleted": "Medium difficulty quiz completed. Keep this rhythm to anchor the new insights.",
+      "hardCompleted": "You passed a hard quiz — your score helps us craft even more relevant challenges."
+    }
   }
 }

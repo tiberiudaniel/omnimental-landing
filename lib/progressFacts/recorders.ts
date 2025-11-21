@@ -530,10 +530,16 @@ export async function recordKunoLessonProgress({
   moduleId,
   completedIds,
   ownerId,
+  performance,
 }: {
   moduleId: string;
   completedIds: string[];
   ownerId?: string | null;
+  performance?: {
+    recentScores?: number[];
+    recentTimeSpent?: number[];
+    difficultyBias?: number;
+  };
 }) {
   try {
     await recordOmniPatch(
@@ -542,7 +548,16 @@ export async function recordKunoLessonProgress({
           lessons: {
             [moduleId]: {
               completedIds,
-              lastUpdated: serverTimestamp(),
+              lastUpdated: serverTimestamp() as unknown as Date,
+              ...(performance
+                ? {
+                    performance: {
+                      recentScores: performance.recentScores ?? [],
+                      recentTimeSpent: performance.recentTimeSpent ?? [],
+                      difficultyBias: performance.difficultyBias ?? 0,
+                    },
+                  }
+                : {}),
             },
           },
         },

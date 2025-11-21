@@ -671,5 +671,33 @@
   "dashboard.trendsToggle.day": "Azi",
   "dashboard.trendsToggle.week": "Săptămână",
   "dashboard.initialInsights": "Insight‑uri inițiale",
-  "dashboard.themeLabel": "Temă"
+  "dashboard.themeLabel": "Temă",
+  "omnikuno": {
+    "difficulty": {
+      "easyLabel": "Ușor",
+      "mediumLabel": "Mediu",
+      "hardLabel": "Greu",
+      "easyChip": "Nivel: Ușor",
+      "mediumChip": "Nivel: Mediu",
+      "hardChip": "Nivel: Greu",
+      "easyShort": "Pas introductiv pentru a consolida bazele.",
+      "mediumShort": "Ritm echilibrat pentru integrare sigură.",
+      "hardShort": "Provocare intensă pentru progres accelerat."
+    },
+    "adaptive": {
+      "headerExplainer": "OmniKuno urmărește cum înveți și schimbă dificultatea lecțiilor și quiz-urilor ca să nu rămâi blocat sau plictisit.",
+      "headerExplainerShort": "Dificultatea se adaptează după ritmul tău.",
+      "tooltip": "Dacă ritmul devine greu, primești misiuni mai ușoare pentru a-ți recăpăta claritatea. Dacă avansezi rapid, ridicăm miza pentru a te ține provocat.",
+      "easierMessage": "Ți-am oferit un pas mai ușor ca să consolidezi relaxat ultimele concepte.",
+      "easierMessageAlt": "Facem un mic pas înapoi pentru a-ți proteja ritmul de învățare.",
+      "harderMessage": "Excelent tempo! Am ridicat dificultatea pentru a te menține provocat.",
+      "harderMessageAlt": "Te descurci grozav, așa că ți-am pregătit o misiune mai intensă.",
+      "mediumMessage": "Ne întoarcem la ritmul mediu pentru integrare echilibrată."
+    },
+    "quizSummary": {
+      "easyCompleted": "Ai închis un quiz ușor de antrenament. Dacă te simți confortabil, următorul va crește dificultatea.",
+      "mediumCompleted": "Quiz de dificultate medie finalizat. Continuă în același ritm pentru a fixa ce ai învățat.",
+      "hardCompleted": "Ai depășit un quiz dificil — rezultatul tău ne ajută să calibrăm provocări și mai relevante."
+    }
+  }
 }

@@ -9,9 +9,7 @@ import type { useI18n } from "@/components/I18nProvider";
 import { formatUtcShort } from "@/lib/format";
 import { toMsLocal } from "@/lib/dashboard/progressSelectors";
 import { computeActionTrend, type ActivityEvent, type extractSessions } from "@/lib/progressAnalytics";
-import type { OmniKunoLesson } from "@/config/omniKunoLessons";
-
-export type LessonStatus = "done" | "active" | "upNext" | "locked";
+import KunoMissionCard, { type KunoMissionCardData } from "./KunoMissionCard";
 
 export type FocusThemeInfo = {
   area?: string | null;
@@ -35,11 +33,7 @@ type CenterColumnCardsProps = {
   focusTheme: FocusThemeInfo;
   omniCunoScore: number;
   kunoDelta: number | null;
-  kunoReadiness: number | null;
-  kunoUpdatedText: string | null;
-  kunoLessons: Array<OmniKunoLesson & { status: LessonStatus }>;
-  onCompleteLesson?: (lessonId: string) => void;
-  completingLessonId?: string | null;
+  kunoMissionData: KunoMissionCardData | null;
 };
 
 export default function CenterColumnCards({
@@ -58,11 +52,7 @@ export default function CenterColumnCards({
   focusTheme,
   omniCunoScore,
   kunoDelta,
-  kunoReadiness,
-  kunoUpdatedText,
-  kunoLessons,
-  onCompleteLesson,
-  completingLessonId,
+  kunoMissionData,
 }: CenterColumnCardsProps) {
   return (
     <div
@@ -80,14 +70,10 @@ export default function CenterColumnCards({
       <div className="grid grid-cols-1 items-stretch gap-2 md:gap-3 lg:gap-3">
         <KunoMissionCard
           lang={lang}
-          focusTheme={focusTheme}
+          focusAreaLabel={focusTheme.area}
           omniCunoScore={omniCunoScore}
           kunoDelta={kunoDelta}
-          kunoReadiness={kunoReadiness}
-          kunoUpdatedText={kunoUpdatedText}
-          kunoLessons={kunoLessons}
-          onCompleteLesson={onCompleteLesson}
-          completingLessonId={completingLessonId}
+          missionData={kunoMissionData}
         />
       </div>
       <TodayGuidanceCard
@@ -193,139 +179,6 @@ function FocusThemeCard({ lang, focusTheme }: { lang: string; focusTheme: FocusT
           >
             {lang === "ro" ? "Schimbă" : "Change"}
           </Link>
-        </div>
-      </Card>
-    </motion.div>
-  );
-}
-
-type KunoMissionLesson = OmniKunoLesson & { status: LessonStatus };
-
-type KunoMissionCardProps = {
-  lang: string;
-  focusTheme: FocusThemeInfo;
-  omniCunoScore: number;
-  kunoDelta: number | null;
-  kunoReadiness: number | null;
-  kunoUpdatedText: string | null;
-  kunoLessons: KunoMissionLesson[];
-  onCompleteLesson?: (lessonId: string) => void;
-  completingLessonId?: string | null;
-};
-
-const kunoLessonStatusStyles: Record<LessonStatus, { wrapper: string; titleColor: string; statusTag: string; node: string }> = {
-  done: {
-    wrapper: "border border-[#E4DAD1] bg-white",
-    titleColor: "text-[#4D3F36]",
-    statusTag: "bg-[#ECF8F0] text-[#1F7A43]",
-    node: "border-[#1F7A43] text-[#1F7A43]",
-  },
-  active: {
-    wrapper: "border border-[#C07963] bg-white shadow-[0_10px_24px_rgba(192,121,99,0.16)]",
-    titleColor: "text-[#2C2C2C]",
-    statusTag: "bg-[#FFF3EC] text-[#B44B1F]",
-    node: "border-[#C07963] text-[#C07963]",
-  },
-  upNext: {
-    wrapper: "border border-dashed border-[#E4DAD1] bg-white",
-    titleColor: "text-[#2C2C2C]",
-    statusTag: "bg-[#F8F1EA] text-[#A08F82]",
-    node: "border-[#D8C7B9] text-[#A08F82]",
-  },
-  locked: {
-    wrapper: "border border-dashed border-[#E4DAD1] bg-white opacity-80",
-    titleColor: "text-[#A08F82]",
-    statusTag: "bg-[#F3EEE8] text-[#A08F82]",
-    node: "border-[#D8C7B9] text-[#A08F82]",
-  },
-};
-
-function KunoMissionCard({
-  lang,
-  focusTheme,
-  omniCunoScore,
-  kunoDelta,
-  kunoReadiness,
-  kunoUpdatedText,
-  kunoLessons,
-  onCompleteLesson,
-  completingLessonId,
-}: KunoMissionCardProps) {
-  const completedCount = kunoLessons.filter((lesson) => lesson.status === "done").length;
-  const totalLessons = kunoLessons.length;
-  return (
-    <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
-      <Card className="rounded-2xl border border-[#E4DAD1] bg-[#FFFBF7] px-3 py-3 shadow-sm sm:px-4 sm:py-4">
-        <div className="flex flex-col gap-2 md:flex-row md:gap-3">
-          <div className="flex-1">
-            <p className="text-xs font-semibold text-[#7B6B60] sm:text-sm">OmniKuno · {lang === "ro" ? "Echilibru emoțional" : "Emotional balance"}</p>
-            <p className="mt-0.5 text-sm font-bold text-[#2C2C2C] sm:text-base">
-              {lang === "ro" ? "Misiunea: acumulează cunoștințe." : "Mission: accumulate knowledge."}
-            </p>
-            <p className="text-[11px] text-[#6A6A6A] sm:text-[12px]">
-              {completedCount} / {totalLessons} {lang === "ro" ? "lecții finalizate" : "lessons completed"}
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-[#7B6B60] sm:text-[11px]">
-              <span className="rounded-full border border-[#C07963]/30 px-2 py-0.5 text-[#C07963]">
-                {lang === "ro" ? "Pregătire" : "Readiness"}: {kunoReadiness != null ? `${Math.round(kunoReadiness)}%` : "—"}
-              </span>
-              <span className="rounded-full border border-[#C07963]/30 px-2 py-0.5 text-[#C07963]">
-                {lang === "ro" ? "Scor Kuno" : "Kuno score"}: {omniCunoScore}
-                {kunoDelta != null && Number.isFinite(kunoDelta) ? (
-                  <span className={`ml-1 font-semibold ${kunoDelta >= 0 ? "text-[#1F7A43]" : "text-[#B8000E]"}`}>
-                    {kunoDelta >= 0 ? "+" : ""}
-                    {Math.round(kunoDelta)}
-                  </span>
-                ) : null}
-              </span>
-              {kunoUpdatedText ? <span className="text-[#A08F82]">{kunoUpdatedText}</span> : null}
-            </div>
-          </div>
-        </div>
-        <div className="mt-3 space-y-2.5">
-          {kunoLessons.map((lesson, idx) => {
-            const styles = kunoLessonStatusStyles[lesson.status] ?? kunoLessonStatusStyles.locked;
-            const isActive = lesson.status === "active";
-            const icon = lesson.status === "done" ? "✓" : lesson.status === "locked" ? "🔒" : null;
-            return (
-              <div key={lesson.id} className="flex flex-col items-stretch">
-                {idx !== 0 ? <span className="mx-auto mb-2 h-4 w-px rounded-full bg-[#E4DAD1]" aria-hidden="true" /> : null}
-                <div className={`w-full rounded-2xl px-3 py-2.5 transition ${styles.wrapper}`}>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-full border text-[16px] ${styles.node}`}>
-                        {icon ? icon : <span className="h-2 w-2 rounded-full bg-[#C07963]" aria-hidden />}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <p className={`text-[12px] font-semibold sm:text-[13px] ${styles.titleColor}`}>
-                        <span className="mr-1 text-[#C07963]">0{lesson.order}</span>
-                        {lesson.title}
-                      </p>
-                      <p className="text-[11px] text-[#5B4C44] sm:text-[12px]">{lesson.shortDescription}</p>
-                      <div className="mt-1 h-px bg-[#E4DAD1]" />
-                      {isActive ? (
-                        <button
-                          type="button"
-                          onClick={() => onCompleteLesson?.(lesson.id)}
-                          disabled={!onCompleteLesson || completingLessonId === lesson.id}
-                          className="mt-2 inline-flex items-center rounded-full border border-[#C07963] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B9A598]"
-                        >
-                          {completingLessonId === lesson.id
-                            ? lang === "ro"
-                              ? "Se salvează..."
-                              : "Saving..."
-                            : lang === "ro"
-                              ? "Începe lecția"
-                              : "Start lesson"}
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
         </div>
       </Card>
     </motion.div>
@@ -481,7 +334,9 @@ function TodayGuidanceCard({
               <div className="flex-1">
                 <div className="mb-1 flex items-center gap-2">
                   <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] ${badge.cls}`}>{badge.text}</span>
-                  <span className="text-[11px] text-[#7B6B60] sm:text-xs">{lang === "ro" ? "Ghidare pentru azi" : "Guidance for today"}</span>
+                  <span className="text-[11px] text-[#7B6B60] sm:text-xs">
+                    {lang === "ro" ? "Omni-Abil: acțiuni concrete" : "Omni-Abil: concrete actions"}
+                  </span>
                 </div>
                 <div className="space-y-1.5 text-[10px] text-[#7B6B60] sm:text-[11px]">
                   <div>

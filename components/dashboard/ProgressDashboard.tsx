@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { useI18n } from "@/components/I18nProvider";
 import { getString } from "@/lib/i18nGetString";
 import { useProfile } from "@/components/ProfileProvider";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { computeKunoComposite, computeOmniScope, computeOmniFlex } from "@/lib/dashboardMetrics";
 import {
@@ -20,14 +20,15 @@ import {
   computeMonthlyDailyCounts,
 } from "@/lib/progressAnalytics";
 import { toMsLocal, getCurrentFocusTag } from "@/lib/dashboard/progressSelectors";
-import { OMNIKUNO_EMOTIONAL_BALANCE_LESSONS } from "@/config/omniKunoLessons";
+import { OMNIKUNO_MODULES } from "@/config/omniKunoLessons";
+import { normalizePerformance } from "@/lib/omniKunoAdaptive";
 import InternalKpiCard from "@/components/dashboard/InternalKpiCard";
 import ActionTrendsCard from "@/components/dashboard/ActionTrendsCard";
 import MotivationCard from "@/components/dashboard/MotivationCard";
 import ProfileIndicesCard from "@/components/dashboard/ProfileIndicesCard";
-import CenterColumnCards, { type FocusThemeInfo, type LessonStatus } from "@/components/dashboard/CenterColumnCards";
+import CenterColumnCards, { type FocusThemeInfo } from "@/components/dashboard/CenterColumnCards";
 import SidebarCards from "@/components/dashboard/SidebarCards";
-import { recordKunoLessonProgress } from "@/lib/progressFacts";
+import type { KunoMissionCardData } from "@/components/dashboard/KunoMissionCard";
 
 export default function ProgressDashboard({
   profileId,
@@ -232,21 +233,6 @@ export default function ProgressDashboard({
   const monthWithEvents = addEventsToBuckets(monthDays.map(x => ({...x})), monthBucketsStart, monthBucketsLen);
   const monthCountsWithEvents = addEventsToCounts(monthCounts.map(x => ({...x})), monthBucketsStart, monthBucketsLen);
 
-  // (legacy weighted minutes scaffolding removed — we now rely on action trend scoring)
-  const formatRelative = useCallback(
-    (ms: number) => {
-      const now = refMs;
-      const diff = Math.max(0, now - ms);
-      const min = Math.floor(diff / 60000);
-      if (min < 1) return lang === "ro" ? "acum" : "just now";
-      if (min < 60) return `${min} ${lang === "ro" ? "min" : "min"}`;
-      const h = Math.floor(min / 60);
-      if (h < 24) return `${h} ${lang === "ro" ? "h" : "h"}`;
-      const d = Math.floor(h / 24);
-      return `${d} ${lang === "ro" ? "zile" : "d"}`;
-    },
-    [lang, refMs],
-  );
   // debugMode declared earlier near top to keep hook order stable
   // ---- Profile indices from Omni block ----
   const omni: OmniBlock | undefined = facts?.omni as OmniBlock | undefined;
@@ -344,11 +330,6 @@ export default function ProgressDashboard({
     0) as number;
   const omniFlexComp = computeOmniFlex(facts as unknown as Record<string, unknown>);
   const omniFlexScore = omniFlexComp.score;
-  const kunoReadiness = useMemo(() => {
-    const raw = (omni?.kuno as { readinessIndex?: number } | undefined)?.readinessIndex;
-    if (typeof raw !== "number") return null;
-    return Math.round(Math.max(0, Math.min(100, raw)));
-  }, [omni?.kuno]);
   const quest = (() => {
     // Prefer item whose script areas match user's main focus area
     const items = Array.isArray(facts?.quests?.items) ? (facts!.quests!.items as Array<{ title?: string; body?: string; scriptId?: string }>) : [];
@@ -430,7 +411,6 @@ export default function ProgressDashboard({
       (lang === "ro" ? "Este directia prioritara pe care lucrezi acum." : "This is the main theme you’re working on right now.");
     return { area, desc, categoryKey: normalizedCategory };
   }, [facts, lang]);
-  const focusCategoryKey = focusTheme.categoryKey;
   const questPreview = useMemo(() => {
     const txt = (quest?.text || "").trim();
     if (!txt) return "";
@@ -441,68 +421,36 @@ export default function ProgressDashboard({
     const lastSpace = slice.lastIndexOf(" ");
     return (lastSpace > 60 ? slice.slice(0, lastSpace) : slice).trimEnd() + "…";
   }, [quest?.text]);
-  const KUNO_MODULE_ID = "emotional_balance_level1";
-  const storedKunoCompletedIds = useMemo(() => {
-    const raw =
-      ((facts?.omni?.kuno as { lessons?: Record<string, { completedIds?: string[] }> } | undefined)?.lessons?.[KUNO_MODULE_ID]?.completedIds ??
-        []) as string[];
-    if (!Array.isArray(raw)) return [];
-    return raw.filter((id): id is string => typeof id === "string");
-  }, [facts?.omni?.kuno]);
-  const storedKunoSignature = storedKunoCompletedIds.join("|");
-  const [kunoCompletedIds, setKunoCompletedIds] = useState<string[]>(storedKunoCompletedIds);
-  useEffect(() => {
-    setKunoCompletedIds(storedKunoCompletedIds);
-  }, [storedKunoSignature]);
-  const [kunoCompletionBusyId, setKunoCompletionBusyId] = useState<string | null>(null);
-  const kunoLessons = useMemo(() => {
-    let unlocked = false;
-    return OMNIKUNO_EMOTIONAL_BALANCE_LESSONS.map((lesson) => {
-      const done = kunoCompletedIds.includes(lesson.id);
-      let status: LessonStatus = "locked";
-      if (done) {
-        status = "done";
-      } else if (!unlocked) {
-        status = "active";
-        unlocked = true;
-      }
-      return { ...lesson, status };
-    });
-  }, [kunoCompletedIds]);
-  const handleLessonComplete = useCallback(
-    async (lessonId: string) => {
-      const lesson = kunoLessons.find((item) => item.id === lessonId);
-      if (!lesson || lesson.status !== "active" || kunoCompletionBusyId) return;
-      const next = Array.from(new Set([...kunoCompletedIds, lessonId]));
-      setKunoCompletedIds(next);
-      if (!profileId || demoFacts) {
-        return;
-      }
-      setKunoCompletionBusyId(lessonId);
-      try {
-        await recordKunoLessonProgress({
-          moduleId: KUNO_MODULE_ID,
-          completedIds: next,
-          ownerId: profileId,
-        });
-      } catch (error) {
-        console.warn("Failed to update OmniKuno lesson progress", error);
-        setKunoCompletedIds((prev) => prev.filter((id) => id !== lessonId));
-      } finally {
-        setKunoCompletionBusyId(null);
-      }
-    },
-    [demoFacts, kunoCompletedIds, kunoLessons, profileId, kunoCompletionBusyId],
-  );
-  const kunoUpdatedText = useMemo(() => {
-    try {
-      const stamp = toMsLocal((facts as { updatedAt?: unknown } | undefined)?.updatedAt);
-      const ms = stamp || refMs;
-      return formatRelative(ms);
-    } catch {
-      return null;
-    }
-  }, [facts, refMs, formatRelative]);
+  const kunoMissionData: KunoMissionCardData | null = useMemo(() => {
+    const kunoBlock =
+      (facts?.omni?.kuno as {
+        recommendedModuleId?: string;
+        lessons?: Record<string, { completedIds?: string[]; performance?: unknown }>;
+        gamification?: { xp?: number };
+      } | undefined) ?? undefined;
+    const pairs = Object.entries(OMNIKUNO_MODULES);
+    const recommended = kunoBlock?.recommendedModuleId
+      ? pairs.find(([, module]) => module.moduleId === kunoBlock.recommendedModuleId)
+      : undefined;
+    const fallbackArea = (() => {
+      const key = (focusTheme.categoryKey || "calm") as keyof typeof OMNIKUNO_MODULES;
+      if (OMNIKUNO_MODULES[key]) return key;
+      return "calm" as keyof typeof OMNIKUNO_MODULES;
+    })();
+    const [areaKey, module] = recommended ?? [fallbackArea, OMNIKUNO_MODULES[fallbackArea]];
+    if (!module) return null;
+    const lessonBlock = kunoBlock?.lessons?.[module.moduleId] ?? null;
+    const completedIds =
+      (lessonBlock?.completedIds?.filter((id): id is string => typeof id === "string") ?? []) as string[];
+    const xp = Number(kunoBlock?.gamification?.xp ?? 0);
+    return {
+      areaKey,
+      module,
+      completedIds,
+      xp: Number.isFinite(xp) ? xp : 0,
+      performance: normalizePerformance((lessonBlock?.performance as Partial<{ recentScores: number[]; recentTimeSpent: number[]; difficultyBias: number }>) ?? null),
+    };
+  }, [facts?.omni?.kuno, focusTheme.categoryKey]);
   // Optional: emit compact debug JSON for E2E when ?debug=1
   const debugJson = (() => {
     try {
@@ -634,11 +582,7 @@ export default function ProgressDashboard({
               focusTheme={focusTheme}
               omniCunoScore={omniCunoScore}
               kunoDelta={kunoDelta}
-              kunoReadiness={kunoReadiness}
-              kunoUpdatedText={kunoUpdatedText}
-              kunoLessons={kunoLessons}
-              onCompleteLesson={handleLessonComplete}
-              completingLessonId={kunoCompletionBusyId}
+              kunoMissionData={kunoMissionData}
             />
           </div>
           <SidebarCards
