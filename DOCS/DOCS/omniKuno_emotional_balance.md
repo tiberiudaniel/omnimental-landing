@@ -1,82 +1,33 @@
 
 
-ARC COMPLET – Emotional Balance
-Trezire → Primele Ciocniri → Profunzime → Maestrie
+# emotional_balance_arc_01_trezire
 
-(stil Oriental/Calm, unitar)
-
-I. Trezirea
-
-Începutul nu este despre schimbare.
-Este despre a învăța să vezi.
-
-În primele momente de lucru cu emoțiile, nu trebuie să rezolvi nimic.
-Trebuie doar să observi cum arată lumea ta interioară: respirația, ritmul, tensiunea, gândurile.
-
-Tot ce simți este permis.
-Tot ce apare este un semn al faptului că ești prezent.
-
-Când privești lucrurile fără grabă, începe trezirea:
-un spațiu mic între stimul și reacție.
-Un loc din care poți alege.
-
-II. Primele Ciocniri
-
-Pe măsură ce devii mai atent, apar primele provocări:
-un ton ridicat, un mesaj sec, o critică, o discuție care se aprinde.
-
-Nu sunt obstacole. Sunt invitații.
-Fiecare dintre ele îți arată ce te afectează cel mai mult.
-Și te învață să te așezi în tine atunci când exteriorul se mișcă repede.
-
-Aici înveți primii pași ai echilibrului:
-respirație mai lentă, prezență în corp, o pauză scurtă înainte de răspuns.
-
-Nu ca să pari calm.
-Ci ca să fii conectat la tine.
-
-III. Profunzime
-
-Când mergi puțin mai departe, ies la suprafață emoții mai adânci:
-rușinea, vinovăția, teama de a dezamăgi, nevoia de a te retrage.
-
-Nu sunt dușmani.
-Sunt straturi vechi ale tale, care cer atenție.
-
-Aici înveți să stai cu ele fără să lupți.
-Să nu le împingi deoparte, dar nici să te pierzi în ele.
-Să respiri, să observi și să lași lucrurile să se așeze.
-
-În profunzime nu găsești rezolvări rapide,
-dar găsești liniștea de care ai nevoie ca să mergi mai departe.
-
-IV. Maestrie
-
-În final, echilibrul emoțional nu înseamnă control total.
-Nu înseamnă să elimini reacțiile sau să devii invulnerabil.
-
-Maestria apare atunci când îți cunoști ritmul.
-Când poți rămâne prezent chiar și în momente tensionate.
-Când vocea ta rămâne calmă, chiar dacă în jur lucrurile se mișcă repede.
-Când poți face un pas mic în direcția bună, chiar și în zilele grele.
-
-Nu perfecțiunea este scopul.
-Ci o stare interioară în care să te simți întreg.
-
-Asta este maestria:
-o formă simplă de liniște activă, pe care o poți folosi oriunde.
-
-✔️ ARC finalizat
-
-Acesta este arc-ul complet, scurt și profund, în stil Oriental/Calm, care poate fi pus:
-
-înainte de Level 1 (Trezire)
-
-si apoi între Level-uri
+[SCREEN arcIntro]
+title: Trezirea
+body: Începutul nu este despre schimbare, ci despre a învăța să vezi. În primele momente de lucru cu emoțiile nu trebuie să rezolvi nimic, doar să observi cum arată lumea ta interioară: respirația, ritmul, tensiunea, gândurile. Tot ce simți este permis și fiecare semn îți arată că ești prezent. Când privești lucrurile fără grabă apare trezirea, acel spațiu mic dintre stimul și reacție din care poți alege.
 
 
+# emotional_balance_arc_02_primele_ciocniri
 
-# calm_l1_01_foundations
+[SCREEN arcIntro]
+title: Primele Ciocniri
+body: Pe măsură ce devii mai atent apar provocări: un ton ridicat, un mesaj sec, o critică, o discuție care se aprinde. Nu sunt obstacole, ci invitații care îți arată ce te atinge cel mai mult. Aici înveți respirația mai lentă, prezența în corp și pauza scurtă înainte de răspuns, nu ca să pari calm, ci ca să rămâi conectat la tine când exteriorul se mișcă repede.
+
+
+# emotional_balance_arc_03_profunzime
+
+[SCREEN arcIntro]
+title: Profunzime
+body: Când mergi mai departe ies la suprafață emoții mai adânci: rușinea, vinovăția, teama de a dezamăgi, dorința de a te retrage. Nu sunt dușmani, ci straturi vechi care cer atenție. Înveți să stai cu ele fără să lupți, să nu le împingi deoparte și nici să te pierzi în ele. Respiri, observi și lași liniștea să se așeze chiar dacă nu există rezolvări rapide.
+
+
+# emotional_balance_arc_04_maestrie
+
+[SCREEN arcIntro]
+title: Maestrie
+body: Echilibrul emoțional nu înseamnă control total și nici eliminarea reacțiilor. Maestria apare când îți cunoști ritmul și poți rămâne prezent chiar și în momente tensionate. În viața de zi cu zi înseamnă să alegi răspunsul, nu impulsul, în discuții reale, în oboseală sau sub presiune. Nu urmărești perfecțiunea, ci capacitatea de a folosi un protocol de reglare chiar și în zilele grele. Asta este maestria: o liniște activă, simplă și aplicată, pe care o poți lua cu tine oriunde.
+
+# emotional_balance_l1_01_foundations
 
 [SCREEN content]
 title: Calmul activ
@@ -86,10 +37,11 @@ body: Calmul activ apare când nu grăbești nimic și nu împingi nimic. Doar o
 title: Tensiunea este un mesaj?
 question: Ești de acord că recunoașterea tensiunii îți oferă un spațiu mic între impuls și acțiune?
 options:
-- Da, o recunosc și respir înainte să acționez.
-- Nu, trebuie să o elimin imediat ca să pot continua.
+- O observ, respir și folosesc protocolul de reglare înainte de răspuns.
+- O ignor până dispare, altfel mă blochez.
+- Încerc să nu mai simt nimic ca să pot continua.
 correctIndex: 0
-explanation: Observarea tensiunii te ajută să alegi răspunsul conștient, nu impulsul.
+explanation: Observarea + protocolul îți dau timp să alegi răspunsul conștient, nu un impuls reflex.
 
 [SCREEN content]
 title: Reține
@@ -117,7 +69,7 @@ title: O propoziție simplă
 prompt: Completează: „Calmul activ pentru mine înseamnă ___.”
 
 
-# calm_l1_02_triggers
+# emotional_balance_l1_02_triggers
 
 [SCREEN content]
 title: Ce pornește reacția
@@ -149,7 +101,7 @@ title: O observare blândă
 prompt: Completează: „Un declanșator frecvent pentru mine este ___.”
 
 
-# calm_l1_03_body_scan
+# emotional_balance_l1_03_body_scan
 
 [SCREEN content]
 title: Corpul vede primul
@@ -182,7 +134,7 @@ title: O notă scurtă
 prompt: Completează: „Astăzi, corpul meu se simte ___.”
 
 
-# calm_l1_04_micro_choices
+# emotional_balance_l1_04_micro_choices
 
 [SCREEN content]
 title: Spațiul dintre impuls și acțiune
@@ -199,6 +151,10 @@ steps:
 - Imaginează-ți că introduci o pauză de o respirație.
 helper: O pauză mică schimbă direcția.
 
+[SCREEN protocol]
+title: Protocolul mini pentru impulsuri
+body: Folosește acest protocol de fiecare dată când simți că impulsul devine mai rapid decât tine.
+
 [SCREEN quiz]
 title: Ce este o micro-decizie?
 question: Cum descrii cel mai bine o micro-decizie?
@@ -214,7 +170,7 @@ title: O alegere pentru azi
 prompt: Completează: „Azi vreau să introduc o pauză înainte de ___.”
 
 
-# calm_l1_05_breath_basics
+# emotional_balance_l1_05_breath_basics
 
 [SCREEN content]
 title: Respirația te sprijină
@@ -247,7 +203,7 @@ title: Intenție scurtă
 prompt: Completează: „Voi folosi respirația lentă când simt ___.”
 
 
-# calm_l1_06_pause_button
+# emotional_balance_l1_06_pause_button
 
 [SCREEN content]
 title: Puterea pauzei
@@ -282,7 +238,7 @@ prompt: Completează: „Când am nevoie de pauză, pot spune: ___.”
 
 
 
-# calm_l1_07_boundaries
+# emotional_balance_l1_07_boundaries
 
 [SCREEN content]
 title: Limite blânde
@@ -314,7 +270,7 @@ title: O limită mică
 prompt: Completează: „O limită pe care vreau să o respect mai des este ___.”
 
 
-# calm_l1_08_self_talk
+# emotional_balance_l1_08_self_talk
 
 [SCREEN content]
 title: Vocea din interior
@@ -346,7 +302,7 @@ title: O frază de sprijin
 prompt: Completează: „Fraza pe care vreau să o folosesc mai des este: ___.” 
 
 
-# calm_l2_09_voice_tone
+# emotional_balance_l2_09_voice_tone
 
 [SCREEN content]
 title: Tonul schimbă totul
@@ -378,7 +334,7 @@ title: Reformulare calmă
 prompt: Completează: „În discuții dificile vreau să-mi reamintesc să ___.”
 
 
-# calm_l2_10_criticism
+# emotional_balance_l2_10_criticism
 
 [SCREEN content]
 title: Critica te activează
@@ -399,18 +355,18 @@ helper: Spațiul interior reduce intensitatea.
 title: Primul pas în critică
 question: Ce te ajută când primești critică?
 options:
-- Să răspunzi repede.
-- Un pas mental în lateral.
-- Să dovedești că ai dreptate.
+- Să respiri, să observi ce emoție a fost atinsă și să faci un pas mental în lateral înainte de răspuns.
+- Să te justifici imediat ca să nu pari slab.
+- Să asculți doar ca să pregătești contraargumentul perfect.
 correctIndex: 1
-explanation: Pasul mental calmează sistemul.
+explanation: Pasul mental + observarea emoției îți dau spațiu pentru un răspuns mai potrivit decât impulsul defensiv.
 
 [SCREEN reflection]
 title: Un gând util
 prompt: Completează: „Când primesc critică, vreau să-mi amintesc că ___.”
 
 
-# calm_l2_11_conflict_opening
+# emotional_balance_l2_11_conflict_opening
 
 [SCREEN content]
 title: Începuturile unui conflict
@@ -427,6 +383,10 @@ steps:
 - Observă care a fost primul impuls.
 helper: Impulsul nu este finalul.
 
+[SCREEN protocol]
+title: Protocol pentru început de conflict
+body: Folosește mini-protocolul înainte de primul răspuns ca să aduci ritmul discuției înapoi la tine.
+
 [SCREEN quiz]
 title: Ce te ajută în conflicte?
 question: Care este primul pas util?
@@ -442,7 +402,7 @@ title: O decizie mică
 prompt: Completează: „În conflicte, vreau să încep cu ___.”
 
 
-# calm_l2_12_focus_under_stress
+# emotional_balance_l2_12_focus_under_stress
 
 [SCREEN content]
 title: Când stresul crește
@@ -474,7 +434,7 @@ title: O ancoră pentru atenție
 prompt: Completează: „Când simt stres, vreau să-mi lărgesc atenția prin ___.”
 
 
-# calm_l2_13_low_energy
+# emotional_balance_l2_13_low_energy
 
 [SCREEN content]
 title: Când energia scade
@@ -506,7 +466,7 @@ title: O intenție simplă
 prompt: Completează: „Când sunt obosit, vreau să îmi amintesc că ___.”
 
 
-# calm_l2_14_multitasking
+# emotional_balance_l2_14_multitasking
 
 [SCREEN content]
 title: Multitasking-ul nu ajută emoțiile
@@ -538,7 +498,7 @@ title: O alegere mică
 prompt: Completează: „Azi vreau să fac mai lent ___.”
 
 
-# calm_l2_15_fast_reactions
+# emotional_balance_l2_15_fast_reactions
 
 [SCREEN content]
 title: Reacțiile rapide
@@ -570,7 +530,7 @@ title: O propoziție calmă
 prompt: Completează: „Când impulsul apare, vreau să ___.”
 
 
-# calm_l2_16_pressure_moments
+# emotional_balance_l2_16_pressure_moments
 
 [SCREEN content]
 title: Momente sub presiune
@@ -600,7 +560,7 @@ explanation: Primul gest stabilește tonul.
 [SCREEN reflection]
 title: O alegere calmă
 prompt: Completează: „Când presiunea crește, vreau să ___.” 
-# calm_l3_17_shame
+# emotional_balance_l3_17_shame
 
 [SCREEN content]
 title: Rușinea apare în liniște
@@ -632,7 +592,7 @@ title: O propoziție de sprijin
 prompt: Completează: „Când apare rușinea, îmi amintesc că ___.”
 
 
-# calm_l3_18_guilt
+# emotional_balance_l3_18_guilt
 
 [SCREEN content]
 title: Vinovăția spune o poveste
@@ -664,7 +624,7 @@ title: O clarificare simplă
 prompt: Completează: „Din situația aceea am învățat că ___.”
 
 
-# calm_l3_19_withdrawal
+# emotional_balance_l3_19_withdrawal
 
 [SCREEN content]
 title: Retragerea
@@ -696,7 +656,7 @@ title: O revenire blândă
 prompt: Completează: „Când mă retrag, vreau să revin după ce ___.”
 
 
-# calm_l3_20_hard_conversations
+# emotional_balance_l3_20_hard_conversations
 
 [SCREEN content]
 title: Discuțiile dificile
@@ -728,7 +688,7 @@ title: Prima frază
 prompt: Completează: „Când încep o discuție grea, pot spune: ___.”
 
 
-# calm_l3_21_restoring_balance
+# emotional_balance_l3_21_restoring_balance
 
 [SCREEN content]
 title: Când te pierzi pe drum
@@ -749,18 +709,18 @@ helper: Revenirea este un proces, nu un moment.
 title: Cum revii la echilibru?
 question: Ce este cel mai util?
 options:
-- Să ignori totul.
-- Un gest mic de revenire.
-- Să te critici.
-correctIndex: 1
-explanation: Pașii mici sunt cei mai eficienți.
+- Să revii la un gest mic (respirație, notițe, protocol) și apoi să alegi răspunsul.
+- Să te critici dur ca să nu repeți greșeala.
+- Să ignori emoția și să te arunci într-un nou task.
+correctIndex: 0
+explanation: Revenirea reală vine dintr-un gest mic conștient care îți redeschide spațiul de alegere, nu din critică sau evitare.
 
 [SCREEN reflection]
 title: O alegere pentru mine
 prompt: Completează: „Când simt că mă pierd, pot începe prin ___.”
 
 
-# calm_l3_22_presence_under_fire
+# emotional_balance_l3_22_presence_under_fire
 
 [SCREEN content]
 title: Prezența în momente grele
@@ -777,6 +737,10 @@ steps:
 - Observă ce ai putea încetini data viitoare.
 helper: Prezența vine prin încetinire.
 
+[SCREEN protocol]
+title: Protocol scurt pentru momente intense
+body: Repetă protocolul în versiunea scurtă (observ, respir, simt corpul, aleg răspunsul) când simți că totul se accelerează.
+
 [SCREEN quiz]
 title: Ce te ajută să rămâi prezent?
 question: Ce acțiune este utilă?
@@ -792,7 +756,7 @@ title: Un anchor mic
 prompt: Completează: „Când totul e intens, pot încetini ___.”
 
 
-# calm_l3_23_centering
+# emotional_balance_l3_23_centering
 
 [SCREEN content]
 title: Așezarea în tine
@@ -825,7 +789,7 @@ title: Un pas spre centru
 prompt: Completează: „Mă pot centra rapid prin ___.”
 
 
-# calm_l3_24_soft_strength
+# emotional_balance_l3_24_soft_strength
 
 [SCREEN content]
 title: Puterea blândă
@@ -858,7 +822,65 @@ prompt: Completează: „Pentru mine, puterea blândă înseamnă ___.”
 
 
 
-# calm_final_test
+# emotional_balance_l3_13_body_to_mind
+[SCREEN content]
+title: Corpul influențează intensitatea emoțiilor
+body: Când glicemia este instabilă sau corpul este flămând ori tensionat, emoțiile devin mai puternice și mai greu de reglat. Nu este „slăbiciune”; este un răspuns fizic.
+
+[SCREEN content]
+title: Reacție sau realitate?
+body: De multe ori, iritarea, furia sau anxietatea cresc pentru că organismul este în stare de alarmă metabolică.
+
+[SCREEN checkpoint]
+title: Observare
+steps:
+- Gândește-te la o perioadă în care ai reacționat disproporționat.
+- Cum era corpul tău atunci? Flămând, obosit, deshidratat?
+helper: Uneori emoțiile nu reflectă situația, ci starea corpului.
+
+[SCREEN quiz]
+title: Corp și emoții
+question: Ce poate amplifica emoțiile?
+options:
+- Doar gândurile negative.
+- Glicemia instabilă, foamea sau oboseala.
+correctIndex: 1
+
+[SCREEN reflection]
+title: Conștientizare
+prompt: „O situație în care corpul mi-a amplificat emoțiile a fost ___.”
+
+
+# emotional_balance_l3_14_mind_to_body
+[SCREEN content]
+title: Emoțiile influențează corpul
+body: Când ești stresat sau supărat, corpul intră în tensiune: respirația se scurtează, pulsul crește, digestia încetinește.
+
+[SCREEN content]
+title: Reglarea emoțiilor prin corp
+body: O respirație lentă sau o mică mișcare poate reduce tensiunea și poate calma valul emoțional fără să forțezi nimic mental.
+
+[SCREEN checkpoint]
+title: Observă
+steps:
+- Gândește-te la ultimul moment de furie sau anxietate.
+- Unde ai simțit tensiunea în corp?
+helper: Emoțiile lăsate nesupravegheate rămân în corp.
+
+[SCREEN quiz]
+title: Minte și corp
+question: Cum poți calma o emoție ridicată?
+options:
+- Doar prin analiză mentală.
+- Prin reglarea corpului: respirație, relaxare, mișcare blândă.
+correctIndex: 1
+
+[SCREEN reflection]
+title: Integrare
+prompt: „Un gest corporal care îmi calmează emoțiile este ___.”
+
+
+# emotional_balance_final_test
 
 [TEST intro]
 title: Mini-Test — Echilibru Emoțional
@@ -866,13 +888,13 @@ body: Un test scurt pentru a verifica ce ai învățat. Nu există note — doar
 
 [TEST question]
 type: singleChoice
-question: Ce descrie cel mai bine calmul activ?
+question: Ce ai exersat de fapt în acest modul?
 options:
-- Absența emoțiilor.
-- Claritatea din mijlocul emoțiilor.
-- Evitarea discuțiilor tensionate.
+- Să elimini emoțiile.
+- Să tolerezi emoțiile și să alegi un răspuns mai potrivit.
+- Să eviți situațiile dificile.
 correctIndex: 1
-explanation: Calmul activ înseamnă prezență, nu absența emoției.
+explanation: Echilibrul emoțional înseamnă să poți sta cu emoția, să folosești protocolul și să alegi răspunsul potrivit.
 
 [TEST question]
 type: singleChoice
@@ -885,12 +907,13 @@ correctIndex: 1
 
 [TEST question]
 type: scenario
-question: Într-o discuție, cineva ridică vocea. Ce acțiune îți păstrează claritatea?
+question: Într-o ședință, cineva te critică brusc și ridică vocea. Simți impulsul să răspunzi imediat. Ce alegi?
 options:
-- Să îți ridici și tu vocea.
-- Să respiri lent o secundă înainte de a răspunde.
-- Să întrerupi discuția brusc.
-correctIndex: 1
+- Răspunzi impulsiv ridicând vocea peste cealaltă persoană.
+- Eviți complet situația și ieși din sală.
+- Observi impulsul, respiri lent, simți corpul și abia apoi răspunzi.
+correctIndex: 2
+explanation: Protocolul (observ, respir, simt corpul, aleg răspunsul) te ajută să păstrezi claritatea.
 
 [TEST question]
 type: fillBlank
@@ -909,6 +932,7 @@ options:
 - Să ignori corpul.
 correctIndex: 1
 
+
 [TEST question]
 type: singleChoice
 question: Ce este „puterea blândă”?
@@ -923,3 +947,12 @@ type: reflectionShort
 question: Scrie o propoziție scurtă:
 prompt: „Un lucru pe care vreau să-l aplic mai des este ___.”
 note: răspuns ghidat, 1 propoziție
+
+[TEST question]
+type: singleChoice
+question: Cum influențează starea corpului echilibrul emoțional?
+options:
+- Emoțiile sunt complet independente de corp.
+- Foamea, oboseala și glicemia instabilă pot amplifica emoțiile și face reglarea lor mai dificilă.
+- Doar gândurile negative contează, corpul nu are niciun rol.
+correctIndex: 1

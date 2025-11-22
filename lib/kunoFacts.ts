@@ -1,5 +1,7 @@
 "use client";
 
+import { resolveModuleId } from "@/config/omniKunoModules";
+
 type UnknownRecord = Record<string, unknown>;
 
 const isRecord = (value: unknown): value is UnknownRecord => typeof value === "object" && value !== null;
@@ -62,24 +64,34 @@ const normalizeMap = (value: unknown) => (isRecord(value) ? (value as Record<str
 
 export function normalizeKunoFacts(raw: unknown): NormalizedKunoFacts {
   const block = isRecord(raw) ? (raw as UnknownRecord) : {};
+  const normalizeModuleId = (value: unknown): string | null => {
+    if (typeof value !== "string" || !value.trim()) return null;
+    const direct = resolveModuleId(value);
+    if (direct) return direct;
+    const trimmed = value.replace(/_level\d+$/, "");
+    const normalized = resolveModuleId(trimmed);
+    return normalized ?? null;
+  };
   const modules: Record<string, KunoModuleSnapshot> = {};
   const modulesRaw = normalizeMap(block.modules);
   if (modulesRaw) {
     Object.entries(modulesRaw).forEach(([key, entry]) => {
-      modules[key] = normalizeModuleEntry(entry);
+      const normalizedKey = normalizeModuleId(key) ?? key;
+      modules[normalizedKey] = normalizeModuleEntry(entry);
     });
   }
   const lessonsRaw = normalizeMap(block.lessons);
   if (lessonsRaw) {
     Object.entries(lessonsRaw).forEach(([key, entry]) => {
-      if (!modules[key]) {
-        modules[key] = normalizeModuleEntry(entry);
+      const normalizedKey = normalizeModuleId(key) ?? key;
+      if (!modules[normalizedKey]) {
+        modules[normalizedKey] = normalizeModuleEntry(entry);
       }
     });
   }
   const gamification = isRecord(block.gamification) ? (block.gamification as UnknownRecord) : null;
-  const recommendedModuleId = typeof block.recommendedModuleId === "string" ? block.recommendedModuleId : null;
-  const recommendedArea = typeof block.recommendedArea === "string" ? block.recommendedArea : null;
+  const recommendedModuleId = normalizeModuleId(block.recommendedModuleId) ?? null;
+  const recommendedArea = normalizeModuleId(block.recommendedArea) ?? null;
   const rawExam = isRecord(block.exam) ? (block.exam as UnknownRecord) : null;
   const exam = rawExam
     ? {

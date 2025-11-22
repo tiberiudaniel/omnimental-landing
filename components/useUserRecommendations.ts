@@ -6,6 +6,7 @@ import { sortRecommendations } from "@/lib/recommendations";
 import { useProfile } from "@/components/ProfileProvider";
 import { collection, onSnapshot, orderBy, query, type FirestoreError } from "firebase/firestore";
 import { getDb, getFirebaseAuth } from "@/lib/firebase";
+import { onAuthStateChanged, type Auth } from "firebase/auth";
 
 interface UseUserRecommendationsState {
   recommendations: OmniRecommendation[];
@@ -15,8 +16,18 @@ interface UseUserRecommendationsState {
 
 export function useUserRecommendations(): UseUserRecommendationsState {
   const { profile } = useProfile();
-  const auth = typeof window !== 'undefined' ? getFirebaseAuth() : null;
-  const userId = profile?.id ?? auth?.currentUser?.uid ?? null;
+  const auth = (typeof window !== "undefined" ? getFirebaseAuth() : null) as Auth | null;
+  const [firebaseUserId, setFirebaseUserId] = useState<string | null>(() => auth?.currentUser?.uid ?? null);
+
+  useEffect(() => {
+    if (!auth) return undefined;
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      setFirebaseUserId(user?.uid ?? null);
+    });
+    return () => unsubAuth();
+  }, [auth]);
+
+  const userId = profile?.id ?? firebaseUserId;
 
   const [state, setState] = useState<UseUserRecommendationsState>({
     recommendations: [],
@@ -25,7 +36,9 @@ export function useUserRecommendations(): UseUserRecommendationsState {
   });
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      return undefined;
+    }
     const db = getDb();
     const colRef = collection(db, "userRecommendations", userId, "items");
     const q = query(colRef, orderBy("createdAt", "desc"));
@@ -56,6 +69,11 @@ export function useUserRecommendations(): UseUserRecommendationsState {
         setState({ recommendations: sortRecommendations(items), loading: false, error: null });
       },
       (error) => {
+        if (error.code === "permission-denied") {
+          console.warn("[useUserRecommendations] Missing Firestore permissions, returning empty list.");
+          setState({ recommendations: [], loading: false, error });
+          return;
+        }
         console.error("[useUserRecommendations] onSnapshot error", error);
         setState({ recommendations: [], loading: false, error });
       },

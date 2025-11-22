@@ -81,13 +81,13 @@ export default function StepMiniTestScore({ answers, score, userId, topicKey, qu
         // Log a knowledge activity event (test)
         try {
           const mapTopic: Record<string, string> = {
-            relatii: 'relationships',
-            performanta: 'performance',
-            energie: 'energy',
-            identitate: 'clarity',
-            calm: 'calm',
-            obiceiuri: 'general',
-            sens: 'general',
+            relatii: "relationships_communication",
+            performanta: "decision_discernment",
+            energie: "energy_body",
+            identitate: "self_trust",
+            calm: "emotional_balance",
+            obiceiuri: "energy_body",
+            sens: "self_trust",
           };
           const focusTag = topicKey ? (mapTopic[topicKey] || topicKey) : null;
           await recordActivityEvent({
@@ -100,13 +100,13 @@ export default function StepMiniTestScore({ answers, score, userId, topicKey, qu
         } catch {}
         // Normalize topicKey to dashboard categories for mastery bars
         const mapTopic: Record<string, string> = {
-          relatii: 'relationships',
-          performanta: 'performance',
-          energie: 'energy',
-          identitate: 'clarity',
-          calm: 'calm',
-          obiceiuri: 'general',
-          sens: 'general',
+          relatii: "relationships_communication",
+          performanta: "decision_discernment",
+          energie: "energy_body",
+          identitate: "self_trust",
+          calm: "emotional_balance",
+          obiceiuri: "energy_body",
+          sens: "self_trust",
         };
         const normalizedKey = topicKey ? (mapTopic[topicKey] || topicKey) : undefined;
         // Patch omni.kuno: knowledge + mastery (primary + optional secondary estimates)

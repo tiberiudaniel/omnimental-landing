@@ -9,7 +9,7 @@ const { adaptProgressFacts } = loadTsModule(
 
 test("adaptProgressFacts maps dimension scores to 0..100 indices", () => {
   const facts = {
-    recommendation: { dimensionScores: { focus: 4, calm: 2, energy: 3 } },
+    recommendation: { dimensionScores: { focus_clarity: 4, emotional_balance: 2, energy_body: 3 } },
     practiceSessions: [
       { type: "reflection" },
       { type: "breathing" },
@@ -25,4 +25,3 @@ test("adaptProgressFacts maps dimension scores to 0..100 indices", () => {
   assert.equal(out.breathingCount, 2);
   assert.equal(out.drillsCount, 1);
 });
-

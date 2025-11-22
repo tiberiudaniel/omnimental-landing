@@ -1,7 +1,9 @@
-export type IndicatorId = 'mental_clarity' | 'emotional_balance' | 'physical_energy';
+import { OMNIKUNO_MODULES, resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
 
-export type IndicatorDomain = 'cognitiv' | 'emoțional' | 'somatic' | 'behavioral';
-export type IndicatorType = 'state' | 'trait';
+export type IndicatorId = "mental_clarity" | "emotional_balance" | "physical_energy";
+
+export type IndicatorDomain = "cognitiv" | "emoțional" | "somatic" | "behavioral";
+export type IndicatorType = "state" | "trait";
 
 export type IndicatorDef = {
   id: IndicatorId;
@@ -17,101 +19,101 @@ export type IndicatorDef = {
 
 export const INDICATORS: Record<IndicatorId, IndicatorDef> = {
   mental_clarity: {
-    id: 'mental_clarity',
-    label: 'Claritate mentală',
-    shortLabel: 'Claritate mentală',
-    domain: 'cognitiv',
-    type: 'state',
+    id: "mental_clarity",
+    label: "Claritate mentală",
+    shortLabel: "Claritate mentală",
+    domain: "cognitiv",
+    type: "state",
     range: [0, 10],
-    description: 'Cât de limpede îți simți gândirea și direcția în acest moment.',
-    dataSources: ['slider', 'actions'],
-    usedIn: ['indicatori_interni', 'trendul_actiunilor', 'raport_saptamanal'],
+    description: "Cât de limpede îți simți gândirea și direcția în acest moment.",
+    dataSources: ["slider", "actions"],
+    usedIn: ["indicatori_interni", "trendul_actiunilor", "raport_saptamanal"],
   },
   emotional_balance: {
-    id: 'emotional_balance',
-    label: 'Echilibru emoțional',
-    shortLabel: 'Echilibru emoțional',
-    domain: 'emoțional',
-    type: 'state',
+    id: "emotional_balance",
+    label: "Echilibru emoțional",
+    shortLabel: "Echilibru emoțional",
+    domain: "emoțional",
+    type: "state",
     range: [0, 10],
-    description: 'Nivelul de tensiune/agitatie vs. calm și stabilitate emoțională.',
-    dataSources: ['slider', 'actions'],
-    usedIn: ['indicatori_interni', 'trendul_actiunilor', 'raport_saptamanal'],
+    description: "Nivelul de tensiune/agitatie vs. calm și stabilitate emoțională.",
+    dataSources: ["slider", "actions"],
+    usedIn: ["indicatori_interni", "trendul_actiunilor", "raport_saptamanal"],
   },
   physical_energy: {
-    id: 'physical_energy',
-    label: 'Energie fizică',
-    shortLabel: 'Energie fizică',
-    domain: 'somatic',
-    type: 'state',
+    id: "physical_energy",
+    label: "Energie fizică",
+    shortLabel: "Energie fizică",
+    domain: "somatic",
+    type: "state",
     range: [0, 10],
-    description: 'Senzația de energie/vitalitate vs. oboseală (baterie încărcată vs. descărcată).',
-    dataSources: ['slider', 'actions'],
-    usedIn: ['indicatori_interni', 'trendul_actiunilor', 'raport_saptamanal'],
+    description: "Senzația de energie/vitalitate vs. oboseală (baterie încărcată vs. descărcată).",
+    dataSources: ["slider", "actions"],
+    usedIn: ["indicatori_interni", "trendul_actiunilor", "raport_saptamanal"],
   },
 };
 
 // Legacy mapping helpers to keep compatibility with existing data shapes
-export const LegacyIndicatorKeyById: Record<IndicatorId, 'clarity' | 'calm' | 'energy'> = {
-  mental_clarity: 'clarity',
-  emotional_balance: 'calm',
-  physical_energy: 'energy',
+export const LegacyIndicatorKeyById: Record<IndicatorId, "clarity" | "calm" | "energy"> = {
+  mental_clarity: "clarity",
+  emotional_balance: "calm",
+  physical_energy: "energy",
 };
 
-export const IndicatorIdByLegacyKey: Record<'clarity' | 'calm' | 'energy', IndicatorId> = {
-  clarity: 'mental_clarity',
-  calm: 'emotional_balance',
-  energy: 'physical_energy',
+export const IndicatorIdByLegacyKey: Record<"clarity" | "calm" | "energy", IndicatorId> = {
+  clarity: "mental_clarity",
+  calm: "emotional_balance",
+  energy: "physical_energy",
 };
 
 // -----------------------------------------------
 // Radar/Chart compatibility (existing components)
 // -----------------------------------------------
-export type IndicatorChartKey = 'clarity' | 'relationships' | 'calm' | 'energy' | 'performance';
+export type IndicatorChartKey = OmniKunoModuleId;
 export type IndicatorChartValues = Record<IndicatorChartKey, number>;
 
-// Source keys used by intent expressions/categories; includes legacy alias 'focus' for 'clarity'
-export type IndicatorSourceKey = IndicatorChartKey | 'focus';
+export type IndicatorSourceKey = IndicatorChartKey;
 
-export const INDICATOR_CHART_KEYS: IndicatorChartKey[] = [
-  'clarity',
-  'relationships',
-  'calm',
-  'energy',
-  'performance',
+export const INDICATOR_CHART_KEYS: IndicatorChartKey[] = OMNIKUNO_MODULES.map(
+  (meta) => meta.id as OmniKunoModuleId,
+);
+
+export const INDICATOR_LABELS: Record<IndicatorChartKey, { ro: string; en: string }> = OMNIKUNO_MODULES.reduce(
+  (acc, meta) => {
+    acc[meta.id as OmniKunoModuleId] = { ro: meta.label.ro, en: meta.label.en };
+    return acc;
+  },
+  {} as Record<IndicatorChartKey, { ro: string; en: string }>,
+);
+
+const KEYWORD_RULES: Array<{ pattern: RegExp; moduleId: OmniKunoModuleId }> = [
+  { pattern: /relat|limi|relationship|boundar|comunic/i, moduleId: "relationships_communication" },
+  { pattern: /calm|stres|stress|anx|panic|emo/i, moduleId: "emotional_balance" },
+  { pattern: /clar|focus|direc|vision|deciz|ident/i, moduleId: "focus_clarity" },
+  { pattern: /energ|vital|oboseal|sleep|somn|habit|health|corp/i, moduleId: "energy_body" },
+  { pattern: /perform|decis|discern|obiectiv|career|carier|money/i, moduleId: "decision_discernment" },
+  { pattern: /incredere|trust|sense|meaning|purpose|valo|identitate|identity/i, moduleId: "self_trust" },
 ];
 
-export const INDICATOR_LABELS: Record<IndicatorChartKey, { ro: string; en: string }> = {
-  clarity: { ro: 'Claritate mentală', en: 'Clarity' },
-  relationships: { ro: 'Relații', en: 'Relationships' },
-  calm: { ro: 'Echilibru emoțional', en: 'Emotional balance' },
-  energy: { ro: 'Energie fizică', en: 'Energy' },
-  performance: { ro: 'Performanță', en: 'Performance' },
-};
-
-// Map intent categories to the 5 radar dimensions
 export function intentCategoryToIndicator(categoryRaw: string): IndicatorChartKey | null {
-  // Normalize to lowercase and strip diacritics for robust matching (e.g., "încredere" -> "incredere")
-  const base = (categoryRaw || '').toLowerCase();
-  if (!base) return null;
-  const c = (() => {
+  if (!categoryRaw) return null;
+  const direct = resolveModuleId(categoryRaw);
+  if (direct) return direct;
+  const normalized = (() => {
+    const base = categoryRaw.toLowerCase();
     try {
-      return base.normalize('NFD').replace(/\p{Diacritic}+/gu, '');
-    } catch { return base; }
+      return base.normalize("NFD").replace(/\p{Diacritic}+/gu, "");
+    } catch {
+      return base;
+    }
   })();
-  // Romanian/English stems
-  if (c.includes('relat')) return 'relationships';
-  if (c.includes('calm') || c.includes('stres') || c.includes('stress')) return 'calm';
-  if (c.includes('clar') || c.includes('focus') || c.includes('ident')) return 'clarity';
-  if (c.includes('energ') || c.includes('vital') || c.includes('echilibru')) return 'energy';
-  // Map "încredere" (incredere) to performance bucket
-  if (c.includes('incredere') || c.includes('perform')) return 'performance';
-  // English fallbacks
-  if (c.includes('relationship')) return 'relationships';
-  if (c.includes('performance') || c.includes('confidence')) return 'performance';
-  if (c.includes('clarity')) return 'clarity';
-  if (c.includes('energy')) return 'energy';
-  if (c.includes('calm')) return 'calm';
+  const alias = resolveModuleId(normalized);
+  if (alias) return alias;
+  for (const rule of KEYWORD_RULES) {
+    if (rule.pattern.test(normalized)) {
+      return rule.moduleId;
+    }
+  }
   return null;
 }
 
@@ -122,24 +124,26 @@ export function buildIndicatorSummary(categories: Array<{ category: string; coun
   shares: IndicatorChartValues;
 } {
   const sourceCounts: Record<string, number> = {};
-  const chart: IndicatorChartValues = { clarity: 0, relationships: 0, calm: 0, energy: 0, performance: 0 };
+  const chart: IndicatorChartValues = INDICATOR_CHART_KEYS.reduce((acc, key) => {
+    acc[key] = 0;
+    return acc;
+  }, {} as IndicatorChartValues);
   let total = 0;
   (categories || []).forEach((entry) => {
-    const cat = String(entry?.category || '');
+    const cat = String(entry?.category || "");
     const n = Math.max(0, Number(entry?.count) || 0);
     if (!cat || !n) return;
     sourceCounts[cat] = (sourceCounts[cat] || 0) + n;
     const key = intentCategoryToIndicator(cat);
-    if (key) chart[key] += n;
-    total += n;
+    if (key) {
+      chart[key] += n;
+      total += n;
+    }
   });
   const denom = total > 0 ? total : 1;
-  const shares: IndicatorChartValues = {
-    clarity: chart.clarity / denom,
-    relationships: chart.relationships / denom,
-    calm: chart.calm / denom,
-    energy: chart.energy / denom,
-    performance: chart.performance / denom,
-  };
+  const shares: IndicatorChartValues = INDICATOR_CHART_KEYS.reduce((acc, key) => {
+    acc[key] = chart[key] / denom;
+    return acc;
+  }, {} as IndicatorChartValues);
   return { sourceCounts, chart, shares };
 }

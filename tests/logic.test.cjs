@@ -58,19 +58,19 @@ test("computeDimensionScores amplifies categories and urgency", () => {
     9,
   );
   // Urgency 9 => factor 0.5 + 0.9 = 1.4 → 4 * 1.4 ≈ 6
-  assert.equal(scores.calm, 6);
-  assert.equal(scores.relationships, 3);
-  assert.equal(scores.focus, 1);
+  assert.equal(scores.emotional_balance, 6);
+  assert.equal(scores.relationships_communication, 3);
+  assert.equal(scores.focus_clarity, 1);
 });
 
 test("recommendSession applies rule hierarchy", () => {
   const baseScores = {
-    calm: 0,
-    focus: 0,
-    energy: 0,
-    relationships: 0,
-    performance: 0,
-    health: 0,
+    emotional_balance: 0,
+    focus_clarity: 0,
+    energy_body: 0,
+    relationships_communication: 0,
+    decision_discernment: 0,
+    self_trust: 0,
   };
 
   const urgent = recommendSession({
@@ -94,7 +94,7 @@ test("recommendSession applies rule hierarchy", () => {
   const performance = recommendSession({
     urgency: 5,
     primaryCategory: "focus",
-    dimensionScores: { ...baseScores, performance: 4, calm: 1 },
+    dimensionScores: { ...baseScores, decision_discernment: 4, emotional_balance: 1 },
     hasProfile: true,
   });
   assert.equal(performance.recommendedPath, "group");
@@ -111,7 +111,14 @@ test("recommendSession applies rule hierarchy", () => {
 });
 
 test("recommendSession defaults to group when no strong signals", () => {
-  const baseScores = { calm: 0, focus: 0, energy: 0, relationships: 0, performance: 0, health: 0 };
+  const baseScores = {
+    emotional_balance: 0,
+    focus_clarity: 0,
+    energy_body: 0,
+    relationships_communication: 0,
+    decision_discernment: 0,
+    self_trust: 0,
+  };
   const rec = recommendSession({ urgency: 5, primaryCategory: undefined, dimensionScores: baseScores, hasProfile: false });
   assert.equal(rec.recommendedPath, "group");
 });
@@ -124,20 +131,26 @@ test("buildIndicatorSummary maps categories to chart and normalized shares", () 
     { category: "energy", count: 4 },
   ];
   const { chart, shares } = buildIndicatorSummary(categories);
-  // Counts are mapped: clarity->focus, relationships->relationships, stress->calm, energy->energy
-  assert.equal(chart.clarity, 3); // focus is displayed as clarity in chart
-  assert.equal(chart.relationships, 2);
-  assert.equal(chart.calm, 1);
-  assert.equal(chart.energy, 4);
+  // Counts are mapped via module IDs
+  assert.equal(chart.focus_clarity, 3);
+  assert.equal(chart.relationships_communication, 2);
+  assert.equal(chart.emotional_balance, 1);
+  assert.equal(chart.energy_body, 4);
   // Shares normalized to ~1 (allow small float tolerance)
-  const totalShare = shares.clarity + shares.relationships + shares.calm + shares.energy + shares.performance;
+  const totalShare =
+    shares.focus_clarity +
+    shares.relationships_communication +
+    shares.emotional_balance +
+    shares.energy_body +
+    shares.decision_discernment +
+    shares.self_trust;
   assert.ok(totalShare > 0.99 && totalShare < 1.01);
 });
 
 test("computeDimensionScores handles empty input and low urgency", () => {
   const scores = computeDimensionScores([], 2);
-  assert.equal(scores.calm, 0);
-  assert.equal(scores.focus, 0);
+  assert.equal(scores.emotional_balance, 0);
+  assert.equal(scores.focus_clarity, 0);
 });
 
 test("computeConsistencyIndexFromDates computes distinct days ratio over 14 days", () => {

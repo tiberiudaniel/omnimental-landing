@@ -73,15 +73,20 @@ export function adaptProgressFacts(facts: unknown): ProgressData {
     f.evaluation && typeof f.evaluation.scores === "object" && f.evaluation.scores ? f.evaluation.scores : {};
 
   // Prefer dimension scores (0..5 scale). Map focus -> clarity.
-  type DimsPartial = { focus?: unknown; calm?: unknown; energy?: unknown } | undefined;
+  type DimsPartial = Record<string, unknown> | undefined;
   const dims: DimsPartial = (f.recommendation?.dimensionScores as DimsPartial) ?? undefined;
   let clarity = 0;
   let calm = 0;
   let energy = 0;
   if (dims) {
-    const dClarity = num(dims?.focus, NaN);
-    const dCalm = num(dims?.calm, NaN);
-    const dEnergy = num(dims?.energy, NaN);
+    const readDimension = (primary: string, legacy?: string) => {
+      const val = num(dims?.[primary], NaN);
+      if (Number.isFinite(val)) return val;
+      return legacy ? num(dims?.[legacy], NaN) : NaN;
+    };
+    const dClarity = readDimension("focus_clarity", "focus");
+    const dCalm = readDimension("emotional_balance", "calm");
+    const dEnergy = readDimension("energy_body", "energy");
     if (Number.isFinite(dClarity) || Number.isFinite(dCalm) || Number.isFinite(dEnergy)) {
       clarity = toPercent(clamp01(dClarity / 5) * 100);
       calm = toPercent(clamp01(dCalm / 5) * 100);

@@ -1,4 +1,5 @@
 import type { ProgressFact } from "@/lib/progressFacts";
+import { resolveModuleId } from "@/config/omniKunoModules";
 
 export type PracticeSessionLite = {
   type: "reflection" | "breathing" | "drill";
@@ -200,8 +201,10 @@ const CATEGORY_WEIGHTS: Record<ActivityCategory, number> = {
 const FOCUS_MATCH_WEIGHT = 1.0;
 const FOCUS_MISMATCH_WEIGHT = 0.5;
 function focusWeight(ev: ActivityEvent, currentFocusTag?: string) {
-  if (!currentFocusTag || !ev.focusTag) return 1.0;
-  return ev.focusTag === currentFocusTag ? FOCUS_MATCH_WEIGHT : FOCUS_MISMATCH_WEIGHT;
+  const eventTag = resolveModuleId(ev.focusTag ?? undefined);
+  const normalizedCurrent = resolveModuleId(currentFocusTag ?? undefined);
+  if (!normalizedCurrent || !eventTag) return 1.0;
+  return eventTag === normalizedCurrent ? FOCUS_MATCH_WEIGHT : FOCUS_MISMATCH_WEIGHT;
 }
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 const DAILY_TARGET = 30; // 30 weighted minutes ≈ 100

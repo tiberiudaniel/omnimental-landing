@@ -64,7 +64,7 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
   const submit = async () => {
     try {
       // log a small knowledge event so trendurile includ acest pas
-      await recordActivityEvent({ startedAtMs: Date.now(), source: 'omnikuno', category: 'knowledge', units: 1, durationMin: 3, focusTag: 'calm' });
+      await recordActivityEvent({ startedAtMs: Date.now(), source: 'omnikuno', category: 'knowledge', units: 1, durationMin: 3, focusTag: 'emotional_balance' });
     } catch {}
     onDone();
   };
@@ -103,4 +103,3 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
     </section>
   );
 }
-

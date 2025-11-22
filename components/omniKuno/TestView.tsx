@@ -47,15 +47,33 @@ export default function TestView({ testId, onCompleted }: TestViewProps) {
 
   if (score) {
     const passed = score.correct >= MIN_PASS_OBJECTIVE;
+    const completion = test.completion;
     return (
       <section className="space-y-3 rounded-3xl border border-[#E4DAD1] bg-white px-6 py-5 text-[#2C2C2C]">
-        <h3 className="text-xl font-semibold">Felicitări!</h3>
+        <h3 className="text-xl font-semibold">{completion?.title ?? "Felicitări!"}</h3>
         <p className="text-sm text-[#4D3F36]">
           Ai răspuns corect la {score.correct} din {score.total} întrebări cu răspuns obiectiv.{" "}
           {passed
             ? "Ești gata să treci la următoarele module – continuă practica calmă și integrează ce ai învățat în conversațiile tale zilnice."
             : "Îți recomandăm să revezi lecțiile-cheie care ți-au ridicat semne de întrebare și să relansezi testul după câteva zile."}
         </p>
+        {completion ? (
+          <div className="space-y-2 rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] px-4 py-3 text-sm text-[#4D3F36]">
+            <p>{completion.body}</p>
+            {completion.suggestions?.length ? (
+              <ul className="list-disc space-y-1 pl-5 text-[13px] text-[#513D32]">
+                {completion.suggestions.map((suggestion) => (
+                  <li key={suggestion}>{suggestion}</li>
+                ))}
+              </ul>
+            ) : null}
+            {completion.badge ? (
+              <div className="rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#1F3C2F]">
+                {completion.badge}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </section>
     );
   }

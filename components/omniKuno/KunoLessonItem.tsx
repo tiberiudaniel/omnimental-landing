@@ -20,9 +20,10 @@ type Props = {
   onSelect: () => void;
   header: ReactNode;
   children?: ReactNode;
+  onLockedAttempt?: () => void;
 };
 
-export default function KunoLessonItem({ lesson, isActive, disabled, onSelect, header, children }: Props) {
+export default function KunoLessonItem({ lesson, isActive, disabled, onSelect, header, children, onLockedAttempt }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (isActive && ref.current) {
@@ -37,7 +38,10 @@ export default function KunoLessonItem({ lesson, isActive, disabled, onSelect, h
       <button
         type="button"
         onClick={() => {
-          if (locked) return;
+          if (locked) {
+            onLockedAttempt?.();
+            return;
+          }
           onSelect();
         }}
         className={`flex w-full items-center justify-between px-3 py-3 text-left transition ${

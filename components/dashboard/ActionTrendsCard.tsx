@@ -10,6 +10,7 @@ import { computeActionTrend, type ActivityEvent } from "@/lib/progressAnalytics"
 import { toMsLocal } from "@/lib/dashboard/progressSelectors";
 import { fadeDelayed, hoverScale } from "@/components/dashboard/motionPresets";
 import type { useI18n } from "@/components/I18nProvider";
+import { resolveModuleId } from "@/config/omniKunoModules";
 
 type SessionsData = Array<{ startedAt?: unknown; durationSec?: number | null; type: string }>;
 
@@ -148,7 +149,10 @@ export default function ActionTrendsCard({
             ? Math.max(0, e.durationMin)
             : Math.max(0, (e.units || 1) * (e.category === "knowledge" ? 6 : e.category === "practice" ? 8 : 4));
         const w = e.category === "knowledge" ? 0.8 : e.category === "practice" ? 1.5 : 1.1;
-        const v = base * w * (currentFocusTag && e.focusTag ? (e.focusTag === currentFocusTag ? 1 : 0.5) : 1);
+        const normalizedCurrent = resolveModuleId(currentFocusTag ?? undefined);
+        const eventTag = resolveModuleId(e.focusTag ?? undefined);
+        const weightFactor = normalizedCurrent && eventTag ? (eventTag === normalizedCurrent ? 1 : 0.5) : 1;
+        const v = base * w * weightFactor;
         if (e.category === "knowledge") wK += v;
         else if (e.category === "practice") wP += v;
         else wR += v;

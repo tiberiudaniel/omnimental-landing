@@ -10,11 +10,13 @@ import { formatUtcShort } from "@/lib/format";
 import { toMsLocal } from "@/lib/dashboard/progressSelectors";
 import { computeActionTrend, type ActivityEvent, type extractSessions } from "@/lib/progressAnalytics";
 import KunoMissionCard, { type KunoMissionCardData } from "./KunoMissionCard";
+import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 
 export type FocusThemeInfo = {
   area?: string | null;
   desc?: string | null;
   categoryKey?: string | null;
+  moduleId?: OmniKunoModuleId | null;
 };
 
 type CenterColumnCardsProps = {

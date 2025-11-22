@@ -1,5 +1,7 @@
 "use client";
 
+import type { OmniKunoModuleId } from "@/config/omniKunoModules";
+
 export type ScriptCondition = {
   metric: "pssTotal" | "gseTotal" | "maasTotal" | "svs" | "knowledgePercent";
   operator: "gte" | "lte";
@@ -25,16 +27,7 @@ export type ContentScript = {
   priority: number;
   notes?: string;
   // Optional thematic areas used to rank/reorder for users
-  areas?: Array<
-    | "clarity"
-    | "focus"
-    | "calm"
-    | "energy"
-    | "relationships"
-    | "performance"
-    | "health"
-    | "identity"
-  >;
+  areas?: OmniKunoModuleId[];
 };
 
 export const defaultContentScripts: ContentScript[] = [
@@ -58,7 +51,7 @@ export const defaultContentScripts: ContentScript[] = [
   ],
   priority: 1,
   notes: "Activated when perceived stress is high.",
-  areas: ["calm", "energy"],
+  areas: ["emotional_balance", "energy_body"],
 },
   {
     id: "knowledge-gap",
@@ -80,7 +73,7 @@ export const defaultContentScripts: ContentScript[] = [
   ],
   priority: 2,
   notes: "Highlights when knowledge mastery is below the desired threshold.",
-  areas: ["clarity", "identity"],
+  areas: ["focus_clarity", "self_trust"],
 },
   {
     id: "presence-scan",
@@ -102,7 +95,7 @@ export const defaultContentScripts: ContentScript[] = [
   ],
   priority: 3,
   notes: "Triggered by lower mindfulness scores.",
-  areas: ["clarity", "focus", "calm"],
+  areas: ["focus_clarity", "emotional_balance"],
 },
   {
     id: "vitality-check",
@@ -124,7 +117,7 @@ export const defaultContentScripts: ContentScript[] = [
   ],
   priority: 4,
   notes: "Helps when vitality is low.",
-  areas: ["energy", "health"],
+  areas: ["energy_body"],
 },
   {
     id: "confidence-loop",
@@ -146,7 +139,7 @@ export const defaultContentScripts: ContentScript[] = [
   ],
   priority: 5,
     notes: "Boosts confidence when GSE is low.",
-    areas: ["performance", "identity"],
+    areas: ["decision_discernment", "self_trust"],
   },
   {
     id: "clarity-notes-3",
@@ -167,7 +160,7 @@ export const defaultContentScripts: ContentScript[] = [
     conditions: [],
     priority: 6,
     notes: "Short clarity journaling task; good general-purpose quest.",
-    areas: ["clarity", "focus"],
+    areas: ["focus_clarity"],
   },
   {
     id: "clarity-notes-3-10min",
@@ -187,6 +180,6 @@ export const defaultContentScripts: ContentScript[] = [
     conditions: [],
     priority: 7,
     notes: "Time‑boxed clarity journaling; complements clarity‑notes‑3.",
-    areas: ["clarity", "focus"],
+    areas: ["focus_clarity"],
   },
 ];

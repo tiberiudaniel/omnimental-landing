@@ -7,6 +7,7 @@ import type { QuestSuggestion } from "../quests";
 import type { SessionType } from "../recommendation";
 import type { DimensionScores } from "../scoring";
 import type { OmniBlock } from "../omniIntel";
+import { resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
 import {
   type DeepPartial,
   type ProgressIntentCategories,
@@ -325,20 +326,26 @@ export async function recordRecommendationProgressFact(payload: {
 
 // Text signals aggregation: bump indicator counters, store last tokens sample
 export async function recordTextSignalFact(payload: {
-  indicators: { calm?: number; focus?: number; energy?: number; relationships?: number; performance?: number };
+  indicators: Partial<Record<string, number>>;
   tokens?: string[];
   textIndicators?: Record<string, { count: number; hits: string[] }>;
 }) {
   const inc = (v?: number) => (typeof v === "number" && Number.isFinite(v) ? (increment(v) as unknown as number) : undefined);
+  const indicatorPayload = Object.entries(payload.indicators || {}).reduce<Partial<Record<OmniKunoModuleId, number>>>(
+    (acc, [key, value]) => {
+      const moduleId = resolveModuleId(key);
+      if (!moduleId) return acc;
+      const next = inc(value);
+      if (typeof next !== "undefined") {
+        acc[moduleId] = next;
+      }
+      return acc;
+    },
+    {},
+  );
   const update: Record<string, unknown> = {
     analytics: {
-      indicators: {
-        calm: inc(payload.indicators.calm) ?? undefined,
-        focus: inc(payload.indicators.focus) ?? undefined,
-        energy: inc(payload.indicators.energy) ?? undefined,
-        relationships: inc(payload.indicators.relationships) ?? undefined,
-        performance: inc(payload.indicators.performance) ?? undefined,
-      },
+      indicators: indicatorPayload,
       lastTokens: Array.isArray(payload.tokens) ? payload.tokens.slice(0, 12) : undefined,
       textIndicators: payload.textIndicators ?? undefined,
       updatedAt: serverTimestamp(),
@@ -799,7 +806,11 @@ export async function recordActivityEvent(payload: {
       category: payload.category,
       units: typeof payload.units === 'number' ? Math.max(1, Math.floor(payload.units)) : 1,
       durationMin: typeof payload.durationMin === 'number' ? Math.max(0, Math.round(payload.durationMin)) : undefined,
-      focusTag: (payload.focusTag ?? null) as string | null,
+      focusTag: (() => {
+        const resolved = resolveModuleId(payload.focusTag ?? undefined);
+        if (resolved) return resolved;
+        return (payload.focusTag ?? null) as string | null;
+      })(),
     };
     await runTransaction(db, async (tx) => {
       const snap = await tx.get(factsRef);

@@ -10,33 +10,33 @@ import {
 import { submitOmniKnowledgeAssessment } from "@/lib/submitEvaluation";
 import { recordKnowledgeViewSummary, recordOmniPatch } from "@/lib/progressFacts";
 import { useProfile } from "./ProfileProvider";
-import { OMNIKUNO_MODULES } from "@/config/omniKunoLessons";
+import { OMNIKUNO_MODULES as LESSON_MODULES } from "@/config/omniKunoLessons";
+import {
+  OMNIKUNO_MODULES as MODULE_META,
+  getLegacyModuleKeyById,
+  resolveModuleId,
+  type OmniKunoModuleId,
+} from "@/config/omniKunoModules";
 
-type KunoAreaKey = keyof typeof OMNIKUNO_MODULES;
+type KunoAreaKey = OmniKunoModuleId;
 
-const AREA_LABELS_RO: Record<KunoAreaKey, string> = {
-  calm: "Echilibru emoțional",
-  energy: "Energie & Somn",
-  relations: "Relații & susținere",
-  performance: "Performanță",
-  sense: "Sens & identitate",
-};
+const AREA_LABELS_RO = MODULE_META.reduce((acc, meta) => {
+  acc[meta.id as KunoAreaKey] = meta.label.ro;
+  return acc;
+}, {} as Record<KunoAreaKey, string>);
 
-const AREA_LABELS_EN: Record<KunoAreaKey, string> = {
-  calm: "Emotional balance & regulation",
-  energy: "Energy & sleep",
-  relations: "Relationships & support",
-  performance: "Performance",
-  sense: "Meaning & identity",
-};
+const AREA_LABELS_EN = MODULE_META.reduce((acc, meta) => {
+  acc[meta.id as KunoAreaKey] = meta.label.en;
+  return acc;
+}, {} as Record<KunoAreaKey, string>);
 
 const KNOWLEDGE_MODULE_TO_AREA: Record<string, KunoAreaKey> = {
-  hrv: "calm",
-  breath: "calm",
-  sleep: "energy",
-  cbt: "relations",
-  ooda: "performance",
-  mindfulness: "sense",
+  hrv: "emotional_balance",
+  breath: "emotional_balance",
+  sleep: "energy_body",
+  cbt: "relationships_communication",
+  ooda: "decision_discernment",
+  mindfulness: "self_trust",
 };
 
 const buildDefaultAnswers = () => {
@@ -120,9 +120,17 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
         return acc;
       }, {});
       const areaAggregate = aggregateAreaStats(score);
-      const recommendedFocus = areaAggregate.bestArea;
+      const recommendedAreaId = areaAggregate.bestArea;
       const breakdown = buildExamBreakdown(score);
-      const recommendedModuleId = OMNIKUNO_MODULES[recommendedFocus]?.moduleId;
+      const legacyKey = getLegacyModuleKeyById(recommendedAreaId);
+      const recommendedLessonModuleId = (() => {
+        if (!legacyKey) return null;
+        const mapped = resolveModuleId(legacyKey);
+        if (mapped && LESSON_MODULES[mapped as OmniKunoModuleId]) {
+          return LESSON_MODULES[mapped as OmniKunoModuleId].moduleId;
+        }
+        return null;
+      })();
       await submitOmniKnowledgeAssessment({
         lang,
         score,
@@ -148,8 +156,8 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
             kuno: {
               knowledgeIndex: score.percent,
               completedTests: 1,
-              ...(recommendedModuleId ? { recommendedModuleId } : {}),
-              recommendedArea: recommendedFocus,
+              ...(recommendedLessonModuleId ? { recommendedModuleId: recommendedLessonModuleId } : {}),
+              recommendedArea: recommendedAreaId,
               exam: {
                 score: score.percent,
                 lastTakenAt: now,
@@ -162,11 +170,11 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
       } catch (patchErr) {
         console.warn("omni patch (knowledgeIndex) failed", patchErr);
       }
-      setRecommendedArea(recommendedFocus);
+      setRecommendedArea(recommendedAreaId);
       setMessage(
         lang === "ro"
-          ? `Scorul Omni-Cunoaștere a fost salvat. Începe cu misiunile din zona ${AREA_LABELS_RO[recommendedFocus]}.`
-          : `Your Omni-Knowledge score is saved. Start with missions in ${AREA_LABELS_EN[recommendedFocus]}.`,
+          ? `Scorul Omni-Cunoaștere a fost salvat. Începe cu misiunile din zona ${AREA_LABELS_RO[recommendedAreaId]}.`
+          : `Your Omni-Knowledge score is saved. Start with missions in ${AREA_LABELS_EN[recommendedAreaId]}.`,
       );
     } catch (submitError) {
       console.error("OC submit failed", submitError);
@@ -423,19 +431,19 @@ function ModuleBreakdown({ score }: { score: OmniKnowledgeScores }) {
 }
 
 function aggregateAreaStats(score: OmniKnowledgeScores) {
-  const stats: Record<KunoAreaKey, { raw: number; max: number; percent: number }> = {
-    calm: { raw: 0, max: 0, percent: 0 },
-    energy: { raw: 0, max: 0, percent: 0 },
-    relations: { raw: 0, max: 0, percent: 0 },
-    performance: { raw: 0, max: 0, percent: 0 },
-    sense: { raw: 0, max: 0, percent: 0 },
-  };
+  const stats: Record<KunoAreaKey, { raw: number; max: number; percent: number }> = MODULE_META.reduce(
+    (acc, meta) => {
+      acc[meta.id as KunoAreaKey] = { raw: 0, max: 0, percent: 0 };
+      return acc;
+    },
+    {} as Record<KunoAreaKey, { raw: number; max: number; percent: number }>,
+  );
   Object.entries(score.breakdown).forEach(([moduleKey, value]) => {
-    const area = KNOWLEDGE_MODULE_TO_AREA[moduleKey] ?? "calm";
+    const area = KNOWLEDGE_MODULE_TO_AREA[moduleKey] ?? "emotional_balance";
     stats[area].raw += value.raw;
     stats[area].max += value.max;
   });
-  let bestArea: KunoAreaKey = "calm";
+  let bestArea: KunoAreaKey = "emotional_balance";
   let bestPct = -1;
   (Object.keys(stats) as KunoAreaKey[]).forEach((area) => {
     const areaData = stats[area];

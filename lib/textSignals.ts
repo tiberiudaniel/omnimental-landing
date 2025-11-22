@@ -5,19 +5,18 @@ import { getDb, ensureAuth, areWritesDisabled } from "./firebase";
 import { recordTextSignalFact } from "./progressFacts";
 import roLex from "@/data/lexicon.ro.json" assert { type: "json" };
 import enLex from "@/data/lexicon.en.json" assert { type: "json" };
+import { OMNIKUNO_MODULES, resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
 
 type Lexicon = {
   indicators: Record<string, { tokens: string[]; synonyms?: string[] }>;
 };
 
-function buildIndex(lex: Lexicon): Record<string, keyof IndicatorCounts> {
-  const index: Record<string, keyof IndicatorCounts> = {};
-  const mapKey = (k: string): keyof IndicatorCounts | undefined => {
-    if (k === "calm" || k === "focus" || k === "energy" || k === "relationships" || k === "performance") return k;
-    return undefined;
-  };
+const MODULE_IDS: OmniKunoModuleId[] = OMNIKUNO_MODULES.map((meta) => meta.id as OmniKunoModuleId);
+
+function buildIndex(lex: Lexicon): Record<string, OmniKunoModuleId> {
+  const index: Record<string, OmniKunoModuleId> = {};
   for (const [key, entry] of Object.entries(lex.indicators || {})) {
-    const dim = mapKey(key);
+    const dim = resolveModuleId(key);
     if (!dim) continue;
     const list = [...(entry.tokens || []), ...(entry.synonyms || [])];
     for (const t of list) index[t.toLowerCase()] = dim;
@@ -48,11 +47,20 @@ function tokenize(text: string, lang: "ro" | "en" = "ro") {
   return { counts, top };
 }
 
-export type IndicatorCounts = { calm: number; focus: number; energy: number; relationships: number; performance: number };
+export type IndicatorCounts = Record<OmniKunoModuleId, number>;
+
+function createIndicatorCounts(): IndicatorCounts {
+  return MODULE_IDS.reduce((acc, id) => {
+    acc[id] = 0;
+    return acc;
+  }, {} as IndicatorCounts);
+}
 
 function mapTokensToIndicators(tokens: Record<string, number>, lang: "ro" | "en"): IndicatorCounts {
-  const ic: IndicatorCounts = { calm: 0, focus: 0, energy: 0, relationships: 0, performance: 0 };
-  const add = (k: keyof IndicatorCounts, v=1) => { ic[k] += v; };
+  const ic = createIndicatorCounts();
+  const add = (k: OmniKunoModuleId, v = 1) => {
+    ic[k] += v;
+  };
   const lex = (lang === "en" ? (enLex as Lexicon) : (roLex as Lexicon));
   const index = buildIndex(lex);
   for (const [w, c] of Object.entries(tokens)) {
@@ -63,17 +71,19 @@ function mapTokensToIndicators(tokens: Record<string, number>, lang: "ro" | "en"
     }
     // Fallback heuristics if not found in lexicon
     if (lang === "ro") {
-      if (/stres|anxiet|panic|relax|calm/i.test(w)) add("calm", c);
-      else if (/clar|direct|deciz|focus|bloc|viziune|alege/i.test(w)) add("focus", c);
-      else if (/relat|limi|partener|singur|comunic|neinteles|incredere/i.test(w)) add("relationships", c);
-      else if (/energ|obos|somn|dorm|echilibru|obicei|stil|sanat/i.test(w)) add("energy", c);
-      else if (/product|obiectiv|tinta|perform|motiva|curaj|eficac|progres/i.test(w)) add("performance", c);
+      if (/stres|anxiet|panic|relax|calm/i.test(w)) add("emotional_balance", c);
+      else if (/clar|direct|deciz|focus|bloc|viziune|alege/i.test(w)) add("focus_clarity", c);
+      else if (/relat|limi|partener|singur|comunic|neinteles|incredere/i.test(w)) add("relationships_communication", c);
+      else if (/energ|obos|somn|dorm|echilibru|obicei|stil|sanat/i.test(w)) add("energy_body", c);
+      else if (/product|obiectiv|tinta|perform|motiva|curaj|eficac|progres/i.test(w)) add("decision_discernment", c);
+      else if (/sens|valo|identit|incredere|rost/i.test(w)) add("self_trust", c);
     } else {
-      if (/stress|anxiet|panic|relax|calm|overwhelm|pressure/i.test(w)) add("calm", c);
-      else if (/clarit|direct|decid|decision|focus|stuck|vision|choose/i.test(w)) add("focus", c);
-      else if (/relat|boundar|partner|alone|communicat|misunderstood|trust/i.test(w)) add("relationships", c);
-      else if (/energy|tired|sleep|insom|balance|habit|lifestyle|health/i.test(w)) add("energy", c);
-      else if (/product|goal|target|perform|motivat|courage|efficac|progress/i.test(w)) add("performance", c);
+      if (/stress|anxiet|panic|relax|calm|overwhelm|pressure/i.test(w)) add("emotional_balance", c);
+      else if (/clarit|direct|decid|decision|focus|stuck|vision|choose/i.test(w)) add("focus_clarity", c);
+      else if (/relat|boundar|partner|alone|communicat|misunderstood|trust/i.test(w)) add("relationships_communication", c);
+      else if (/energy|tired|sleep|insom|balance|habit|lifestyle|health/i.test(w)) add("energy_body", c);
+      else if (/product|goal|target|perform|motivat|courage|efficac|progress/i.test(w)) add("decision_discernment", c);
+      else if (/meaning|purpose|identity|values|sense|trust/i.test(w)) add("self_trust", c);
     }
   }
   return ic;

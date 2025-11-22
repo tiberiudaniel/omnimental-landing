@@ -1,67 +1,61 @@
+import { OMNIKUNO_MODULES, resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
+
 export type IntentCategorySummary = {
   category: string;
   count: number;
 };
 
-export type DimensionScores = {
-  calm: number;
-  focus: number;
-  energy: number;
-  relationships: number;
-  performance: number;
-  health: number;
-};
+export type DimensionScores = Record<OmniKunoModuleId, number>;
 
-const categoryToDimension: Record<string, keyof DimensionScores | undefined> = {
-  anxiety: "calm",
-  stress: "calm",
-  panic: "calm",
+const MODULE_IDS: OmniKunoModuleId[] = OMNIKUNO_MODULES.map((meta) => meta.id as OmniKunoModuleId);
 
-  focus: "focus",
-  productivity: "focus",
-  clarity: "focus",
+const CATEGORY_KEYWORDS: Array<{ pattern: RegExp; moduleId: OmniKunoModuleId }> = [
+  { pattern: /relat|limi|famil|boundar|partner|social/i, moduleId: "relationships_communication" },
+  { pattern: /calm|stres|stress|anx|panic|control|emo/i, moduleId: "emotional_balance" },
+  { pattern: /clar|focus|product|decis|orient|direction|vision/i, moduleId: "focus_clarity" },
+  { pattern: /energ|oboseal|burnout|sleep|somn|habit|health|corp|body/i, moduleId: "energy_body" },
+  { pattern: /perform|career|money|decis|discern|impact|strategie/i, moduleId: "decision_discernment" },
+  { pattern: /incredere|trust|identity|identitate|meaning|purpose|valo|sense/i, moduleId: "self_trust" },
+];
 
-  fatigue: "energy",
-  sleep: "energy",
-  burnout: "energy",
+function createZeroScores(): DimensionScores {
+  return MODULE_IDS.reduce((acc, id) => {
+    acc[id] = 0;
+    return acc;
+  }, {} as DimensionScores);
+}
 
-  relationships: "relationships",
-  boundaries: "relationships",
-  family: "relationships",
-
-  career: "performance",
-  money: "performance",
-  performance: "performance",
-
-  health: "health",
-  habits: "health",
-  lifestyle: "health",
-};
-
-export function computeDimensionScores(
-  categories: IntentCategorySummary[],
-  urgency: number,
-): DimensionScores {
-  const base: DimensionScores = {
-    calm: 0,
-    focus: 0,
-    energy: 0,
-    relationships: 0,
-    performance: 0,
-    health: 0,
-  };
-
-  for (const { category, count } of categories) {
-    const dim = categoryToDimension[category];
-    if (!dim) continue;
-    base[dim] += count;
+function mapCategoryToModule(category: string): OmniKunoModuleId | null {
+  const direct = resolveModuleId(category);
+  if (direct) return direct;
+  const normalized = (() => {
+    const base = (category || "").toLowerCase();
+    try {
+      return base.normalize("NFD").replace(/\p{Diacritic}+/gu, "");
+    } catch {
+      return base;
+    }
+  })();
+  const alias = resolveModuleId(normalized);
+  if (alias) return alias;
+  for (const rule of CATEGORY_KEYWORDS) {
+    if (rule.pattern.test(normalized)) {
+      return rule.moduleId;
+    }
   }
+  return null;
+}
 
+export function computeDimensionScores(categories: IntentCategorySummary[], urgency: number): DimensionScores {
+  const base = createZeroScores();
+  for (const { category, count } of categories) {
+    const moduleId = mapCategoryToModule(category);
+    if (!moduleId) continue;
+    base[moduleId] += count;
+  }
   const factor = 0.5 + urgency / 10;
-
-  (Object.keys(base) as (keyof DimensionScores)[]).forEach((key) => {
-    base[key] = Math.round(base[key] * factor);
+  MODULE_IDS.forEach((moduleId) => {
+    base[moduleId] = Math.round(base[moduleId] * factor);
   });
-
   return base;
 }

@@ -13,6 +13,7 @@ import { increment } from 'firebase/firestore';
 import { applyKunoGamification } from '@/lib/kunoGamification';
 import Toast from '@/components/Toast';
 import { getMicroLesson } from '@/data/lessons';
+import { resolveModuleId } from "@/config/omniKunoModules";
 
 function LessonQuiz({ category }: { category: string }) {
   const { profile } = useProfile();
@@ -64,8 +65,8 @@ function LessonQuiz({ category }: { category: string }) {
               await recordPracticeSession('drill', started, 180, profile?.id);
               // Log knowledge activity event
               // Try to tag with category param if present
-              const focusTag = (category && typeof category === 'string') ? category : null;
-              await recordActivityEvent({ startedAtMs: Date.now(), source: 'omnikuno', category: 'knowledge', units: 1, focusTag }, profile?.id ?? undefined);
+              const focusTag = category && typeof category === "string" ? resolveModuleId(category) ?? category : null;
+              await recordActivityEvent({ startedAtMs: Date.now(), source: "omnikuno", category: "knowledge", units: 1, focusTag }, profile?.id ?? undefined);
             } catch {}
             setToast('Lecția a fost salvată');
             setTimeout(() => router.push('/progress'), 700);

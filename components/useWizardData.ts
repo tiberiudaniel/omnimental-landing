@@ -308,20 +308,28 @@ export function useWizardJourneyState({
         : 5;
 
       const { shares } = await import("@/lib/indicators").then((m) => m.buildIndicatorSummary(categories));
+      const shareClarity = Number(shares.focus_clarity ?? 0);
+      const shareRelationships = Number(shares.relationships_communication ?? 0);
+      const shareEmotional = Number(shares.emotional_balance ?? 0);
+      const shareEnergy = Number(shares.energy_body ?? 0);
+      const shareDecision = Number(shares.decision_discernment ?? 0);
+      const shareSelfTrust = Number(shares.self_trust ?? 0);
       const topShare = Math.max(
-        Number(shares.clarity ?? 0),
-        Number(shares.relationships ?? 0),
-        Number(shares.calm ?? 0),
-        Number(shares.energy ?? 0),
-        Number(shares.performance ?? 0),
+        shareClarity,
+        shareRelationships,
+        shareEmotional,
+        shareEnergy,
+        shareDecision,
+        shareSelfTrust,
       );
       const topCategory = (() => {
         const pairs: Array<[string, number]> = [
-          ["clarity", Number(shares.clarity ?? 0)],
-          ["relationships", Number(shares.relationships ?? 0)],
-          ["calm", Number(shares.calm ?? 0)],
-          ["energy", Number(shares.energy ?? 0)],
-          ["performance", Number(shares.performance ?? 0)],
+          ["focus_clarity", shareClarity],
+          ["relationships_communication", shareRelationships],
+          ["emotional_balance", shareEmotional],
+          ["energy_body", shareEnergy],
+          ["decision_discernment", shareDecision],
+          ["self_trust", shareSelfTrust],
         ];
         pairs.sort((a, b) => b[1] - a[1]);
         return pairs[0]?.[0] ?? null;

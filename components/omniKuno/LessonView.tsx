@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { OmniKunoLesson } from "@/config/omniKunoLessons";
+import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 import { getLessonXp, applyKunoXp } from "@/lib/omniKunoXp";
 import { recordKunoLessonProgress } from "@/lib/progressFacts";
 import { updatePerformanceSnapshot, type KunoPerformanceSnapshot } from "@/lib/omniKunoAdaptive";
@@ -10,9 +11,10 @@ import {
   OMNI_KUNO_LESSON_CONTENT,
   type OmniKunoLessonScreen,
 } from "@/config/omniKunoLessonContent";
+import { CALM_PROTOCOL_STEPS } from "@/config/omniKunoConstants";
 
 export type LessonViewProps = {
-  areaKey: "calm" | "energy" | "relations" | "performance" | "sense";
+  areaKey: OmniKunoModuleId;
   moduleId: string;
   lesson: OmniKunoLesson;
   existingCompletedIds: readonly string[];
@@ -70,7 +72,7 @@ export default function LessonView({
   const totalScreens = screens.length;
   const currentScreen = screens[Math.min(currentScreenIndex, totalScreens - 1)];
   const isLastScreen = currentScreenIndex === totalScreens - 1;
-  const isReflectionScreen = currentScreen.kind === "reflection";
+  const requiresReflectionInput = currentScreen.kind === "reflection";
 
   const reflectionStorageKey = useMemo(() => `omnikuno_reflection_${lesson.id}`, [lesson.id]);
 
@@ -96,7 +98,8 @@ export default function LessonView({
   }, [reflection, reflectionStorageKey]);
 
   const handleComplete = async () => {
-    if (busy || done || (isReflectionScreen && reflection.trim().length < reflectionMinChars)) return;
+    if (busy || done) return;
+    if (requiresReflectionInput && reflection.trim().length < reflectionMinChars) return;
     setBusy(true);
     try {
       const merged = Array.from(new Set([...existingCompletedIds, lesson.id]));
@@ -183,6 +186,7 @@ export default function LessonView({
       </div>
       <div className="rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] p-4 text-[#4D3F36]">
         {renderScreenContent(currentScreen, {
+          areaKey,
           quizAnswerIndex,
           quizResult,
           reflection,
@@ -214,7 +218,7 @@ export default function LessonView({
           <button
             type="button"
             onClick={handleComplete}
-            disabled={busy || done || !isReflectionScreen || reflection.trim().length < reflectionMinChars}
+            disabled={busy || done || (requiresReflectionInput && reflection.trim().length < reflectionMinChars)}
             className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
           >
             {done
@@ -243,6 +247,7 @@ export default function LessonView({
 }
 
 type ScreenRendererProps = {
+  areaKey: LessonViewProps["areaKey"];
   quizAnswerIndex: number | null;
   quizResult: "correct" | "incorrect" | null;
   reflection: string;
@@ -254,7 +259,7 @@ type ScreenRendererProps = {
 
 function renderScreenContent(
   screen: OmniKunoLessonScreen,
-  { quizAnswerIndex, quizResult, reflection, lang, onQuizSelect, onReflectionChange, reflectionMinChars }: ScreenRendererProps,
+  { areaKey, quizAnswerIndex, quizResult, reflection, lang, onQuizSelect, onReflectionChange, reflectionMinChars }: ScreenRendererProps,
 ) {
   if (screen.kind === "content") {
     return (
@@ -372,6 +377,31 @@ function renderScreenContent(
               ? "Perfect, poți salva lecția."
               : "Great, you can mark the lesson complete."}
         </p>
+      </div>
+    );
+  }
+  if (screen.kind === "arcIntro") {
+    return (
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{screen.title}</p>
+        <p className="text-sm leading-relaxed text-[#2C2C2C]">{screen.body}</p>
+      </div>
+    );
+  }
+  if (screen.kind === "protocol") {
+    const customSteps = Array.isArray(screen.steps) && screen.steps.length ? screen.steps : null;
+    const steps = customSteps ?? (areaKey === "emotional_balance" ? CALM_PROTOCOL_STEPS : null);
+    return (
+      <div className="space-y-3">
+        <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{screen.title}</p>
+        {screen.body ? <p className="text-sm text-[#2C2C2C]">{screen.body}</p> : null}
+        {steps ? (
+          <ul className="list-disc space-y-1 pl-5 text-sm text-[#4D3F36]">
+            {steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ul>
+        ) : null}
       </div>
     );
   }

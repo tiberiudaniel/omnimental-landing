@@ -32,23 +32,23 @@ const CATEGORY_METADATA: Record<
   { indicator: IndicatorSourceKey; label: Record<Locale, string> }
 > = {
   clarity: {
-    indicator: "focus",
+    indicator: "focus_clarity",
     label: { ro: "Claritate & direcție", en: "Clarity & direction" },
   },
   relationships: {
-    indicator: "relationships",
+    indicator: "relationships_communication",
     label: { ro: "Relații & limite", en: "Relationships & boundaries" },
   },
   stress: {
-    indicator: "calm",
+    indicator: "emotional_balance",
     label: { ro: "Stres & control", en: "Stress & control" },
   },
   confidence: {
-    indicator: "performance",
+    indicator: "decision_discernment",
     label: { ro: "Încredere & performanță", en: "Confidence & performance" },
   },
   balance: {
-    indicator: "energy",
+    indicator: "energy_body",
     label: { ro: "Energie & echilibru interior", en: "Energy & inner balance" },
   },
 };

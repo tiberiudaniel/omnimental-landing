@@ -29,6 +29,11 @@ import { saveRecommendationCache, readRecommendationCache, updateSelectedPath } 
 // duplicate import cleanup
 import { generateAdaptiveIntentCloudWords } from "@/lib/intentExpressions";
 import { CATEGORY_LABELS } from "@/lib/categoryLabels";
+import {
+  OMNIKUNO_MODULE_ID_BY_ALIAS,
+  getModuleLabel,
+  type OmniKunoModuleId,
+} from "@/config/omniKunoModules";
 import { useWindowWidth } from "@/lib/useWindowSize";
 import { useTStrings } from "@/components/useTStrings";
 // import { getString as i18nGetString } from "@/lib/i18nGetString";
@@ -111,12 +116,12 @@ function PageContent() {
   }, [searchParams]);
   const [dimensionScores, setDimensionScores] = useState<DimensionScores>(() => (
     (cachedReco?.dimensionScores as DimensionScores | undefined) ?? {
-      calm: 0,
-      focus: 0,
-      energy: 0,
-      relationships: 0,
-      performance: 0,
-      health: 0,
+      emotional_balance: 0,
+      focus_clarity: 0,
+      energy_body: 0,
+      relationships_communication: 0,
+      decision_discernment: 0,
+      self_trust: 0,
     }
   ));
   const [recommendedPath, setRecommendedPath] = useState<SessionType>(() => (cachedReco?.recommendation?.path as SessionType | undefined) ?? "group");
@@ -195,19 +200,42 @@ function PageContent() {
   const categoryLabels = useMemo(() => {
     const fromI18n = t("intentCategoryLabels");
     const base: Record<string, string> =
-      fromI18n && typeof fromI18n === "object" ? (fromI18n as Record<string, string>) : {};
-    // Fallbacks from CATEGORY_LABELS when i18n is missing
-    const isRO = lang !== "en";
+      fromI18n && typeof fromI18n === "object" ? { ...(fromI18n as Record<string, string>) } : {};
+    const langKey: "ro" | "en" = lang === "en" ? "en" : "ro";
+    Object.entries(OMNIKUNO_MODULE_ID_BY_ALIAS).forEach(([alias, moduleId]) => {
+      if (!base[alias]) {
+        base[alias] = getModuleLabel(moduleId, langKey);
+      }
+    });
+    const manualFallbacks: Record<string, OmniKunoModuleId> = {
+      clarity: "focus_clarity",
+      focus: "focus_clarity",
+      relationships: "relationships_communication",
+      relatii: "relationships_communication",
+      stress: "emotional_balance",
+      calm: "emotional_balance",
+      balance: "energy_body",
+      energy: "energy_body",
+      confidence: "self_trust",
+      identity: "self_trust",
+      health: "self_trust",
+      performance: "decision_discernment",
+    };
+    Object.entries(manualFallbacks).forEach(([alias, moduleId]) => {
+      if (!base[alias]) {
+        base[alias] = getModuleLabel(moduleId, langKey);
+      }
+    });
     const ensure = (key: string, roKey: keyof typeof CATEGORY_LABELS) => {
       if (!base[key] || typeof base[key] !== "string") {
-        base[key] = isRO ? CATEGORY_LABELS[roKey].name.ro : CATEGORY_LABELS[roKey].name.en;
+        base[key] = langKey === "ro" ? CATEGORY_LABELS[roKey].name.ro : CATEGORY_LABELS[roKey].name.en;
       }
     };
-    ensure("clarity", "claritate");
-    ensure("relationships", "relatii");
-    ensure("stress", "stres");
-    ensure("confidence", "incredere");
-    ensure("balance", "echilibru");
+    ensure("claritate", "claritate");
+    ensure("relatii", "relatii");
+    ensure("stres", "stres");
+    ensure("incredere", "incredere");
+    ensure("echilibru", "echilibru");
     return base;
   }, [t, lang]);
   const recommendedBadgeValue = s("cardsRecommendedLabel", "");

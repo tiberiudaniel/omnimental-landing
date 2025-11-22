@@ -26,8 +26,8 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
       }, userId ?? undefined);
       // Log knowledge activity (lesson completed)
       try {
-        // This initiation lesson targets stress + clarity; tag to 'calm' for focus weighting
-        await recordActivityEvent({ startedAtMs: Date.now(), source: 'omnikuno', category: 'knowledge', units: 1, focusTag: 'calm' }, userId ?? undefined);
+        // This initiation lesson targets stress + clarity; tag to emotional balance for focus weighting
+        await recordActivityEvent({ startedAtMs: Date.now(), source: 'omnikuno', category: 'knowledge', units: 1, focusTag: 'emotional_balance' }, userId ?? undefined);
       } catch {}
     } catch (e) {
       console.warn('lesson save failed', e);

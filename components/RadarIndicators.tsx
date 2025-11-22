@@ -18,11 +18,12 @@ type RadarIndicatorsProps = {
 };
 
 const WEDGE_COLORS: Record<IndicatorChartKey, string> = {
-  clarity: "#F2B84B",
-  relationships: "#F28157",
-  calm: "#D95032",
-  energy: "#1E3A8A",
-  performance: "#2B6F88",
+  focus_clarity: "#F2B84B",
+  relationships_communication: "#F28157",
+  emotional_balance: "#D95032",
+  energy_body: "#1E3A8A",
+  decision_discernment: "#2B6F88",
+  self_trust: "#8F5DA2",
 };
 
 const clampValue = (value: number, max: number) => Math.max(0, Math.min(max, value));

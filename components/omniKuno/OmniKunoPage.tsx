@@ -1,9 +1,10 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
 import { OMNIKUNO_MODULES, type OmniKunoModuleConfig } from "@/config/omniKunoLessons";
+import { OMNI_KUNO_ARC_INTROS } from "@/config/omniKunoLessonContent";
 import { normalizePerformance, type KunoPerformanceSnapshot } from "@/lib/omniKunoAdaptive";
 import { useI18n } from "@/components/I18nProvider";
 import SiteHeader from "@/components/SiteHeader";
@@ -14,70 +15,399 @@ import Toast from "@/components/Toast";
 import LessonView from "./LessonView";
 import QuizView from "./QuizView";
 import KunoLessonItem from "./KunoLessonItem";
-import EmotionalBalanceArcIntro from "./EmotionalBalanceArcIntro";
+import ModuleArcHero from "./ModuleArcHero";
 import TestView from "./TestView";
 import { computeLessonsStatus } from "./useKunoTimeline";
 import { asDifficulty, DIFFICULTY_STYLES, type LessonDifficulty } from "./difficulty";
 import { getLessonDuration, getLessonObjective } from "./lessonUtils";
 import { normalizeKunoFacts, getKunoModuleSnapshot } from "@/lib/kunoFacts";
+import { resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
+type ArcZoneKey = keyof (typeof OMNI_KUNO_ARC_INTROS)["emotional_balance"];
+const ARC_ZONE_ORDER: ArcZoneKey[] = ["trezire", "primele_ciocniri", "profunzime", "maestrie"];
+type OmniAreaKey = OmniKunoModuleId;
+type TimelineItem = ReturnType<typeof computeLessonsStatus>[number];
+type ModuleFinalTestContent = {
+  testId: string;
+  heading: string;
+  title: string;
+  description: string;
+  buttonLabel: string;
+  moduleName: string;
+};
+type SupportedFinalTestArea =
+  | "emotional_balance"
+  | "focus_clarity"
+  | "relationships_communication"
+  | "energy_body"
+  | "self_trust"
+  | "decision_discernment";
+const FINAL_TEST_COPY: Record<
+  SupportedFinalTestArea,
+  {
+    testId: string;
+    heading: { ro: string; en: string };
+    title: { ro: string; en: string };
+    description: { ro: string; en: string };
+    buttonLabel: { ro: string; en: string };
+    moduleName: { ro: string; en: string };
+  }
+> = {
+  emotional_balance: {
+    testId: "emotional_balance_final_test",
+    heading: { ro: "Finalizare modul", en: "Module completion" },
+    title: { ro: "Ai parcurs toate lecțiile Echilibru Emoțional", en: "You completed all Emotional Balance lessons" },
+    description: {
+      ro: "Încheie călătoria cu mini-testul Echilibru Emoțional pentru a fixa claritatea obținută.",
+      en: "Wrap up with the Emotional Balance mini-test to anchor the clarity you unlocked.",
+    },
+    buttonLabel: { ro: "Mini-test Echilibru Emoțional", en: "Emotional Balance mini-test" },
+    moduleName: { ro: "Echilibru Emoțional", en: "Emotional Balance" },
+  },
+  focus_clarity: {
+    testId: "focus_clarity_final_test",
+    heading: { ro: "Finalizare modul", en: "Module completion" },
+    title: { ro: "Ai parcurs toate lecțiile Claritate și Focus", en: "You completed all Clarity & Focus lessons" },
+    description: {
+      ro: "Închide modulul cu mini-testul Claritate și Focus pentru a valida protocolul tău de atenție.",
+      en: "Close the module with the Clarity & Focus mini-test to validate your clarity protocol.",
+    },
+    buttonLabel: { ro: "Mini-test Claritate și Focus", en: "Clarity & Focus mini-test" },
+    moduleName: { ro: "Claritate și Focus", en: "Clarity & Focus" },
+  },
+  relationships_communication: {
+    testId: "relationships_communication_final_test",
+    heading: { ro: "Finalizare modul", en: "Module completion" },
+    title: {
+      ro: "Ai parcurs toate lecțiile Relații și Comunicare",
+      en: "You completed all Relationships & Communication lessons",
+    },
+    description: {
+      ro: "Încheie modulul cu mini-testul Relații și Comunicare pentru a fixa protocolul de ascultare și limite.",
+      en: "Close the module with the Relationships & Communication mini-test to reinforce the listening and boundaries protocol.",
+    },
+    buttonLabel: { ro: "Mini-test Relații și Comunicare", en: "Relationships & Communication mini-test" },
+    moduleName: { ro: "Relații și Comunicare", en: "Relationships & Communication" },
+  },
+  energy_body: {
+    testId: "energy_body_final_test",
+    heading: { ro: "Finalizare modul", en: "Module completion" },
+    title: {
+      ro: "Ai parcurs toate lecțiile Energie & Corp",
+      en: "You completed all Energy & Body lessons",
+    },
+    description: {
+      ro: "Încheie modulul cu mini-testul Energie & Corp pentru a valida protocolul de resetare și ritualurile tale.",
+      en: "Close the module with the Energy & Body mini-test to reinforce your reset protocol and rituals.",
+    },
+    buttonLabel: { ro: "Mini-test Energie & Corp", en: "Energy & Body mini-test" },
+    moduleName: { ro: "Energie & Corp", en: "Energy & Body" },
+  },
+  self_trust: {
+    testId: "self_trust_final_test",
+    heading: { ro: "Finalizare modul", en: "Module completion" },
+    title: { ro: "Ai parcurs toate lecțiile Încredere în Sine", en: "You completed all Self-Trust lessons" },
+    description: {
+      ro: "Încheie modulul cu mini-testul Încredere în Sine pentru a întări protocolul realist și reparațiile rapide.",
+      en: "Close the module with the Self-Trust mini-test to reinforce the realistic promise protocol and quick repairs.",
+    },
+    buttonLabel: { ro: "Mini-test Încredere în Sine", en: "Self-Trust mini-test" },
+    moduleName: { ro: "Încredere în Sine", en: "Self-Trust" },
+  },
+  decision_discernment: {
+    testId: "decision_discernment_final_test",
+    heading: { ro: "Finalizare modul", en: "Module completion" },
+    title: {
+      ro: "Ai parcurs toate lecțiile Discernământ & Decizii",
+      en: "You completed all Discernment & Decisions lessons",
+    },
+    description: {
+      ro: "Încheie modulul cu mini-testul Discernământ & Decizii pentru a fixa protocolul calm și ritualul tău de alegere.",
+      en: "Close the module with the Discernment & Decisions mini-test to reinforce your calm decision protocol and ritual.",
+    },
+    buttonLabel: { ro: "Mini-test Discernământ & Decizii", en: "Discernment & Decisions mini-test" },
+    moduleName: { ro: "Discernământ & Decizii", en: "Discernment & Decisions" },
+  },
+};
+
+type ZoneRule = (lessonId: string) => ArcZoneKey | null;
+
+const MODULE_ZONE_RULES: Partial<Record<OmniAreaKey, ZoneRule>> = {
+  emotional_balance: (lessonId: string) => {
+    if (lessonId.startsWith("emotional_balance_l1_") || lessonId.startsWith("emotional_balance_l1_q")) {
+      return "trezire";
+    }
+    if (lessonId.startsWith("emotional_balance_l2_") || lessonId.startsWith("emotional_balance_l2_q")) {
+      return "primele_ciocniri";
+    }
+    const level3Match = lessonId.match(/^emotional_balance_l3_(\d+)/);
+    if (level3Match) {
+      const numeric = Number(level3Match[1]);
+      if (numeric >= 17 && numeric <= 20) return "profunzime";
+      if (numeric >= 21) return "maestrie";
+    }
+    return null;
+  },
+  focus_clarity: (lessonId: string) => {
+    const match = lessonId.match(/^focus_clarity_l1_(\d+)/);
+    if (!match) return null;
+    const numeric = Number(match[1]);
+    if (numeric <= 2) return "trezire";
+    if (numeric <= 4) return "primele_ciocniri";
+    if (numeric <= 6) return "profunzime";
+    return "maestrie";
+  },
+  energy_body: (lessonId: string) => {
+    if (lessonId === "energy_body_protocol") {
+      return "trezire";
+    }
+    const match = lessonId.match(/^energy_body_l(\d)_(\d+)/);
+    if (!match) return null;
+    const level = Number(match[1]);
+    const numeric = Number(match[2]);
+    if (level === 1) {
+      return numeric <= 4 ? "trezire" : "primele_ciocniri";
+    }
+    if (level === 2) {
+      return numeric <= 7 ? "primele_ciocniri" : "profunzime";
+    }
+    if (level === 3) {
+      return numeric <= 10 ? "profunzime" : "maestrie";
+    }
+    return null;
+  },
+  relationships_communication: (lessonId: string) => {
+    if (lessonId.startsWith("relationships_communication_l1_")) {
+      return "trezire";
+    }
+    if (lessonId.startsWith("relationships_communication_l2_")) {
+      return "primele_ciocniri";
+    }
+    const level3Match = lessonId.match(/^relationships_communication_l3_(\d+)/);
+    if (level3Match) {
+      const numeric = Number(level3Match[1]);
+      if (numeric <= 10) return "profunzime";
+      return "maestrie";
+    }
+    return null;
+  },
+  self_trust: (lessonId: string) => {
+    if (lessonId === "self_trust_protocol" || lessonId.startsWith("self_trust_l1_")) {
+      return "trezire";
+    }
+    if (lessonId.startsWith("self_trust_l2_")) {
+      return "primele_ciocniri";
+    }
+    const level3Match = lessonId.match(/^self_trust_l3_(\d+)/);
+    if (level3Match) {
+      const numeric = Number(level3Match[1]);
+      if (numeric <= 10) return "profunzime";
+      return "maestrie";
+    }
+    return null;
+  },
+  decision_discernment: (lessonId: string) => {
+    if (lessonId === "decision_discernment_protocol" || lessonId.startsWith("decision_discernment_l1_")) {
+      return "trezire";
+    }
+    if (lessonId.startsWith("decision_discernment_l2_")) {
+      return "primele_ciocniri";
+    }
+    if (lessonId.startsWith("decision_discernment_l3_")) {
+      return "profunzime";
+    }
+    return null;
+  },
+};
+
+function getZoneKeyForLesson(areaKey: OmniAreaKey, lessonId: string): ArcZoneKey | null {
+  const rule = MODULE_ZONE_RULES[areaKey];
+  if (!rule) return null;
+  return rule(lessonId);
+}
+
+function groupTimelineSegments(
+  areaKey: OmniAreaKey,
+  timeline: TimelineItem[],
+): Array<{ zoneKey: ArcZoneKey | null; items: TimelineItem[] }> {
+  if (!timeline.length) return [];
+  const segments: Array<{ zoneKey: ArcZoneKey | null; items: TimelineItem[] }> = [];
+  let currentZone: ArcZoneKey | null = null;
+  let buffer: TimelineItem[] = [];
+  timeline.forEach((item) => {
+    const zone = getZoneKeyForLesson(areaKey, item.id);
+    if (buffer.length === 0) {
+      currentZone = zone;
+    } else if (zone !== currentZone) {
+      segments.push({ zoneKey: currentZone, items: buffer });
+      buffer = [];
+      currentZone = zone;
+    }
+    buffer.push(item);
+  });
+  if (buffer.length) {
+    segments.push({ zoneKey: currentZone, items: buffer });
+  }
+  return segments;
+}
+
+function ArcIntroCard({
+  areaKey,
+  zoneKey,
+  variant = "default",
+}: {
+  areaKey: OmniAreaKey;
+  zoneKey: ArcZoneKey;
+  variant?: "default" | "compact";
+}) {
+  const arcSet = OMNI_KUNO_ARC_INTROS[areaKey];
+  const arc = arcSet?.[zoneKey];
+  if (!arc) return null;
+  const zoneIndex = ARC_ZONE_ORDER.indexOf(zoneKey);
+  const zoneLabel = zoneIndex >= 0 ? `Zona ${zoneIndex + 1}` : "Zona";
+  const containerClasses =
+    variant === "compact"
+      ? "rounded-2xl border border-[#E7DED3] bg-white/80 px-4 py-3 text-sm"
+      : "rounded-3xl border border-[#E7DED3] bg-white/80 px-4 py-4 text-base";
+  return (
+    <div className={`${containerClasses} text-[#2C2C2C] shadow-sm`}>
+      <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">
+        {zoneLabel} · {arc.title}
+      </p>
+      <p className="mt-1 text-sm text-[#4D3F36]">{arc.body}</p>
+    </div>
+  );
+}
+
+function renderArcIntro(areaKey: OmniAreaKey, zoneKey: ArcZoneKey | null) {
+  if (!zoneKey) return null;
+  const arcSet = OMNI_KUNO_ARC_INTROS[areaKey];
+  if (!arcSet || !arcSet[zoneKey]) return null;
+  return <ArcIntroCard areaKey={areaKey} zoneKey={zoneKey} />;
+}
+
+function renderCompactArcIntro(areaKey: OmniAreaKey, zoneKey: ArcZoneKey | null) {
+  if (!zoneKey) return null;
+  const arcSet = OMNI_KUNO_ARC_INTROS[areaKey];
+  if (!arcSet || !arcSet[zoneKey]) return null;
+  return <ArcIntroCard areaKey={areaKey} zoneKey={zoneKey} variant="compact" />;
+}
+
+function getFinalTestConfig(areaKey: OmniAreaKey, lang: "ro" | "en"): ModuleFinalTestContent | null {
+  if (!(areaKey in FINAL_TEST_COPY)) return null;
+  const copy = FINAL_TEST_COPY[areaKey as SupportedFinalTestArea];
+  if (!copy) return null;
+  return {
+    testId: copy.testId,
+    heading: copy.heading[lang] ?? copy.heading.ro,
+    title: copy.title[lang] ?? copy.title.ro,
+    description: copy.description[lang] ?? copy.description.ro,
+    buttonLabel: copy.buttonLabel[lang] ?? copy.buttonLabel.ro,
+    moduleName: copy.moduleName[lang] ?? copy.moduleName.ro,
+  };
+}
 
 export default function OmniKunoPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { profile } = useProfile();
-  const search = useSearchParams();
+  const searchParams = useSearchParams();
   const { data: progress } = useProgressFacts(profile?.id);
   const kunoFacts = useMemo(() => normalizeKunoFacts(progress?.omni?.kuno), [progress?.omni?.kuno]);
   const { t, lang } = useI18n();
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const moduleIdFromQuery = search?.get("moduleId");
-  const recommendedModuleId = kunoFacts.recommendedModuleId ?? null;
-const moduleEntries = useMemo(() => Object.entries(OMNIKUNO_MODULES) as Array<[ExperienceProps["areaKey"], OmniKunoModuleConfig]>, []);
-const areaFromModuleId = useMemo<ExperienceProps["areaKey"] | null>(() => {
-  if (!moduleIdFromQuery) return null;
-  const match = moduleEntries.find(([, module]) => module.moduleId === moduleIdFromQuery);
-  return match ? match[0] : null;
-}, [moduleEntries, moduleIdFromQuery]);
-  const recommendedArea = useMemo<ExperienceProps["areaKey"] | null>(() => {
-    if (kunoFacts.recommendedArea && Object.hasOwn(OMNIKUNO_MODULES, kunoFacts.recommendedArea)) {
-      return kunoFacts.recommendedArea as ExperienceProps["areaKey"];
+  const moduleEntries = useMemo(() => Object.entries(OMNIKUNO_MODULES) as Array<[OmniAreaKey, OmniKunoModuleConfig]>, []);
+  const moduleParam = searchParams?.get("module");
+  const areaParam = searchParams?.get("area");
+  const lessonParamRaw = searchParams?.get("lesson");
+  const lessonHasExplicitNone = lessonParamRaw === "none";
+  const lessonQueryParam = lessonHasExplicitNone ? null : lessonParamRaw;
+  const parseModuleParam = useCallback((value?: string | null): OmniAreaKey | null => {
+    const resolved = resolveModuleId(value ?? undefined);
+    if (resolved && OMNIKUNO_MODULES[resolved]) {
+      return resolved;
     }
-    if (!recommendedModuleId) return null;
-    const match = moduleEntries.find(([, module]) => module.moduleId === recommendedModuleId);
-    return match ? match[0] : null;
-  }, [kunoFacts.recommendedArea, moduleEntries, recommendedModuleId]);
-  const areaQueryParam = search?.get("area");
-  const areaFromQuery = (areaQueryParam && Object.hasOwn(OMNIKUNO_MODULES, areaQueryParam)
-    ? (areaQueryParam as ExperienceProps["areaKey"])
-    : null);
-  const defaultArea = areaFromQuery ?? areaFromModuleId ?? recommendedArea ?? "calm";
-  const [selectedArea, setSelectedArea] = useState<ExperienceProps["areaKey"]>(defaultArea);
+    return null;
+  }, []);
+  const moduleFromUrl = parseModuleParam(moduleParam);
+  const areaFromUrl = parseModuleParam(areaParam);
+  const recommendedArea = useMemo<OmniAreaKey | null>(() => {
+    const direct = parseModuleParam(kunoFacts.recommendedArea);
+    if (direct) return direct;
+    return parseModuleParam(kunoFacts.recommendedModuleId);
+  }, [kunoFacts.recommendedArea, kunoFacts.recommendedModuleId, parseModuleParam]);
+  const activeAreaKey: OmniAreaKey = moduleFromUrl ?? areaFromUrl ?? recommendedArea ?? "emotional_balance";
+  const activeModule = OMNIKUNO_MODULES[activeAreaKey];
   const [showFinalTest, setShowFinalTest] = useState(false);
   const [finalTestResult, setFinalTestResult] = useState<{ correct: number; total: number } | null>(null);
   const resetFinalTestState = useCallback(() => {
     setShowFinalTest(false);
     setFinalTestResult(null);
   }, []);
+  const updateUrl = useCallback(
+    (updates: { area?: OmniAreaKey | null; module?: string | null; lesson?: string | null }) => {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      let changed = false;
+      if (updates.area !== undefined) {
+        if (updates.area) {
+          if (params.get("area") !== updates.area) changed = true;
+          params.set("area", updates.area);
+        } else if (params.has("area")) {
+          params.delete("area");
+          changed = true;
+        }
+      }
+      if (updates.module !== undefined) {
+          if (updates.module) {
+            if (params.get("module") !== updates.module) changed = true;
+            params.set("module", updates.module);
+          } else if (params.has("module")) {
+            params.delete("module");
+            changed = true;
+          }
+      }
+      if (updates.lesson !== undefined) {
+        const lessonValue = updates.lesson ?? "none";
+        if (params.get("lesson") !== lessonValue) changed = true;
+        params.set("lesson", lessonValue);
+      }
+      if (!changed) return;
+      const query = params.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
   const handleAreaSelect = useCallback(
     (nextArea: ExperienceProps["areaKey"]) => {
       resetFinalTestState();
-      setSelectedArea(nextArea);
+      const nextModule = OMNIKUNO_MODULES[nextArea];
+      const nextLessonId = nextModule.lessons[0]?.id ?? null;
+      updateUrl({ area: nextArea, module: nextModule.moduleId, lesson: nextLessonId });
     },
-    [resetFinalTestState],
+    [resetFinalTestState, updateUrl],
   );
+  const resolvedLessonIdFromQuery =
+    lessonQueryParam && activeModule.lessons.some((lesson) => lesson.id === lessonQueryParam) ? lessonQueryParam : null;
+  const fallbackLessonId = activeModule.lessons[0]?.id ?? null;
+  const initialLessonIdForModule = resolvedLessonIdFromQuery ?? (lessonHasExplicitNone ? null : fallbackLessonId);
   useEffect(() => {
-    setSelectedArea(defaultArea);
-  }, [defaultArea]);
-  const activeAreaKey = selectedArea;
-  const activeModule = OMNIKUNO_MODULES[activeAreaKey];
+    const needsAreaSync = areaParam !== activeAreaKey;
+    const needsModuleSync = moduleParam !== activeAreaKey;
+    const needsLessonSync =
+      initialLessonIdForModule != null ? lessonQueryParam !== initialLessonIdForModule : !lessonHasExplicitNone;
+    if (needsAreaSync || needsModuleSync || needsLessonSync) {
+      updateUrl({
+        area: activeAreaKey,
+        module: activeAreaKey,
+        lesson: initialLessonIdForModule ?? null,
+      });
+    }
+  }, [activeAreaKey, areaParam, moduleParam, initialLessonIdForModule, lessonHasExplicitNone, lessonQueryParam, updateUrl]);
   const moduleSnapshot = getKunoModuleSnapshot(kunoFacts, activeModule.moduleId);
   const completedIdsFromFacts = moduleSnapshot.completedIds;
   const performanceFromFacts = (moduleSnapshot.performance ?? null) as Partial<KunoPerformanceSnapshot> | null;
-const normalizedPerformance = useMemo(
-  () => normalizePerformance(performanceFromFacts),
-  [performanceFromFacts],
-);
+  const normalizedPerformance = normalizePerformance(performanceFromFacts);
 const areaStats = useMemo(() => {
   return Object.fromEntries(
     moduleEntries.map(([areaKey, module]) => {
@@ -93,31 +423,40 @@ const areaStats = useMemo(() => {
         },
       ];
     }),
-  ) as Record<ExperienceProps["areaKey"], { completed: number; total: number; percentage: number }>;
+  ) as Record<OmniAreaKey, { completed: number; total: number; percentage: number }>;
 }, [kunoFacts.modules, moduleEntries]);
   const [adaptiveMessage, setAdaptiveMessage] = useState<string | null>(null);
   const [adaptiveHistory, setAdaptiveHistory] = useState<Array<{ id: string; message: string }>>([]);
   const [activeLessonMeta, setActiveLessonMeta] = useState<{ id: string; difficulty: LessonDifficulty } | null>(null);
   const lastDifficultyRef = useRef<LessonDifficulty | null>(null);
   const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const areaLabelMap = useMemo<Record<ExperienceProps["areaKey"], string>>(() => {
+  const areaLabelMap = useMemo<Record<OmniAreaKey, string>>(() => {
     if (lang === "ro") {
       return {
-        calm: "Echilibru emoțional",
-        energy: "Energie",
-        relations: "Relații",
-        performance: "Performanță",
-        sense: "Sens",
+        emotional_balance: "Echilibru emoțional",
+        focus_clarity: "Claritate & Focus",
+        energy_body: "Energie & Corp",
+        relationships_communication: "Relații & Comunicare",
+        decision_discernment: "Discernământ & Decizii",
+        self_trust: "Încredere în Sine",
       };
     }
     return {
-      calm: "Emotional balance",
-      energy: "Energy",
-      relations: "Relationships",
-      performance: "Performance",
-      sense: "Meaning",
+      emotional_balance: "Emotional Balance",
+      focus_clarity: "Clarity & Focus",
+      energy_body: "Energy & Body",
+      relationships_communication: "Relationships & Communication",
+      decision_discernment: "Discernment & Decisions",
+      self_trust: "Self-Trust",
     };
   }, [lang]);
+  const finalTestConfig = useMemo(() => getFinalTestConfig(activeAreaKey, lang), [activeAreaKey, lang]);
+  const handleLessonSelect = useCallback(
+    (lessonId: string | null) => {
+      updateUrl({ area: activeAreaKey, module: activeModule.moduleId, lesson: lessonId });
+    },
+    [activeAreaKey, activeModule.moduleId, updateUrl],
+  );
   const handleActiveLessonChange = useCallback((meta: { id: string; difficulty: LessonDifficulty } | null) => {
     setActiveLessonMeta(meta);
   }, []);
@@ -251,10 +590,11 @@ const areaStats = useMemo(() => {
           </aside>
 
           <section className="space-y-4">
-            {activeAreaKey === "calm" ? <EmotionalBalanceArcIntro /> : null}
+            <ModuleArcHero areaKey={activeAreaKey} areaLabel={areaLabelMap[activeAreaKey]} />
             <ModuleExperience
               key={moduleStateKey}
               areaKey={activeAreaKey}
+              areaTitle={areaLabelMap[activeAreaKey]}
               module={activeModule}
               profileId={profile?.id}
               completedIdsFromFacts={completedIdsFromFacts}
@@ -262,10 +602,13 @@ const areaStats = useMemo(() => {
               onActiveLessonChange={handleActiveLessonChange}
               onToast={setToastMsg}
               showFinalTest={showFinalTest}
-              finalTestResult={finalTestResult}
-              onToggleFinalTest={setShowFinalTest}
-              onFinalTestComplete={(result) => setFinalTestResult(result)}
-            />
+            finalTestResult={finalTestResult}
+            onToggleFinalTest={setShowFinalTest}
+            onFinalTestComplete={(result) => setFinalTestResult(result)}
+            finalTestConfig={finalTestConfig}
+            initialLessonId={initialLessonIdForModule}
+            onLessonSelect={handleLessonSelect}
+          />
           </section>
         </div>
       </div>
@@ -276,50 +619,64 @@ const areaStats = useMemo(() => {
 }
 
 type ExperienceProps = {
-  areaKey: "calm" | "energy" | "relations" | "performance" | "sense";
+  areaKey: OmniAreaKey;
+  areaTitle?: string;
   module: OmniKunoModuleConfig;
   profileId?: string | null;
   completedIdsFromFacts: string[];
   initialPerformance: KunoPerformanceSnapshot;
+  initialLessonId?: string | null;
+  onLessonSelect?: (lessonId: string | null) => void;
   onActiveLessonChange?: (meta: { id: string; difficulty: LessonDifficulty } | null) => void;
   onToast?: (message: string) => void;
   showFinalTest?: boolean;
   finalTestResult?: { correct: number; total: number } | null;
   onToggleFinalTest?: (value: boolean) => void;
   onFinalTestComplete?: (result: { correct: number; total: number }) => void;
+  finalTestConfig?: ModuleFinalTestContent | null;
 };
 
 function ModuleExperience({
   areaKey,
+  areaTitle,
   module,
   profileId,
   completedIdsFromFacts,
   initialPerformance,
+  initialLessonId = null,
+  onLessonSelect,
   onActiveLessonChange,
   onToast,
   showFinalTest = false,
   finalTestResult = null,
   onToggleFinalTest,
   onFinalTestComplete,
+  finalTestConfig = null,
 }: ExperienceProps) {
   const { t, lang } = useI18n();
   const [localCompleted, setLocalCompleted] = useState<string[]>(() => completedIdsFromFacts);
   const [localPerformance, setLocalPerformance] = useState<KunoPerformanceSnapshot>(initialPerformance);
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const orderedLessons = useMemo(() => module.lessons.slice().sort((a, b) => a.order - b.order), [module.lessons]);
   const timeline = useMemo(
     () => computeLessonsStatus(module.lessons, localCompleted, localPerformance),
     [module.lessons, localCompleted, localPerformance],
   );
+  const timelineSegments = useMemo(() => {
+    if (!MODULE_ZONE_RULES[areaKey]) {
+      return [{ zoneKey: null, items: timeline }];
+    }
+    return groupTimelineSegments(areaKey, timeline);
+  }, [areaKey, timeline]);
   const moduleCompleted = useMemo(() => timeline.every((item) => item.status === "done"), [timeline]);
   const completedCount = useMemo(() => timeline.filter((item) => item.status === "done").length, [timeline]);
   const completionPct = timeline.length ? Math.round((completedCount / timeline.length) * 100) : 0;
   const timelineIdSet = useMemo(() => new Set(timeline.map((item) => item.id)), [timeline]);
   const resolvedLessonId = useMemo(() => {
-    if (selectedLessonId && timelineIdSet.has(selectedLessonId)) {
-      return selectedLessonId;
+    if (initialLessonId && timelineIdSet.has(initialLessonId)) {
+      return initialLessonId;
     }
     return null;
-  }, [selectedLessonId, timelineIdSet]);
+  }, [initialLessonId, timelineIdSet]);
   const resolvedLesson = useMemo(() => {
     if (resolvedLessonId) {
       const explicit = module.lessons.find((lesson) => lesson.id === resolvedLessonId);
@@ -335,19 +692,13 @@ function ModuleExperience({
       onActiveLessonChange(null);
     }
   }, [onActiveLessonChange, resolvedLesson]);
-
   const handleLessonCompleted = useCallback(
     (
       lessonId: string,
       meta?: { updatedPerformance?: KunoPerformanceSnapshot; score?: number; timeSpentSec?: number },
     ) => {
-      const performanceForNext = meta?.updatedPerformance ?? localPerformance;
-      setLocalCompleted((prev) => {
-        if (prev.includes(lessonId)) return prev;
-        const next = [...prev, lessonId];
-        setSelectedLessonId(null);
-        return next;
-      });
+      setLocalCompleted((prev) => (prev.includes(lessonId) ? prev : [...prev, lessonId]));
+      onLessonSelect?.(null);
       if (meta?.updatedPerformance) {
         setLocalPerformance(meta.updatedPerformance);
       }
@@ -363,8 +714,16 @@ function ModuleExperience({
         }
       }
     },
-    [lang, module.lessons, localPerformance, onToast],
+    [lang, onLessonSelect, onToast],
   );
+  const handleLockedLessonAttempt = useCallback(() => {
+    if (!onToast) return;
+    onToast(
+      lang === "ro"
+        ? "Finalizează lecțiile anterioare pentru a debloca această lecție."
+        : "Finish the previous lessons to unlock this step.",
+    );
+  }, [lang, onToast]);
 
   return (
     <>
@@ -375,7 +734,7 @@ function ModuleExperience({
               {lang === "ro" ? "Misiunea activă" : "Active mission"}
             </p>
             <h2 className="text-xl font-bold text-[#2C2C2C]">
-              {module.moduleId.replace(/_/g, " ")} · {lang === "ro" ? "misiunea principală" : "main storyline"}
+              {areaTitle ?? module.moduleId.replace(/_/g, " ")} · {lang === "ro" ? "misiunea principală" : "main storyline"}
             </h2>
           </div>
           <div className="text-right text-sm text-[#7B6B60]">
@@ -388,108 +747,113 @@ function ModuleExperience({
         <div className="mt-4 h-2 rounded-full bg-[#F4EDE4]">
           <div className="h-2 rounded-full bg-[#C07963]" style={{ width: `${Math.min(100, completionPct)}%` }} />
         </div>
-        <div className="mt-4 space-y-3">
-          {timeline.map((item) => {
-            const lessonDef = module.lessons.find((lesson) => lesson.id === item.id);
-            if (!lessonDef) return null;
-            const disabled = item.status === "locked";
-            const difficultyKey = asDifficulty(item.difficulty);
-            const difficultyLabel = String(t(`omnikuno.difficulty.${difficultyKey}Label`));
-            const difficultyShort = String(t(`omnikuno.difficulty.${difficultyKey}Short`));
-            const isOpen = resolvedLessonId ? resolvedLessonId === item.id : false;
-            const objective = String(getLessonObjective(lessonDef, lang));
-            return (
-              <KunoLessonItem
-                key={item.id}
-                lesson={{
-                  id: item.id,
-                  order: item.order,
-                  title: item.title,
-                  type: item.type,
-                  status: item.status,
-                  difficulty: difficultyKey,
-                }}
-                isActive={Boolean(isOpen)}
-                disabled={disabled}
-                onSelect={() => {
-                  if (!disabled) setSelectedLessonId(item.id);
-                }}
-                header={
-                  <div className="flex w-full items-start gap-3">
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold ${
-                        item.status === "done"
-                          ? "border-[#1F7A43] bg-[#ECF8F0] text-[#1F7A43]"
-                          : item.status === "active"
-                            ? "border-[#C07963] bg-[#FFF3EC] text-[#C07963]"
-                            : "border-[#F0E8E0] bg-white text-[#B0A295]"
-                      }`}
-                    >
-                      {item.status === "done" ? "✓" : item.status === "locked" ? "…" : "▶"}
-                    </div>
-                    <div
-                      className={`flex-1 rounded-xl border px-3 py-2 ${
-                        isOpen ? "border-[#C07963] bg-white" : "border-[#F0E8E0]"
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-[#2C2C2C]">
-                            {item.order}. {item.title}
-                          </p>
-                          <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">
-                            {item.type === "quiz" ? "Quiz" : lang === "ro" ? "Lecție" : "Lesson"}
-                          </p>
+        <div className="mt-4 space-y-5">
+          {timelineSegments.map((segment, segmentIndex) => (
+            <div key={`${segment.zoneKey ?? `segment-${segmentIndex}`}-${areaKey}`} className="space-y-3">
+              {renderArcIntro(areaKey, segment.zoneKey)}
+              {segment.items.map((item) => {
+                const lessonDef = module.lessons.find((lesson) => lesson.id === item.id);
+                if (!lessonDef) return null;
+                const disabled = item.status === "locked";
+                const difficultyKey = asDifficulty(item.difficulty);
+                const difficultyLabel = String(t(`omnikuno.difficulty.${difficultyKey}Label`));
+                const difficultyShort = String(t(`omnikuno.difficulty.${difficultyKey}Short`));
+                const isOpen = resolvedLessonId ? resolvedLessonId === item.id : false;
+                const objective = String(getLessonObjective(lessonDef, lang));
+                return (
+                  <KunoLessonItem
+                    key={item.id}
+                    lesson={{
+                      id: item.id,
+                      order: item.order,
+                      title: item.title,
+                      type: item.type,
+                      status: item.status,
+                      difficulty: difficultyKey,
+                    }}
+                    isActive={Boolean(isOpen)}
+                    disabled={disabled}
+                    onSelect={() => {
+                      onLessonSelect?.(item.id);
+                    }}
+                    onLockedAttempt={handleLockedLessonAttempt}
+                    header={
+                      <div className="flex w-full items-start gap-3">
+                        <div
+                          className={`flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold ${
+                            item.status === "done"
+                              ? "border-[#1F7A43] bg-[#ECF8F0] text-[#1F7A43]"
+                              : item.status === "active"
+                                ? "border-[#C07963] bg-[#FFF3EC] text-[#C07963]"
+                                : "border-[#F0E8E0] bg-white text-[#B0A295]"
+                          }`}
+                        >
+                          {item.status === "done" ? "✓" : item.status === "locked" ? "…" : "▶"}
                         </div>
-                        <div className="text-right">
-                          <span
-                            className={`inline-flex items-center rounded-full px-3 py-0.5 text-[10px] uppercase tracking-[0.2em] ${DIFFICULTY_STYLES[difficultyKey].badge}`}
-                            title={difficultyShort}
-                          >
-                            {difficultyLabel}
-                          </span>
-                          {renderEffortBadges(module, item.id, lang)}
+                        <div
+                          className={`flex-1 rounded-xl border px-3 py-2 ${
+                            isOpen ? "border-[#C07963] bg-white" : "border-[#F0E8E0]"
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <p className="font-semibold text-[#2C2C2C]">
+                                {item.order}. {item.title}
+                              </p>
+                              <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+                                {item.type === "quiz" ? "Quiz" : lang === "ro" ? "Lecție" : "Lesson"}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span
+                                className={`inline-flex items-center rounded-full px-3 py-0.5 text-[10px] uppercase tracking-[0.2em] ${DIFFICULTY_STYLES[difficultyKey].badge}`}
+                                title={difficultyShort}
+                              >
+                                {difficultyLabel}
+                              </span>
+                              {renderEffortBadges(module, item.id, lang)}
+                            </div>
+                          </div>
+                          {!isOpen ? <p className="mt-2 text-[11px] text-[#7B6B60]">{objective}</p> : null}
                         </div>
                       </div>
-                      {!isOpen ? <p className="mt-2 text-[11px] text-[#7B6B60]">{objective}</p> : null}
-                    </div>
-                  </div>
-                }
-              >
-                {lessonDef.type === "quiz" ? (
-                  <QuizView
-                    areaKey={areaKey}
-                    moduleId={module.moduleId}
-                    lesson={lessonDef}
-                    existingCompletedIds={localCompleted}
-                    ownerId={profileId}
-                    performanceSnapshot={localPerformance}
-                    onCompleted={(lessonId, meta) => handleLessonCompleted(lessonId, meta)}
-                  />
-                ) : (
-                  <LessonView
-                    areaKey={areaKey}
-                    moduleId={module.moduleId}
-                    lesson={lessonDef}
-                    existingCompletedIds={localCompleted}
-                    ownerId={profileId}
-                    performanceSnapshot={localPerformance}
-                    onCompleted={(lessonId, meta) => handleLessonCompleted(lessonId, meta)}
-                  />
-                )}
-              </KunoLessonItem>
-            );
-          })}
+                    }
+                  >
+                    {lessonDef.type === "quiz" ? (
+                      <QuizView
+                        areaKey={areaKey}
+                        moduleId={module.moduleId}
+                        lesson={lessonDef}
+                        existingCompletedIds={localCompleted}
+                        ownerId={profileId}
+                        performanceSnapshot={localPerformance}
+                        onCompleted={(lessonId, meta) => handleLessonCompleted(lessonId, meta)}
+                      />
+                    ) : (
+                      <LessonView
+                        areaKey={areaKey}
+                        moduleId={module.moduleId}
+                        lesson={lessonDef}
+                        existingCompletedIds={localCompleted}
+                        ownerId={profileId}
+                        performanceSnapshot={localPerformance}
+                        onCompleted={(lessonId, meta) => handleLessonCompleted(lessonId, meta)}
+                      />
+                    )}
+                  </KunoLessonItem>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
-      {areaKey === "calm" && moduleCompleted ? (
+      {moduleCompleted && finalTestConfig ? (
         <div className="space-y-3 rounded-2xl border border-[#E4DAD1] bg-[#FFFBF7] p-4">
+          {renderCompactArcIntro(areaKey, "maestrie")}
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">Finalizare modul</p>
-            <h3 className="text-lg font-semibold text-[#2C2C2C]">Ai parcurs toate lecțiile Echilibru Emoțional</h3>
-            <p className="text-sm text-[#4D3F36]">
-              Încheie călătoria cu mini-testul calm_final_test pentru a fixa claritatea obținută.
-            </p>
+            <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{finalTestConfig.heading}</p>
+            <h3 className="text-lg font-semibold text-[#2C2C2C]">{finalTestConfig.title}</h3>
+            <p className="text-sm text-[#4D3F36]">{finalTestConfig.description}</p>
           </div>
           {!showFinalTest ? (
             <button
@@ -497,22 +861,24 @@ function ModuleExperience({
               onClick={() => onToggleFinalTest?.(true)}
               className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white"
             >
-              Mini-test Emotional Balance
+              {finalTestConfig.buttonLabel}
             </button>
           ) : (
             <TestView
-              testId="calm_final_test"
+              testId={finalTestConfig.testId}
               onCompleted={(result) => {
                 onFinalTestComplete?.(result);
                 if (onToast) {
-                  onToast(`Mini-test finalizat (${result.correct}/${result.total}).`);
+                  onToast(`${finalTestConfig.moduleName} · mini-test finalizat (${result.correct}/${result.total}).`);
                 }
               }}
             />
           )}
           {finalTestResult ? (
             <div className="rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-2 text-sm text-[#1F3C2F]">
-              Felicitări! Ai închis modulul cu {finalTestResult.correct} răspunsuri corecte din {finalTestResult.total}. Continuă practica liniștită în viața de zi cu zi.
+              {lang === "ro"
+                ? `Felicitări! Ai închis modulul ${finalTestConfig.moduleName} cu ${finalTestResult.correct} răspunsuri corecte din ${finalTestResult.total}. Continuă practica în viața reală.`
+                : `Congrats! You finished ${finalTestConfig.moduleName} with ${finalTestResult.correct}/${finalTestResult.total} correct answers. Keep applying the practice.`}
             </div>
           ) : null}
         </div>

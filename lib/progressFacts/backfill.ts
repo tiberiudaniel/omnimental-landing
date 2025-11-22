@@ -21,6 +21,7 @@ import {
 } from "../dashboardMetrics";
 import type { PracticeSessionLite } from "../progressAnalytics";
 import type { DimensionScores } from "../scoring";
+import { OMNIKUNO_MODULES, resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
 import type { OmniKnowledgeScores } from "../omniKnowledge";
 import type { SessionType } from "../recommendation";
 import type { OmniBlock } from "../omniIntel";
@@ -31,35 +32,24 @@ import type {
   ProgressMotivationPayload,
 } from "./types";
 
-const DIMENSION_KEYS: Array<keyof DimensionScores> = [
-  "calm",
-  "focus",
-  "energy",
-  "relationships",
-  "performance",
-  "health",
-];
+const DIMENSION_KEYS: OmniKunoModuleId[] = OMNIKUNO_MODULES.map((meta) => meta.id as OmniKunoModuleId);
 
 export function sanitizeDimensionScores(entry: unknown): DimensionScores | null {
   if (!entry || typeof entry !== "object") {
     return null;
   }
-  const source = entry as Partial<Record<keyof DimensionScores, unknown>>;
-  const baseline: DimensionScores = {
-    calm: 0,
-    focus: 0,
-    energy: 0,
-    relationships: 0,
-    performance: 0,
-    health: 0,
-  };
+  const baseline: DimensionScores = DIMENSION_KEYS.reduce((acc, moduleId) => {
+    acc[moduleId] = 0;
+    return acc;
+  }, {} as DimensionScores);
   let seen = false;
-  DIMENSION_KEYS.forEach((key) => {
-    const value = Number(source[key]);
-    if (Number.isFinite(value)) {
-      baseline[key] = value;
-      seen = true;
-    }
+  Object.entries(entry as Record<string, unknown>).forEach(([rawKey, rawValue]) => {
+    const moduleId = resolveModuleId(rawKey);
+    if (!moduleId) return;
+    const value = Number(rawValue);
+    if (!Number.isFinite(value)) return;
+    baseline[moduleId] = value;
+    seen = true;
   });
   return seen ? baseline : null;
 }

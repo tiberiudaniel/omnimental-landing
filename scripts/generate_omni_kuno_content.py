@@ -3,10 +3,51 @@
 import json
 import re
 from pathlib import Path
+from typing import Dict, List, Tuple
 
 ROOT = Path(__file__).resolve().parents[1]
-MD_PATH = ROOT / "DOCS" / "DOCS" / "omniKuno_emotional_balance.md"
 TS_PATH = ROOT / "config" / "omniKunoLessonContent.ts"
+
+ARC_ZONE_KEYS = ("trezire", "primele_ciocniri", "profunzime", "maestrie")
+
+MODULE_DEFINITIONS = [
+  {
+    "key": "emotional_balance",
+    "moduleId": "emotional_balance",
+    "title": "Echilibru Emoțional",
+    "md": ROOT / "DOCS" / "DOCS" / "omniKuno_emotional_balance.md",
+  },
+  {
+    "key": "focus_clarity",
+    "moduleId": "focus_clarity",
+    "title": "Claritate și Focus",
+    "md": ROOT / "DOCS" / "DOCS" / "omniKuno_focus_clarity.md",
+  },
+  {
+    "key": "relationships_communication",
+    "moduleId": "relationships_communication",
+    "title": "Relații și Comunicare",
+    "md": ROOT / "DOCS" / "DOCS" / "omniKuno_relationships_communication.md",
+  },
+  {
+    "key": "energy_body",
+    "moduleId": "energy_body",
+    "title": "Energie & Corp",
+    "md": ROOT / "DOCS" / "DOCS" / "omniKuno_energy_body.md",
+  },
+  {
+    "key": "self_trust",
+    "moduleId": "self_trust",
+    "title": "Încredere în Sine",
+    "md": ROOT / "DOCS" / "DOCS" / "omniKuno_self_trust.md",
+  },
+  {
+    "key": "decision_discernment",
+    "moduleId": "decision_discernment",
+    "title": "Discernământ & Decizii",
+    "md": ROOT / "DOCS" / "DOCS" / "omniKuno_decision_discernment.md",
+  },
+]
 
 
 def parse_md(text: str):
@@ -102,9 +143,56 @@ def parse_md(text: str):
     return lessons
 
 
-def build_ts(lessons):
-    lesson_map = {lesson["lessonId"]: lesson for lesson in lessons}
-    header = """export type OmniKunoScreenKind = "content" | "checkpoint" | "quiz" | "reflection";
+def resolve_arc_zone(lesson_id: str) -> str | None:
+    for zone in ARC_ZONE_KEYS:
+        if lesson_id.endswith(zone):
+            return zone
+    return None
+
+
+def split_lessons_and_arcs(lessons, module_id: str) -> Tuple[List[dict], Dict[str, dict]]:
+    arcs: Dict[str, dict] = {}
+    payload: List[dict] = []
+    arc_prefix = f"{module_id}_arc_"
+    final_test_id = f"{module_id}_final_test"
+    for lesson in lessons:
+        lesson_id = lesson["lessonId"]
+        if lesson_id == final_test_id:
+            continue
+        if lesson_id.startswith(arc_prefix):
+            zone = resolve_arc_zone(lesson_id)
+            if not zone:
+                continue
+            arc_screen = next((screen for screen in lesson["screens"] if screen.get("kind") == "arcintro"), None)
+            if arc_screen:
+                arcs[zone] = {
+                    "id": lesson_id,
+                    "title": arc_screen.get("title", ""),
+                    "body": arc_screen.get("body", ""),
+                }
+            continue
+        payload.append(lesson)
+    return payload, arcs
+
+
+def build_ts(module_payload: Dict[str, dict]):
+    lesson_map: Dict[str, dict] = {}
+    arc_groups: Dict[str, dict] = {}
+    modules_serializable: Dict[str, dict] = {}
+    for key, module in module_payload.items():
+        arc_groups[key] = module["arcIntros"]
+        modules_serializable[key] = {
+            "id": module["id"],
+            "title": module["title"],
+            "arcIntros": module["arcIntros"],
+            "lessons": module["lessons"],
+        }
+        for lesson in module["lessons"]:
+            lesson_map[lesson["lessonId"]] = lesson
+
+    header = """export type OmniKunoArcZoneKey = "trezire" | "primele_ciocniri" | "profunzime" | "maestrie";
+
+export type OmniKunoScreenKind = "content" | "checkpoint" | "quiz" | "reflection" | "protocol" | "arcIntro";
 
 export type OmniKunoLessonScreen =
   | {
@@ -128,30 +216,81 @@ export type OmniKunoLessonScreen =
       question: string;
       options: string[];
       correctIndex: number;
-      explanation: string;
+      explanation?: string;
     }
   | {
       id?: string;
       kind: "reflection";
       title: string;
       prompt: string;
+    }
+  | {
+      id?: string;
+      kind: "protocol";
+      title: string;
+      body?: string;
+      steps?: string[];
+    }
+  | {
+      id?: string;
+      kind: "arcIntro";
+      title: string;
+      body: string;
     };
 
 export type OmniKunoLessonContent = {
   lessonId: string;
   screens: OmniKunoLessonScreen[];
 };
+
+export type OmniKunoArcIntro = {
+  id: string;
+  title: string;
+  body: string;
+};
+
+export type OmniKunoArcIntroGroup = Record<OmniKunoArcZoneKey, OmniKunoArcIntro>;
+
+export type OmniKunoModuleContent = {
+  id: string;
+  title: string;
+  arcIntros: OmniKunoArcIntroGroup;
+  lessons: OmniKunoLessonContent[];
+};
+
+export type OmniKunoArcIntroGroups = Record<string, OmniKunoArcIntroGroup>;
 """
-    data_str = json.dumps(lesson_map, ensure_ascii=False, indent=2)
-    return f"{header}\nexport const OMNI_KUNO_LESSON_CONTENT: Record<string, OmniKunoLessonContent> = {data_str};\n"
+    module_str = json.dumps(modules_serializable, ensure_ascii=False, indent=2)
+    arc_str = json.dumps(arc_groups, ensure_ascii=False, indent=2)
+    lessons_str = json.dumps(lesson_map, ensure_ascii=False, indent=2)
+    return (
+        f"{header}\n"
+        f"export const OMNI_KUNO_MODULE_CONTENT: Record<string, OmniKunoModuleContent> = {module_str};\n\n"
+        f"export const OMNI_KUNO_ARC_INTROS: OmniKunoArcIntroGroups = {arc_str};\n\n"
+        f"export const OMNI_KUNO_LESSON_CONTENT: Record<string, OmniKunoLessonContent> = {lessons_str};\n"
+    )
 
 
 def main():
-    md_text = MD_PATH.read_text(encoding="utf-8")
-    lessons = [lesson for lesson in parse_md(md_text) if lesson["lessonId"] != "calm_final_test"]
-    ts_content = build_ts(lessons)
+    modules_payload: Dict[str, dict] = {}
+    for module in MODULE_DEFINITIONS:
+        md_text = module["md"].read_text(encoding="utf-8")
+        lessons = parse_md(md_text)
+        filtered, arcs = split_lessons_and_arcs(lessons, module["moduleId"])
+        missing_arc_keys = [zone for zone in ARC_ZONE_KEYS if zone not in arcs]
+        if missing_arc_keys:
+            raise RuntimeError(f"Module {module['key']} is missing arc intros for: {', '.join(missing_arc_keys)}")
+        modules_payload[module["key"]] = {
+            "id": module["moduleId"],
+            "title": module["title"],
+            "arcIntros": {zone: arcs[zone] for zone in ARC_ZONE_KEYS},
+            "lessons": filtered,
+        }
+
+    ts_content = build_ts(modules_payload)
     TS_PATH.write_text(ts_content, encoding="utf-8")
-    print(f"Wrote {len(lessons)} lessons to {TS_PATH.relative_to(ROOT)}")
+    total_lessons = sum(len(module["lessons"]) for module in modules_payload.values())
+    print(f"Wrote {total_lessons} lessons across {len(modules_payload)} modules to {TS_PATH.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ import { recordEvaluationTabChange } from "@/lib/progressFacts";
 import SessionDetails from "./SessionDetails";
 import type { IntentPrimaryCategory, IntentCloudWord } from "@/lib/intentExpressions";
 import type { ResolutionSpeed, BudgetPreference, GoalType, EmotionalState, FormatPreference } from "@/lib/evaluation";
+import type { DimensionScores } from "@/lib/scoring";
 import MultiTypewriter from "./MultiTypewriter";
 import TypewriterText from "./TypewriterText";
 import { motion } from "framer-motion";
@@ -89,7 +90,7 @@ type Props = {
   // preferences used in recommendation summary
   formatPreference: FormatPreference;
   // unified recommendation extras
-  dimensionScores: { calm: number; focus: number; energy: number; relationships: number; performance: number; health: number };
+  dimensionScores: DimensionScores;
   algoVersion?: number;
 
   // Details step

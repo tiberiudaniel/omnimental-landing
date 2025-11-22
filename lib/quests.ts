@@ -1,6 +1,7 @@
 "use client";
 
 import { defaultContentScripts, type ContentScript } from "./contentScripts";
+import { resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
 
 export type EvaluationScoreSnapshot = {
   pssTotal: number;
@@ -166,9 +167,9 @@ function rotate<T>(arr: T[], offset: number): T[] {
   return arr.slice(o).concat(arr.slice(0, o));
 }
 
-export function getAreasForScript(scriptId: string): string[] {
+export function getAreasForScript(scriptId: string): OmniKunoModuleId[] {
   const s = defaultContentScripts.find((x) => x.id === scriptId);
-  return (s?.areas as string[] | undefined) ?? [];
+  return (s?.areas as OmniKunoModuleId[] | undefined) ?? [];
 }
 
 export function generateWeeklyQuests(
@@ -181,9 +182,9 @@ export function generateWeeklyQuests(
   const base = [...defaultContentScripts].sort((a, b) => a.priority - b.priority);
   const pool = rotate(base, week % base.length).slice(0, Math.max(limit, 5));
   // Personalize order by thematic closeness
-  const area = (context.userArea || "").toLowerCase();
+  const area = resolveModuleId(context.userArea ?? undefined);
   const scored = pool
-    .map((s) => ({ s, score: (s.areas || []).some((a) => a === area) ? 1 : 0 }))
+    .map((s) => ({ s, score: area && (s.areas || []).some((a) => a === area) ? 1 : 0 }))
     .sort((a, b) => b.score - a.score || a.s.priority - b.s.priority)
     .map((x) => x.s)
     .slice(0, limit);

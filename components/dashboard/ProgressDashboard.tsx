@@ -20,7 +20,12 @@ import {
   computeMonthlyDailyCounts,
 } from "@/lib/progressAnalytics";
 import { toMsLocal, getCurrentFocusTag } from "@/lib/dashboard/progressSelectors";
-import { OMNIKUNO_MODULES, type OmniKunoModuleConfig } from "@/config/omniKunoLessons";
+import {
+  OMNIKUNO_MODULES as OMNIKUNO_LESSON_MODULES,
+  type OmniKunoModuleConfig,
+} from "@/config/omniKunoLessons";
+import { getLegacyModuleKeyById, getModuleLabel, resolveModuleId } from "@/config/omniKunoModules";
+import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 import { normalizePerformance } from "@/lib/omniKunoAdaptive";
 import InternalKpiCard from "@/components/dashboard/InternalKpiCard";
 import ActionTrendsCard from "@/components/dashboard/ActionTrendsCard";
@@ -314,12 +319,15 @@ export default function ProgressDashboard({
     );
     if (items.length) {
       const topCat = (() => {
-        // reuse focusTheme after it's computed below? compute lightweight here from facts.intent
-        const intent = (facts?.intent as { firstCategory?: string | null } | undefined);
-        return (intent?.firstCategory || "").toString().toLowerCase();
+        const intent = facts?.intent as { firstCategory?: string | null } | undefined;
+        const raw = typeof intent?.firstCategory === "string" ? intent.firstCategory : null;
+        return raw ? resolveModuleId(raw) : null;
       })();
       const sorted = items
-        .map((it) => ({ it, match: topCat && it.scriptId ? (getAreasForScript(String(it.scriptId)).includes(topCat) ? 1 : 0) : 0 }))
+        .map((it) => ({
+          it,
+          match: topCat && it.scriptId ? (getAreasForScript(String(it.scriptId)).includes(topCat) ? 1 : 0) : 0,
+        }))
         .sort((a, b) => b.match - a.match);
       const best = sorted[0]?.it ?? items[0];
       const title = best.title && best.title.trim().length ? best.title : fallbackTitle;
@@ -371,7 +379,11 @@ export default function ProgressDashboard({
       balance: lang === "ro" ? "Echilibru emoțional" : "Emotional balance",
     };
     const normalizedCategory = topCategory ? topCategory.toLowerCase() : undefined;
-    const areaFromIntent = topCategory ? catLabelMap[topCategory] ?? topCategory : undefined;
+    const resolvedModuleId = resolveModuleId(normalizedCategory);
+    const areaFromIntent =
+      (resolvedModuleId ? getModuleLabel(resolvedModuleId, lang === "ro" ? "ro" : "en") : undefined) ||
+      (normalizedCategory ? catLabelMap[normalizedCategory] : undefined) ||
+      (topCategory ? catLabelMap[topCategory] ?? topCategory : undefined);
     const area =
       areaFromIntent ||
       ev?.focusLabel ||
@@ -383,7 +395,7 @@ export default function ProgressDashboard({
       ev?.mainObjective ||
       rec?.summary ||
       (lang === "ro" ? "Este directia prioritara pe care lucrezi acum." : "This is the main theme you’re working on right now.");
-    return { area, desc, categoryKey: normalizedCategory };
+    return { area, desc, categoryKey: normalizedCategory, moduleId: resolvedModuleId };
   }, [facts, lang]);
   const questPreview = useMemo(() => {
     const txt = (quest?.text || "").trim();
@@ -396,10 +408,10 @@ export default function ProgressDashboard({
     return (lastSpace > 60 ? slice.slice(0, lastSpace) : slice).trimEnd() + "…";
   }, [quest?.text]);
   const kunoMissionData: KunoMissionCardData | null = useMemo(() => {
-    const pairs = Object.entries(OMNIKUNO_MODULES);
+    const pairs = Object.entries(OMNIKUNO_LESSON_MODULES) as Array<[OmniKunoModuleId, OmniKunoModuleConfig]>;
     const explicitArea = (() => {
-      if (kunoFacts.recommendedArea && Object.hasOwn(OMNIKUNO_MODULES, kunoFacts.recommendedArea)) {
-        return kunoFacts.recommendedArea as keyof typeof OMNIKUNO_MODULES;
+      if (kunoFacts.recommendedArea && Object.hasOwn(OMNIKUNO_LESSON_MODULES, kunoFacts.recommendedArea)) {
+        return kunoFacts.recommendedArea as OmniKunoModuleId;
       }
       return null;
     })();
@@ -408,16 +420,26 @@ export default function ProgressDashboard({
         return pairs.find(([, module]) => module.moduleId === kunoFacts.recommendedModuleId);
       }
       if (explicitArea) {
-        return [explicitArea, OMNIKUNO_MODULES[explicitArea]] as [keyof typeof OMNIKUNO_MODULES, OmniKunoModuleConfig];
+        return [explicitArea, OMNIKUNO_LESSON_MODULES[explicitArea]] as [OmniKunoModuleId, OmniKunoModuleConfig];
       }
       return undefined;
     })();
     const fallbackArea = (() => {
-      const key = (focusTheme.categoryKey || "calm") as keyof typeof OMNIKUNO_MODULES;
-      if (OMNIKUNO_MODULES[key]) return key;
-      return "calm" as keyof typeof OMNIKUNO_MODULES;
+      const focusModuleId =
+        focusTheme.moduleId ?? resolveModuleId(focusTheme.categoryKey ?? undefined) ?? "emotional_balance";
+      if (OMNIKUNO_LESSON_MODULES[focusModuleId as OmniKunoModuleId]) {
+        return focusModuleId as OmniKunoModuleId;
+      }
+      const legacyKey = getLegacyModuleKeyById(focusModuleId);
+      if (legacyKey) {
+        const mapped = resolveModuleId(legacyKey);
+        if (mapped && OMNIKUNO_LESSON_MODULES[mapped as OmniKunoModuleId]) {
+          return mapped as OmniKunoModuleId;
+        }
+      }
+      return "emotional_balance";
     })();
-    const [areaKey, module] = recommended ?? [fallbackArea, OMNIKUNO_MODULES[fallbackArea]];
+    const [areaKey, module] = recommended ?? [fallbackArea, OMNIKUNO_LESSON_MODULES[fallbackArea]];
     if (!module) return null;
     const moduleSnapshot = kunoFacts.modules[module.moduleId];
     const completedIds = moduleSnapshot?.completedIds ?? [];
@@ -431,7 +453,7 @@ export default function ProgressDashboard({
         (moduleSnapshot?.performance as Partial<{ recentScores: number[]; recentTimeSpent: number[]; difficultyBias: number }> | null) ?? null,
       ),
     };
-  }, [focusTheme.categoryKey, kunoFacts]);
+  }, [focusTheme.categoryKey, focusTheme.moduleId, kunoFacts]);
   // Optional: emit compact debug JSON for E2E when ?debug=1
   const debugJson = (() => {
     try {

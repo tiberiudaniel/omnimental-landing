@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { OmniKunoLesson } from "@/config/omniKunoLessons";
+import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 import { applyKunoXp, getQuizXp } from "@/lib/omniKunoXp";
 import { recordKunoLessonProgress } from "@/lib/progressFacts";
 import { getOmniKunoQuiz } from "@/lib/omniKunoQuizBank";
@@ -9,7 +10,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { asDifficulty, DIFFICULTY_STYLES } from "./difficulty";
 
 export type QuizViewProps = {
-  areaKey: "calm" | "energy" | "relations" | "performance" | "sense";
+  areaKey: OmniKunoModuleId;
   moduleId: string;
   lesson: OmniKunoLesson & { quizTopicKey?: string };
   existingCompletedIds: readonly string[];

@@ -1,4 +1,6 @@
-export type OmniKunoAreaKey = "calm" | "energy" | "relations" | "performance" | "sense";
+import type { OmniKunoModuleId } from "@/config/omniKunoModules";
+
+export type OmniKunoAreaKey = OmniKunoModuleId;
 
 export function getLessonXp(options?: { difficulty?: "standard" | "advanced" }): number {
   if (options?.difficulty === "advanced") return 8;

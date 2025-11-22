@@ -31,9 +31,9 @@ export default function ProgressHeaderSection({ lang, progress, omniIntelScore, 
     const urgency = progress?.intent?.urgency ?? 0;
     const scores = computeDimensionScores(categories, urgency);
     return [
-      { title: lang === "ro" ? "Clarity Index" : "Clarity Index", value: scores.focus },
-      { title: lang === "ro" ? "Index Echilibru emoțional" : "Emotional balance index", value: scores.calm },
-      { title: lang === "ro" ? "Vitality Index" : "Vitality Index", value: scores.energy },
+      { title: lang === "ro" ? "Clarity Index" : "Clarity Index", value: scores.focus_clarity },
+      { title: lang === "ro" ? "Index Echilibru emoțional" : "Emotional balance index", value: scores.emotional_balance },
+      { title: lang === "ro" ? "Vitality Index" : "Vitality Index", value: scores.energy_body },
     ];
   })();
   return (

@@ -157,11 +157,12 @@ export function RecommendationStep(props: Props) {
     const top = pairs[0]?.[0];
     if (!top) return null;
     const mapToRoKey: Record<string, keyof typeof CATEGORY_LABELS> = {
-      clarity: "claritate",
-      relationships: "relatii",
-      calm: "stres",
-      energy: "echilibru",
-      performance: "incredere",
+      focus_clarity: "claritate",
+      relationships_communication: "relatii",
+      emotional_balance: "stres",
+      energy_body: "echilibru",
+      decision_discernment: "incredere",
+      self_trust: "incredere",
     };
     const roKey = mapToRoKey[top];
     const item = roKey ? CATEGORY_LABELS[roKey] : undefined;

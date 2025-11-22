@@ -10,15 +10,36 @@ export default function OmniScopLitePage() {
   const { lang } = useI18n();
   const isRO = lang !== "en";
   const demo = getDemoProgressFacts(isRO ? "ro" : "en", 1);
-  const shares: IndicatorChartValues = (demo.recommendation?.dimensionScores
-    ? {
-        clarity: (demo.recommendation.dimensionScores.focus ?? 0) / 5,
-        relationships: (demo.recommendation.dimensionScores.relationships ?? 0) / 5,
-        calm: (demo.recommendation.dimensionScores.calm ?? 0) / 5,
-        energy: (demo.recommendation.dimensionScores.energy ?? 0) / 5,
-        performance: (demo.recommendation.dimensionScores.performance ?? 0) / 5,
+  const shares: IndicatorChartValues = (() => {
+    const dims = demo.recommendation?.dimensionScores ?? {};
+    const read = (key: string, legacy?: string) => {
+      const value = Number((dims as Record<string, unknown>)[key]);
+      if (Number.isFinite(value)) return value;
+      if (legacy) {
+        const legacyVal = Number((dims as Record<string, unknown>)[legacy]);
+        if (Number.isFinite(legacyVal)) return legacyVal;
       }
-    : { clarity: 0.2, relationships: 0.3, calm: 0.2, energy: 0.1, performance: 0.2 }) as IndicatorChartValues;
+      return 0;
+    };
+    if (demo.recommendation?.dimensionScores) {
+      return {
+        focus_clarity: read("focus_clarity", "focus") / 5,
+        relationships_communication: read("relationships_communication", "relationships") / 5,
+        emotional_balance: read("emotional_balance", "calm") / 5,
+        energy_body: read("energy_body", "energy") / 5,
+        decision_discernment: read("decision_discernment", "performance") / 5,
+        self_trust: read("self_trust", "health") / 5,
+      } satisfies IndicatorChartValues;
+    }
+    return {
+      focus_clarity: 0.2,
+      relationships_communication: 0.25,
+      emotional_balance: 0.2,
+      energy_body: 0.15,
+      decision_discernment: 0.15,
+      self_trust: 0.05,
+    } satisfies IndicatorChartValues;
+  })();
   const indicators = shares;
 
   return (
