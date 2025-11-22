@@ -5,9 +5,10 @@ test('Kuno practice with category filter updates dashboard', async ({ page }) =>
   await resetSession(page);
   await go(page, '/kuno/practice?cat=calm&n=3&e2e=1');
   // Answer first 3 with feedback and next
+  const options = page.getByTestId('practice-option');
   for (let i = 0; i < 3; i++) {
-    await expect(page.getByRole('button').first()).toBeVisible();
-    await page.getByRole('button').first().click();
+    await expect(options.first()).toBeVisible();
+    await options.first().click();
     await expect(page.getByText(/Corect|Greșit/)).toBeVisible();
     await page.getByRole('button', { name: /Următoarea întrebare/ }).click();
   }

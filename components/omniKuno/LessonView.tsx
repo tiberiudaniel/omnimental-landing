@@ -43,7 +43,7 @@ export default function LessonView({
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(existingCompletedIds.includes(lesson.id));
   const [reflection, setReflection] = useState("");
-  const reflectionMinChars = 5;
+  const reflectionMinChars = 3;
   const [currentScreenIndex, setCurrentScreenIndex] = useState(0);
   const [quizAnswerIndex, setQuizAnswerIndex] = useState<number | null>(null);
   const [quizResult, setQuizResult] = useState<"correct" | "incorrect" | null>(null);
@@ -73,8 +73,18 @@ export default function LessonView({
   const currentScreen = screens[Math.min(currentScreenIndex, totalScreens - 1)];
   const isLastScreen = currentScreenIndex === totalScreens - 1;
   const requiresReflectionInput = currentScreen.kind === "reflection";
+  const needsQuizAnswer = currentScreen.kind === "quiz" && quizAnswerIndex === null;
+  const centerLabel = useMemo(() => {
+    if (!lesson.center) return null;
+    const map =
+      lang === "ro"
+        ? { mind: "Minte", body: "Corp", heart: "Inimă", combined: "Integrat" }
+        : { mind: "Mind", body: "Body", heart: "Heart", combined: "Combined" };
+    return map[lesson.center];
+  }, [lang, lesson.center]);
 
   const reflectionStorageKey = useMemo(() => `omnikuno_reflection_${lesson.id}`, [lesson.id]);
+  const reflectionHelperId = `${lesson.id}-reflection-hint`;
 
   useEffect(() => {
     setDone(existingCompletedIds.includes(lesson.id));
@@ -147,7 +157,7 @@ export default function LessonView({
         : true;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="lesson-view">
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -164,6 +174,9 @@ export default function LessonView({
             {chipText}
           </span>
           {durationText ? <span>{durationText}</span> : null}
+          {centerLabel ? (
+            <span className="rounded-full bg-[#FFF3EC] px-2.5 py-0.5 text-xs font-semibold text-[#C07963]">{centerLabel}</span>
+          ) : null}
           <span className="rounded-full bg-[#FFF3EC] px-2.5 py-0.5 font-semibold text-[#C07963]">
             {done ? (lang === "ro" ? "Finalizată" : "Completed") : lang === "ro" ? "Activă" : "Active"}
           </span>
@@ -179,12 +192,12 @@ export default function LessonView({
               />
             ))}
           </div>
-          <p className="text-[11px] text-[#7B6B60]">
-            {currentScreenIndex + 1}/{totalScreens}
+          <p className="text-[11px] text-[#7B6B60]" id={reflectionHelperId}>
+            {lang === "ro" ? `Pas ${currentScreenIndex + 1} din ${totalScreens}` : `Step ${currentScreenIndex + 1} of ${totalScreens}`}
           </p>
         </div>
       </div>
-      <div className="rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] p-4 text-[#4D3F36]">
+      <div className="rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] p-4 text-[#4D3F36]" data-testid={`lesson-screen-${currentScreenIndex + 1}`}>
         {renderScreenContent(currentScreen, {
           areaKey,
           quizAnswerIndex,
@@ -194,6 +207,7 @@ export default function LessonView({
           onQuizSelect: handleQuizSelect,
           onReflectionChange: (value) => setReflection(value),
           reflectionMinChars,
+          reflectionHelperId,
         })}
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -210,6 +224,7 @@ export default function LessonView({
             type="button"
             onClick={handleNextScreen}
             disabled={!canContinue}
+            data-testid="lesson-next"
             className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
           >
             {lang === "ro" ? "Continuă" : "Continue"}
@@ -219,6 +234,7 @@ export default function LessonView({
             type="button"
             onClick={handleComplete}
             disabled={busy || done || (requiresReflectionInput && reflection.trim().length < reflectionMinChars)}
+            data-testid="lesson-complete"
             className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
           >
             {done
@@ -234,6 +250,21 @@ export default function LessonView({
                   : "Mark lesson as done"}
           </button>
         )}
+        {!canContinue && requiresReflectionInput ? (
+          <p className="text-[11px] text-[#B03C2F]">
+            {lang === "ro" ? "Scrie încă 1–2 propoziții ca să poți continua." : "Add 1–2 short sentences to continue."}
+          </p>
+        ) : null}
+        {!canContinue && needsQuizAnswer ? (
+          <p className="text-[11px] text-[#B03C2F]">
+            {lang === "ro" ? "Alege un răspuns ca să poți continua." : "Select an answer to continue."}
+          </p>
+        ) : null}
+        {!canContinue && currentScreen.kind === "quiz" && quizAnswerIndex === null ? (
+          <p className="text-[11px] text-[#B03C2F]">
+            {lang === "ro" ? "Alege un răspuns ca să continui." : "Select an answer to continue."}
+          </p>
+        ) : null}
         {done ? (
           <div className="rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-2 text-sm text-[#1F3C2F]">
             {lang === "ro"
@@ -255,11 +286,12 @@ type ScreenRendererProps = {
   onQuizSelect: (index: number) => void;
   onReflectionChange: (value: string) => void;
   reflectionMinChars: number;
+  reflectionHelperId: string;
 };
 
 function renderScreenContent(
   screen: OmniKunoLessonScreen,
-  { areaKey, quizAnswerIndex, quizResult, reflection, lang, onQuizSelect, onReflectionChange, reflectionMinChars }: ScreenRendererProps,
+  { areaKey, quizAnswerIndex, quizResult, reflection, lang, onQuizSelect, onReflectionChange, reflectionMinChars, reflectionHelperId }: ScreenRendererProps,
 ) {
   if (screen.kind === "content") {
     return (
@@ -315,6 +347,7 @@ function renderScreenContent(
                 type="button"
                 className={`${baseClasses} ${stateClasses}`}
                 onClick={() => onQuizSelect(index)}
+                data-testid="kuno-quiz-option"
               >
                 <span className="inline-flex items-center gap-2">
                   {showState && selected ? (
@@ -362,6 +395,7 @@ function renderScreenContent(
           onChange={(e) => onReflectionChange(e.target.value)}
           rows={4}
           className="w-full rounded-2xl border border-[#E4DAD1] bg-white px-3 py-2 text-sm text-[#2C2C2C] focus:border-[#C07963] focus:outline-none"
+          aria-describedby={reflectionHelperId}
           placeholder={
             lang === "ro"
               ? `Scrie cel puțin ${reflectionMinChars} caractere.`
@@ -371,11 +405,11 @@ function renderScreenContent(
         <p className="text-[11px] text-[#7B6B60]">
           {remaining > 0
             ? lang === "ro"
-              ? `Mai ai nevoie de ${remaining} caractere.`
-              : `Need ${remaining} more characters.`
+              ? "Scrie încă 1–2 propoziții ca să poți continua."
+              : "Add 1–2 short sentences to continue."
             : lang === "ro"
-              ? "Perfect, poți salva lecția."
-              : "Great, you can mark the lesson complete."}
+              ? "Perfect, poți continua."
+              : "Great, you can continue."}
         </p>
       </div>
     );

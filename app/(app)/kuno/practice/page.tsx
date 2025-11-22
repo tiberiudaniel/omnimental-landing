@@ -12,6 +12,17 @@ import type { KunoAttempt, KunoCategory, KunoDifficulty, KunoQuestion } from '@/
 import { saveKunoAttempts } from '@/lib/kunoPersistence';
 import { recordPracticeSession } from '@/lib/progressFacts';
 import { useProgressFacts } from '@/components/useProgressFacts';
+import type { OmniKunoModuleId } from "@/config/omniKunoModules";
+
+const CATEGORY_TO_MODULE: Record<string, OmniKunoModuleId> = {
+  clarity: "focus_clarity",
+  calm: "emotional_balance",
+  energy: "energy_body",
+  relationships: "relationships_communication",
+  performance: "decision_discernment",
+  health: "energy_body",
+  general: "emotional_balance",
+};
 
 function PracticeInner() {
   const router = useRouter();
@@ -96,6 +107,8 @@ function PracticeInner() {
   const [toast, setToast] = useState<string | null>(null);
   if (done) {
     const s = scoreAttempts(attempts);
+    const moduleId = CATEGORY_TO_MODULE[cat ?? ""] ?? "emotional_balance";
+    const omniHref = `/omni-kuno?area=${moduleId}&module=${moduleId}`;
     return (
       <div className="mx-auto max-w-xl rounded-[14px] border border-[#E4D8CE] bg-white p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-[#2C2C2C]">Rezultat</h2>
@@ -126,6 +139,12 @@ function PracticeInner() {
         >
           Salvează și mergi la progress
         </button>
+        <Link
+          className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[#C07963] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white"
+          href={omniHref}
+        >
+          Continuă în OmniKuno
+        </Link>
         {toast ? (
           <div className="fixed bottom-4 left-0 right-0 mx-auto max-w-md px-4">
             <Toast message={toast} okLabel="OK" onClose={() => setToast(null)} />
@@ -146,6 +165,7 @@ function PracticeInner() {
             key={i}
             className="rounded-[10px] border border-[#D8C6B6] px-3 py-2 text-left text-[13px] sm:text-sm text-[#2C2C2C] hover:border-[#2C2C2C]"
             onClick={() => onAnswer(i)}
+            data-testid="practice-option"
           >
             {opt}
           </button>

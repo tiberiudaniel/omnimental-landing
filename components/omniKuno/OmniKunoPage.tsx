@@ -10,18 +10,18 @@ import { useI18n } from "@/components/I18nProvider";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
-import InfoTooltip from "@/components/InfoTooltip";
 import Toast from "@/components/Toast";
-import LessonView from "./LessonView";
-import QuizView from "./QuizView";
-import KunoLessonItem from "./KunoLessonItem";
 import ModuleArcHero from "./ModuleArcHero";
 import TestView from "./TestView";
 import { computeLessonsStatus } from "./useKunoTimeline";
-import { asDifficulty, DIFFICULTY_STYLES, type LessonDifficulty } from "./difficulty";
-import { getLessonDuration, getLessonObjective } from "./lessonUtils";
+import { asDifficulty, type LessonDifficulty } from "./difficulty";
+import { getLessonDuration } from "./lessonUtils";
 import { normalizeKunoFacts, getKunoModuleSnapshot } from "@/lib/kunoFacts";
 import { resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
+import { KunoModuleHeader } from "./KunoModuleHeader";
+import { KunoTimeline } from "./KunoTimeline";
+import { KunoActivePanel } from "./KunoActivePanel";
+import { KunoFinalTestBanner } from "./KunoFinalTestBanner";
 type ArcZoneKey = keyof (typeof OMNI_KUNO_ARC_INTROS)["emotional_balance"];
 const ARC_ZONE_ORDER: ArcZoneKey[] = ["trezire", "primele_ciocniri", "profunzime", "maestrie"];
 type OmniAreaKey = OmniKunoModuleId;
@@ -285,13 +285,6 @@ function renderArcIntro(areaKey: OmniAreaKey, zoneKey: ArcZoneKey | null) {
   return <ArcIntroCard areaKey={areaKey} zoneKey={zoneKey} />;
 }
 
-function renderCompactArcIntro(areaKey: OmniAreaKey, zoneKey: ArcZoneKey | null) {
-  if (!zoneKey) return null;
-  const arcSet = OMNI_KUNO_ARC_INTROS[areaKey];
-  if (!arcSet || !arcSet[zoneKey]) return null;
-  return <ArcIntroCard areaKey={areaKey} zoneKey={zoneKey} variant="compact" />;
-}
-
 function getFinalTestConfig(areaKey: OmniAreaKey, lang: "ro" | "en"): ModuleFinalTestContent | null {
   if (!(areaKey in FINAL_TEST_COPY)) return null;
   const copy = FINAL_TEST_COPY[areaKey as SupportedFinalTestArea];
@@ -491,6 +484,12 @@ const areaStats = useMemo(() => {
   }, [activeLessonMeta, t]);
   const focusLabel = areaLabelMap[activeAreaKey];
   const moduleStateKey = `${activeModule.moduleId}:${completedIdsFromFacts.slice().sort().join("|")}:${normalizedPerformance.difficultyBias}`;
+  const completedLessonsCount = completedIdsFromFacts.length;
+  const headerProgressSummary =
+    lang === "ro"
+      ? `Lecții finalizate: ${completedLessonsCount}/${activeModule.lessons.length}`
+      : `Lessons completed: ${completedLessonsCount}/${activeModule.lessons.length}`;
+  const headerXpSummary = lang === "ro" ? "XP: 45 · Următorul nivel la 120" : "XP: 45 · Next level at 120";
 
   const goToAuth = useCallback(() => router.push("/auth"), [router]);
 
@@ -504,30 +503,16 @@ const areaStats = useMemo(() => {
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <main className="mx-auto max-w-6xl px-4 py-6 text-[#2C2C2C]">
         <div className="space-y-6">
-        <header className="rounded-2xl border border-[#E4DAD1] bg-white px-6 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#C07963]">OmniKuno</p>
-          <h1 className="text-2xl font-bold text-[#2C2C2C]">
-            Tema ta în focus · <span className="text-xl text-[#C07963]">{focusLabel}</span>
-          </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-[#7B6B60]">
-            <span>{areaLabelMap[activeAreaKey]} · Nivel 1</span>
-            <span>XP: 45 / 120</span>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-[#7B6B60]">
-            <span>{String(t("omnikuno.adaptive.headerExplainerShort"))}</span>
-            <InfoTooltip
-              label={String(t("omnikuno.adaptive.headerExplainer"))}
-              items={[String(t("omnikuno.adaptive.tooltip"))]}
+          <div data-testid="omni-kuno-header">
+            <KunoModuleHeader
+              title={lang === "ro" ? "Tema ta în focus" : "Your focus mission"}
+              focusLabel={focusLabel}
+              progressLabel={headerProgressSummary}
+              xpLabel={headerXpSummary}
+              adaptiveMessage={adaptiveMessage}
+              onDismissAdaptive={() => setAdaptiveMessage(null)}
             />
           </div>
-          {adaptiveMessage ? (
-            <div className="mt-2 flex items-start justify-between rounded-xl border border-[#F0E8E0] bg-[#FFFBF7] px-3 py-2 text-[12px] text-[#5A4B43]">
-              <span>{adaptiveMessage}</span>
-              <button type="button" className="ml-2 text-[#B08A78] transition hover:text-[#2C2C2C]" onClick={() => setAdaptiveMessage(null)}>
-                ×
-              </button>
-            </div>
-          ) : null}
           {adaptiveHistory.length ? (
             <div className="mt-3 rounded-xl border border-dashed border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7B6B60]">
@@ -540,8 +525,6 @@ const areaStats = useMemo(() => {
               </ul>
             </div>
           ) : null}
-        </header>
-
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
           <aside className="rounded-2xl border border-[#E4DAD1] bg-white p-4 shadow-sm">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#7B6B60]">Teme OmniKuno</p>
@@ -594,7 +577,6 @@ const areaStats = useMemo(() => {
             <ModuleExperience
               key={moduleStateKey}
               areaKey={activeAreaKey}
-              areaTitle={areaLabelMap[activeAreaKey]}
               module={activeModule}
               profileId={profile?.id}
               completedIdsFromFacts={completedIdsFromFacts}
@@ -620,7 +602,6 @@ const areaStats = useMemo(() => {
 
 type ExperienceProps = {
   areaKey: OmniAreaKey;
-  areaTitle?: string;
   module: OmniKunoModuleConfig;
   profileId?: string | null;
   completedIdsFromFacts: string[];
@@ -638,7 +619,6 @@ type ExperienceProps = {
 
 function ModuleExperience({
   areaKey,
-  areaTitle,
   module,
   profileId,
   completedIdsFromFacts,
@@ -684,6 +664,18 @@ function ModuleExperience({
     }
     return null;
   }, [module.lessons, resolvedLessonId]);
+  const renderZoneIntroForTimeline = useCallback(
+    (zoneKey: ArcZoneKey | null) => renderArcIntro(areaKey, zoneKey),
+    [areaKey],
+  );
+  const timelineTranslation = useCallback(
+    (key: string): string | number => {
+      const value = t(key);
+      if (typeof value === "string" || typeof value === "number") return value;
+      return String(value ?? "");
+    },
+    [t],
+  );
   useEffect(() => {
     if (!onActiveLessonChange) return;
     if (resolvedLesson) {
@@ -698,7 +690,13 @@ function ModuleExperience({
       meta?: { updatedPerformance?: KunoPerformanceSnapshot; score?: number; timeSpentSec?: number },
     ) => {
       setLocalCompleted((prev) => (prev.includes(lessonId) ? prev : [...prev, lessonId]));
-      onLessonSelect?.(null);
+      const currentIndex = orderedLessons.findIndex((lesson) => lesson.id === lessonId);
+      const nextLesson = currentIndex >= 0 ? orderedLessons[currentIndex + 1] : null;
+      if (nextLesson) {
+        onLessonSelect?.(nextLesson.id);
+      } else {
+        onLessonSelect?.(null);
+      }
       if (meta?.updatedPerformance) {
         setLocalPerformance(meta.updatedPerformance);
       }
@@ -714,7 +712,7 @@ function ModuleExperience({
         }
       }
     },
-    [lang, onLessonSelect, onToast],
+    [lang, onLessonSelect, onToast, orderedLessons],
   );
   const handleLockedLessonAttempt = useCallback(() => {
     if (!onToast) return;
@@ -727,143 +725,49 @@ function ModuleExperience({
 
   return (
     <>
-      <div className="rounded-2xl border border-[#E4DAD1] bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7B6B60]">
-              {lang === "ro" ? "Misiunea activă" : "Active mission"}
-            </p>
-            <h2 className="text-xl font-bold text-[#2C2C2C]">
-              {areaTitle ?? module.moduleId.replace(/_/g, " ")} · {lang === "ro" ? "misiunea principală" : "main storyline"}
-            </h2>
-          </div>
-          <div className="text-right text-sm text-[#7B6B60]">
-            <p>
-              {lang === "ro" ? "Progres" : "Progress"}: {completedCount} / {timeline.length} {lang === "ro" ? "misiuni" : "missions"}
-            </p>
-            <p>XP: 45 · {lang === "ro" ? "Următorul nivel la 120" : "Next level at 120"}</p>
-          </div>
-        </div>
+      <KunoActivePanel
+        progress={
+          <p>
+            {lang === "ro" ? "Progres" : "Progress"}: {completedCount} / {timeline.length}{" "}
+            {lang === "ro" ? "misiuni" : "missions"}
+          </p>
+        }
+        xpLabel={lang === "ro" ? "XP: 45 · Următorul nivel la 120" : "XP: 45 · Next level at 120"}
+        nextLessonTitle={resolvedLesson?.title ?? null}
+        onContinue={resolvedLesson ? () => onLessonSelect?.(resolvedLesson.id) : undefined}
+        disabled={!resolvedLesson}
+      >
         <div className="mt-4 h-2 rounded-full bg-[#F4EDE4]">
           <div className="h-2 rounded-full bg-[#C07963]" style={{ width: `${Math.min(100, completionPct)}%` }} />
         </div>
-        <div className="mt-4 space-y-5">
-          {timelineSegments.map((segment, segmentIndex) => (
-            <div key={`${segment.zoneKey ?? `segment-${segmentIndex}`}-${areaKey}`} className="space-y-3">
-              {renderArcIntro(areaKey, segment.zoneKey)}
-              {segment.items.map((item) => {
-                const lessonDef = module.lessons.find((lesson) => lesson.id === item.id);
-                if (!lessonDef) return null;
-                const disabled = item.status === "locked";
-                const difficultyKey = asDifficulty(item.difficulty);
-                const difficultyLabel = String(t(`omnikuno.difficulty.${difficultyKey}Label`));
-                const difficultyShort = String(t(`omnikuno.difficulty.${difficultyKey}Short`));
-                const isOpen = resolvedLessonId ? resolvedLessonId === item.id : false;
-                const objective = String(getLessonObjective(lessonDef, lang));
-                return (
-                  <KunoLessonItem
-                    key={item.id}
-                    lesson={{
-                      id: item.id,
-                      order: item.order,
-                      title: item.title,
-                      type: item.type,
-                      status: item.status,
-                      difficulty: difficultyKey,
-                    }}
-                    isActive={Boolean(isOpen)}
-                    disabled={disabled}
-                    onSelect={() => {
-                      onLessonSelect?.(item.id);
-                    }}
-                    onLockedAttempt={handleLockedLessonAttempt}
-                    header={
-                      <div className="flex w-full items-start gap-3">
-                        <div
-                          className={`flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold ${
-                            item.status === "done"
-                              ? "border-[#1F7A43] bg-[#ECF8F0] text-[#1F7A43]"
-                              : item.status === "active"
-                                ? "border-[#C07963] bg-[#FFF3EC] text-[#C07963]"
-                                : "border-[#F0E8E0] bg-white text-[#B0A295]"
-                          }`}
-                        >
-                          {item.status === "done" ? "✓" : item.status === "locked" ? "…" : "▶"}
-                        </div>
-                        <div
-                          className={`flex-1 rounded-xl border px-3 py-2 ${
-                            isOpen ? "border-[#C07963] bg-white" : "border-[#F0E8E0]"
-                          }`}
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div>
-                              <p className="font-semibold text-[#2C2C2C]">
-                                {item.order}. {item.title}
-                              </p>
-                              <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">
-                                {item.type === "quiz" ? "Quiz" : lang === "ro" ? "Lecție" : "Lesson"}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <span
-                                className={`inline-flex items-center rounded-full px-3 py-0.5 text-[10px] uppercase tracking-[0.2em] ${DIFFICULTY_STYLES[difficultyKey].badge}`}
-                                title={difficultyShort}
-                              >
-                                {difficultyLabel}
-                              </span>
-                              {renderEffortBadges(module, item.id, lang)}
-                            </div>
-                          </div>
-                          {!isOpen ? <p className="mt-2 text-[11px] text-[#7B6B60]">{objective}</p> : null}
-                        </div>
-                      </div>
-                    }
-                  >
-                    {lessonDef.type === "quiz" ? (
-                      <QuizView
-                        areaKey={areaKey}
-                        moduleId={module.moduleId}
-                        lesson={lessonDef}
-                        existingCompletedIds={localCompleted}
-                        ownerId={profileId}
-                        performanceSnapshot={localPerformance}
-                        onCompleted={(lessonId, meta) => handleLessonCompleted(lessonId, meta)}
-                      />
-                    ) : (
-                      <LessonView
-                        areaKey={areaKey}
-                        moduleId={module.moduleId}
-                        lesson={lessonDef}
-                        existingCompletedIds={localCompleted}
-                        ownerId={profileId}
-                        performanceSnapshot={localPerformance}
-                        onCompleted={(lessonId, meta) => handleLessonCompleted(lessonId, meta)}
-                      />
-                    )}
-                  </KunoLessonItem>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
+      </KunoActivePanel>
+      <KunoTimeline
+        areaKey={areaKey}
+        segments={timelineSegments as Array<{ zoneKey: ArcZoneKey | null; items: ReturnType<typeof computeLessonsStatus> }>}
+        module={module}
+        lang={lang}
+        profileId={profileId}
+        resolvedLessonId={resolvedLessonId}
+        localCompleted={localCompleted}
+        localPerformance={localPerformance}
+        onLessonSelect={(lessonId) => onLessonSelect?.(lessonId)}
+        onLessonCompleted={handleLessonCompleted}
+        onLockedAttempt={handleLockedLessonAttempt}
+        renderZoneIntro={renderZoneIntroForTimeline}
+        renderEffortBadges={renderEffortBadges}
+        t={timelineTranslation}
+      />
       {moduleCompleted && finalTestConfig ? (
-        <div className="space-y-3 rounded-2xl border border-[#E4DAD1] bg-[#FFFBF7] p-4">
-          {renderCompactArcIntro(areaKey, "maestrie")}
-          <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{finalTestConfig.heading}</p>
-            <h3 className="text-lg font-semibold text-[#2C2C2C]">{finalTestConfig.title}</h3>
-            <p className="text-sm text-[#4D3F36]">{finalTestConfig.description}</p>
-          </div>
-          {!showFinalTest ? (
-            <button
-              type="button"
-              onClick={() => onToggleFinalTest?.(true)}
-              className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white"
-            >
-              {finalTestConfig.buttonLabel}
-            </button>
-          ) : (
+        <div className="space-y-4">
+          <KunoFinalTestBanner
+            areaKey={areaKey}
+            finalTestConfig={finalTestConfig}
+            showFinalTest={showFinalTest}
+            onToggleFinalTest={(value) => onToggleFinalTest?.(value)}
+            lang={lang}
+            finalTestResult={finalTestResult}
+          />
+          {showFinalTest ? (
             <TestView
               testId={finalTestConfig.testId}
               onCompleted={(result) => {
@@ -873,13 +777,6 @@ function ModuleExperience({
                 }
               }}
             />
-          )}
-          {finalTestResult ? (
-            <div className="rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-2 text-sm text-[#1F3C2F]">
-              {lang === "ro"
-                ? `Felicitări! Ai închis modulul ${finalTestConfig.moduleName} cu ${finalTestResult.correct} răspunsuri corecte din ${finalTestResult.total}. Continuă practica în viața reală.`
-                : `Congrats! You finished ${finalTestConfig.moduleName} with ${finalTestResult.correct}/${finalTestResult.total} correct answers. Keep applying the practice.`}
-            </div>
           ) : null}
         </div>
       ) : null}

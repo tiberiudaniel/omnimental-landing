@@ -13,6 +13,9 @@ export type OmniKunoLesson = {
   durationMin?: number;
   quizTopicKey?: string;
   difficulty?: "easy" | "medium" | "hard";
+  center?: "mind" | "body" | "heart" | "combined";
+  tags?: string[];
+  learningObjectives?: string[];
 };
 
 export type OmniKunoModuleConfig = {
@@ -613,36 +616,39 @@ const focusClarityLessons: OmniKunoLesson[] = [
   },
 ];
 
+const withDefaultCenter = (lessons: OmniKunoLesson[], center: OmniKunoLesson["center"]) =>
+  lessons.map((lesson) => (lesson.center ? lesson : { ...lesson, center }));
+
 export const OMNIKUNO_MODULES: Record<OmniKunoModuleId, OmniKunoModuleConfig> = {
   emotional_balance: {
     moduleId: "emotional_balance",
     topicKey: "emotional_balance",
-    lessons: emotionalBalanceLessons,
+    lessons: withDefaultCenter(emotionalBalanceLessons, "heart"),
   },
   focus_clarity: {
     moduleId: "focus_clarity",
     topicKey: "focus_clarity",
-    lessons: focusClarityLessons,
+    lessons: withDefaultCenter(focusClarityLessons, "mind"),
   },
   energy_body: {
     moduleId: "energy_body",
     topicKey: "energy_body",
-    lessons: energyBodyLessons,
+    lessons: withDefaultCenter(energyBodyLessons, "body"),
   },
   relationships_communication: {
     moduleId: "relationships_communication",
     topicKey: "relationships_communication",
-    lessons: relationshipsCommunicationLessons,
+    lessons: withDefaultCenter(relationshipsCommunicationLessons, "combined"),
   },
   decision_discernment: {
     moduleId: "decision_discernment",
     topicKey: "decision_discernment",
-    lessons: decisionDiscernmentLessons,
+    lessons: withDefaultCenter(decisionDiscernmentLessons, "mind"),
   },
   self_trust: {
     moduleId: "self_trust",
     topicKey: "self_trust",
-    lessons: selfTrustLessons,
+    lessons: withDefaultCenter(selfTrustLessons, "heart"),
   },
 };
 

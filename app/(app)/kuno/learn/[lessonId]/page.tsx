@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, Suspense } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
@@ -13,7 +14,17 @@ import { increment } from 'firebase/firestore';
 import { applyKunoGamification } from '@/lib/kunoGamification';
 import Toast from '@/components/Toast';
 import { getMicroLesson } from '@/data/lessons';
-import { resolveModuleId } from "@/config/omniKunoModules";
+import { resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
+
+const CATEGORY_TO_MODULE: Record<string, OmniKunoModuleId> = {
+  clarity: "focus_clarity",
+  calm: "emotional_balance",
+  energy: "energy_body",
+  relationships: "relationships_communication",
+  performance: "decision_discernment",
+  health: "energy_body",
+  general: "emotional_balance",
+};
 
 function LessonQuiz({ category }: { category: string }) {
   const { profile } = useProfile();
@@ -43,6 +54,8 @@ function LessonQuiz({ category }: { category: string }) {
 
   if (done) {
     const s = scoreAttempts(attempts);
+    const moduleId = CATEGORY_TO_MODULE[category] ?? "emotional_balance";
+    const omniHref = `/omni-kuno?area=${moduleId}&module=${moduleId}`;
     return (
       <div className="mx-auto max-w-xl rounded-[14px] border border-[#E4DAD1] bg-white p-6 shadow-sm text-center">
         <h2 className="text-xl font-semibold text-[#2C2C2C]">Rezultat micro‑lecție</h2>
@@ -75,6 +88,12 @@ function LessonQuiz({ category }: { category: string }) {
         >
           Salvează și mergi la progress
         </button>
+        <Link
+          href={omniHref}
+          className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[#C07963] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white"
+        >
+          Continuă în OmniKuno
+        </Link>
         {toast ? (
           <div className="fixed bottom-4 left-0 right-0 mx-auto max-w-md px-4">
             <Toast message={toast} okLabel="OK" onClose={() => setToast(null)} />
