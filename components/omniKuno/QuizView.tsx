@@ -62,9 +62,19 @@ export default function QuizView({
       const merged = Array.from(new Set([...existingCompletedIds, lesson.id]));
       const timeSpentSec = Math.max(30, Math.round((Date.now() - startRef.current) / 1000));
       const updatedPerformance = updatePerformanceSnapshot(performanceSnapshot, { score: pct, timeSpentSec });
-      await recordKunoLessonProgress({ moduleId, completedIds: merged, ownerId, performance: updatedPerformance });
+      const xpReward = getQuizXp(pct);
+      const wasFirstCompletion = !existingCompletedIds.includes(lesson.id);
+      await recordKunoLessonProgress({
+        moduleId,
+        completedIds: merged,
+        ownerId,
+        performance: updatedPerformance,
+        xpDelta: wasFirstCompletion ? xpReward : 0,
+        wasFirstCompletion,
+        difficulty: difficultyKey,
+      });
       setCompleted(true);
-      applyKunoXp(areaKey, getQuizXp(pct));
+      applyKunoXp(areaKey, xpReward);
       onCompleted?.(lesson.id, { score: pct, timeSpentSec, updatedPerformance });
     } finally {
       setBusy(false);

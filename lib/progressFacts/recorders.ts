@@ -531,6 +531,9 @@ export async function recordKunoLessonProgress({
   completedIds,
   ownerId,
   performance,
+  xpDelta,
+  wasFirstCompletion,
+  difficulty,
 }: {
   moduleId: string;
   completedIds: string[];
@@ -540,6 +543,9 @@ export async function recordKunoLessonProgress({
     recentTimeSpent?: number[];
     difficultyBias?: number;
   };
+  xpDelta?: number;
+  wasFirstCompletion?: boolean;
+  difficulty?: "easy" | "medium" | "hard";
 }) {
   try {
     const modulePayload = {
@@ -555,16 +561,30 @@ export async function recordKunoLessonProgress({
           }
         : {}),
     };
+    const globalPatch: Record<string, unknown> = {};
+    if (typeof xpDelta === "number" && Number.isFinite(xpDelta) && xpDelta !== 0) {
+      globalPatch.totalXp = increment(Math.floor(xpDelta)) as unknown as number;
+    }
+    if (wasFirstCompletion) {
+      globalPatch.completedLessons = increment(1) as unknown as number;
+    }
+    if (difficulty === "easy" || difficulty === "medium" || difficulty === "hard") {
+      globalPatch.currentDifficulty = difficulty;
+    }
+    const kunoPayload: Record<string, unknown> = {
+      modules: {
+        [moduleId]: modulePayload,
+      },
+      lessons: {
+        [moduleId]: modulePayload,
+      },
+    };
+    if (Object.keys(globalPatch).length > 0) {
+      kunoPayload.global = globalPatch;
+    }
     await recordOmniPatch(
       {
-        kuno: {
-          modules: {
-            [moduleId]: modulePayload,
-          },
-          lessons: {
-            [moduleId]: modulePayload,
-          },
-        },
+        kuno: kunoPayload,
       },
       ownerId,
     );

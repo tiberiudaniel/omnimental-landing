@@ -24,7 +24,7 @@ export const CATEGORY_LABELS: Record<CategoryKeyRO, CategoryLabels> = {
     },
   },
   stres: {
-    name: { ro: "Echilibru emoțional", en: "Calm" },
+    name: { ro: "Echilibru emoțional", en: "Emotional balance" },
     short: { ro: "reglare stres", en: "stress regulation" },
     reflection: {
       ro: "Ce te ajută, în mod realist, să cobori ritmul 10 minute azi?",

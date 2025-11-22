@@ -15,7 +15,7 @@ import { OMNIKUNO_MODULES } from "@/config/omniKunoLessons";
 type KunoAreaKey = keyof typeof OMNIKUNO_MODULES;
 
 const AREA_LABELS_RO: Record<KunoAreaKey, string> = {
-  calm: "Calm emoțional",
+  calm: "Echilibru emoțional",
   energy: "Energie & Somn",
   relations: "Relații & susținere",
   performance: "Performanță",
@@ -23,7 +23,7 @@ const AREA_LABELS_RO: Record<KunoAreaKey, string> = {
 };
 
 const AREA_LABELS_EN: Record<KunoAreaKey, string> = {
-  calm: "Calm & regulation",
+  calm: "Emotional balance & regulation",
   energy: "Energy & sleep",
   relations: "Relationships & support",
   performance: "Performance",

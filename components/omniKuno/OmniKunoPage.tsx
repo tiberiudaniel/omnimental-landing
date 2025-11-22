@@ -14,6 +14,8 @@ import Toast from "@/components/Toast";
 import LessonView from "./LessonView";
 import QuizView from "./QuizView";
 import KunoLessonItem from "./KunoLessonItem";
+import EmotionalBalanceArcIntro from "./EmotionalBalanceArcIntro";
+import TestView from "./TestView";
 import { computeLessonsStatus } from "./useKunoTimeline";
 import { asDifficulty, DIFFICULTY_STYLES, type LessonDifficulty } from "./difficulty";
 import { getLessonDuration, getLessonObjective } from "./lessonUtils";
@@ -51,6 +53,19 @@ const areaFromModuleId = useMemo<ExperienceProps["areaKey"] | null>(() => {
     : null);
   const defaultArea = areaFromQuery ?? areaFromModuleId ?? recommendedArea ?? "calm";
   const [selectedArea, setSelectedArea] = useState<ExperienceProps["areaKey"]>(defaultArea);
+  const [showFinalTest, setShowFinalTest] = useState(false);
+  const [finalTestResult, setFinalTestResult] = useState<{ correct: number; total: number } | null>(null);
+  const resetFinalTestState = useCallback(() => {
+    setShowFinalTest(false);
+    setFinalTestResult(null);
+  }, []);
+  const handleAreaSelect = useCallback(
+    (nextArea: ExperienceProps["areaKey"]) => {
+      resetFinalTestState();
+      setSelectedArea(nextArea);
+    },
+    [resetFinalTestState],
+  );
   useEffect(() => {
     setSelectedArea(defaultArea);
   }, [defaultArea]);
@@ -88,7 +103,7 @@ const areaStats = useMemo(() => {
   const areaLabelMap = useMemo<Record<ExperienceProps["areaKey"], string>>(() => {
     if (lang === "ro") {
       return {
-        calm: "Calm",
+        calm: "Echilibru emoțional",
         energy: "Energie",
         relations: "Relații",
         performance: "Performanță",
@@ -96,7 +111,7 @@ const areaStats = useMemo(() => {
       };
     }
     return {
-      calm: "Calm",
+      calm: "Emotional balance",
       energy: "Energy",
       relations: "Relationships",
       performance: "Performance",
@@ -200,7 +215,7 @@ const areaStats = useMemo(() => {
                   <li key={module.moduleId}>
                     <button
                       type="button"
-                      onClick={() => setSelectedArea(key)}
+                      onClick={() => handleAreaSelect(key)}
                       className={`w-full rounded-lg border px-3 py-2 text-left transition ${
                         isActive ? "border-[#C07963] bg-[#FFF4EE] shadow-[0_10px_25px_rgba(192,121,99,0.08)]" : "border-[#F0E8E0] hover:border-[#E3D3C7]"
                       }`}
@@ -236,6 +251,7 @@ const areaStats = useMemo(() => {
           </aside>
 
           <section className="space-y-4">
+            {activeAreaKey === "calm" ? <EmotionalBalanceArcIntro /> : null}
             <ModuleExperience
               key={moduleStateKey}
               areaKey={activeAreaKey}
@@ -245,6 +261,10 @@ const areaStats = useMemo(() => {
               initialPerformance={normalizedPerformance}
               onActiveLessonChange={handleActiveLessonChange}
               onToast={setToastMsg}
+              showFinalTest={showFinalTest}
+              finalTestResult={finalTestResult}
+              onToggleFinalTest={setShowFinalTest}
+              onFinalTestComplete={(result) => setFinalTestResult(result)}
             />
           </section>
         </div>
@@ -263,6 +283,10 @@ type ExperienceProps = {
   initialPerformance: KunoPerformanceSnapshot;
   onActiveLessonChange?: (meta: { id: string; difficulty: LessonDifficulty } | null) => void;
   onToast?: (message: string) => void;
+  showFinalTest?: boolean;
+  finalTestResult?: { correct: number; total: number } | null;
+  onToggleFinalTest?: (value: boolean) => void;
+  onFinalTestComplete?: (result: { correct: number; total: number }) => void;
 };
 
 function ModuleExperience({
@@ -273,37 +297,36 @@ function ModuleExperience({
   initialPerformance,
   onActiveLessonChange,
   onToast,
+  showFinalTest = false,
+  finalTestResult = null,
+  onToggleFinalTest,
+  onFinalTestComplete,
 }: ExperienceProps) {
   const { t, lang } = useI18n();
   const [localCompleted, setLocalCompleted] = useState<string[]>(() => completedIdsFromFacts);
   const [localPerformance, setLocalPerformance] = useState<KunoPerformanceSnapshot>(initialPerformance);
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(() => {
-    const initialTimeline = computeLessonsStatus(module.lessons, completedIdsFromFacts, initialPerformance);
-    const active = initialTimeline.find((item) => item.status === "active") ?? initialTimeline[0];
-    return active?.id ?? null;
-  });
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const timeline = useMemo(
     () => computeLessonsStatus(module.lessons, localCompleted, localPerformance),
     [module.lessons, localCompleted, localPerformance],
   );
+  const moduleCompleted = useMemo(() => timeline.every((item) => item.status === "done"), [timeline]);
   const completedCount = useMemo(() => timeline.filter((item) => item.status === "done").length, [timeline]);
   const completionPct = timeline.length ? Math.round((completedCount / timeline.length) * 100) : 0;
   const timelineIdSet = useMemo(() => new Set(timeline.map((item) => item.id)), [timeline]);
-  const activeTimelineId = useMemo(() => timeline.find((item) => item.status === "active")?.id ?? null, [timeline]);
   const resolvedLessonId = useMemo(() => {
     if (selectedLessonId && timelineIdSet.has(selectedLessonId)) {
       return selectedLessonId;
     }
-    return activeTimelineId;
-  }, [selectedLessonId, timelineIdSet, activeTimelineId]);
+    return null;
+  }, [selectedLessonId, timelineIdSet]);
   const resolvedLesson = useMemo(() => {
     if (resolvedLessonId) {
       const explicit = module.lessons.find((lesson) => lesson.id === resolvedLessonId);
       if (explicit) return explicit;
     }
-    const activeFallback = timeline.find((item) => item.status === "active");
-    return activeFallback ? module.lessons.find((lesson) => lesson.id === activeFallback.id) ?? null : null;
-  }, [module.lessons, resolvedLessonId, timeline]);
+    return null;
+  }, [module.lessons, resolvedLessonId]);
   useEffect(() => {
     if (!onActiveLessonChange) return;
     if (resolvedLesson) {
@@ -322,9 +345,7 @@ function ModuleExperience({
       setLocalCompleted((prev) => {
         if (prev.includes(lessonId)) return prev;
         const next = [...prev, lessonId];
-        const refreshed = computeLessonsStatus(module.lessons, next, performanceForNext);
-        const nextActive = refreshed.find((item) => item.status === "active");
-        setSelectedLessonId(nextActive?.id ?? lessonId);
+        setSelectedLessonId(null);
         return next;
       });
       if (meta?.updatedPerformance) {
@@ -375,7 +396,7 @@ function ModuleExperience({
             const difficultyKey = asDifficulty(item.difficulty);
             const difficultyLabel = String(t(`omnikuno.difficulty.${difficultyKey}Label`));
             const difficultyShort = String(t(`omnikuno.difficulty.${difficultyKey}Short`));
-            const isActive = resolvedLessonId ? resolvedLessonId === item.id : item.status === "active";
+            const isOpen = resolvedLessonId ? resolvedLessonId === item.id : false;
             const objective = String(getLessonObjective(lessonDef, lang));
             return (
               <KunoLessonItem
@@ -388,7 +409,7 @@ function ModuleExperience({
                   status: item.status,
                   difficulty: difficultyKey,
                 }}
-                isActive={Boolean(isActive)}
+                isActive={Boolean(isOpen)}
                 disabled={disabled}
                 onSelect={() => {
                   if (!disabled) setSelectedLessonId(item.id);
@@ -408,7 +429,7 @@ function ModuleExperience({
                     </div>
                     <div
                       className={`flex-1 rounded-xl border px-3 py-2 ${
-                        isActive ? "border-[#C07963] bg-white" : "border-[#F0E8E0]"
+                        isOpen ? "border-[#C07963] bg-white" : "border-[#F0E8E0]"
                       }`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -430,7 +451,7 @@ function ModuleExperience({
                           {renderEffortBadges(module, item.id, lang)}
                         </div>
                       </div>
-                      <p className="mt-2 text-[11px] text-[#7B6B60]">{objective}</p>
+                      {!isOpen ? <p className="mt-2 text-[11px] text-[#7B6B60]">{objective}</p> : null}
                     </div>
                   </div>
                 }
@@ -461,6 +482,41 @@ function ModuleExperience({
           })}
         </div>
       </div>
+      {areaKey === "calm" && moduleCompleted ? (
+        <div className="space-y-3 rounded-2xl border border-[#E4DAD1] bg-[#FFFBF7] p-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">Finalizare modul</p>
+            <h3 className="text-lg font-semibold text-[#2C2C2C]">Ai parcurs toate lecțiile Echilibru Emoțional</h3>
+            <p className="text-sm text-[#4D3F36]">
+              Încheie călătoria cu mini-testul calm_final_test pentru a fixa claritatea obținută.
+            </p>
+          </div>
+          {!showFinalTest ? (
+            <button
+              type="button"
+              onClick={() => onToggleFinalTest?.(true)}
+              className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white"
+            >
+              Mini-test Emotional Balance
+            </button>
+          ) : (
+            <TestView
+              testId="calm_final_test"
+              onCompleted={(result) => {
+                onFinalTestComplete?.(result);
+                if (onToast) {
+                  onToast(`Mini-test finalizat (${result.correct}/${result.total}).`);
+                }
+              }}
+            />
+          )}
+          {finalTestResult ? (
+            <div className="rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-2 text-sm text-[#1F3C2F]">
+              Felicitări! Ai închis modulul cu {finalTestResult.correct} răspunsuri corecte din {finalTestResult.total}. Continuă practica liniștită în viața de zi cu zi.
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </>
   );
 }

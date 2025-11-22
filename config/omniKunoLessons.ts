@@ -6,6 +6,8 @@ export type OmniKunoLesson = {
   type: OmniKunoLessonType;
   title: string;
   summary: string;
+  content?: string;
+  screensCount?: number;
   durationMin?: number;
   quizTopicKey?: string;
   difficulty?: "easy" | "medium" | "hard";
@@ -18,15 +20,48 @@ export type OmniKunoModuleConfig = {
 };
 
 const calmLevel1Lessons: OmniKunoLesson[] = [
-  { id: "calm_l1_01_foundations", order: 1, type: "lesson", title: "Ce este calmul activ", summary: "Definim clar diferența dintre calm și pasivitate și ce înseamnă să păstrezi claritatea în momente tensionate.", durationMin: 6, difficulty: "easy" },
-  { id: "calm_l1_02_checkin", order: 2, type: "lesson", title: "Mini check-in de 90 secunde", summary: "Tehnică rapidă din onboarding pentru a scana corpul, respirația și gândurile înainte de o decizie.", durationMin: 4 },
-  { id: "calm_l1_03_trigger_map", order: 3, type: "lesson", title: "Harta declanșatorilor", summary: "Identifici 3 situații tipice care îți ridică pulsul și schițezi reacția firească vs reacția dorită.", durationMin: 7 },
-  { id: "calm_l1_04_resp_sync", order: 4, type: "lesson", title: "Respirație sincronizată 4-2-6", summary: "Protocol scurt pentru reglarea pulsului și a tonusului nervos în maximum două minute.", durationMin: 5 },
-  { id: "calm_l1_05_micro_breaks", order: 5, type: "lesson", title: "Micro-pauze în agenda reală", summary: "Cum programezi pauze de 60 secunde în calendarul aglomerat pentru a preveni avalanșa emoțională.", durationMin: 6 },
-  { id: "calm_l1_06_story_line", order: 6, type: "lesson", title: "Povestea din cap vs faptele", summary: "Instrument din OmniKuno pentru separarea emoției de interpretarea automată.", durationMin: 6 },
-  { id: "calm_l1_07_evening_reset", order: 7, type: "lesson", title: "Reset seara în 3 pași", summary: "Mic ritual de închidere a zilei: evacuare tensiune, recunoaștere progres, plan minimal pentru mâine.", durationMin: 8 },
+  {
+    id: "calm_l1_01_foundations",
+    order: 1,
+    type: "lesson",
+    title: "Fundamentele calmului activ",
+    summary: "Ce înseamnă echilibrul emoțional modern și cum se deosebește de pasivitate sau evitare.",
+    durationMin: 6,
+    difficulty: "easy",
+    screensCount: 5,
+  },
+  {
+    id: "calm_l1_02_triggers",
+    order: 2,
+    type: "lesson",
+    title: "Maparea declanșatorilor",
+    summary: "Identifici situațiile concrete care îți cresc pulsul și pregătești un răspuns conștient.",
+    durationMin: 6,
+    screensCount: 5,
+  },
+  {
+    id: "calm_l1_03_body_scan",
+    order: 3,
+    type: "lesson",
+    title: "Body scan de 2 minute",
+    summary: "Un protocol rapid pentru a observa semnalele corpului înainte de reacții impulsive.",
+    durationMin: 5,
+    screensCount: 5,
+  },
+  {
+    id: "calm_l1_04_micro_choices",
+    order: 4,
+    type: "lesson",
+    title: "Micro alegeri calm-activ",
+    summary: "Cum montezi micro-pauze și ancore în zi pentru a rămâne centrat chiar și sub presiune.",
+    durationMin: 6,
+    screensCount: 5,
+  },
+  { id: "calm_l1_05_micro_breaks", order: 5, type: "lesson", title: "Micro-pauze în agenda reală", summary: "Cum programezi pauze de 60 secunde în calendarul aglomerat pentru a preveni avalanșa emoțională.", durationMin: 6, screensCount: 5 },
+  { id: "calm_l1_06_story_line", order: 6, type: "lesson", title: "Povestea din cap vs faptele", summary: "Instrument din OmniKuno pentru separarea emoției de interpretarea automată.", durationMin: 6, screensCount: 5 },
+  { id: "calm_l1_07_evening_reset", order: 7, type: "lesson", title: "Reset seara în 3 pași", summary: "Mic ritual de închidere a zilei: evacuare tensiune, recunoaștere progres, plan minimal pentru mâine.", durationMin: 8, screensCount: 5 },
   { id: "calm_l1_q1", order: 8, type: "quiz", title: "Quiz: Indicatori de calm interior", summary: "5 întrebări care verifică dacă recunoști semnalele somatice și cognitive asociate calmului activ.", quizTopicKey: "kuno_calm_intro", difficulty: "hard" },
-  { id: "calm_l1_08_micro_commit", order: 9, type: "lesson", title: "Micro-angajament zilnic", summary: "Îți alegi „ancora” calmă pentru următoarele 7 zile (de ex. respirație + notițe).", durationMin: 5 },
+  { id: "calm_l1_08_micro_commit", order: 9, type: "lesson", title: "Micro-angajament zilnic", summary: "Îți alegi „ancora” calmă pentru următoarele 7 zile (de ex. respirație + notițe).", durationMin: 5, screensCount: 5 },
   { id: "calm_l1_q2", order: 10, type: "quiz", title: "Quiz: Scenarii reale", summary: "Simulări cu 4 scenarii pentru a valida cum aplici tehnicile când apare un conflict.", quizTopicKey: "kuno_calm_scenarios", difficulty: "hard" },
 ];
 

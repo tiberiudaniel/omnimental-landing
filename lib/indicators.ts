@@ -84,7 +84,7 @@ export const INDICATOR_CHART_KEYS: IndicatorChartKey[] = [
 export const INDICATOR_LABELS: Record<IndicatorChartKey, { ro: string; en: string }> = {
   clarity: { ro: 'Claritate mentală', en: 'Clarity' },
   relationships: { ro: 'Relații', en: 'Relationships' },
-  calm: { ro: 'Echilibru emoțional', en: 'Calm' },
+  calm: { ro: 'Echilibru emoțional', en: 'Emotional balance' },
   energy: { ro: 'Energie fizică', en: 'Energy' },
   performance: { ro: 'Performanță', en: 'Performance' },
 };

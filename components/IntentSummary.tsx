@@ -140,7 +140,7 @@ export default function IntentSummary({
       ? "Cât de urgent simți să lucrezi la aceste teme?"
       : "How urgent does it feel to work on these themes?",
   );
-  const urgencyLow = getTextMulti(["intentMotivationIntensityLow", "intentSummaryIntensityLow"], lang === "ro" ? "Relaxat" : "Calm");
+  const urgencyLow = getTextMulti(["intentMotivationIntensityLow", "intentSummaryIntensityLow"], lang === "ro" ? "Relaxat" : "Balanced");
   const urgencyHigh = getTextMulti(
     ["intentMotivationIntensityHigh", "intentSummaryIntensityHigh"],
     lang === "ro" ? "Foarte urgent" : "Very urgent",

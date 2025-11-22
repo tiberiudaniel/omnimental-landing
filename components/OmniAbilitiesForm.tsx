@@ -142,7 +142,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
             ["tempo", lang === "ro" ? "Tempo 5–6/min" : "Tempo 5–6/min"],
             ["diaphragm", lang === "ro" ? "Respirație diafragmatică" : "Diaphragm breathing"],
             ["exhale", lang === "ro" ? "Expirație prelungită" : "Extended exhale"],
-            ["calm", lang === "ro" ? "Calm perceput" : "Perceived calm"],
+            ["calm", lang === "ro" ? "Echilibru emoțional perceput" : "Perceived emotional balance"],
             ["coherence", lang === "ro" ? "Coerență ritmică" : "Rhythmic coherence"],
           ] as const).map(([key, label]) => (
             <label key={key} className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
@@ -306,7 +306,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
           {([
             ["zeroSwitch", lang === "ro" ? "Zero switch" : "Zero switch"],
             ["completion", lang === "ro" ? "Completare task" : "Task completion"],
-            ["calm", lang === "ro" ? "Calm/Atenție" : "Calm/Presence"],
+            ["calm", lang === "ro" ? "Echilibru/Atenție" : "Emotional balance/presence"],
           ] as const).map(([key, label]) => (
             <label key={key} className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
               {label}

@@ -139,8 +139,8 @@ export function adaptProgressFacts(facts: unknown): ProgressData {
   if (clarity > 60) strengths.push("Claritate mentală");
   else weaknesses.push("Claritate scăzută");
 
-  if (calm > 60) strengths.push("Calm emoțional");
-  else weaknesses.push("Calm redus");
+  if (calm > 60) strengths.push("Echilibru emoțional");
+  else weaknesses.push("Echilibru emoțional redus");
 
   if (energy > 60) strengths.push("Vitalitate");
   else weaknesses.push("Energy scăzută");

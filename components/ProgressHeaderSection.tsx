@@ -32,7 +32,7 @@ export default function ProgressHeaderSection({ lang, progress, omniIntelScore, 
     const scores = computeDimensionScores(categories, urgency);
     return [
       { title: lang === "ro" ? "Clarity Index" : "Clarity Index", value: scores.focus },
-      { title: lang === "ro" ? "Calm Index" : "Calm Index", value: scores.calm },
+      { title: lang === "ro" ? "Index Echilibru emoțional" : "Emotional balance index", value: scores.calm },
       { title: lang === "ro" ? "Vitality Index" : "Vitality Index", value: scores.energy },
     ];
   })();

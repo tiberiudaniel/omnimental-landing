@@ -360,7 +360,7 @@ export default function ProgressDashboard({
     const catLabelMap: Record<string, string> = {
       clarity: lang === "ro" ? "Claritate mentală" : "Clarity",
       focus: lang === "ro" ? "Claritate mentală" : "Clarity",
-      calm: lang === "ro" ? "Echilibru emoțional" : "Calm",
+      calm: lang === "ro" ? "Echilibru emoțional" : "Emotional balance",
       energy: lang === "ro" ? "Energie fizică" : "Energy",
       relationships: lang === "ro" ? "Relații" : "Relationships",
       performance: lang === "ro" ? "Performanță" : "Performance",
@@ -368,7 +368,7 @@ export default function ProgressDashboard({
       identity: lang === "ro" ? "Identitate" : "Identity",
       anxiety: lang === "ro" ? "Anxietate" : "Anxiety",
       stress: lang === "ro" ? "Stres" : "Stress",
-      balance: lang === "ro" ? "Echilibru emoțional" : "Calm",
+      balance: lang === "ro" ? "Echilibru emoțional" : "Emotional balance",
     };
     const normalizedCategory = topCategory ? topCategory.toLowerCase() : undefined;
     const areaFromIntent = topCategory ? catLabelMap[topCategory] ?? topCategory : undefined;

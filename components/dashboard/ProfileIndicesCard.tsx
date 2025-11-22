@@ -131,7 +131,7 @@ function renderMasterySegments(lang: string, omni: OmniBlock | undefined) {
   if (!masterySegments.length) return null;
   const labelMap: Record<string, string> = {
     clarity: lang === "ro" ? "Claritate mentală" : "Clarity",
-    calm: lang === "ro" ? "Echilibru emoțional" : "Calm",
+    calm: lang === "ro" ? "Echilibru emoțional" : "Emotional balance",
     energy: lang === "ro" ? "Energie fizică" : "Energy",
     relationships: lang === "ro" ? "Relații" : "Relationships",
     performance: lang === "ro" ? "Performanță" : "Performance",

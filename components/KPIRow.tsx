@@ -11,7 +11,8 @@ type KPIItem = {
 export default function KPIRow({ items }: { items: KPIItem[] }) {
   const hints: Record<string, string> = {
     "Clarity Index": "Claritate & focus (teme legate de focalizare)",
-    "Calm Index": "Calm & reglare (stres/anxietate)",
+    "Index Echilibru emoțional": "Echilibru emoțional & reglare",
+    "Emotional balance index": "Emotional balance & regulation",
     "Vitality Index": "Energie & reziliență",
   };
   return (
