@@ -267,14 +267,14 @@ function ArcIntroCard({
   const zoneLabel = zoneIndex >= 0 ? `Zona ${zoneIndex + 1}` : "Zona";
   const containerClasses =
     variant === "compact"
-      ? "rounded-2xl border border-[#E7DED3] bg-white/80 px-4 py-3 text-sm"
-      : "rounded-3xl border border-[#E7DED3] bg-white/80 px-4 py-4 text-base";
+      ? "rounded-2xl border border-[#E7DED3] bg-white/85 px-4 py-3 text-sm"
+      : "rounded-3xl border border-[#E7DED3] bg-white/85 px-4 py-4 text-base";
   return (
     <div className={`${containerClasses} text-[#2C2C2C] shadow-sm`}>
       <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">
         {zoneLabel} · {arc.title}
       </p>
-      <p className="mt-1 text-sm text-[#4D3F36]">{arc.body}</p>
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#4D3F36]">{arc.body}</p>
     </div>
   );
 }
@@ -515,6 +515,8 @@ const areaStats = useMemo(() => {
     lang === "ro"
       ? `XP: ${totalXp} · Nivel ${kunoLevel} · ${nextLevelCopy}`
       : `XP: ${totalXp} · Level ${kunoLevel} · ${nextLevelCopy}`;
+  const headerMetaSummary = `${headerProgressSummary} · ${headerXpSummary}`;
+  const moduleLevelLabel = lang === "ro" ? "Nivel 1" : "Level 1";
 
   const goToAuth = useCallback(() => router.push("/auth"), [router]);
 
@@ -531,10 +533,14 @@ const areaStats = useMemo(() => {
           <KunoContainer>
             <div className="space-y-4" data-testid="omni-kuno-header">
               <KunoModuleHeader
-                title={lang === "ro" ? "Tema ta în focus" : "Your focus mission"}
+                title={
+                  lang === "ro"
+                    ? "Acumulează cunoaștere pe tema"
+                    : "Accumulate knowledge on"
+                }
                 focusLabel={focusLabel}
-                progressLabel={headerProgressSummary}
-                xpLabel={headerXpSummary}
+                moduleLevelLabel={moduleLevelLabel}
+                progressSummary={headerMetaSummary}
                 adaptiveMessage={adaptiveMessage}
                 onDismissAdaptive={() => setAdaptiveMessage(null)}
               />
@@ -560,12 +566,13 @@ const areaStats = useMemo(() => {
                 const isActive = key === activeAreaKey;
                 const stat = areaStats[key];
                 const isRecommended = recommendedArea === key;
+                const levelBadge = lang === "ro" ? "Nivel 1" : "Level 1";
                 return (
                   <li key={module.moduleId}>
                     <button
                       type="button"
                       onClick={() => handleAreaSelect(key)}
-                      className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+                      className={`w-full rounded-2xl border px-3.5 py-3 text-left transition ${
                         isActive ? "border-[#C07963] bg-[#FFF4EE] shadow-[0_10px_25px_rgba(192,121,99,0.08)]" : "border-[#F0E8E0] hover:border-[#E3D3C7]"
                       }`}
                     >
@@ -577,7 +584,7 @@ const areaStats = useMemo(() => {
                               {lang === "ro" ? "Recomandat" : "Recommended"}
                             </span>
                           ) : null}
-                          <span className={`text-xs ${isActive ? "text-[#C07963]" : "text-[#A08F82]"}`}>Nivel 1</span>
+                          <span className={`text-xs font-semibold ${isActive ? "text-[#C07963]" : "text-[#A08F82]"}`}>{levelBadge}</span>
                         </div>
                       </div>
                       <div className="mt-1 flex items-center justify-between text-[11px] text-[#7B6B60]">
@@ -604,7 +611,6 @@ const areaStats = useMemo(() => {
               key={moduleStateKey}
               areaKey={activeAreaKey}
               module={activeModule}
-              xpLabel={headerXpSummary}
               profileId={profile?.id}
               completedIdsFromFacts={completedIdsFromFacts}
               initialPerformance={normalizedPerformance}
@@ -642,7 +648,6 @@ type ExperienceProps = {
   onToggleFinalTest?: (value: boolean) => void;
   onFinalTestComplete?: (result: { correct: number; total: number }) => void;
   finalTestConfig?: ModuleFinalTestContent | null;
-  xpLabel?: string;
 };
 
 function ModuleExperience({
@@ -660,11 +665,8 @@ function ModuleExperience({
   onToggleFinalTest,
   onFinalTestComplete,
   finalTestConfig = null,
-  xpLabel,
 }: ExperienceProps) {
   const { t, lang } = useI18n();
-  const fallbackXpLabel = lang === "ro" ? "XP actualizat" : "XP updated";
-  const xpDisplay = xpLabel ?? fallbackXpLabel;
   const [localCompleted, setLocalCompleted] = useState<string[]>(() => completedIdsFromFacts);
   const [localPerformance, setLocalPerformance] = useState<KunoPerformanceSnapshot>(initialPerformance);
   const timeline = useMemo(
@@ -751,18 +753,16 @@ function ModuleExperience({
     <div className="space-y-8">
       <KunoContainer align="left">
         <KunoActivePanel
-          progress={
-            <p>
-              {lang === "ro" ? "Progres" : "Progress"}: {completedCount} / {timeline.length}{" "}
-              {lang === "ro" ? "misiuni" : "missions"}
-            </p>
+          progressSummary={
+            lang === "ro"
+              ? `Progres: ${completedCount}/${timeline.length} misiuni`
+              : `Progress: ${completedCount}/${timeline.length} missions`
           }
-          xpLabel={xpDisplay}
           nextLessonTitle={resolvedLesson?.title ?? null}
           onContinue={resolvedLesson ? () => onLessonSelect?.(resolvedLesson.id) : undefined}
           disabled={!resolvedLesson}
         >
-          <div className="mt-4 h-2 rounded-full bg-[#F4EDE4]">
+          <div className="h-2 rounded-full bg-[#F4EDE4]">
             <div className="h-2 rounded-full bg-[#C07963]" style={{ width: `${Math.min(100, completionPct)}%` }} />
           </div>
         </KunoActivePanel>

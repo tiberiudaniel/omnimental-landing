@@ -3,6 +3,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { fadeDelayed, hoverScale } from "@/components/dashboard/motionPresets";
+import InfoTooltip from "@/components/InfoTooltip";
 import type { OmniKunoModuleConfig } from "@/config/omniKunoLessons";
 import { computeLessonsStatus } from "@/components/omniKuno/useKunoTimeline";
 import type { KunoPerformanceSnapshot } from "@/lib/omniKunoAdaptive";
@@ -43,20 +44,14 @@ export default function KunoMissionCard({ lang, focusAreaLabel, omniCunoScore, k
   const moduleQuery = missionData ? `&module=${encodeURIComponent(missionData.module.moduleId)}` : "";
   const lessonQuery = activeLesson ? `&lesson=${encodeURIComponent(activeLesson.id)}` : "";
   const ctaHref = missionData ? `/omni-kuno?area=${areaParam}${moduleQuery}${lessonQuery}` : "/omni-kuno";
-  const startIndex = (() => {
-    const idx = timeline.findIndex((item) => item.status !== "done");
-    if (idx === -1) return Math.max(timeline.length - 3, 0);
-    return Math.max(idx, 0);
-  })();
-  const missionsPreview = timeline.slice(startIndex, startIndex + 3);
   const scoreDelta =
     kunoDelta != null && Number.isFinite(kunoDelta)
       ? `${kunoDelta >= 0 ? "+" : ""}${Math.round(kunoDelta)}`
       : null;
 
   const statusLine = lang === "ro"
-    ? `Lecții finalizate: ${completedCount}/${totalLessons} · XP: ${xp}`
-    : `Lessons completed: ${completedCount}/${totalLessons} · XP: ${xp}`;
+    ? `Lecții finalizate: ${completedCount}/${totalLessons}`
+    : `Lessons completed: ${completedCount}/${totalLessons}`;
 
   return (
     <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
@@ -64,80 +59,107 @@ export default function KunoMissionCard({ lang, focusAreaLabel, omniCunoScore, k
         className="rounded-2xl border border-[#E4DAD1] bg-[#FFFBF7] px-3 py-3 shadow-sm sm:px-4 sm:py-4"
         data-testid="dashboard-kuno-card"
       >
-        <header className="flex flex-col gap-1">
-          <p className="text-xs font-semibold text-[#7B6B60] sm:text-sm">OmniKuno – {lang === "ro" ? "Misiunea ta de azi" : "Your mission today"}</p>
-          <p className="text-sm font-semibold text-[#2C2C2C] sm:text-base">
-            {lang === "ro" ? "Tema în focus" : "Focus theme"}: <span className="text-[#C07963]">· {focusLabel}</span>
+        <header className="rounded-2xl border border-[#F0E8E0] bg-white/85 px-3 py-3">
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">
+            <span className="rounded-full bg-[#FFF3EC] px-2 py-0.5 text-[#C07963]">OmniKuno</span>
+            <span>{lang === "ro" ? "Misiunea ta de azi" : "Your mission today"}</span>
+          </div>
+          <p className="mt-2 text-[14px] font-semibold text-[#2C2C2C] sm:text-base">
+            {lang === "ro" ? "Acumulează cunoaștere pe tema" : "Accumulate knowledge on"}{" "}
+            <span className="text-[#C07963]">· {focusLabel}</span>
           </p>
-          <p className="text-[11px] text-[#6A6A6A] sm:text-[12px]">
+          <p className="mt-1 text-[11px] italic text-[#4D3F36] sm:text-[12px]">
             {lang === "ro"
-              ? `Misiunea este să acumulezi cunoștințe pe ${moduleLabel ?? focusLabel}.`
-              : `Your mission is to build knowledge on ${moduleLabel ?? focusLabel}.`}
-          </p>
+              ? "Cunoașterea îți dă puterea de a alege."
+              : "Knowledge gives you the power to choose."}
+         </p>
         </header>
 
-        <div className="mt-3 rounded-2xl border border-dashed border-[#E4DAD1] bg-white/70 px-3 py-2 text-sm font-semibold text-[#2C2C2C]">
+        <div className="mt-4 rounded-2xl border border-[#E4DAD1] bg-white px-3 py-3 text-[12px] font-semibold text-[#2C2C2C]">
           {statusLine}
         </div>
-        {activeLesson ? (
-          <div className="mt-3 rounded-2xl border border-[#E4DAD1] bg-white px-3 py-2 text-sm text-[#4D3F36]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B08A78]">
-              {lang === "ro" ? "Următorul pas recomandat" : "Next best step"}
-            </p>
-            <p className="mt-1 text-sm font-semibold text-[#2C2C2C]">{activeLesson.title}</p>
-          </div>
-        ) : null}
-        <div className="mt-2 flex items-center gap-2 text-[11px] text-[#7B6B60] sm:text-[12px]">
-          <span>
-            {lang === "ro" ? "Scor" : "Score"}: {omniCunoScore}
-          </span>
-          {scoreDelta ? (
-            <span className={`font-semibold ${Number(kunoDelta) >= 0 ? "text-[#1F7A43]" : "text-[#B8000E]"}`}>{scoreDelta}</span>
-          ) : null}
-        </div>
-
-        <div className="mt-4 space-y-2">
-          {missionsPreview.length ? (
-            missionsPreview.map((mission) => (
-              <div key={mission.id} className="flex items-start gap-3 rounded-2xl border border-[#F0E8E0] bg-white px-3 py-2">
-                <span
-                  className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold ${
-                    mission.status === "done"
-                      ? "border-[#1F7A43] bg-[#ECF8F0] text-[#1F7A43]"
-                      : mission.status === "active"
-                        ? "border-[#C07963] bg-[#FFF3EC] text-[#C07963]"
-                        : "border-dashed border-[#D8C7B9] text-[#A08F82]"
-                  }`}
-                >
-                  {mission.status === "done" ? "✓" : mission.status === "active" ? "▶" : "…"}
-                </span>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#2C2C2C]">{mission.title}</p>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-[#A08F82]">
-                    {mission.type === "quiz" ? (lang === "ro" ? "Quiz" : "Quiz") : lang === "ro" ? "Lecție" : "Lesson"}
-                  </p>
-                </div>
+        <div className="mt-4 rounded-2xl border border-[#E4DAD1] bg-white px-4 py-4 text-sm text-[#4D3F36]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B08A78]">
+            {lang === "ro" ? "Următorul pas" : "Next step"}
+          </p>
+          {activeLesson ? (
+            <div className="mt-3 flex items-center gap-3">
+              <span
+                className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold ${
+                  activeLesson.type === "quiz"
+                    ? "border-[#C07963] bg-[#FFF3EC] text-[#C07963]"
+                    : "border-[#1F7A43] bg-[#ECF8F0] text-[#1F7A43]"
+                }`}
+              >
+                ▶
+              </span>
+              <div>
+                <p className="text-base font-semibold text-[#2C2C2C] leading-tight">{activeLesson.title}</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[#A08F82]">
+                  {activeLesson.type === "quiz" ? (lang === "ro" ? "Quiz" : "Quiz") : lang === "ro" ? "Lecție" : "Lesson"}
+                </p>
               </div>
-            ))
+            </div>
           ) : (
-            <p className="text-[12px] text-[#7B6B60]">
-              {lang === "ro" ? "Nu avem încă misiuni pentru această temă." : "No missions available for this focus yet."}
+            <p className="mt-2 text-[12px] text-[#7B6B60]">
+              {lang === "ro" ? "Nu avem momentan un pas activ." : "No active step right now."}
             </p>
           )}
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <Link
-            href="/omni-kuno"
-            className="text-[11px] font-semibold text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline"
-          >
-            {lang === "ro" ? "Vezi toate misiunile" : "View all missions"}
-          </Link>
+        <div className="mt-4 flex justify-center">
           <Link
             href={ctaHref}
-            className="inline-flex items-center justify-center rounded-full bg-[#2C2C2C] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#C07963]"
+            className="inline-flex w-full max-w-sm items-center justify-center rounded-full bg-gradient-to-b from-[#C07963] to-[#B36654] px-5 py-3 text-base font-semibold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(192,121,99,0.35)] transition hover:brightness-110 hover:shadow-[0_12px_26px_rgba(192,121,99,0.4)] active:translate-y-[1px]"
           >
-            {lang === "ro" ? "Continuă misiunea OmniKuno" : "Continue OmniKuno mission"}
+            {lang === "ro" ? "Continuă misiunea" : "Continue mission"}
+          </Link>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-[#E4DAD1] bg-white px-4 py-3 text-sm text-[#4D3F36]">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B08A78]">
+              {lang === "ro" ? "Indicatori recenți" : "Recent indicators"}
+            </p>
+            <InfoTooltip
+              items={[
+                lang === "ro"
+                  ? "XP arată câți pași (lecții + quiz-uri) ai finalizat recent, iar scorul adaptiv arată calitatea și ritmul ultimelor sesiuni."
+                  : "XP shows how many steps (lessons + quizzes) you completed recently, while the adaptive score reflects the quality and rhythm of your latest sessions.",
+              ]}
+              label={lang === "ro" ? "Detalii indicatori" : "Indicator details"}
+            />
+          </div>
+          <div className="mt-3 space-y-2 text-[12px] text-[#2C2C2C]">
+            <div className="flex items-center justify-between">
+              <p className="text-[12px] font-semibold text-[#7B6B60]">
+                {lang === "ro" ? "XP (Pași finalizați)" : "XP (Steps completed)"}
+              </p>
+              <p className="text-[13px] font-semibold">{xp}</p>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[12px] font-semibold text-[#7B6B60]">
+                {lang === "ro" ? "Scor adaptiv" : "Adaptive score"}
+              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-[13px] font-semibold">{omniCunoScore}</p>
+                {scoreDelta ? (
+                  <p className={`text-[11px] font-semibold ${Number(kunoDelta) >= 0 ? "text-[#1F7A43]" : "text-[#B8000E]"}`}>
+                    {lang === "ro" ? "Progres: " : "Progress: "}
+                    {scoreDelta}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 pb-4">
+          <Link
+            href="/omni-kuno"
+            className="inline-flex items-center text-[11px] font-semibold text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline"
+          >
+            {lang === "ro" ? "Vezi toate misiunile" : "View all missions"}
           </Link>
         </div>
       </Card>

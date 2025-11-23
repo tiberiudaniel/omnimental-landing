@@ -6,10 +6,12 @@ import { fadeDelayed, hoverScale } from "@/components/dashboard/motionPresets";
 import { getString } from "@/lib/i18nGetString";
 import type { ProgressFact } from "@/lib/progressFacts";
 import type { useI18n } from "@/components/I18nProvider";
-import { toMsLocal } from "@/lib/dashboard/progressSelectors";
 import type { Dispatch, SetStateAction } from "react";
 import type { adaptProgressFacts } from "@/lib/progressAdapter";
 import type { getDailyInsight } from "@/lib/insights";
+import type { extractSessions } from "@/lib/progressAnalytics";
+import { TodayGuidanceCard } from "./CenterColumnCards";
+import { buildOmniAbilSnapshot, type OmniAbilSnapshot } from "./omniAbilSnapshot";
 
 type SidebarCardsProps = {
   debugGrid?: boolean;
@@ -25,6 +27,10 @@ type SidebarCardsProps = {
   setAchvDismissed: Dispatch<SetStateAction<boolean>>;
   insight: ReturnType<typeof getDailyInsight>;
   prog: ReturnType<typeof adaptProgressFacts>;
+  sessions: ReturnType<typeof extractSessions>;
+  refMs: number;
+  currentFocusTag?: string;
+  nowAnchor: number;
 };
 
 export default function SidebarCards({
@@ -41,24 +47,44 @@ export default function SidebarCards({
   setAchvDismissed,
   insight,
   prog,
+  sessions,
+  refMs,
+  currentFocusTag,
+  nowAnchor,
 }: SidebarCardsProps) {
+  const readinessSnapshot = buildOmniAbilSnapshot({ lang, facts, sessions, refMs, currentFocusTag, nowAnchor });
   return (
     <div
-      className={`mt-2 flex flex-col gap-2 md:mt-3 lg:mt-0 lg:w-[320px] lg:flex-none ${
+      className={`mt-2 flex flex-col gap-2 md:mt-3 md:gap-3 lg:mt-0 lg:w-[320px] lg:flex-none lg:gap-4 ${
         debugGrid ? "outline outline-1 outline-[#C24B17]/40" : ""
       }`}
     >
       <motion.div variants={fadeDelayed(0.16)} {...hoverScale}>
         <DailyInsightCard lang={lang} t={t} insight={insight} />
       </motion.div>
-      <motion.div variants={fadeDelayed(0.28)} {...hoverScale}>
-        <RecentEntriesCard lang={lang} facts={facts} />
+      <motion.div variants={fadeDelayed(0.2)} {...hoverScale}>
+        <TodayGuidanceCard
+          lang={lang}
+          facts={facts}
+          sessions={sessions}
+          refMs={refMs}
+          currentFocusTag={currentFocusTag}
+          nowAnchor={nowAnchor}
+        />
       </motion.div>
       <motion.div variants={fadeDelayed(0.26)} {...hoverScale}>
         <PracticeSnapshotCard prog={prog} />
       </motion.div>
       <motion.div variants={fadeDelayed(0.32)} {...hoverScale}>
-        <TodaysQuestCard lang={lang} t={t} quest={quest} questPreview={questPreview} questExpanded={questExpanded} setQuestExpanded={setQuestExpanded} />
+        <TodaysQuestCard
+          lang={lang}
+          t={t}
+          quest={quest}
+          questPreview={questPreview}
+          questExpanded={questExpanded}
+          setQuestExpanded={setQuestExpanded}
+          snapshot={readinessSnapshot}
+        />
       </motion.div>
       {showAchv ? <AchievementBanner lang={lang} setAchvDismissed={setAchvDismissed} /> : null}
       {Array.isArray(profile?.simulatedInsights) && profile.simulatedInsights.length > 0 ? (
@@ -72,115 +98,34 @@ export default function SidebarCards({
 
 function DailyInsightCard({ lang, t, insight }: { lang: string; t: ReturnType<typeof useI18n>["t"]; insight: ReturnType<typeof getDailyInsight> }) {
   return (
-    <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
-      <h3 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
-        {getString(t, "dashboard.insightTitle", lang === "ro" ? "Revelația zilei" : "Insight of the Day")}
-      </h3>
-      <div className="relative">
-        <p className="text-[11px] leading-relaxed text-[#2C2C2C] sm:text-xs">{insight.text}</p>
-      </div>
-      <div className="mt-1 flex items-center justify-between sm:mt-2">
-        <p className="text-[9px] uppercase tracking-[0.16em] text-[#A08F82] sm:text-[10px]">
-          {getString(t, "dashboard.themeLabel", lang === "ro" ? "Temă" : "Theme")}: {insight.theme}
-        </p>
-      </div>
-    </Card>
-  );
-}
-
-function RecentEntriesCard({ lang, facts }: { lang: string; facts: ProgressFact | null }) {
-  const entries = (facts?.recentEntries as Array<{ text?: string; timestamp?: unknown; tabId?: string }> | undefined) ?? [];
-  const hasEntries = entries.length > 0;
-  const grouped = (() => {
-    if (!hasEntries) return [];
-    const sorted = entries
-      .map((e) => ({ ...e, _ms: toMsLocal(e.timestamp), _text: String(e.text ?? "").trim() }))
-      .sort((a, b) => b._ms - a._ms);
-    const dedup: Array<(typeof sorted)[number]> = [];
-    const seen = new Set<string>();
-    for (const item of sorted) {
-      const key = item._text;
-      if (key && !seen.has(key)) {
-        seen.add(key);
-        dedup.push(item);
-      }
-    }
-    const items = dedup.slice(0, 2);
-    const groups: Record<string, Array<{ text: string; ms: number; tab?: string }>> = {};
-    const fmtDay = (ms: number) => {
-      try {
-        return new Date(ms).toLocaleDateString(lang === "ro" ? "ro-RO" : "en-US", { year: "numeric", month: "short", day: "numeric" });
-      } catch {
-        return "";
-      }
-    };
-    for (const it of items) {
-      if (!it._ms) continue;
-      const day = fmtDay(it._ms);
-      if (!day) continue;
-      if (!groups[day]) groups[day] = [];
-      groups[day].push({ text: it._text || "-", ms: it._ms, tab: it.tabId });
-    }
-    return Object.entries(groups).map(([day, list]) => ({ day, items: list }));
-  })();
-  const fmtTime = (ms: number) => {
-    try {
-      return new Date(ms).toLocaleTimeString(lang === "ro" ? "ro-RO" : "en-US", { hour: "2-digit", minute: "2-digit" });
-    } catch {
-      return "";
-    }
-  };
-  return (
-    <Card className="min-w-0 rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3.5">
-      <div className="mb-1 flex items-center justify-between sm:mb-2">
-        <h4 className="text-xs font-semibold text-[#7B6B60] sm:text-sm">{lang === "ro" ? "Însemnări recente" : "Recent Entries"}</h4>
-        <div className="flex items-center gap-1">
-          <Link
-            href={{ pathname: "/progress", query: { open: "journal" } }}
-            className="rounded-[10px] border border-[#2C2C2C] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] sm:px-2 sm:text-[10px]"
-            aria-label="Open journal"
+    <Card className="flex h-full flex-col rounded-xl border border-transparent bg-transparent p-0 shadow-none sm:p-0">
+      <div>
+        <h3 className="sr-only">
+          {getString(t, "dashboard.insightTitle", lang === "ro" ? "Revelația zilei" : "Insight of the Day")}
+        </h3>
+        <div className="relative rounded-2xl border border-transparent bg-white/60 px-3 py-4 text-[#3E2F27] shadow-none">
+          <span className="absolute -top-1 left-2 text-xl text-[#E3D3C6]">“</span>
+          <p
+            id="daily-insight-text"
+            className="text-[11px] italic leading-relaxed text-[#9A7D70] sm:text-xs line-clamp-3"
+            style={{ fontFamily: '"Comic Sans MS","Segoe Script","Bradley Hand",cursive' }}
           >
-            {lang === "ro" ? "Jurnal" : "Journal"}
-          </Link>
+            {insight.text}
+          </p>
+          <span className="absolute -bottom-1 right-2 text-xl text-[#E3D3C6]">”</span>
         </div>
       </div>
-      {!hasEntries ? (
-        <p className="rounded-[10px] border border-[#F0E8E0] bg-[#FFFBF7] px-2 py-1.5 text-[11px] text-[#6A6A6A] sm:px-2.5 sm:py-2 sm:text-xs">
-          {lang === "ro" ? "Nimic deocamdată. Scrie un jurnal sau finalizează un exercițiu." : "Nothing yet. Add a journal entry or complete a practice."}
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {grouped.map((group) => (
-            <div key={group.day}>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#A08F82] sm:text-[11px]">{group.day}</p>
-              {group.items.map((item, idx) => {
-                const tab = typeof item.tab === "string" && item.tab ? item.tab : "OBSERVATII_EVALUARE";
-                const href = { pathname: "/progress", query: { open: "journal", tab } } as const;
-                const full = String(item.text);
-                const MAX_PREVIEW = 60;
-                const short = full.length > MAX_PREVIEW ? `${full.slice(0, MAX_PREVIEW).trimEnd()}…` : full;
-                return (
-                  <div key={`${group.day}-${idx}`} className="mb-1.5 border-b border-[#F0E8E0] pb-1.5 last:border-b-0 last:pb-0 sm:mb-2.5 sm:pb-2">
-                    <Link href={href} className="block truncate text-[11px] text-[#2C2C2C] underline-offset-2 hover:underline sm:text-xs" title={full}>
-                      {short}
-                    </Link>
-                    <p className="mt-0.5 text-[9px] text-[#A08F82] sm:mt-1 sm:text-[10px]" suppressHydrationWarning>
-                      {fmtTime(item.ms)}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="mt-1 flex items-center justify-end sm:mt-2">
-        <Link
-          href={{ pathname: "/progress", query: { open: "journal" } }}
-          className="text-[10px] text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline"
+      <div className="mt-1.5 flex items-center justify-end sm:mt-2">
+        <button
+          type="button"
+          onClick={() => {
+            const el = document.getElementById("daily-insight-text");
+            if (el) el.classList.toggle("line-clamp-3");
+          }}
+          className="text-[10px] font-medium text-[#A3765A] underline-offset-2 hover:text-[#7A4E3B] hover:underline"
         >
           {lang === "ro" ? "Vezi tot" : "See all"}
-        </Link>
+        </button>
       </div>
     </Card>
   );
@@ -207,9 +152,15 @@ type TodaysQuestCardProps = {
   questPreview: string;
   questExpanded: boolean;
   setQuestExpanded: Dispatch<SetStateAction<boolean>>;
+  snapshot: OmniAbilSnapshot;
 };
 
-function TodaysQuestCard({ lang, t, quest, questPreview, questExpanded, setQuestExpanded }: TodaysQuestCardProps) {
+function TodaysQuestCard({ lang, t, quest, questPreview, questExpanded, setQuestExpanded, snapshot }: TodaysQuestCardProps) {
+  const makeBar = (val01: number, accent: string) => (
+    <div className="h-1.5 w-full rounded-full bg-[#E8DED4]">
+      <div className="h-1.5 rounded-full" style={{ width: `${Math.max(0, Math.min(100, Math.round(val01 * 100)))}%`, background: accent }} />
+    </div>
+  );
   return (
     <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-white px-3 py-2 shadow-sm sm:px-4 sm:py-3 h-auto">
       <h3 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">{getString(t, "dashboard.todayQuest", lang === "ro" ? "Provocarea de azi" : "Today’s quest")}</h3>
@@ -225,6 +176,30 @@ function TodaysQuestCard({ lang, t, quest, questPreview, questExpanded, setQuest
         ) : (
           <span className="text-[11px] text-transparent">—</span>
         )}
+      </div>
+      <div className="mt-3 space-y-2 rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#B08A78]">
+          <span className={`rounded-full border px-2 py-0.5 ${snapshot.badge.cls}`}>{snapshot.badge.text}</span>
+          <span>{lang === "ro" ? "Starea ta acum" : "Your current state"}</span>
+        </div>
+        <div className="space-y-1.5 text-[10px] text-[#7B6B60] sm:text-[11px]">
+          <div>
+            <p className="font-semibold text-[#2C2C2C]">{lang === "ro" ? "Energia" : "Energy"}</p>
+            {makeBar(snapshot.energy / 10, "#F7B267")}
+          </div>
+          <div>
+            <p className="font-semibold text-[#2C2C2C]">{lang === "ro" ? "Echilibrul emoțional" : "Emotional balance"}</p>
+            {makeBar((10 - snapshot.stress) / 10, "#C27BA0")}
+          </div>
+          <div>
+            <p className="font-semibold text-[#2C2C2C]">{lang === "ro" ? "Claritatea" : "Clarity"}</p>
+            {makeBar(snapshot.clarity / 10, "#6A9FB5")}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-[#EADFD4] bg-white px-3 py-2 text-[11px] text-[#4D3F36] sm:text-xs">
+          <p className="text-[11px] font-semibold text-[#2C2C2C] sm:text-xs">{lang === "ro" ? "De ce această recomandare" : "Why this recommendation"}</p>
+          <p>{snapshot.why}</p>
+        </div>
       </div>
     </Card>
   );

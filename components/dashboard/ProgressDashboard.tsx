@@ -35,6 +35,7 @@ import CenterColumnCards, { type FocusThemeInfo } from "@/components/dashboard/C
 import SidebarCards from "@/components/dashboard/SidebarCards";
 import type { KunoMissionCardData } from "@/components/dashboard/KunoMissionCard";
 import { normalizeKunoFacts } from "@/lib/kunoFacts";
+import { RecentEntriesCard } from "@/components/dashboard/RecentEntriesCard";
 
 export default function ProgressDashboard({
   profileId,
@@ -448,11 +449,20 @@ export default function ProgressDashboard({
       ev?.mainAreaLabel ||
       rec?.primaryAreaLabel ||
       (lang === "ro" ? "Tema principală acum" : "Main focus right now");
+    const horizon = facts?.motivation?.timeHorizon ?? null;
+    const horizonSuffix = (() => {
+      if (!horizon) return null;
+      const mapRo: Record<string, string> = { days: "zile", weeks: "săptămâni", months: "luni" };
+      const mapEn: Record<string, string> = { days: "days", weeks: "weeks", months: "months" };
+      return lang === "ro" ? mapRo[horizon] ?? null : mapEn[horizon] ?? null;
+    })();
     const desc =
       ev?.summary ||
       ev?.mainObjective ||
       rec?.summary ||
-      (lang === "ro" ? "Este directia prioritara pe care lucrezi acum." : "This is the main theme you’re working on right now.");
+      (lang === "ro"
+        ? `Este direcția prioritară pe care lucrezi acum${horizonSuffix ? ` pentru următoarele ${horizonSuffix}` : ""}.`
+        : `This is the main theme you’re working on${horizonSuffix ? ` for the next ${horizonSuffix}` : ""}.`);
     return { area, desc, categoryKey: normalizedCategory, moduleId: resolvedModuleId };
   }, [facts, lang]);
   const questPreview = useMemo(() => {
@@ -611,6 +621,7 @@ export default function ProgressDashboard({
                 motivationDelta={motivationDelta}
                 facts={facts}
               />
+              <RecentEntriesCard lang={lang} facts={facts} />
             </div>
 
             <ProfileIndicesCard
@@ -634,10 +645,6 @@ export default function ProgressDashboard({
               lang={lang}
               t={t}
               facts={facts}
-              sessions={sessions}
-              refMs={refMs}
-              currentFocusTag={currentFocusTag}
-              nowAnchor={nowAnchor}
               omniIntelScore={omniIntelScore}
               omniIntelDelta={omniIntelDelta}
               focusTheme={focusTheme}
@@ -660,6 +667,10 @@ export default function ProgressDashboard({
             setAchvDismissed={setAchvDismissed}
             insight={insight}
             prog={prog}
+            sessions={sessions}
+            refMs={refMs}
+            currentFocusTag={currentFocusTag}
+            nowAnchor={nowAnchor}
           />
         </div>
       </Card>
