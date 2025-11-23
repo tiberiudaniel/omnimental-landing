@@ -6,7 +6,10 @@ import { getAdminDb } from "@/lib/firebaseAdmin";
 import { Resend } from "resend";
 
 const OTP_TTL_MS = 15 * 60 * 1000; // 15 minutes
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Instanță safe: nu aruncă dacă nu există cheia
+const resend =
+  process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 function generateOtpCode(): string {
   const num = Math.floor(100000 + Math.random() * 900000);
@@ -14,8 +17,9 @@ function generateOtpCode(): string {
 }
 
 async function sendOtpEmail(to: string, code: string) {
-  if (!process.env.RESEND_API_KEY) {
-    console.log(`[OTP] Cod pentru ${to}: ${code}`);
+  // Dacă nu avem cheie sau instanță Resend, nu trimitem email, doar log
+  if (!process.env.RESEND_API_KEY || !resend) {
+    console.log(`[OTP][NO-RESEND] Cod pentru ${to}: ${code}`);
     return;
   }
 
@@ -71,6 +75,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("request-code error", err);
-    return NextResponse.json({ error: "Eroare la generarea codului." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Eroare la generarea codului." },
+      { status: 500 },
+    );
   }
 }
