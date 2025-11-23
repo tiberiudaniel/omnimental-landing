@@ -16,9 +16,20 @@ type Props = {
   styleLabel?: 'knowledge' | 'scenario' | 'reflection' | 'microSkill' | undefined;
   index?: number;
   total?: number;
+  questionTestId?: string;
+  optionTestId?: string;
 };
 
-export default function TestQuestionCard({ item, onAnswer, scored, styleLabel, index, total }: Props) {
+export default function TestQuestionCard({
+  item,
+  onAnswer,
+  scored,
+  styleLabel,
+  index,
+  total,
+  questionTestId,
+  optionTestId,
+}: Props) {
   const [sel, setSel] = useState<number | null>(null);
   const graded = typeof item.correctIndex === 'number' && item.correctIndex >= 0;
   const correct = sel !== null && graded ? sel === item.correctIndex : null;
@@ -31,7 +42,10 @@ export default function TestQuestionCard({ item, onAnswer, scored, styleLabel, i
   })();
   const scoredHint = scored ?? graded;
   return (
-    <div className="rounded-[12px] border border-[#E4DAD1] bg-white p-4 shadow-sm" data-testid="eo-question">
+    <div
+      className="rounded-[12px] border border-[#E4DAD1] bg-white p-4 shadow-sm"
+      data-testid={questionTestId ?? undefined}
+    >
       <div className="mb-1 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {styleText ? (
@@ -61,7 +75,7 @@ export default function TestQuestionCard({ item, onAnswer, scored, styleLabel, i
                 setSel(idx);
                 onAnswer(idx, graded ? idx === item.correctIndex : false);
               }}
-              data-testid="eo-option"
+              data-testid={optionTestId ?? undefined}
               className={`flex items-center justify-between rounded-[10px] border px-3 py-2 text-left text-[13px] sm:text-sm transition ${
                 stateClass || "border-[#D8C6B6] hover:border-[#2C2C2C]"
               } text-[#2C2C2C]`}

@@ -44,6 +44,7 @@ export default function KunoLessonItem({ lesson, isActive, disabled, onSelect, h
           }
           onSelect();
         }}
+        data-testid="kuno-lesson-trigger"
         className={`flex w-full items-center justify-between px-3 py-3 text-left transition ${
           locked ? "cursor-not-allowed" : "hover:bg-[#FFFBF7]"
         }`}

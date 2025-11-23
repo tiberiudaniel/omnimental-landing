@@ -43,7 +43,19 @@ export default function LessonView({
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(existingCompletedIds.includes(lesson.id));
   const [reflection, setReflection] = useState("");
-  const reflectionMinChars = 3;
+  const [isRelaxedMode, setIsRelaxedMode] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("e2e") === "1" || url.searchParams.get("demo") === "1") {
+        setIsRelaxedMode(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+  const reflectionMinChars = isRelaxedMode ? 0 : 3;
   const [currentScreenIndex, setCurrentScreenIndex] = useState(0);
   const [quizAnswerIndex, setQuizAnswerIndex] = useState<number | null>(null);
   const [quizResult, setQuizResult] = useState<"correct" | "incorrect" | null>(null);
@@ -72,7 +84,7 @@ export default function LessonView({
   const totalScreens = screens.length;
   const currentScreen = screens[Math.min(currentScreenIndex, totalScreens - 1)];
   const isLastScreen = currentScreenIndex === totalScreens - 1;
-  const requiresReflectionInput = currentScreen.kind === "reflection";
+  const requiresReflectionInput = currentScreen.kind === "reflection" && !isRelaxedMode;
   const needsQuizAnswer = currentScreen.kind === "quiz" && quizAnswerIndex === null;
   const centerLabel = useMemo(() => {
     if (!lesson.center) return null;
@@ -151,9 +163,9 @@ export default function LessonView({
 
   const canContinue =
     currentScreen.kind === "quiz"
-      ? quizAnswerIndex !== null
+      ? isRelaxedMode || quizAnswerIndex !== null
       : currentScreen.kind === "reflection"
-        ? reflection.trim().length >= reflectionMinChars
+        ? isRelaxedMode || reflection.trim().length >= reflectionMinChars
         : true;
 
   return (

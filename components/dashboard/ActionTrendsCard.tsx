@@ -266,12 +266,23 @@ export default function ActionTrendsCard({
     }
   };
 
+  const trendTitle =
+    timeframe === "day"
+      ? lang === "ro"
+        ? "Trend zilnic"
+        : "Daily trend"
+      : timeframe === "week"
+        ? getString(t, "dashboard.trendsTitle", lang === "ro" ? "Trend săptămânal" : "Weekly trends")
+        : lang === "ro"
+          ? "Trend lunar"
+          : "Monthly trend";
+
   return (
     <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
       <div id="actions-trend">
         <Card className="h-[200px] overflow-hidden rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm sm:h-[240px] sm:p-4 lg:h-[280px]">
           <h3 className="mb-1 flex items-center gap-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
-            <span>{lang === "ro" ? "Trendul acțiunilor" : "Actions trend"}</span>
+            <span>{trendTitle}</span>
             <InfoTooltip
               label={lang === "ro" ? "Despre trend" : "About trends"}
               items={
@@ -303,6 +314,15 @@ export default function ActionTrendsCard({
             </p>
             <div className="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2">
               <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[10px] sm:text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setTimeframe("day")}
+                  className={`rounded px-1.5 py-0.5 transition ${timeframe === "day" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                  aria-label="Toggle to day view"
+                  data-testid="trend-toggle-day"
+                >
+                  {lang === "ro" ? "Azi" : "Day"}
+                </button>
                 <button
                   type="button"
                   onClick={() => setTimeframe("week")}

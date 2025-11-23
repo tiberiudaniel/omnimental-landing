@@ -1,0 +1,82 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - banner [ref=e13]:
+      - generic [ref=e14]:
+        - button "Autentificare" [ref=e15]
+        - generic "dgZt6SqKgEMdkKX18O99rTemuTc2" [ref=e16]: Oaspete
+        - generic [ref=e17]:
+          - button "RO" [pressed] [ref=e18]
+          - generic [ref=e19]: "-"
+          - button "EN" [ref=e20]
+      - generic [ref=e21]:
+        - link "OmniMental logo OmniMental" [ref=e22] [cursor=pointer]:
+          - /url: /intro
+          - img "OmniMental logo" [ref=e23]
+          - generic [ref=e24]: OmniMental
+        - navigation [ref=e25]:
+          - link "Antrenament" [ref=e26] [cursor=pointer]:
+            - /url: /antrenament
+          - link "Progres" [ref=e27] [cursor=pointer]:
+            - /url: /progress
+          - link "Recomandări" [ref=e28] [cursor=pointer]:
+            - /url: /recommendation
+          - link "Inițiere" [ref=e29] [cursor=pointer]:
+            - /url: /experience-onboarding?flow=initiation&step=intro
+        - generic [ref=e30]:
+          - button "Jurnal" [ref=e31]:
+            - generic [ref=e32]: Jurnal
+          - button "Deschide meniul" [ref=e33]
+    - main [ref=e38]:
+      - generic [ref=e39]:
+        - heading "Sign in" [level=1] [ref=e40]
+        - paragraph [ref=e41]: Choose how you want to access your OmniMental account.
+        - button "Continue with Google" [ref=e42]
+        - generic [ref=e43]:
+          - paragraph [ref=e44]: Email + code (15 minutes)
+          - generic [ref=e45]:
+            - textbox "email@exemplu.com" [ref=e46]
+            - button "Send code" [ref=e47]
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - paragraph [ref=e50]: Prefer a classic password?
+            - button "Create account" [ref=e51]
+          - generic [ref=e52]:
+            - textbox "email@exemplu.com" [ref=e53]
+            - textbox "Password" [ref=e54]
+            - button "Sign in with email + password" [ref=e55]
+        - paragraph [ref=e56]:
+          - link "Back to home" [ref=e57] [cursor=pointer]:
+            - /url: /
+  - contentinfo [ref=e58]:
+    - generic [ref=e60]:
+      - paragraph [ref=e61]: © 2025 OmniMental
+      - navigation [ref=e62]:
+        - generic [ref=e63]:
+          - link "Despre" [ref=e64] [cursor=pointer]:
+            - /url: /about
+          - generic [ref=e65]: ·
+        - generic [ref=e66]:
+          - link "Contact" [ref=e67] [cursor=pointer]:
+            - /url: /contact
+          - generic [ref=e68]: ·
+        - generic [ref=e69]:
+          - link "Politica de confidențialitate" [ref=e70] [cursor=pointer]:
+            - /url: /privacy
+          - generic [ref=e71]: ·
+        - generic [ref=e72]:
+          - link "Termeni și condiții" [ref=e73] [cursor=pointer]:
+            - /url: /terms
+          - generic [ref=e74]: ·
+        - generic [ref=e75]:
+          - link "Politica cookies" [ref=e76] [cursor=pointer]:
+            - /url: /cookies
+          - generic [ref=e77]: ·
+        - link "Dezabonare" [ref=e79] [cursor=pointer]:
+          - /url: /unsubscribe
+```

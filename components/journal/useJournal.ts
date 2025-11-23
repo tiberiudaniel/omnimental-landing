@@ -30,6 +30,9 @@ const EMPTY: JournalState = {
   },
 };
 
+const LOCAL_FALLBACK_PREFIX = "omnimental_journal_fallback_";
+const LOCAL_RECENT_PREFIX = "omnimental_recent_entries_";
+
 function mapFromDoc(doc?: JournalDoc | null): Record<JournalTabId, string> {
   return {
     SCOP_INTENTIE: doc?.tabs.SCOP_INTENTIE?.text ?? "",
@@ -132,11 +135,8 @@ export function useJournal(userId: string | null | undefined) {
         if (isDemoOrE2E) {
           console.log("[Journal] demo/e2e: skip Firestore write", { userId, path: `userJournals/${userId}` });
           try {
-            const key = `omnimental_journal_fallback_${userId}`;
-            const existingRaw = window.localStorage.getItem(key);
-            const existing = existingRaw ? (JSON.parse(existingRaw) as Record<string, string>) : {};
-            existing[tabId] = text;
-            window.localStorage.setItem(key, JSON.stringify(existing));
+            persistLocalJournalTab(userId, tabId, text);
+            persistLocalRecentEntry(userId, tabId, text);
           } catch {}
           lastSavedRef.current[tabId] = text;
           setState((s) => ({ ...s, saving: false }));
@@ -186,11 +186,8 @@ export function useJournal(userId: string | null | undefined) {
           console.warn("journal save failed", e);
           // Best-effort local fallback so user doesn't lose text in demo/guest
           try {
-            const key = `omnimental_journal_fallback_${userId}`;
-            const existingRaw = window.localStorage.getItem(key);
-            const existing = existingRaw ? (JSON.parse(existingRaw) as Record<string, string>) : {};
-            existing[tabId] = text;
-            window.localStorage.setItem(key, JSON.stringify(existing));
+            persistLocalJournalTab(userId, tabId, text);
+            persistLocalRecentEntry(userId, tabId, text);
           } catch {}
           return "local";
         } else {
@@ -221,4 +218,34 @@ export function useJournal(userId: string | null | undefined) {
   );
 
   return { ...state, setTabText, saveTab, scheduleSave };
+}
+
+function persistLocalJournalTab(userId: string, tabId: JournalTabId, text: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const key = `${LOCAL_FALLBACK_PREFIX}${userId}`;
+    const existingRaw = window.localStorage.getItem(key);
+    const existing = existingRaw ? (JSON.parse(existingRaw) as Record<string, string>) : {};
+    existing[tabId] = text;
+    window.localStorage.setItem(key, JSON.stringify(existing));
+  } catch {
+    // noop
+  }
+}
+
+function persistLocalRecentEntry(userId: string, tabId: JournalTabId, text: string) {
+  if (typeof window === "undefined") return;
+  const normalized = (text ?? "").trim();
+  if (!normalized) return;
+  try {
+    const key = `${LOCAL_RECENT_PREFIX}${userId}`;
+    const existingRaw = window.localStorage.getItem(key);
+    const existing = existingRaw ? (JSON.parse(existingRaw) as Array<{ text: string; timestamp: number; tabId?: string }>) : [];
+    existing.push({ text: normalized, timestamp: Date.now(), tabId });
+    const pruned = existing.slice(-50);
+    window.localStorage.setItem(key, JSON.stringify(pruned));
+    window.dispatchEvent(new CustomEvent("journal:recent-entry", { detail: { userId } }));
+  } catch {
+    // ignore
+  }
 }

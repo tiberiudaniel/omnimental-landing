@@ -31,7 +31,14 @@ function LessonQuiz({ category }: { category: string }) {
   const router = useRouter();
   const [toast, setToast] = useState<string | null>(null);
   const pool = useMemo(() => CUNO_QUESTIONS.filter((q) => String(q.category) === category), [category]);
-  const questions = useMemo(() => pool.slice(0, 3), [pool]);
+  const questions = useMemo(() => {
+    if (pool.length >= 3) return pool.slice(0, 3);
+    if (pool.length > 0) {
+      const extras = CUNO_QUESTIONS.filter((q) => String(q.category) !== category);
+      return [...pool, ...extras].slice(0, 3);
+    }
+    return CUNO_QUESTIONS.slice(0, 3);
+  }, [category, pool]);
   const [idx, setIdx] = useState(0);
   const [attempts, setAttempts] = useState<KunoAttempt[]>([]);
   const q = questions[idx];
@@ -210,7 +217,7 @@ function LessonInner() {
     health: 'Consolidează sănătatea: somn, nutriție simplă, variabilitate în mișcare. ',
     general: 'Principii generale pentru progres consecvent și adaptare. ',
   };
-  const [started, setStarted] = useState(true);
+  const [started, setStarted] = useState(() => qs.get('start') === '1');
 
   return (
     <div className="min-h-screen bg-[#FDFCF9]">

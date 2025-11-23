@@ -87,6 +87,8 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
           styleLabel="knowledge"
           index={idx}
           total={questions.length}
+          questionTestId="eo-question"
+          optionTestId="eo-option"
         />
       ))}
       <div className="flex items-center justify-between">

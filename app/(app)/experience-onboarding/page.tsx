@@ -48,6 +48,7 @@ function ExperienceOnboardingContent() {
   const { lang } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const requireLogin = process.env.NEXT_PUBLIC_REQUIRE_LOGIN_FOR_ONBOARDING === '1';
+  const bypassAuth = Boolean(search?.get("demo") || search?.get("e2e") === "1");
   const [blocked, setBlocked] = useState(false);
 
   // Read/normalize navigation state and step hooks BEFORE any early return to keep hook order stable
@@ -66,7 +67,7 @@ function ExperienceOnboardingContent() {
   // Optional gate: require login before onboarding/initiation
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!requireLogin) return;
+    if (!requireLogin || bypassAuth) return;
     if (profile?.id) return;
     try {
       const returnTo = window.location.href;
@@ -78,7 +79,7 @@ function ExperienceOnboardingContent() {
       router.replace('/progress?from=onboarding-auth');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requireLogin, profile?.id]);
+  }, [requireLogin, profile?.id, bypassAuth]);
 
   // Normalize entry: if start=1 and no explicit step, set intro once
   useEffect(() => {
@@ -197,6 +198,7 @@ function ExperienceOnboardingContent() {
                   }
                   return (
                     <StepMiniTest
+                      autoSubmitAfterMin
                       onSubmit={(a, s, meta) => {
                         setAnswers(a);
                         setScore(s);

@@ -157,6 +157,9 @@ export default function StepMiniTestScore({ answers, score, userId, topicKey, qu
         <div className="mb-1 text-xs uppercase tracking-[0.3em] text-[#A08F82]">{lang === 'ro' ? 'Pas 3/7' : 'Step 3/7'}</div>
         <Typewriter text={lang === 'ro' ? "Ai terminat mini‑testul. Iată scorul tău." : "You’ve finished the mini-test. Here is your score."} />
       </div>
+      <h3 className="text-base font-semibold text-[#1F1F1F]" data-testid="eo-score-heading">
+        {lang === 'ro' ? 'Scor Mini' : 'Mini Score'}
+      </h3>
       <ScoreCard raw={score.raw} max={score.max} title={lang === 'ro' ? 'Scor Omni‑Kuno (cunoștințe)' : 'Omni‑Kuno score (knowledge)'} />
       {(() => {
         // Supportive micro‑message based on percent (pure knowledge quiz)

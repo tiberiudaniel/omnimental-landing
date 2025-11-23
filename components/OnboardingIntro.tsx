@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useI18n } from "@/components/I18nProvider";
 import { getString } from "@/lib/i18nGetString";
@@ -25,17 +25,18 @@ export default function OnboardingIntro({ profileId, onDone }: { profileId: stri
   // In E2E/demo flows, allow continue without explicit click to reduce flakiness.
   // Use state set after mount to avoid hydration mismatches.
   const [allowAutoContinue, setAllowAutoContinue] = useState(false);
-  if (typeof window !== 'undefined' && !allowAutoContinue) {
-    // Micro-queue to run after mount synchronously without extra effect boilerplate
-    queueMicrotask(() => {
-      try {
-        const url = new URL(window.location.href);
-        if (url.searchParams.get('e2e') === '1' || url.searchParams.get('demo') === '1') {
-          setAllowAutoContinue(true);
-        }
-      } catch { /* noop */ }
-    });
-  }
+  useEffect(() => {
+    if (allowAutoContinue) return;
+    if (typeof window === "undefined") return;
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("e2e") === "1" || url.searchParams.get("demo") === "1") {
+        setAllowAutoContinue(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, [allowAutoContinue]);
 
   const handleContinue = async () => {
     // In demo/e2e, allow proceeding with a safe default if nothing selected

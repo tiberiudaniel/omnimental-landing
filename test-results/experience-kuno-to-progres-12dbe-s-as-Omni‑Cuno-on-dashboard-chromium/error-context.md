@@ -1,0 +1,50 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - button "Autentificare" [ref=e6]
+        - generic "rRTPtcwQSTh9ajnAoJtjec1PlDw2" [ref=e7]: Oaspete
+        - generic [ref=e8]:
+          - button "RO" [pressed] [ref=e9]
+          - generic [ref=e10]: "-"
+          - button "EN" [ref=e11]
+      - generic [ref=e12]:
+        - link "OmniMental logo OmniMental" [ref=e13] [cursor=pointer]:
+          - /url: /intro
+          - img "OmniMental logo" [ref=e14]
+          - generic [ref=e15]: OmniMental
+        - navigation [ref=e16]:
+          - link "Antrenament" [ref=e17] [cursor=pointer]:
+            - /url: /antrenament
+          - link "Progres" [ref=e18] [cursor=pointer]:
+            - /url: /progress
+          - link "Recomandări" [ref=e19] [cursor=pointer]:
+            - /url: /recommendation
+          - link "Inițiere" [ref=e20] [cursor=pointer]:
+            - /url: /experience-onboarding?flow=initiation&step=intro
+        - button "Deschide meniul" [ref=e22]
+    - main [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: Pas 1/7
+        - paragraph [ref=e30]: Bine ai venit în onboarding-ul experiențial
+        - button "Omni‑Kuno OMNI‑KUNO Cunoaștere & concepte Omni‑Kuno este mini‑testul de cunoștințe care îți arată rapid nivelul de înțelegere pe conceptele cheie. În 3 întrebări afli punctajul inițial și vezi explicația corectă la fiecare răspuns. Începe" [ref=e33] [cursor=pointer]:
+          - heading "Omni‑Kuno" [level=3] [ref=e34]
+          - generic [ref=e35]:
+            - generic [ref=e36]:
+              - generic [ref=e37]:
+                - generic [ref=e38]: OMNI‑KUNO
+                - generic [ref=e39]: Cunoaștere & concepte
+              - paragraph [ref=e40]: Omni‑Kuno este mini‑testul de cunoștințe care îți arată rapid nivelul de înțelegere pe conceptele cheie. În 3 întrebări afli punctajul inițial și vezi explicația corectă la fiecare răspuns.
+            - button "Începe" [active] [ref=e42]
+  - button "Open Next.js Dev Tools" [ref=e48] [cursor=pointer]:
+    - generic [ref=e51]:
+      - text: Compiling
+      - generic [ref=e52]:
+        - generic [ref=e53]: .
+        - generic [ref=e54]: .
+        - generic [ref=e55]: .
+  - alert [ref=e56]
+```

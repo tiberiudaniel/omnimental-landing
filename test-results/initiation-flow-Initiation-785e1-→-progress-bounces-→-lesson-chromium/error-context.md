@@ -1,0 +1,114 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - button "Autentificare" [ref=e6]
+        - generic "hEhP3pqXQHQmOmqPInKLvK6IiBF3" [ref=e7]: Oaspete
+        - generic [ref=e8]:
+          - button "RO" [pressed] [ref=e9]
+          - generic [ref=e10]: "-"
+          - button "EN" [ref=e11]
+      - generic [ref=e12]:
+        - link "OmniMental logo OmniMental" [ref=e13] [cursor=pointer]:
+          - /url: /intro
+          - img "OmniMental logo" [ref=e14]
+          - generic [ref=e15]: OmniMental
+        - navigation [ref=e16]:
+          - link "Antrenament" [ref=e17] [cursor=pointer]:
+            - /url: /antrenament
+          - link "Progres" [ref=e18] [cursor=pointer]:
+            - /url: /progress
+          - link "Recomandări" [ref=e19] [cursor=pointer]:
+            - /url: /recommendation
+          - link "Inițiere" [ref=e20] [cursor=pointer]:
+            - /url: /experience-onboarding?flow=initiation&step=intro
+        - generic [ref=e21]:
+          - button "Jurnal" [ref=e22]:
+            - generic [ref=e23]: Jurnal
+          - button "Deschide meniul" [ref=e24]
+    - main [ref=e29]:
+      - generic [ref=e30]: Pas 2/8
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - generic [ref=e33]: Pas 2/7
+          - paragraph [ref=e34]: "Mini‑Cuno: 5 întrebări rapide. Vei vedea explicația corectă la fiecare răspuns."
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - generic "Contează la scor" [ref=e38]: Cunoștințe · +scor
+            - generic [ref=e39]: 1/5
+          - paragraph [ref=e40]: Un micro‑obicei cu impact transversal?
+          - generic [ref=e41]:
+            - button "Respirație lentă 1–2 min" [ref=e42]:
+              - generic [ref=e43]: Respirație lentă 1–2 min
+            - button "Salt peste mic dejun zilnic" [ref=e44]:
+              - generic [ref=e45]: Salt peste mic dejun zilnic
+            - button "Notificări continue" [ref=e46]:
+              - generic [ref=e47]: Notificări continue
+            - button "Fără pauze" [ref=e48]:
+              - generic [ref=e49]: Fără pauze
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - generic "Contează la scor" [ref=e53]: Cunoștințe · +scor
+            - generic [ref=e54]: 2/5
+          - paragraph [ref=e55]: Primul pas pentru consecvență?
+          - generic [ref=e56]:
+            - button "Ancore simple, repetitive" [ref=e57]:
+              - generic [ref=e58]: Ancore simple, repetitive
+            - button "Obiective vagi" [ref=e59]:
+              - generic [ref=e60]: Obiective vagi
+            - button "Complexitate maximă de la început" [ref=e61]:
+              - generic [ref=e62]: Complexitate maximă de la început
+            - button "Schimbări zilnice drastice" [ref=e63]:
+              - generic [ref=e64]: Schimbări zilnice drastice
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic "Contează la scor" [ref=e68]: Cunoștințe · +scor
+            - generic [ref=e69]: 3/5
+          - paragraph [ref=e70]: Ce descrie cel mai bine flexibilitatea psihologică?
+          - generic [ref=e71]:
+            - button "Evitarea emoțiilor neplăcute" [ref=e72]:
+              - generic [ref=e73]: Evitarea emoțiilor neplăcute
+            - button "Deschidere la experiență + adaptare în funcție de valori" [ref=e74]:
+              - generic [ref=e75]: Deschidere la experiență + adaptare în funcție de valori
+            - button "Control total al gândurilor" [ref=e76]:
+              - generic [ref=e77]: Control total al gândurilor
+            - button "Perfecționism în orice context" [ref=e78]:
+              - generic [ref=e79]: Perfecționism în orice context
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - generic "Contează la scor" [ref=e83]: Cunoștințe · +scor
+            - generic [ref=e84]: 4/5
+          - paragraph [ref=e85]: Un exemplu de “defusion” cognitiv (ACT) este…
+          - generic [ref=e86]:
+            - button "Să crezi 100% orice gând" [ref=e87]:
+              - generic [ref=e88]: Să crezi 100% orice gând
+            - button "Să observi gândul ca pe un eveniment mental, nu ca pe un fapt" [ref=e89]:
+              - generic [ref=e90]: Să observi gândul ca pe un eveniment mental, nu ca pe un fapt
+            - button "Să te forțezi să nu mai gândești" [ref=e91]:
+              - generic [ref=e92]: Să te forțezi să nu mai gândești
+            - button "Să ignori corpul" [ref=e93]:
+              - generic [ref=e94]: Să ignori corpul
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - generic "Contează la scor" [ref=e98]: Cunoștințe · +scor
+            - generic [ref=e99]: 5/5
+          - paragraph [ref=e100]: Care acțiune reflectă “valori în acțiune”?
+          - generic [ref=e101]:
+            - button "Amân pe termen nedefinit" [ref=e102]:
+              - generic [ref=e103]: Amân pe termen nedefinit
+            - button "Fac un pas mic azi în direcția valorilor mele" [ref=e104]:
+              - generic [ref=e105]: Fac un pas mic azi în direcția valorilor mele
+            - button "Caut aprobare constant" [ref=e106]:
+              - generic [ref=e107]: Caut aprobare constant
+            - button "Evita orice risc" [ref=e108]:
+              - generic [ref=e109]: Evita orice risc
+        - generic [ref=e110]:
+          - paragraph [ref=e111]: "Scor curent: 0/5"
+          - button "Vezi scorul" [disabled] [ref=e112]
+  - button "Open Next.js Dev Tools" [ref=e118] [cursor=pointer]:
+    - img [ref=e119]
+  - alert [ref=e122]
+```

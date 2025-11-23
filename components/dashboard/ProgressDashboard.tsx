@@ -1,6 +1,6 @@
 "use client";
 import { Card } from "@/components/ui/card";
-import type { ProgressFact } from "@/lib/progressFacts";
+import type { ProgressFact, RecentEntry } from "@/lib/progressFacts";
 import { adaptProgressFacts } from "@/lib/progressAdapter";
 import { getDailyInsight } from "@/lib/insights";
 import { getAreasForScript } from "@/lib/quests";
@@ -52,12 +52,70 @@ export default function ProgressDashboard({
   hideOmniIntel?: boolean;
 }) {
   const { profile } = useProfile();
-  const facts = demoFacts ?? factsProp ?? null;
+  const baseFacts = demoFacts ?? factsProp ?? null;
   const loading = demoFacts ? false : Boolean(loadingProp);
   const { t, lang } = useI18n();
   // Read debug flag from URL early to keep hook order stable across renders
   const search = useSearchParams();
   const debugMode = (search?.get('debug') === '1');
+  const [localRecentEntries, setLocalRecentEntries] = useState<RecentEntry[]>([]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = `omnimental_recent_entries_${profileId}`;
+    const load = () => {
+      try {
+        const raw = window.localStorage.getItem(key);
+        if (!raw) {
+          setLocalRecentEntries([]);
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) {
+          setLocalRecentEntries([]);
+          return;
+        }
+        const normalized = parsed
+          .map((entry) => ({
+            text: String(entry?.text ?? ""),
+            timestamp: entry?.timestamp ?? Date.now(),
+            tabId: entry?.tabId ? String(entry.tabId) : undefined,
+          }))
+          .filter((entry) => entry.text.trim().length > 0);
+        setLocalRecentEntries(normalized);
+      } catch {
+        setLocalRecentEntries([]);
+      }
+    };
+    load();
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string }>).detail;
+      if (!detail?.userId || detail.userId === profileId) {
+        load();
+      }
+    };
+    window.addEventListener("journal:recent-entry", handler as EventListener);
+    return () => {
+      window.removeEventListener("journal:recent-entry", handler as EventListener);
+    };
+  }, [profileId]);
+
+  const facts = useMemo(() => {
+    if (!localRecentEntries.length) {
+      return baseFacts;
+    }
+    const normalizedEntries: RecentEntry[] = localRecentEntries.map((entry) => ({
+      text: entry.text,
+      timestamp: entry.timestamp,
+      tabId: entry.tabId,
+    }));
+    if (!baseFacts) {
+      return { recentEntries: normalizedEntries } as ProgressFact;
+    }
+    return {
+      ...baseFacts,
+      recentEntries: [...(baseFacts.recentEntries ?? []), ...normalizedEntries],
+    };
+  }, [baseFacts, localRecentEntries]);
   const kunoFacts = useMemo(() => normalizeKunoFacts(facts?.omni?.kuno), [facts?.omni?.kuno]);
   const [timeframe, setTimeframe] = useState<"day" | "week" | "month">("week");
   const [qaOpen, setQaOpen] = useState(false);

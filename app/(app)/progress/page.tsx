@@ -17,6 +17,15 @@ import { getDemoProgressFacts } from "@/lib/demoData";
 import { useAuth } from "@/components/AuthProvider";
 import RequireAuth from "@/components/auth/RequireAuth";
 
+const FALLBACK_GUEST_ID = (() => {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {}
+  return `guest-${Math.random().toString(36).slice(2, 10)}`;
+})();
+
 function ProgressContent() {
   const router = useRouter();
   const { t, lang } = useI18n();
@@ -91,12 +100,51 @@ function ProgressContent() {
   }, [progress]);
   const [journalBlocked] = useState(initialJournalState.blocked);
   const [journalOpen, setJournalOpen] = useState(initialJournalState.open);
+  const guestJournalId = useMemo(() => {
+    if (profile?.id || user?.uid) return null;
+    if (typeof window === "undefined") return null;
+    const key = "omnimental_guest_id";
+    const readStored = () => {
+      const stored = window.localStorage.getItem(key);
+      return stored && stored.trim().length ? stored : null;
+    };
+    let stored = readStored();
+    if (!stored) {
+      stored = FALLBACK_GUEST_ID;
+      try {
+        window.localStorage.setItem(key, stored);
+      } catch {
+        // ignore storage write failures
+      }
+    }
+    return stored || FALLBACK_GUEST_ID;
+  }, [profile?.id, user?.uid]);
   const goToAuth = () => router.push("/auth");
   const initialTabParam = (() => {
     const tab = search?.get('tab');
     const allowed = new Set(['SCOP_INTENTIE','MOTIVATIE_REZURSE','PLAN_RECOMANDARI','OBSERVATII_EVALUARE','NOTE_LIBERE']);
     return tab && allowed.has(tab) ? (tab as JournalTabId) : undefined;
   })();
+  const journalContext = useMemo(
+    () => ({
+      sourcePage: "progress",
+      sourceBlock: stepParam === "journal-open" ? "initiation.journal" : undefined,
+      suggestedSnippets:
+        stepParam === "journal-open"
+          ? lang === "ro"
+            ? [
+                "Două propoziții despre starea ta acum.",
+                "Ce ai observat la tine în ultimele ore?",
+              ]
+            : [
+                "Two short sentences about your state now.",
+                "What did you notice in the last hours?",
+              ]
+          : undefined,
+    }),
+    [lang, stepParam],
+  );
+  const journalUserId = profile?.id ?? user?.uid ?? guestJournalId ?? (demoParam || e2e ? "demo-user" : null);
 
   // React to open=journal in URL: open the drawer immediately, then clean the param
   useEffect(() => {
@@ -136,6 +184,16 @@ function ProgressContent() {
     return () => window.clearTimeout(id);
   }, [progress]);
 
+  const journalDrawer = !journalBlocked && journalUserId ? (
+    <JournalDrawer
+      open={journalOpen}
+      onOpenChange={setJournalOpen}
+      userId={journalUserId}
+      context={journalContext}
+      initialTab={initialTabParam}
+    />
+  ) : null;
+
   if (!profile?.id) {
     if (demoParam || e2e) {
       return (
@@ -153,7 +211,7 @@ function ProgressContent() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => router.push('/experience-onboarding?step=journal')}
+                    onClick={() => router.push('/experience-onboarding?flow=initiation&step=journal')}
                     className="rounded-[10px] border border-[#1F3C2F] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#1F3C2F] hover:bg-[#1F3C2F] hover:text-white"
                     data-testid="progress-cta-eo-continue"
                   >
@@ -162,8 +220,9 @@ function ProgressContent() {
                 </div>
               </div>
             ) : null}
-            <ProgressDashboard profileId={"demo-user"} demoFacts={demoFacts} debugGrid={debugGrid} />
+            <ProgressDashboard profileId={journalUserId ?? "demo-user"} demoFacts={demoFacts} debugGrid={debugGrid} />
           </main>
+          {journalDrawer}
         </div>
       );
     }
@@ -236,29 +295,7 @@ function ProgressContent() {
         </div>
       ) : null}
       {/* Force-open journal drawer when allowed */}
-      {(profile?.id || user?.uid) ? (
-        <JournalDrawer
-          open={journalOpen}
-          onOpenChange={setJournalOpen}
-          userId={user?.uid ?? null}
-          context={{
-            sourcePage: 'progress',
-            sourceBlock: stepParam === 'journal-open' ? 'initiation.journal' : undefined,
-            suggestedSnippets: stepParam === 'journal-open'
-              ? (lang === 'ro'
-                ? [
-                    'Două propoziții despre starea ta acum.',
-                    'Ce ai observat la tine în ultimele ore?'
-                  ]
-                : [
-                    'Two short sentences about your state now.',
-                    'What did you notice in the last hours?'
-                  ])
-              : undefined,
-          }}
-          initialTab={initialTabParam}
-        />
-      ) : null}
+      {journalDrawer}
       <main className="mx-auto max-w-5xl px-4 py-6 md:px-8">
         {fromParam === 'onboarding-auth' ? (
           <div className="mb-3 rounded-[12px] border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-3 text-sm text-[#1F3C2F]" data-testid="onboarding-auth-banner">
@@ -308,7 +345,7 @@ function ProgressContent() {
               </div>
               <button
                 type="button"
-                onClick={() => router.push('/experience-onboarding?step=journal')}
+                onClick={() => router.push('/experience-onboarding?flow=initiation&step=journal')}
                 className="rounded-[10px] border border-[#1F3C2F] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#1F3C2F] hover:bg-[#1F3C2F] hover:text-white"
                 data-testid="progress-cta-eo-continue"
               >
@@ -404,12 +441,42 @@ function ProgressContent() {
   );
 }
 
+function ProgressPageInner() {
+  const search = useSearchParams();
+  const router = useRouter();
+  const { user, loading } = useAuth();
+  const demoParam = search?.get("demo");
+  const e2eParam = search?.get("e2e");
+  const fromParam = search?.get("from");
+  const allowGuest = Boolean(demoParam || e2eParam === "1" || fromParam === "experience-onboarding");
+
+  useEffect(() => {
+    if (allowGuest) return;
+    if (loading) return;
+    if (!user) {
+      const encoded = encodeURIComponent("/progress");
+      router.replace(`/auth?returnTo=${encoded}`);
+    }
+  }, [allowGuest, loading, router, user]);
+
+  if (!allowGuest && (loading || !user)) {
+    return null;
+  }
+
+  if (allowGuest) {
+    return <ProgressContent />;
+  }
+  return (
+    <RequireAuth redirectTo="/progress">
+      <ProgressContent />
+    </RequireAuth>
+  );
+}
+
 export default function ProgressPage() {
   return (
     <Suspense fallback={null}>
-      <RequireAuth redirectTo="/progress">
-        <ProgressContent />
-      </RequireAuth>
+      <ProgressPageInner />
     </Suspense>
   );
 }

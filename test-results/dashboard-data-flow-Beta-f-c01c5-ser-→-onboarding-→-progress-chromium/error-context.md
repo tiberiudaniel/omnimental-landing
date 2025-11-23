@@ -6,7 +6,7 @@
     - banner [ref=e3]:
       - generic [ref=e4]:
         - button "Autentificare" [ref=e5]
-        - generic "guest" [ref=e6]: Oaspete
+        - generic "eFxtxNqwHYh5BZFrdYQMIbvTmoE3" [ref=e6]: Oaspete
         - generic [ref=e7]:
           - button "RO" [pressed] [ref=e8]
           - generic [ref=e9]: "-"
@@ -35,8 +35,9 @@
             - generic "Pasul 4" [ref=e38]
             - generic [ref=e39]: Recomandare
       - generic [ref=e44]:
-        - 'heading "Mintea ta nu stă doar în creier: și inima, și intestinul trimit semnale când iei decizii importante." [level=2] [ref=e48]':
-          - 'generic "Mintea ta nu stă doar în creier: și inima, și intestinul trimit semnale când iei decizii importante." [ref=e49]':
+        - heading "Când aceste trei ‘minți’ nu sunt aliniate, apar blocajele, ezitările și exploziile de stres." [level=2] [ref=e48]:
+          - generic "Când aceste trei ‘minți’ nu sunt aliniate, apar blocajele, ezitările și exploziile de stres." [ref=e49]:
+            - text: Când aceste trei ‘minți’ nu sunt aliniate, apar blo
             - generic [ref=e50]: "|"
         - generic [ref=e53]:
           - paragraph [ref=e56]: Alege 7 afirmații care descriu cel mai bine ce trăiești acum.
@@ -47,31 +48,31 @@
               - generic [ref=e62]: "Țintă: 5–7"
             - paragraph [ref=e64]: 0%
           - generic [ref=e65]:
-            - button "Nu știu să spun nu" [ref=e66]
-            - button "Simt că trebuie să controlez totul" [ref=e67]
-            - button "Mă cert des cu partenerul" [ref=e68]
-            - button "Îmi este greu să am încredere în oameni" [ref=e69]
-            - button "Vreau să-mi găsesc direcția" [ref=e70]
-            - button "Nu știu ce vreau cu adevărat" [ref=e71]
-            - button "Nu mai am o viziune clară asupra vieții" [ref=e72]
-            - button "Vreau să am mai multă răbdare" [ref=e73]
-            - button "Simt că merg în cerc" [ref=e74]
-            - button "Vreau să fiu mai productiv" [ref=e75]
-            - button "Simt că pierd controlul" [ref=e76]
-            - button "Mă simt copleșit de responsabilități" [ref=e77]
-            - button "Mi-e teamă să greșesc" [ref=e78]
-            - button "Nu pot să mă relaxez" [ref=e79]
-            - button "Mă epuizează relațiile din jur" [ref=e80]
-            - button "Mă simt epuizat" [ref=e81]
-            - button "Vreau să scap de stres" [ref=e82]
-            - button "Vreau să mă simt capabil și stabil" [ref=e83]
-            - button "Mă tem că o să dezamăgesc" [ref=e84]
-            - button "Vreau să am mai multă încredere în mine" [ref=e85]
-            - button "Vreau relații mai autentice" [ref=e86]
-            - button "Simt că m-am deconectat de mine" [ref=e87]
-            - button "Nu mai am energie" [ref=e88]
-            - button "Vreau mai mult echilibru" [ref=e89]
-            - button "Îmi pierd motivația ușor" [ref=e90]
+            - button "Simt că dau prea mult și primesc prea puțin" [ref=e66]
+            - button "Mă simt gol pe dinăuntru" [ref=e67]
+            - button "Vreau să pun limite sănătoase" [ref=e68]
+            - button "Simt că merg în cerc" [ref=e69]
+            - button "Vreau să am mai multă răbdare" [ref=e70]
+            - button "Vreau să fiu mai productiv" [ref=e71]
+            - button "Totul e prea mult" [ref=e72]
+            - button "Nu pot să mă concentrez" [ref=e73]
+            - button "Simt că trebuie să controlez totul" [ref=e74]
+            - button "Mă simt copleșit de responsabilități" [ref=e75]
+            - button "Mă tem că o să dezamăgesc" [ref=e76]
+            - button "Simt că pierd controlul" [ref=e77]
+            - button "Nu pot să mă relaxez" [ref=e78]
+            - button "Mă epuizează relațiile din jur" [ref=e79]
+            - button "Mi-e teamă să fac o alegere greșită" [ref=e80]
+            - button "Îmi pierd motivația ușor" [ref=e81]
+            - button "Mă simt vinovat când refuz" [ref=e82]
+            - button "Vreau să-mi regăsesc calmul interior" [ref=e83]
+            - button "Mă compar prea mult cu alții" [ref=e84]
+            - button "Vreau să înțeleg ce e important pentru mine" [ref=e85]
+            - button "Nu știu ce vreau cu adevărat" [ref=e86]
+            - button "Vreau liniște" [ref=e87]
+            - button "Mă simt neînțeles" [ref=e88]
+            - button "Mă îndoiesc de propriile decizii" [ref=e89]
+            - button "Mă simt obosit tot timpul" [ref=e90]
           - generic [ref=e91]:
             - button "Continuă" [disabled] [ref=e92]
             - paragraph [ref=e93]: Selectează 5–7 opțiuni pentru a continua.
@@ -101,7 +102,16 @@
           - generic [ref=e113]: ·
         - link "Dezabonare" [ref=e115] [cursor=pointer]:
           - /url: /unsubscribe
-  - button "Open Next.js Dev Tools" [ref=e121] [cursor=pointer]:
-    - img [ref=e122]
-  - alert [ref=e125]
+  - generic [ref=e120] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e121]:
+      - img [ref=e122]
+    - generic [ref=e125]:
+      - button "Open issues overlay" [ref=e126]:
+        - generic [ref=e127]:
+          - generic [ref=e128]: "0"
+          - generic [ref=e129]: "1"
+        - generic [ref=e130]: Issue
+      - button "Collapse issues badge" [ref=e131]:
+        - img [ref=e132]
+  - alert [ref=e134]
 ```

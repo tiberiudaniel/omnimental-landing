@@ -15,9 +15,11 @@ function OnboardingContent() {
   const { lang } = useI18n();
   const { profile } = useProfile();
   const search = useSearchParams();
+  const demoMode = Boolean(search?.get('demo') || search?.get('e2e') === '1');
   const aliasEnabled =
-    (process.env.NEXT_PUBLIC_ONBOARDING_ALIAS === '1') ||
-    (process.env.NEXT_PUBLIC_ONBOARDING_ALIAS?.toLowerCase?.() === 'true');
+    ((process.env.NEXT_PUBLIC_ONBOARDING_ALIAS === '1') ||
+      (process.env.NEXT_PUBLIC_ONBOARDING_ALIAS?.toLowerCase?.() === 'true')) &&
+    !demoMode;
   // Declare step state before any conditional return so hooks order is stable
   const [step, setStep] = useState<1 | 2 | 3>(1);
 

@@ -10,7 +10,7 @@ test.describe("OmniKuno lesson progression", () => {
     const timeline = page.getByTestId("kuno-timeline");
     await expect(timeline).toBeVisible();
     const firstLesson = timeline.getByTestId("kuno-lesson-item").first();
-    await firstLesson.getByRole("button").click();
+    await firstLesson.getByTestId("kuno-lesson-trigger").click();
     await expect(page.getByTestId("lesson-view")).toBeVisible();
 
     while (await page.getByTestId("lesson-next").isVisible().catch(() => false)) {

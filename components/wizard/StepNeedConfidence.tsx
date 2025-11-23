@@ -6,6 +6,7 @@ import { buildNeedProfile } from '@/lib/needProfile';
 import GuideCard from '@/components/onboarding/GuideCard';
 import TypewriterText from '@/components/TypewriterText';
 import { useI18n } from '@/components/I18nProvider';
+import { getWizardStepTestId } from '@/components/useWizardSteps';
 import { recordNeedProfile } from '@/lib/progressFacts';
 import { FEEDBACK_BY_TAG } from '@/config/needSurveyFeedback';
 
@@ -37,7 +38,7 @@ export default function StepNeedConfidence({ selectedOptions, onDone }: { select
     onDone(profile);
   };
   return (
-    <section className="space-y-4">
+    <section className="space-y-4" data-testid={getWizardStepTestId("needConfidence")}>
       <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
         <TypewriterText text={lang === 'ro' ? q.label.ro : q.label.en} />
       </div>

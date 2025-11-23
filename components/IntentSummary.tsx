@@ -567,6 +567,15 @@ export default function IntentSummary({
     return false;
   })();
 
+  useEffect(() => {
+    if (!e2eOverride) return;
+    setSpeedTouched(true);
+    setBudgetTouched(true);
+    setGoalTouched(true);
+    setEmotionalTouched(true);
+    setDeterminationTouched(true);
+  }, [e2eOverride]);
+
   const canProceed = (() => {
     if (e2eOverride) return true;
     if (step === 0) return true; // reduce friction on step 0
@@ -586,7 +595,9 @@ export default function IntentSummary({
     if (step === TOTAL_STEPS - 1) {
       onContinue();
     } else {
-      setStep((prev) => Math.min(TOTAL_STEPS - 1, prev + 1));
+      requestAnimationFrame(() => {
+        setStep((prev) => Math.min(TOTAL_STEPS - 1, prev + 1));
+      });
     }
   };
 

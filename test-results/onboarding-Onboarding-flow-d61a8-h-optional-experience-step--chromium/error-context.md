@@ -1,0 +1,43 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - button "Autentificare" [ref=e6]
+        - generic "AvuSNIieUiQ04oVppYt70rJcWn72" [ref=e7]: Oaspete
+        - generic [ref=e8]:
+          - button "RO" [pressed] [ref=e9]
+          - generic [ref=e10]: "-"
+          - button "EN" [ref=e11]
+      - generic [ref=e12]:
+        - link "OmniMental logo OmniMental" [ref=e13] [cursor=pointer]:
+          - /url: /intro
+          - img "OmniMental logo" [ref=e14]
+          - generic [ref=e15]: OmniMental
+        - navigation [ref=e16]:
+          - link "Antrenament" [ref=e17] [cursor=pointer]:
+            - /url: /antrenament
+          - link "Progres" [ref=e18] [cursor=pointer]:
+            - /url: /progress
+          - link "Recomandări" [ref=e19] [cursor=pointer]:
+            - /url: /recommendation
+          - link "Inițiere" [ref=e20] [cursor=pointer]:
+            - /url: /experience-onboarding?flow=initiation&step=intro
+        - button "Deschide meniul" [ref=e22]
+    - main [ref=e27]:
+      - generic [ref=e32]: Pasul 1/3 — Context
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - heading "În diverse perioade, viața ne provoacă la adaptare." [level=2] [ref=e36]
+          - paragraph [ref=e37]: Aici începe antrenamentul tău pentru perioade ca aceasta — când ai nevoie de claritate, energie și sens.
+        - generic [ref=e38]:
+          - button "calm_clarity" [ref=e39]
+          - button "control_balance" [ref=e40]
+          - button "perform_focus" [ref=e41]
+        - button "Continuă" [disabled] [ref=e43]
+  - button "Open Next.js Dev Tools" [ref=e49] [cursor=pointer]:
+    - img [ref=e50]
+  - alert [ref=e53]
+```

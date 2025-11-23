@@ -1,0 +1,317 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - button "Autentificare" [ref=e6]
+        - generic "PnHcqJsUKzUCsoww70yjh1vAlGA2" [ref=e7]: Oaspete
+        - generic [ref=e8]:
+          - button "RO" [pressed] [ref=e9]
+          - generic [ref=e10]: "-"
+          - button "EN" [ref=e11]
+      - generic [ref=e12]:
+        - link "OmniMental logo OmniMental" [ref=e13] [cursor=pointer]:
+          - /url: /intro
+          - img "OmniMental logo" [ref=e14]
+          - generic [ref=e15]: OmniMental
+        - navigation [ref=e16]:
+          - link "Antrenament" [ref=e17] [cursor=pointer]:
+            - /url: /antrenament
+          - link "Progres" [ref=e18] [cursor=pointer]:
+            - /url: /progress
+          - link "Recomandări" [ref=e19] [cursor=pointer]:
+            - /url: /recommendation
+          - link "Inițiere" [ref=e20] [cursor=pointer]:
+            - /url: /experience-onboarding?flow=initiation&step=intro
+        - generic [ref=e21]:
+          - button "Jurnal" [ref=e22]:
+            - generic [ref=e23]: Jurnal
+          - button "Deschide meniul" [ref=e24]
+    - generic [ref=e30]:
+      - generic [ref=e31]: Demo
+      - generic [ref=e32]: "Mod demo: date sintetice — nu se salvează în cont."
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - generic:
+              - paragraph: Jurnal personal
+              - heading [level=2]: Noteaza ceea ce este interesant si util.
+            - button: ×
+          - generic:
+            - generic:
+              - button: Scop și intenție
+              - button: Motivație și resurse
+              - button: Plan și recomandări
+              - button: Observații din evaluare
+              - button: Note libere
+            - textbox:
+              - /placeholder: "Ce vrei să fie diferit pentru tine în 4–6 săptămâni?\nDe ce contează asta pentru tine acum? >>"
+          - generic:
+            - generic:
+              - generic: Se salvează automat.
+              - generic: Salvat
+              - button: Închide
+    - main [ref=e33]:
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]:
+            - heading "OmniMental Progress" [level=2] [ref=e39]
+            - generic [ref=e42]:
+              - heading "KPI — Gândire • Emoție • Energie" [level=3] [ref=e44]
+              - paragraph [ref=e46]: Evoluția indicatorilor interni în timp.
+              - generic [ref=e48]:
+                - button "Toggle KPI to week" [ref=e49]: Săptămână
+                - button "Toggle KPI to month" [ref=e50]: Lună
+              - generic [ref=e51]:
+                - link "Actualizează" [ref=e52] [cursor=pointer]:
+                  - /url: /experience-onboarding?flow=initiation&step=daily-state
+                - link "Scrie o notiță" [ref=e53] [cursor=pointer]:
+                  - /url: /progress?open=journal&tab=NOTE_LIBERE
+              - generic [ref=e55]:
+                - paragraph [ref=e56]: Nu avem încă istoric pentru indicatori. Completează rapid sliderele (1–10) ca să începem evoluția.
+                - generic [ref=e57]:
+                  - link "Actualizează (1–10)" [ref=e58] [cursor=pointer]:
+                    - /url: /experience-onboarding?flow=initiation&step=daily-state
+                  - link "Adaugă o notă rapidă" [ref=e59] [cursor=pointer]:
+                    - /url: /progress?open=journal&tab=NOTE_LIBERE
+            - generic [ref=e62]:
+              - heading "Trend săptămânal Despre trend" [level=3] [ref=e63]:
+                - generic [ref=e64]: Trend săptămânal
+                - button "Despre trend" [ref=e66]: i
+              - generic [ref=e67]:
+                - paragraph [ref=e68]: Evoluția activităților
+                - generic [ref=e69]:
+                  - generic [ref=e70]:
+                    - button "Toggle to day view" [ref=e71]: Azi
+                    - button "Toggle to week view" [ref=e72]: Săptămână
+                    - button "Toggle to month view" [ref=e73]: Lună
+                  - generic [ref=e74]:
+                    - button "Toggle to minutes" [ref=e75]: Minute
+                    - button "Toggle to sessions" [ref=e76]: Sesiuni
+                    - button "Toggle to activity score" [ref=e77]: Scor
+              - img "Trend săptămânal minute" [ref=e79]:
+                - application [ref=e82]:
+                  - generic [ref=e107]:
+                    - generic [ref=e108]:
+                      - generic [ref=e110]: Lun
+                      - generic [ref=e112]: Mar
+                      - generic [ref=e114]: Mie
+                      - generic [ref=e116]: Joi
+                      - generic [ref=e118]: Vin
+                      - generic [ref=e120]: Dum
+                    - generic [ref=e121]:
+                      - generic [ref=e123]: "0"
+                      - generic [ref=e125]: "10"
+                      - generic [ref=e127]: "20"
+                    - generic [ref=e128]:
+                      - generic [ref=e129]: "20"
+                      - generic [ref=e130]: "6"
+                      - generic [ref=e131]: "12"
+                      - generic [ref=e132]: "12"
+                      - generic [ref=e133]: "15"
+                      - generic [ref=e134]: "5"
+                      - generic [ref=e135]: "16"
+                    - generic [ref=e136]:
+                      - generic [ref=e137]: "20"
+                      - generic [ref=e138]: "6"
+                      - generic [ref=e139]: "12"
+                      - generic [ref=e140]: "12"
+                      - generic [ref=e141]: "15"
+                      - generic [ref=e142]: "5"
+                      - generic [ref=e143]: "16"
+              - generic [ref=e146]: "Pondere (ultimele 7 zile): 70% practică, 0% cunoștințe, 30% reflecție."
+            - generic [ref=e148]:
+              - heading "Motivație / Resurse" [level=2] [ref=e149]
+              - generic [ref=e150]:
+                - generic [ref=e151]:
+                  - generic [ref=e152]: Indice motivație
+                  - generic [ref=e153]:
+                    - text: "54"
+                    - generic "față de ultima vizită" [ref=e154]: "+0"
+                - progressbar [ref=e155]
+              - paragraph [ref=e158]: 3h/săpt · Buget mediu · Săptămâni
+              - link "Schimbă" [ref=e160] [cursor=pointer]:
+                - /url: /wizard?step=intentMotivation
+          - generic [ref=e162]:
+            - heading "Profile indices" [level=3] [ref=e163]
+            - generic [ref=e164]:
+              - generic [ref=e165]:
+                - button "Omni-Scop" [ref=e168]: i
+                - paragraph [ref=e169]:
+                  - generic [ref=e170]: Omni-Scop
+                - paragraph [ref=e171]: "54"
+              - generic [ref=e172]:
+                - button "Omni-Cuno" [ref=e175]: i
+                - paragraph [ref=e176]:
+                  - generic [ref=e177]: Omni-Cuno
+                - paragraph [ref=e178]: "31"
+              - generic [ref=e179]:
+                - button "Omni-Abil" [ref=e182]: i
+                - paragraph [ref=e183]:
+                  - generic [ref=e184]: Omni-Abil
+                - paragraph [ref=e185]: "26"
+              - generic [ref=e186]:
+                - button "Omni-Flex" [ref=e189]: i
+                - paragraph [ref=e190]:
+                  - generic [ref=e191]: Omni-Flex
+                - paragraph [ref=e192]: "62"
+            - generic [ref=e193]:
+              - generic [ref=e195]:
+                - generic [ref=e196]: Claritate mentală
+                - generic [ref=e197]: 58%
+              - generic [ref=e201]:
+                - generic [ref=e202]: Echilibru emoțional
+                - generic [ref=e203]: 49%
+              - generic [ref=e207]:
+                - generic [ref=e208]: Energie fizică
+                - generic [ref=e209]: 45%
+              - generic [ref=e213]:
+                - generic [ref=e214]: Performanță
+                - generic [ref=e215]: 42%
+          - generic [ref=e218]:
+            - generic [ref=e219]:
+              - generic [ref=e221]:
+                - heading "Bine ai revenit" [level=2] [ref=e222]
+                - paragraph [ref=e223]: "Ultima evaluare: 2025-11-23 04:01 UTC"
+              - generic [ref=e225]:
+                - heading "Tematica în focus" [level=2] [ref=e226]
+                - paragraph [ref=e227]: Claritate & Focus
+                - paragraph [ref=e228]: Este directia prioritara pe care lucrezi acum.
+                - link "Schimbă" [ref=e230] [cursor=pointer]:
+                  - /url: /wizard?step=intent
+            - generic [ref=e233]:
+              - generic [ref=e234]:
+                - paragraph [ref=e235]: OmniKuno – Misiunea ta de azi
+                - paragraph [ref=e236]:
+                  - text: "Tema în focus:"
+                  - generic [ref=e237]: · Claritate & Focus
+                - paragraph [ref=e238]: Misiunea este să acumulezi cunoștințe pe Claritate & Focus.
+              - generic [ref=e239]: "Lecții finalizate: 0/8 · XP: 0"
+              - generic [ref=e240]:
+                - paragraph [ref=e241]: Următorul pas recomandat
+                - paragraph [ref=e242]: Zgomot exterior, zgomot interior
+              - generic [ref=e243]:
+                - generic [ref=e244]: "Scor: 31"
+                - generic [ref=e245]: "+0"
+              - generic [ref=e246]:
+                - generic [ref=e247]:
+                  - generic [ref=e248]: ▶
+                  - generic [ref=e249]:
+                    - paragraph [ref=e250]: Zgomot exterior, zgomot interior
+                    - paragraph [ref=e251]: Lecție
+                - generic [ref=e252]:
+                  - generic [ref=e253]: …
+                  - generic [ref=e254]:
+                    - paragraph [ref=e255]: Un singur punct de atenție
+                    - paragraph [ref=e256]: Lecție
+                - generic [ref=e257]:
+                  - generic [ref=e258]: …
+                  - generic [ref=e259]:
+                    - paragraph [ref=e260]: Ce contează pentru tine
+                    - paragraph [ref=e261]: Lecție
+              - generic [ref=e262]:
+                - link "Vezi toate misiunile" [ref=e263] [cursor=pointer]:
+                  - /url: /omni-kuno
+                - link "Continuă misiunea OmniKuno" [ref=e264] [cursor=pointer]:
+                  - /url: /omni-kuno?area=focus_clarity&module=focus_clarity&lesson=focus_clarity_l1_01_noise
+            - generic [ref=e267]:
+              - generic [ref=e268]:
+                - generic [ref=e269]:
+                  - generic [ref=e270]: ENERGIE SCĂZUTĂ
+                  - generic [ref=e271]: "Omni-Abil: acțiuni concrete"
+                - generic [ref=e272]:
+                  - paragraph [ref=e274]: Energia
+                  - paragraph [ref=e277]: Echilibrul emoțional
+                  - paragraph [ref=e280]: Claritatea
+                - generic [ref=e282]:
+                  - paragraph [ref=e283]: De ce această recomandare
+                  - paragraph [ref=e284]: Îți recomandăm asta pentru că, în ultimele zile, energia ta a fost ~0/10, echilibrul emoțional ~0/10, iar scorul de acțiune azi este 71/100.
+              - generic [ref=e285]:
+                - generic [ref=e286]:
+                  - paragraph [ref=e287]: Pasul principal
+                  - paragraph [ref=e288]: Respirație 5 minute pentru reset
+                  - paragraph [ref=e289]: "Ritm simplu 4–4 (sau 4–6): inspiră 4s, ține 4s, expiră 4s, ține 4s. 3–5 cicluri, cu atenția pe expirație."
+                  - link "Începe acum ~5 min" [ref=e290] [cursor=pointer]:
+                    - /url: /antrenament?tab=ose
+                    - generic [ref=e291]: Începe acum
+                    - generic [ref=e292]: ~5 min
+                - generic [ref=e293]:
+                  - generic [ref=e294]:
+                    - paragraph [ref=e295]: Variante light
+                    - generic [ref=e296]: — 5 min
+                  - generic [ref=e297]:
+                    - 'link "• Somn: checklist scurt (2 min)" [ref=e298] [cursor=pointer]':
+                      - /url: /antrenament?tab=oc
+                    - 'link "• Jurnal: o notă rapidă" [ref=e299] [cursor=pointer]':
+                      - /url: /progress?open=journal&tab=NOTE_LIBERE
+        - generic [ref=e300]:
+          - generic [ref=e302]:
+            - heading "Revelația zilei" [level=3] [ref=e303]
+            - paragraph [ref=e305]: Mintea devine mai clară când limitele personale sunt respectate; confuzia vine adesea din supraîncărcare relațională.
+            - paragraph [ref=e307]: "Temă: Clarity"
+          - generic [ref=e309]:
+            - generic [ref=e310]:
+              - heading "Însemnări recente" [level=4] [ref=e311]
+              - link "Open journal" [ref=e313] [cursor=pointer]:
+                - /url: /progress?open=journal
+                - text: Jurnal
+            - generic [ref=e314]:
+              - generic [ref=e315]:
+                - paragraph [ref=e316]: 22 nov. 2025
+                - generic [ref=e317]:
+                  - link "Mi-am clarificat obiectivul pentru săptămâna asta." [ref=e318] [cursor=pointer]:
+                    - /url: /progress?open=journal&tab=OBSERVATII_EVALUARE
+                  - paragraph [ref=e319]: 10:10
+              - generic [ref=e320]:
+                - paragraph [ref=e321]: 21 nov. 2025
+                - generic [ref=e322]:
+                  - link "Am observat că respirația m-a calmat în 2 minute." [ref=e323] [cursor=pointer]:
+                    - /url: /progress?open=journal&tab=OBSERVATII_EVALUARE
+                  - paragraph [ref=e324]: 11:10
+            - link "Vezi tot" [ref=e326] [cursor=pointer]:
+              - /url: /progress?open=journal
+          - generic [ref=e328]:
+            - heading "Practice snapshot" [level=4] [ref=e329]
+            - generic [ref=e330]:
+              - generic [ref=e331]:
+                - paragraph [ref=e332]:
+                  - generic [ref=e333]: Reflections
+                - paragraph [ref=e334]: "4"
+              - generic [ref=e335]:
+                - paragraph [ref=e336]:
+                  - generic [ref=e337]: Breathing min
+                - paragraph [ref=e338]: "7"
+              - generic [ref=e339]:
+                - paragraph [ref=e340]:
+                  - generic [ref=e341]: Focus drills
+                - paragraph [ref=e342]: "3"
+              - generic [ref=e343]:
+                - paragraph [ref=e344]:
+                  - generic [ref=e345]: Energy idx
+                - paragraph [ref=e346]: "40"
+          - generic [ref=e348]:
+            - heading "Provocarea de azi" [level=3] [ref=e349]
+            - generic:
+              - paragraph
+            - generic [ref=e350]:
+              - paragraph [ref=e351]: Aplică azi, în viața reală.
+              - generic [ref=e352]: —
+  - generic [ref=e357] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e358]:
+      - img [ref=e359]
+    - generic [ref=e362]:
+      - button "Open issues overlay" [ref=e363]:
+        - generic [ref=e364]:
+          - generic [ref=e365]: "4"
+          - generic [ref=e366]: "5"
+        - generic [ref=e367]:
+          - text: Issue
+          - generic [ref=e368]: s
+      - button "Collapse issues badge" [ref=e369]:
+        - img [ref=e370]
+  - alert [ref=e372]
+  - generic [ref=e373]: "0"
+```

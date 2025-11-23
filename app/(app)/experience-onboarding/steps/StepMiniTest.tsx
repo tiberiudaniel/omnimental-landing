@@ -8,12 +8,22 @@ import { useProgressFacts } from "@/components/useProgressFacts";
 import { getOnboardingQuestions } from "@/lib/omniKunoOnboarding";
 import { getCorrectIndexFor } from "@/lib/omniKunoAnswers";
 import type { OmniKunoTopicKey } from "@/lib/omniKunoTypes";
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useI18n } from "@/components/I18nProvider";
 
-type MiniMeta = { topicKey?: string; secondaryTopicKey?: string; questions?: Array<{ id: string; correctIndex: number; style?: string; facet?: string; topicKey?: string }> };
+type MiniMeta = {
+  topicKey?: string;
+  secondaryTopicKey?: string;
+  questions?: Array<{ id: string; correctIndex: number; style?: string; facet?: string; topicKey?: string; questionText?: string }>;
+};
 
-export default function StepMiniTest({ onSubmit }: { onSubmit: (answers: number[], score: { raw: number; max: number }, meta?: MiniMeta) => void }) {
+export default function StepMiniTest({
+  onSubmit,
+  autoSubmitAfterMin = false,
+}: {
+  onSubmit: (answers: number[], score: { raw: number; max: number }, meta?: MiniMeta) => void;
+  autoSubmitAfterMin?: boolean;
+}) {
   const { lang } = useI18n();
   const { profile } = useProfile();
   const { data: facts } = useProgressFacts(profile?.id);
@@ -62,7 +72,13 @@ export default function StepMiniTest({ onSubmit }: { onSubmit: (answers: number[
   })();
   // Build a pure knowledge mini‑quiz to avoid mixing types in the score.
   // 1) Pull onboarding questions and filter to knowledge
-  const onboardingSet = primary ? getOnboardingQuestions(primary as OmniKunoTopicKey, undefined, (facts?.intent?.tags ?? []) as string[]) : [];
+  const onboardingSet = useMemo(
+    () =>
+      primary
+        ? getOnboardingQuestions(primary as OmniKunoTopicKey, undefined, (facts?.intent?.tags ?? []) as string[])
+        : [],
+    [facts?.intent?.tags, primary],
+  );
   const knowledgeFromOnboarding = onboardingSet.filter((q) => q.style === 'knowledge');
   // 2) If not enough, fallback to general CUNO bank for the mapped category
   const catMap: Record<string, string> = { relatii: 'relationships', calm: 'calm', identitate: 'clarity', performanta: 'performance', energie: 'energy', obiceiuri: 'general', sens: 'general' };
@@ -89,7 +105,39 @@ export default function StepMiniTest({ onSubmit }: { onSubmit: (answers: number[
   const [touched, setTouched] = useState<boolean[]>(Array(questions.length).fill(false));
   const raw = answers.filter((a, i) => questions[i].correctIndex >= 0 && a === questions[i].correctIndex).length;
   const max = questions.length;
-  const allAnswered = touched.every(Boolean);
+  const answeredCount = touched.filter(Boolean).length;
+  const minAnswersNeeded = Math.min(3, questions.length || 3);
+  const canSubmit = answeredCount >= minAnswersNeeded;
+  const autoSubmitRef = useRef(false);
+  const handleSubmit = useCallback(() => {
+    autoSubmitRef.current = true;
+    onSubmit(
+      answers,
+      { raw, max },
+      {
+        topicKey: onboardingSet.length ? (primary as string) : (primary as string | undefined),
+        secondaryTopicKey: onboardingSet.length ? (secondary as string | undefined) : undefined,
+        questions: questions.map((q) => {
+          const src = onboardingSet.find((f) => f.id === q.id);
+          return {
+            id: q.id,
+            correctIndex: q.correctIndex,
+            style: src?.style,
+            facet: src?.facet as string | undefined,
+            topicKey: src?.topicKey as string | undefined,
+            questionText: q.question,
+          };
+        }),
+      },
+    );
+  }, [answers, max, onboardingSet, onSubmit, primary, questions, raw, secondary]);
+
+  useEffect(() => {
+    if (!autoSubmitAfterMin) return;
+    if (!canSubmit) return;
+    if (autoSubmitRef.current) return;
+    handleSubmit();
+  }, [autoSubmitAfterMin, canSubmit, handleSubmit]);
   return (
     <section className="space-y-4">
       <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
@@ -111,25 +159,16 @@ export default function StepMiniTest({ onSubmit }: { onSubmit: (answers: number[
             styleLabel={style}
             index={idx}
             total={questions.length}
+            questionTestId="eo-question"
+            optionTestId="eo-option"
           />
         );
       })}
       <div className="flex items-center justify-between">
         <p className="text-sm text-[#4A3A30]">{lang === 'ro' ? 'Scor curent' : 'Current score'}: {raw}/{max}</p>
         <button
-          disabled={!allAnswered}
-          onClick={() => onSubmit(
-            answers,
-            { raw, max },
-            {
-              topicKey: onboardingSet.length ? (primary as string) : (primary as string | undefined),
-              secondaryTopicKey: onboardingSet.length ? (secondary as string | undefined) : undefined,
-              questions: questions.map((q) => {
-                const src = onboardingSet.find((f) => f.id === q.id);
-                return { id: q.id, correctIndex: q.correctIndex, style: src?.style, facet: src?.facet as string | undefined, topicKey: src?.topicKey as string | undefined, questionText: q.question };
-              }),
-            }
-          )}
+          disabled={!canSubmit}
+          onClick={handleSubmit}
           data-testid="eo-submit"
           className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
         >

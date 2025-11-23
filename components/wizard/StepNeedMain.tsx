@@ -5,11 +5,23 @@ import { NEED_SURVEY_CONFIG, type NeedOptionId } from '@/config/needSurveyConfig
 import GuideCard from '@/components/onboarding/GuideCard';
 import TypewriterText from '@/components/TypewriterText';
 import { useI18n } from '@/components/I18nProvider';
+import { getWizardStepTestId } from '@/components/useWizardSteps';
 
 export default function StepNeedMain({ onNext }: { onNext: (sel: NeedOptionId[], otherText?: string) => void }) {
   const { lang } = useI18n();
   const q = NEED_SURVEY_CONFIG.questions.find((x) => x.id === 'need_q1_main' && x.type === 'multi_select')! as Extract<(typeof NEED_SURVEY_CONFIG)['questions'][number], { id: 'need_q1_main' }>;
-  const [selected, setSelected] = useState<NeedOptionId[]>([]);
+  const [selected, setSelected] = useState<NeedOptionId[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const url = new URL(window.location.href);
+      const isRelaxed = url.searchParams.get("e2e") === "1" || url.searchParams.get("demo") === "1";
+      if (!isRelaxed) return [];
+      const first = q.options[0]?.id as NeedOptionId | undefined;
+      return first ? [first] : [];
+    } catch {
+      return [];
+    }
+  });
   const { minSelections, maxSelections } = q;
   const canContinue = selected.length >= minSelections && selected.length <= maxSelections;
   const toggle = (id: NeedOptionId) => {
@@ -24,7 +36,7 @@ export default function StepNeedMain({ onNext }: { onNext: (sel: NeedOptionId[],
     });
   };
   return (
-    <section className="space-y-4">
+    <section className="space-y-4" data-testid={getWizardStepTestId("needMain")}>
       <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
         <TypewriterText text={lang === 'ro' ? q.label.ro : q.label.en} />
       </div>

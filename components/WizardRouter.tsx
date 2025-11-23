@@ -393,7 +393,7 @@ export default function WizardRouter(props: Props) {
           : ['I knew','Heard about it','Didn’t know']
       );
       return (
-        <div className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8">
+        <div className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8" data-testid={getWizardStepTestId("microLessonInfo")}>
         <section className="mx-auto w-full max-w-4xl px-4 md:px-6">
           {/* Eyebrow */}
           <div className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#C07963]">

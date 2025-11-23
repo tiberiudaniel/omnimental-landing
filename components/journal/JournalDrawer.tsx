@@ -172,7 +172,11 @@ export function JournalDrawer({ open, onOpenChange, userId, context, initialTab 
   );
 
   return (
-    <div className={`fixed inset-0 z-[60] ${open ? "pointer-events-auto" : "pointer-events-none"}`} aria-hidden={!open} data-testid="journal-drawer">
+    <div
+      className={`fixed inset-0 z-[60] ${open ? "pointer-events-auto" : "pointer-events-none"}`}
+      aria-hidden={open ? "false" : "true"}
+      data-testid="journal-drawer"
+    >
       {/* Backdrop */}
       <div
         className={`absolute inset-0 transition-opacity ${open ? "opacity-100" : "opacity-0"}`}
