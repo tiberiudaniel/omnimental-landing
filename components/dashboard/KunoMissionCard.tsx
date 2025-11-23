@@ -24,8 +24,6 @@ type KunoMissionCardProps = {
   missionData: KunoMissionCardData | null;
 };
 
-const XP_PER_LEVEL = 120;
-
 export default function KunoMissionCard({ lang, focusAreaLabel, omniCunoScore, kunoDelta, missionData }: KunoMissionCardProps) {
   const timeline = useMemo(() => {
     if (!missionData) return [];
