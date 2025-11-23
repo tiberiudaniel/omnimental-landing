@@ -34,6 +34,7 @@ const emotionalBalanceLessons: OmniKunoLesson[] = [
     durationMin: 6,
     difficulty: "easy",
     screensCount: 5,
+    center: "combined",
   },
   {
     id: "emotional_balance_l1_02_triggers",
@@ -43,6 +44,7 @@ const emotionalBalanceLessons: OmniKunoLesson[] = [
     summary: "Identifici situațiile concrete care îți cresc pulsul și pregătești un răspuns conștient.",
     durationMin: 6,
     screensCount: 5,
+    center: "mind",
   },
   {
     id: "emotional_balance_l1_03_body_scan",
@@ -52,6 +54,7 @@ const emotionalBalanceLessons: OmniKunoLesson[] = [
     summary: "Un protocol rapid pentru a observa semnalele corpului înainte de reacții impulsive.",
     durationMin: 5,
     screensCount: 5,
+    center: "body",
   },
   {
     id: "emotional_balance_l1_04_micro_choices",
@@ -61,13 +64,69 @@ const emotionalBalanceLessons: OmniKunoLesson[] = [
     summary: "Cum montezi micro-pauze și ancore în zi pentru a rămâne centrat chiar și sub presiune.",
     durationMin: 6,
     screensCount: 5,
+    center: "combined",
   },
-  { id: "emotional_balance_l1_05_micro_breaks", order: 5, type: "lesson", title: "Micro-pauze în agenda reală", summary: "Cum programezi pauze de 60 secunde în calendarul aglomerat pentru a preveni avalanșa emoțională.", durationMin: 6, screensCount: 5 },
-  { id: "emotional_balance_l1_06_story_line", order: 6, type: "lesson", title: "Povestea din cap vs faptele", summary: "Instrument din OmniKuno pentru separarea emoției de interpretarea automată.", durationMin: 6, screensCount: 5 },
-  { id: "emotional_balance_l1_07_evening_reset", order: 7, type: "lesson", title: "Reset seara în 3 pași", summary: "Mic ritual de închidere a zilei: evacuare tensiune, recunoaștere progres, plan minimal pentru mâine.", durationMin: 8, screensCount: 5 },
-  { id: "emotional_balance_l1_q1", order: 8, type: "quiz", title: "Quiz: Indicatori de calm interior", summary: "5 întrebări care verifică dacă recunoști semnalele somatice și cognitive asociate calmului activ.", quizTopicKey: "kuno_calm_intro", difficulty: "hard" },
-  { id: "emotional_balance_l1_08_micro_commit", order: 9, type: "lesson", title: "Micro-angajament zilnic", summary: "Îți alegi „ancora” calmă pentru următoarele 7 zile (de ex. respirație + notițe).", durationMin: 5, screensCount: 5 },
-  { id: "emotional_balance_l1_q2", order: 10, type: "quiz", title: "Quiz: Scenarii reale", summary: "Simulări cu 4 scenarii pentru a valida cum aplici tehnicile când apare un conflict.", quizTopicKey: "kuno_calm_scenarios", difficulty: "hard" },
+  {
+    id: "emotional_balance_l1_05_micro_breaks",
+    order: 5,
+    type: "lesson",
+    title: "Micro-pauze în agenda reală",
+    summary: "Cum programezi pauze de 60 secunde în calendarul aglomerat pentru a preveni avalanșa emoțională.",
+    durationMin: 6,
+    screensCount: 5,
+    center: "body",
+  },
+  {
+    id: "emotional_balance_l1_06_story_line",
+    order: 6,
+    type: "lesson",
+    title: "Povestea din cap vs faptele",
+    summary: "Instrument din OmniKuno pentru separarea emoției de interpretarea automată.",
+    durationMin: 6,
+    screensCount: 5,
+    center: "mind",
+  },
+  {
+    id: "emotional_balance_l1_07_evening_reset",
+    order: 7,
+    type: "lesson",
+    title: "Reset seara în 3 pași",
+    summary:
+      "Mic ritual de închidere a zilei: evacuare tensiune, recunoaștere progres, plan minimal pentru mâine.",
+    durationMin: 8,
+    screensCount: 5,
+    center: "combined",
+  },
+  {
+    id: "emotional_balance_l1_q1",
+    order: 8,
+    type: "quiz",
+    title: "Quiz: Indicatori de calm interior",
+    summary: "5 întrebări care verifică dacă recunoști semnalele somatice și cognitive asociate calmului activ.",
+    quizTopicKey: "kuno_calm_intro",
+    difficulty: "hard",
+    center: "combined",
+  },
+  {
+    id: "emotional_balance_l1_08_micro_commit",
+    order: 9,
+    type: "lesson",
+    title: "Micro-angajament zilnic",
+    summary: "Îți alegi „ancora” calmă pentru următoarele 7 zile (de ex. respirație + notițe).",
+    durationMin: 5,
+    screensCount: 5,
+    center: "heart",
+  },
+  {
+    id: "emotional_balance_l1_q2",
+    order: 10,
+    type: "quiz",
+    title: "Quiz: Scenarii reale",
+    summary: "Simulări cu 4 scenarii pentru a valida cum aplici tehnicile când apare un conflict.",
+    quizTopicKey: "kuno_calm_scenarios",
+    difficulty: "hard",
+    center: "combined",
+  },
 ];
 
 const energyBodyLessons: OmniKunoLesson[] = [
@@ -79,6 +138,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     summary: "Setul de 4 pași prin care observi, respiri, relaxezi corpul și alegi un gest mic de resetare.",
     durationMin: 4,
     difficulty: "easy",
+    center: "body",
   },
   {
     id: "energy_body_l1_01_signals",
@@ -88,6 +148,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     summary: "Identifici mesajele simple prin care corpul îți arată că ritmul actual îl obosește.",
     durationMin: 5,
     difficulty: "easy",
+    center: "body",
   },
   {
     id: "energy_body_l1_02_breath",
@@ -96,6 +157,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     title: "Respirația și energia",
     summary: "Folosești 2 respirații lente pentru a trimite corpului un semnal de siguranță.",
     durationMin: 5,
+    center: "body",
   },
   {
     id: "energy_body_l1_03_posture",
@@ -104,6 +166,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     title: "Postură și tensiune",
     summary: "Ajustezi poziția corpului pentru a reduce tensiunea și a recăpăta aer.",
     durationMin: 5,
+    center: "body",
   },
   {
     id: "energy_body_l1_04_microbreaks",
@@ -112,6 +175,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     title: "Pauze mici, efect mare",
     summary: "Planifici pauze de un minut care îți protejează atenția și energia.",
     durationMin: 5,
+    center: "body",
   },
   {
     id: "energy_body_l2_05_sleep_ritual",
@@ -121,6 +185,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     summary: "Construiești un ritual scurt care îți liniștește sistemul înainte de somn.",
     durationMin: 6,
     difficulty: "medium",
+    center: "body",
   },
   {
     id: "energy_body_l2_06_rhythm",
@@ -130,6 +195,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     summary: "Mapezi ferestrele bune și momentele în care corpul cere încetinire.",
     durationMin: 6,
     difficulty: "medium",
+    center: "combined",
   },
   {
     id: "energy_body_l2_07_movement",
@@ -139,6 +205,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     summary: "Introduci micro-mişcare pentru a scoate corpul din rigiditate și ceață.",
     durationMin: 5,
     difficulty: "medium",
+    center: "body",
   },
   {
     id: "energy_body_l2_08_fuel",
@@ -148,6 +215,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     summary: "Clarifici ce fel de alimentație și hidratare îți stabilizează energia.",
     durationMin: 6,
     difficulty: "medium",
+    center: "body",
   },
   {
     id: "energy_body_l3_09_stress_energy",
@@ -157,6 +225,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     summary: "Înveți să vezi legătura dintre stres prelungit și căderile de energie.",
     durationMin: 6,
     difficulty: "hard",
+    center: "combined",
   },
   {
     id: "energy_body_l3_10_crash_repair",
@@ -166,6 +235,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     summary: "Planifici gesturi mici de reparație după perioade foarte solicitante.",
     durationMin: 6,
     difficulty: "hard",
+    center: "body",
   },
   {
     id: "energy_body_l3_11_listening_limits",
@@ -175,6 +245,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     summary: "Reînveți să accepți limitele corpului fără rușine și să acționezi în consecință.",
     durationMin: 5,
     difficulty: "hard",
+    center: "heart",
   },
   {
     id: "energy_body_l3_12_personal_ritual",
@@ -184,6 +255,7 @@ const energyBodyLessons: OmniKunoLesson[] = [
     summary: "Îți creezi un ritual propriu care combină respirație, mișcare și pauze pentru zilele grele.",
     durationMin: 6,
     difficulty: "hard",
+    center: "combined",
   },
 ];
 
@@ -550,6 +622,7 @@ const focusClarityLessons: OmniKunoLesson[] = [
     durationMin: 5,
     screensCount: 5,
     difficulty: "easy",
+    center: "mind",
   },
   {
     id: "focus_clarity_l1_02_single_point",
@@ -559,6 +632,7 @@ const focusClarityLessons: OmniKunoLesson[] = [
     summary: "Construiești un protocol simplu de focus: alegi un singur lucru, respiri și setezi un pas clar.",
     durationMin: 6,
     screensCount: 6,
+    center: "mind",
   },
   {
     id: "focus_clarity_l1_03_values",
@@ -568,6 +642,7 @@ const focusClarityLessons: OmniKunoLesson[] = [
     summary: "Clarifici trei valori/lucruri importante acum astfel încât deciziile zilnice să fie mai simple.",
     durationMin: 5,
     screensCount: 5,
+    center: "mind",
   },
   {
     id: "focus_clarity_l1_04_scatter",
@@ -577,6 +652,7 @@ const focusClarityLessons: OmniKunoLesson[] = [
     summary: "Înveți să încetinești ritmul și să revii la o singură direcție când apar multe întreruperi.",
     durationMin: 6,
     screensCount: 6,
+    center: "mind",
   },
   {
     id: "focus_clarity_l1_05_priorities",
@@ -586,6 +662,7 @@ const focusClarityLessons: OmniKunoLesson[] = [
     summary: "Stabilești clar care este primul lucru care merită atenția ta într-o zi aglomerată.",
     durationMin: 5,
     screensCount: 5,
+    center: "mind",
   },
   {
     id: "focus_clarity_l1_06_inner_clutter",
@@ -595,6 +672,7 @@ const focusClarityLessons: OmniKunoLesson[] = [
     summary: "Transformi dialogul interior dur într-unul mai blând pentru a elibera spațiu mental.",
     durationMin: 5,
     screensCount: 5,
+    center: "mind",
   },
   {
     id: "focus_clarity_l1_07_planning_light",
@@ -604,6 +682,7 @@ const focusClarityLessons: OmniKunoLesson[] = [
     summary: "Folosești structura acum–după–mai târziu ca să planifici simplu, fără haos.",
     durationMin: 6,
     screensCount: 6,
+    center: "mind",
   },
   {
     id: "focus_clarity_l1_08_daily_reset",
@@ -613,6 +692,7 @@ const focusClarityLessons: OmniKunoLesson[] = [
     summary: "Închizi ziua cu un reset în trei întrebări astfel încât mintea să rămână clară pentru mâine.",
     durationMin: 5,
     screensCount: 5,
+    center: "mind",
   },
 ];
 

@@ -52,6 +52,22 @@ export default function InternalKpiCard({ lang, t, timeframe, setTimeframe, fact
               </button>
             </div>
           </div>
+          <div className="mt-2 flex flex-wrap gap-2 text-[10px] sm:text-[11px] text-[#7B6B60]">
+            <Link
+              href="/experience-onboarding?flow=initiation&step=daily-state"
+              className="inline-flex items-center gap-1 rounded-full border border-[#E4DAD1] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4D3F36] transition hover:border-[#C07963] hover:text-[#C07963]"
+              data-testid="kpi-action-update"
+            >
+              {lang === "ro" ? "Actualizează" : "Update"}
+            </Link>
+            <Link
+              href="/progress?open=journal&tab=NOTE_LIBERE"
+              className="inline-flex items-center gap-1 rounded-full border border-[#E4DAD1] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4D3F36] transition hover:border-[#C07963] hover:text-[#C07963]"
+              data-testid="kpi-action-note"
+            >
+              {lang === "ro" ? "Scrie o notiță" : "Write a note"}
+            </Link>
+          </div>
           {renderHistory(lang, facts)}
         </div>
       </Card>

@@ -22,6 +22,7 @@ import { KunoModuleHeader } from "./KunoModuleHeader";
 import { KunoTimeline } from "./KunoTimeline";
 import { KunoActivePanel } from "./KunoActivePanel";
 import { KunoFinalTestBanner } from "./KunoFinalTestBanner";
+import { getKunoLevel } from "@/lib/omniKunoXp";
 type ArcZoneKey = keyof (typeof OMNI_KUNO_ARC_INTROS)["emotional_balance"];
 const ARC_ZONE_ORDER: ArcZoneKey[] = ["trezire", "primele_ciocniri", "profunzime", "maestrie"];
 type OmniAreaKey = OmniKunoModuleId;
@@ -489,7 +490,20 @@ const areaStats = useMemo(() => {
     lang === "ro"
       ? `Lecții finalizate: ${completedLessonsCount}/${activeModule.lessons.length}`
       : `Lessons completed: ${completedLessonsCount}/${activeModule.lessons.length}`;
-  const headerXpSummary = lang === "ro" ? "XP: 45 · Următorul nivel la 120" : "XP: 45 · Next level at 120";
+  const totalXp = Math.max(0, Math.round(kunoFacts.global?.totalXp ?? 0));
+  const { level: kunoLevel, nextThreshold } = getKunoLevel(totalXp);
+  const nextLevelCopy =
+    nextThreshold != null
+      ? lang === "ro"
+        ? `Următorul nivel la ${nextThreshold} XP`
+        : `Next level at ${nextThreshold} XP`
+      : lang === "ro"
+        ? "Nivel maxim atins"
+        : "Max level reached";
+  const headerXpSummary =
+    lang === "ro"
+      ? `XP: ${totalXp} · Nivel ${kunoLevel} · ${nextLevelCopy}`
+      : `XP: ${totalXp} · Level ${kunoLevel} · ${nextLevelCopy}`;
 
   const goToAuth = useCallback(() => router.push("/auth"), [router]);
 
@@ -578,6 +592,7 @@ const areaStats = useMemo(() => {
               key={moduleStateKey}
               areaKey={activeAreaKey}
               module={activeModule}
+              xpLabel={headerXpSummary}
               profileId={profile?.id}
               completedIdsFromFacts={completedIdsFromFacts}
               initialPerformance={normalizedPerformance}
@@ -615,6 +630,7 @@ type ExperienceProps = {
   onToggleFinalTest?: (value: boolean) => void;
   onFinalTestComplete?: (result: { correct: number; total: number }) => void;
   finalTestConfig?: ModuleFinalTestContent | null;
+  xpLabel?: string;
 };
 
 function ModuleExperience({
@@ -632,8 +648,11 @@ function ModuleExperience({
   onToggleFinalTest,
   onFinalTestComplete,
   finalTestConfig = null,
+  xpLabel,
 }: ExperienceProps) {
   const { t, lang } = useI18n();
+  const fallbackXpLabel = lang === "ro" ? "XP actualizat" : "XP updated";
+  const xpDisplay = xpLabel ?? fallbackXpLabel;
   const [localCompleted, setLocalCompleted] = useState<string[]>(() => completedIdsFromFacts);
   const [localPerformance, setLocalPerformance] = useState<KunoPerformanceSnapshot>(initialPerformance);
   const orderedLessons = useMemo(() => module.lessons.slice().sort((a, b) => a.order - b.order), [module.lessons]);
@@ -732,7 +751,7 @@ function ModuleExperience({
             {lang === "ro" ? "misiuni" : "missions"}
           </p>
         }
-        xpLabel={lang === "ro" ? "XP: 45 · Următorul nivel la 120" : "XP: 45 · Next level at 120"}
+        xpLabel={xpDisplay}
         nextLessonTitle={resolvedLesson?.title ?? null}
         onContinue={resolvedLesson ? () => onLessonSelect?.(resolvedLesson.id) : undefined}
         disabled={!resolvedLesson}
