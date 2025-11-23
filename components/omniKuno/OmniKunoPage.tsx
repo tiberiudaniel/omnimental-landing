@@ -11,7 +11,6 @@ import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import Toast from "@/components/Toast";
-import ModuleArcHero from "./ModuleArcHero";
 import TestView from "./TestView";
 import { computeLessonsStatus } from "./useKunoTimeline";
 import { asDifficulty, type LessonDifficulty } from "./difficulty";
@@ -23,6 +22,7 @@ import { KunoTimeline } from "./KunoTimeline";
 import { KunoActivePanel } from "./KunoActivePanel";
 import { KunoFinalTestBanner } from "./KunoFinalTestBanner";
 import { getKunoLevel } from "@/lib/omniKunoXp";
+import { KunoContainer } from "./KunoContainer";
 type ArcZoneKey = keyof (typeof OMNI_KUNO_ARC_INTROS)["emotional_balance"];
 const ARC_ZONE_ORDER: ArcZoneKey[] = ["trezire", "primele_ciocniri", "profunzime", "maestrie"];
 type OmniAreaKey = OmniKunoModuleId;
@@ -333,6 +333,10 @@ export default function OmniKunoPage() {
   }, [kunoFacts.recommendedArea, kunoFacts.recommendedModuleId, parseModuleParam]);
   const activeAreaKey: OmniAreaKey = moduleFromUrl ?? areaFromUrl ?? recommendedArea ?? "emotional_balance";
   const activeModule = OMNIKUNO_MODULES[activeAreaKey];
+  const moduleSnapshot = getKunoModuleSnapshot(kunoFacts, activeModule.moduleId);
+  const completedIdsFromFacts = moduleSnapshot.completedIds;
+  const performanceFromFacts = (moduleSnapshot.performance ?? null) as Partial<KunoPerformanceSnapshot> | null;
+  const normalizedPerformance = normalizePerformance(performanceFromFacts);
   const [showFinalTest, setShowFinalTest] = useState(false);
   const [finalTestResult, setFinalTestResult] = useState<{ correct: number; total: number } | null>(null);
   const resetFinalTestState = useCallback(() => {
@@ -376,14 +380,25 @@ export default function OmniKunoPage() {
     (nextArea: ExperienceProps["areaKey"]) => {
       resetFinalTestState();
       const nextModule = OMNIKUNO_MODULES[nextArea];
-      const nextLessonId = nextModule.lessons[0]?.id ?? null;
+      const nextSnapshot = getKunoModuleSnapshot(kunoFacts, nextModule.moduleId);
+      const nextCompleted = nextSnapshot.completedIds ?? [];
+      const ordered = nextModule.lessons.slice().sort((a, b) => a.order - b.order);
+      const nextLessonId = (() => {
+        const pending = ordered.find((lesson) => !nextCompleted.includes(lesson.id));
+        return pending?.id ?? ordered[0]?.id ?? null;
+      })();
       updateUrl({ area: nextArea, module: nextModule.moduleId, lesson: nextLessonId });
     },
-    [resetFinalTestState, updateUrl],
+    [kunoFacts, resetFinalTestState, updateUrl],
   );
+  const orderedModuleLessons = useMemo(() => activeModule.lessons.slice().sort((a, b) => a.order - b.order), [activeModule.lessons]);
   const resolvedLessonIdFromQuery =
-    lessonQueryParam && activeModule.lessons.some((lesson) => lesson.id === lessonQueryParam) ? lessonQueryParam : null;
-  const fallbackLessonId = activeModule.lessons[0]?.id ?? null;
+    lessonQueryParam && orderedModuleLessons.some((lesson) => lesson.id === lessonQueryParam) ? lessonQueryParam : null;
+  const pendingLessonId = useMemo(() => {
+    const next = orderedModuleLessons.find((lesson) => !completedIdsFromFacts.includes(lesson.id));
+    return next?.id ?? orderedModuleLessons[0]?.id ?? null;
+  }, [completedIdsFromFacts, orderedModuleLessons]);
+  const fallbackLessonId = pendingLessonId;
   const initialLessonIdForModule = resolvedLessonIdFromQuery ?? (lessonHasExplicitNone ? null : fallbackLessonId);
   useEffect(() => {
     const needsAreaSync = areaParam !== activeAreaKey;
@@ -398,10 +413,6 @@ export default function OmniKunoPage() {
       });
     }
   }, [activeAreaKey, areaParam, moduleParam, initialLessonIdForModule, lessonHasExplicitNone, lessonQueryParam, updateUrl]);
-  const moduleSnapshot = getKunoModuleSnapshot(kunoFacts, activeModule.moduleId);
-  const completedIdsFromFacts = moduleSnapshot.completedIds;
-  const performanceFromFacts = (moduleSnapshot.performance ?? null) as Partial<KunoPerformanceSnapshot> | null;
-  const normalizedPerformance = normalizePerformance(performanceFromFacts);
 const areaStats = useMemo(() => {
   return Object.fromEntries(
     moduleEntries.map(([areaKey, module]) => {
@@ -515,32 +526,34 @@ const areaStats = useMemo(() => {
         onMenuToggle={() => setMenuOpen(true)}
       />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-      <main className="mx-auto max-w-6xl px-4 py-6 text-[#2C2C2C]">
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 text-[#2C2C2C]">
         <div className="space-y-6">
-          <div data-testid="omni-kuno-header">
-            <KunoModuleHeader
-              title={lang === "ro" ? "Tema ta în focus" : "Your focus mission"}
-              focusLabel={focusLabel}
-              progressLabel={headerProgressSummary}
-              xpLabel={headerXpSummary}
-              adaptiveMessage={adaptiveMessage}
-              onDismissAdaptive={() => setAdaptiveMessage(null)}
-            />
-          </div>
-          {adaptiveHistory.length ? (
-            <div className="mt-3 rounded-xl border border-dashed border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7B6B60]">
-                {lang === "ro" ? "Ajustări recente de dificultate" : "Recent difficulty changes"}
-              </p>
-              <ul className="mt-2 space-y-1 text-[12px] text-[#5A4B43]">
-                {adaptiveHistory.map((entry) => (
-                  <li key={entry.id}>{entry.message}</li>
-                ))}
-              </ul>
+          <KunoContainer>
+            <div className="space-y-4" data-testid="omni-kuno-header">
+              <KunoModuleHeader
+                title={lang === "ro" ? "Tema ta în focus" : "Your focus mission"}
+                focusLabel={focusLabel}
+                progressLabel={headerProgressSummary}
+                xpLabel={headerXpSummary}
+                adaptiveMessage={adaptiveMessage}
+                onDismissAdaptive={() => setAdaptiveMessage(null)}
+              />
+              {adaptiveHistory.length ? (
+                <div className="rounded-xl border border-dashed border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7B6B60]">
+                    {lang === "ro" ? "Ajustări recente de dificultate" : "Recent difficulty changes"}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-[12px] text-[#5A4B43]">
+                    {adaptiveHistory.map((entry) => (
+                      <li key={entry.id}>{entry.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
-          <aside className="rounded-2xl border border-[#E4DAD1] bg-white p-4 shadow-sm">
+          </KunoContainer>
+        <div className="flex flex-col gap-6 px-2 sm:px-3 lg:flex-row">
+          <aside className="order-2 rounded-2xl border border-[#E4DAD1] bg-white p-4 shadow-sm lg:order-1 lg:w-60 lg:flex-shrink-0">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#7B6B60]">Teme OmniKuno</p>
             <ul className="space-y-2 text-sm text-[#2C2C2C]">
               {moduleEntries.map(([key, module]) => {
@@ -586,8 +599,7 @@ const areaStats = useMemo(() => {
             </ul>
           </aside>
 
-          <section className="space-y-4">
-            <ModuleArcHero areaKey={activeAreaKey} areaLabel={areaLabelMap[activeAreaKey]} />
+          <section className="order-1 flex-1 space-y-6 lg:order-2 lg:basis-[65%] lg:max-w-[65%]">
             <ModuleExperience
               key={moduleStateKey}
               areaKey={activeAreaKey}
@@ -599,13 +611,13 @@ const areaStats = useMemo(() => {
               onActiveLessonChange={handleActiveLessonChange}
               onToast={setToastMsg}
               showFinalTest={showFinalTest}
-            finalTestResult={finalTestResult}
-            onToggleFinalTest={setShowFinalTest}
-            onFinalTestComplete={(result) => setFinalTestResult(result)}
-            finalTestConfig={finalTestConfig}
-            initialLessonId={initialLessonIdForModule}
-            onLessonSelect={handleLessonSelect}
-          />
+              finalTestResult={finalTestResult}
+              onToggleFinalTest={setShowFinalTest}
+              onFinalTestComplete={(result) => setFinalTestResult(result)}
+              finalTestConfig={finalTestConfig}
+              initialLessonId={initialLessonIdForModule}
+              onLessonSelect={handleLessonSelect}
+            />
           </section>
         </div>
       </div>
@@ -655,7 +667,6 @@ function ModuleExperience({
   const xpDisplay = xpLabel ?? fallbackXpLabel;
   const [localCompleted, setLocalCompleted] = useState<string[]>(() => completedIdsFromFacts);
   const [localPerformance, setLocalPerformance] = useState<KunoPerformanceSnapshot>(initialPerformance);
-  const orderedLessons = useMemo(() => module.lessons.slice().sort((a, b) => a.order - b.order), [module.lessons]);
   const timeline = useMemo(
     () => computeLessonsStatus(module.lessons, localCompleted, localPerformance),
     [module.lessons, localCompleted, localPerformance],
@@ -709,13 +720,7 @@ function ModuleExperience({
       meta?: { updatedPerformance?: KunoPerformanceSnapshot; score?: number; timeSpentSec?: number },
     ) => {
       setLocalCompleted((prev) => (prev.includes(lessonId) ? prev : [...prev, lessonId]));
-      const currentIndex = orderedLessons.findIndex((lesson) => lesson.id === lessonId);
-      const nextLesson = currentIndex >= 0 ? orderedLessons[currentIndex + 1] : null;
-      if (nextLesson) {
-        onLessonSelect?.(nextLesson.id);
-      } else {
-        onLessonSelect?.(null);
-      }
+      onLessonSelect?.(null);
       if (meta?.updatedPerformance) {
         setLocalPerformance(meta.updatedPerformance);
       }
@@ -731,7 +736,7 @@ function ModuleExperience({
         }
       }
     },
-    [lang, onLessonSelect, onToast, orderedLessons],
+    [lang, onLessonSelect, onToast],
   );
   const handleLockedLessonAttempt = useCallback(() => {
     if (!onToast) return;
@@ -743,63 +748,69 @@ function ModuleExperience({
   }, [lang, onToast]);
 
   return (
-    <>
-      <KunoActivePanel
-        progress={
-          <p>
-            {lang === "ro" ? "Progres" : "Progress"}: {completedCount} / {timeline.length}{" "}
-            {lang === "ro" ? "misiuni" : "missions"}
-          </p>
-        }
-        xpLabel={xpDisplay}
-        nextLessonTitle={resolvedLesson?.title ?? null}
-        onContinue={resolvedLesson ? () => onLessonSelect?.(resolvedLesson.id) : undefined}
-        disabled={!resolvedLesson}
-      >
-        <div className="mt-4 h-2 rounded-full bg-[#F4EDE4]">
-          <div className="h-2 rounded-full bg-[#C07963]" style={{ width: `${Math.min(100, completionPct)}%` }} />
-        </div>
-      </KunoActivePanel>
-      <KunoTimeline
-        areaKey={areaKey}
-        segments={timelineSegments as Array<{ zoneKey: ArcZoneKey | null; items: ReturnType<typeof computeLessonsStatus> }>}
-        module={module}
-        lang={lang}
-        profileId={profileId}
-        resolvedLessonId={resolvedLessonId}
-        localCompleted={localCompleted}
-        localPerformance={localPerformance}
-        onLessonSelect={(lessonId) => onLessonSelect?.(lessonId)}
-        onLessonCompleted={handleLessonCompleted}
-        onLockedAttempt={handleLockedLessonAttempt}
-        renderZoneIntro={renderZoneIntroForTimeline}
-        renderEffortBadges={renderEffortBadges}
-        t={timelineTranslation}
-      />
+    <div className="space-y-8">
+      <KunoContainer align="left">
+        <KunoActivePanel
+          progress={
+            <p>
+              {lang === "ro" ? "Progres" : "Progress"}: {completedCount} / {timeline.length}{" "}
+              {lang === "ro" ? "misiuni" : "missions"}
+            </p>
+          }
+          xpLabel={xpDisplay}
+          nextLessonTitle={resolvedLesson?.title ?? null}
+          onContinue={resolvedLesson ? () => onLessonSelect?.(resolvedLesson.id) : undefined}
+          disabled={!resolvedLesson}
+        >
+          <div className="mt-4 h-2 rounded-full bg-[#F4EDE4]">
+            <div className="h-2 rounded-full bg-[#C07963]" style={{ width: `${Math.min(100, completionPct)}%` }} />
+          </div>
+        </KunoActivePanel>
+      </KunoContainer>
+      <KunoContainer align="left">
+        <KunoTimeline
+          areaKey={areaKey}
+          segments={timelineSegments as Array<{ zoneKey: ArcZoneKey | null; items: ReturnType<typeof computeLessonsStatus> }>}
+          module={module}
+          lang={lang}
+          profileId={profileId}
+          resolvedLessonId={resolvedLessonId}
+          localCompleted={localCompleted}
+          localPerformance={localPerformance}
+          onLessonSelect={(lessonId) => onLessonSelect?.(lessonId)}
+          onLessonCompleted={handleLessonCompleted}
+          onLockedAttempt={handleLockedLessonAttempt}
+          renderZoneIntro={renderZoneIntroForTimeline}
+          renderEffortBadges={renderEffortBadges}
+          t={timelineTranslation}
+        />
+      </KunoContainer>
       {moduleCompleted && finalTestConfig ? (
-        <div className="space-y-4">
-          <KunoFinalTestBanner
-            areaKey={areaKey}
-            finalTestConfig={finalTestConfig}
-            showFinalTest={showFinalTest}
-            onToggleFinalTest={(value) => onToggleFinalTest?.(value)}
-            lang={lang}
-            finalTestResult={finalTestResult}
-          />
-          {showFinalTest ? (
-            <TestView
-              testId={finalTestConfig.testId}
-              onCompleted={(result) => {
-                onFinalTestComplete?.(result);
-                if (onToast) {
-                  onToast(`${finalTestConfig.moduleName} · mini-test finalizat (${result.correct}/${result.total}).`);
-                }
-              }}
+        <KunoContainer align="left">
+          <div className="space-y-4">
+            <KunoFinalTestBanner
+              areaKey={areaKey}
+              finalTestConfig={finalTestConfig}
+              showFinalTest={showFinalTest}
+              onToggleFinalTest={(value) => onToggleFinalTest?.(value)}
+              lang={lang}
+              finalTestResult={finalTestResult}
             />
-          ) : null}
-        </div>
+            {showFinalTest ? (
+              <TestView
+                testId={finalTestConfig.testId}
+                onCompleted={(result) => {
+                  onFinalTestComplete?.(result);
+                  if (onToast) {
+                    onToast(`${finalTestConfig.moduleName} · mini-test finalizat (${result.correct}/${result.total}).`);
+                  }
+                }}
+              />
+            ) : null}
+          </div>
+        </KunoContainer>
       ) : null}
-    </>
+    </div>
   );
 }
 

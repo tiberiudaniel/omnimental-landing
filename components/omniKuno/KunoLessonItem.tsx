@@ -34,7 +34,16 @@ export default function KunoLessonItem({ lesson, isActive, disabled, onSelect, h
   const locked = disabled || lesson.status === "locked";
 
   return (
-    <div ref={ref} className="rounded-2xl border border-[#E4DAD1] bg-white shadow-sm">
+    <div
+      ref={ref}
+      className={`rounded-2xl border border-[#E4DAD1] bg-white transition shadow-sm ${
+        locked
+          ? "opacity-60"
+          : isActive
+            ? "shadow-[0_25px_50px_rgba(192,121,99,0.25)]"
+            : "shadow-sm"
+      }`}
+    >
       <button
         type="button"
         onClick={() => {
@@ -45,7 +54,7 @@ export default function KunoLessonItem({ lesson, isActive, disabled, onSelect, h
           onSelect();
         }}
         data-testid="kuno-lesson-trigger"
-        className={`flex w-full items-center justify-between px-3 py-3 text-left transition ${
+        className={`flex w-full items-center justify-between px-3 py-2 text-left transition ${
           locked ? "cursor-not-allowed" : "hover:bg-[#FFFBF7]"
         }`}
       >
