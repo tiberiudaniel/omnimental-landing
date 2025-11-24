@@ -49,6 +49,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
       "carieră",
       "respirație",
       "energie",
+      "Dezvoltă-ți Inteligența Adaptativă",
       "reziliență",
       "încredere",
       "comunicare",

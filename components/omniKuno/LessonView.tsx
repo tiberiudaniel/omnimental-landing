@@ -24,6 +24,8 @@ export type LessonViewProps = {
     lessonId: string,
     meta?: { timeSpentSec: number; updatedPerformance: KunoPerformanceSnapshot; note?: string },
   ) => void;
+  onStepChange?: (current: number, total: number) => void;
+  showHeader?: boolean;
 };
 
 export default function LessonView({
@@ -34,6 +36,8 @@ export default function LessonView({
   ownerId,
   performanceSnapshot,
   onCompleted,
+  onStepChange,
+  showHeader = true,
 }: LessonViewProps) {
   const { t, lang } = useI18n();
   const difficultyKey = asDifficulty(lesson.difficulty);
@@ -168,8 +172,13 @@ export default function LessonView({
         ? isRelaxedMode || reflection.trim().length >= reflectionMinChars
         : true;
 
+  useEffect(() => {
+    onStepChange?.(currentScreenIndex + 1, totalScreens);
+  }, [currentScreenIndex, totalScreens, onStepChange]);
+
   return (
     <div className="space-y-4" data-testid="lesson-view">
+      {showHeader ? (
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -209,6 +218,7 @@ export default function LessonView({
           </p>
         </div>
       </div>
+      ) : null}
       <div className="rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] p-4 text-[#4D3F36]" data-testid={`lesson-screen-${currentScreenIndex + 1}`}>
         {renderScreenContent(currentScreen, {
           areaKey,
@@ -387,7 +397,15 @@ function renderScreenContent(
                 : "border border-[#F5C6C0] bg-[#FFF7F5] text-[#5C2A1D]"
             }`}
           >
-            {screen.explanation}
+            {screen.explanation
+              ? screen.explanation
+              : quizResult === "correct"
+                ? lang === "ro"
+                  ? "Bine ai surprins ideea-cheie: răspunsul corect sprijină ceea ce tocmai ai exersat în lecție."
+                  : "Great—this answer reflects the key point of the lesson."
+                : lang === "ro"
+                  ? "Observă ce detaliu ți-a scăpat și recitește explicația din pasul anterior pentru claritate."
+                  : "Review the previous insight and notice what detail you missed."}
           </div>
         ) : null}
       </div>

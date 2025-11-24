@@ -9,7 +9,7 @@ import type { useI18n } from "@/components/I18nProvider";
 import { formatUtcShort } from "@/lib/format";
 import { toMsLocal } from "@/lib/dashboard/progressSelectors";
 import type { extractSessions } from "@/lib/progressAnalytics";
-import KunoMissionCard, { type KunoMissionCardData } from "./KunoMissionCard";
+import KunoMissionCard, { type KunoMissionCardData, type KunoNextModuleSuggestion } from "./KunoMissionCard";
 import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 import { buildOmniAbilSnapshot } from "./omniAbilSnapshot";
 import { useEffect, useState } from "react";
@@ -34,6 +34,7 @@ type CenterColumnCardsProps = {
   omniCunoScore: number;
   kunoDelta: number | null;
   kunoMissionData: KunoMissionCardData | null;
+  kunoNextModuleSuggestion?: KunoNextModuleSuggestion | null;
 };
 
 export default function CenterColumnCards({
@@ -49,6 +50,7 @@ export default function CenterColumnCards({
   omniCunoScore,
   kunoDelta,
   kunoMissionData,
+  kunoNextModuleSuggestion,
 }: CenterColumnCardsProps) {
   const [showFocusCard, setShowFocusCard] = useState(true);
   useEffect(() => {
@@ -75,6 +77,7 @@ export default function CenterColumnCards({
           omniCunoScore={omniCunoScore}
           kunoDelta={kunoDelta}
           missionData={kunoMissionData}
+          nextModuleSuggestion={kunoNextModuleSuggestion}
         />
       </div>
     </div>

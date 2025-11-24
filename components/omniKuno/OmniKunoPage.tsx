@@ -3,8 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
-import { OMNIKUNO_MODULES, type OmniKunoModuleConfig } from "@/config/omniKunoLessons";
-import { OMNI_KUNO_ARC_INTROS } from "@/config/omniKunoLessonContent";
+import { OMNIKUNO_MODULES, type OmniKunoModuleConfig, type OmniKunoLesson } from "@/config/omniKunoLessons";
 import { normalizePerformance, type KunoPerformanceSnapshot } from "@/lib/omniKunoAdaptive";
 import { useI18n } from "@/components/I18nProvider";
 import SiteHeader from "@/components/SiteHeader";
@@ -14,19 +13,18 @@ import Toast from "@/components/Toast";
 import TestView from "./TestView";
 import { computeLessonsStatus } from "./useKunoTimeline";
 import { asDifficulty, type LessonDifficulty } from "./difficulty";
-import { getLessonDuration } from "./lessonUtils";
 import { normalizeKunoFacts, getKunoModuleSnapshot } from "@/lib/kunoFacts";
-import { resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
+import { getLessonObjective } from "./lessonUtils";
+import { resolveModuleId, type OmniAreaKey } from "@/config/omniKunoModules";
 import { KunoModuleHeader } from "./KunoModuleHeader";
-import { KunoTimeline } from "./KunoTimeline";
 import { KunoActivePanel } from "./KunoActivePanel";
 import { KunoFinalTestBanner } from "./KunoFinalTestBanner";
 import { getKunoLevel } from "@/lib/omniKunoXp";
 import { KunoContainer } from "./KunoContainer";
-type ArcZoneKey = keyof (typeof OMNI_KUNO_ARC_INTROS)["emotional_balance"];
-const ARC_ZONE_ORDER: ArcZoneKey[] = ["trezire", "primele_ciocniri", "profunzime", "maestrie"];
-type OmniAreaKey = OmniKunoModuleId;
-type TimelineItem = ReturnType<typeof computeLessonsStatus>[number];
+import { ModuleOverviewDialog } from "./ModuleOverviewDialog";
+import LessonAccordionItem from "./LessonAccordionItem";
+import ActiveLessonInner from "./ActiveLessonInner";
+
 type ModuleFinalTestContent = {
   testId: string;
   heading: string;
@@ -35,6 +33,7 @@ type ModuleFinalTestContent = {
   buttonLabel: string;
   moduleName: string;
 };
+
 type SupportedFinalTestArea =
   | "emotional_balance"
   | "focus_clarity"
@@ -42,6 +41,16 @@ type SupportedFinalTestArea =
   | "energy_body"
   | "self_trust"
   | "decision_discernment";
+
+type TimelineItemWithMeta = ReturnType<typeof computeLessonsStatus>[number] & {
+  lesson: OmniKunoLesson | null;
+  displayIndex: number;
+  levelLabel?: string;
+  centerLabel?: string;
+  durationLabel?: string;
+  description?: string;
+};
+
 const FINAL_TEST_COPY: Record<
   SupportedFinalTestArea,
   {
@@ -92,10 +101,7 @@ const FINAL_TEST_COPY: Record<
   energy_body: {
     testId: "energy_body_final_test",
     heading: { ro: "Finalizare modul", en: "Module completion" },
-    title: {
-      ro: "Ai parcurs toate lecțiile Energie & Corp",
-      en: "You completed all Energy & Body lessons",
-    },
+    title: { ro: "Ai parcurs toate lecțiile Energie & Corp", en: "You completed all Energy & Body lessons" },
     description: {
       ro: "Încheie modulul cu mini-testul Energie & Corp pentru a valida protocolul de resetare și ritualurile tale.",
       en: "Close the module with the Energy & Body mini-test to reinforce your reset protocol and rituals.",
@@ -130,162 +136,6 @@ const FINAL_TEST_COPY: Record<
   },
 };
 
-type ZoneRule = (lessonId: string) => ArcZoneKey | null;
-
-const MODULE_ZONE_RULES: Partial<Record<OmniAreaKey, ZoneRule>> = {
-  emotional_balance: (lessonId: string) => {
-    if (lessonId.startsWith("emotional_balance_l1_") || lessonId.startsWith("emotional_balance_l1_q")) {
-      return "trezire";
-    }
-    if (lessonId.startsWith("emotional_balance_l2_") || lessonId.startsWith("emotional_balance_l2_q")) {
-      return "primele_ciocniri";
-    }
-    const level3Match = lessonId.match(/^emotional_balance_l3_(\d+)/);
-    if (level3Match) {
-      const numeric = Number(level3Match[1]);
-      if (numeric >= 17 && numeric <= 20) return "profunzime";
-      if (numeric >= 21) return "maestrie";
-    }
-    return null;
-  },
-  focus_clarity: (lessonId: string) => {
-    const match = lessonId.match(/^focus_clarity_l1_(\d+)/);
-    if (!match) return null;
-    const numeric = Number(match[1]);
-    if (numeric <= 2) return "trezire";
-    if (numeric <= 4) return "primele_ciocniri";
-    if (numeric <= 6) return "profunzime";
-    return "maestrie";
-  },
-  energy_body: (lessonId: string) => {
-    if (lessonId === "energy_body_protocol") {
-      return "trezire";
-    }
-    const match = lessonId.match(/^energy_body_l(\d)_(\d+)/);
-    if (!match) return null;
-    const level = Number(match[1]);
-    const numeric = Number(match[2]);
-    if (level === 1) {
-      return numeric <= 4 ? "trezire" : "primele_ciocniri";
-    }
-    if (level === 2) {
-      return numeric <= 7 ? "primele_ciocniri" : "profunzime";
-    }
-    if (level === 3) {
-      return numeric <= 10 ? "profunzime" : "maestrie";
-    }
-    return null;
-  },
-  relationships_communication: (lessonId: string) => {
-    if (lessonId.startsWith("relationships_communication_l1_")) {
-      return "trezire";
-    }
-    if (lessonId.startsWith("relationships_communication_l2_")) {
-      return "primele_ciocniri";
-    }
-    const level3Match = lessonId.match(/^relationships_communication_l3_(\d+)/);
-    if (level3Match) {
-      const numeric = Number(level3Match[1]);
-      if (numeric <= 10) return "profunzime";
-      return "maestrie";
-    }
-    return null;
-  },
-  self_trust: (lessonId: string) => {
-    if (lessonId === "self_trust_protocol" || lessonId.startsWith("self_trust_l1_")) {
-      return "trezire";
-    }
-    if (lessonId.startsWith("self_trust_l2_")) {
-      return "primele_ciocniri";
-    }
-    const level3Match = lessonId.match(/^self_trust_l3_(\d+)/);
-    if (level3Match) {
-      const numeric = Number(level3Match[1]);
-      if (numeric <= 10) return "profunzime";
-      return "maestrie";
-    }
-    return null;
-  },
-  decision_discernment: (lessonId: string) => {
-    if (lessonId === "decision_discernment_protocol" || lessonId.startsWith("decision_discernment_l1_")) {
-      return "trezire";
-    }
-    if (lessonId.startsWith("decision_discernment_l2_")) {
-      return "primele_ciocniri";
-    }
-    if (lessonId.startsWith("decision_discernment_l3_")) {
-      return "profunzime";
-    }
-    return null;
-  },
-};
-
-function getZoneKeyForLesson(areaKey: OmniAreaKey, lessonId: string): ArcZoneKey | null {
-  const rule = MODULE_ZONE_RULES[areaKey];
-  if (!rule) return null;
-  return rule(lessonId);
-}
-
-function groupTimelineSegments(
-  areaKey: OmniAreaKey,
-  timeline: TimelineItem[],
-): Array<{ zoneKey: ArcZoneKey | null; items: TimelineItem[] }> {
-  if (!timeline.length) return [];
-  const segments: Array<{ zoneKey: ArcZoneKey | null; items: TimelineItem[] }> = [];
-  let currentZone: ArcZoneKey | null = null;
-  let buffer: TimelineItem[] = [];
-  timeline.forEach((item) => {
-    const zone = getZoneKeyForLesson(areaKey, item.id);
-    if (buffer.length === 0) {
-      currentZone = zone;
-    } else if (zone !== currentZone) {
-      segments.push({ zoneKey: currentZone, items: buffer });
-      buffer = [];
-      currentZone = zone;
-    }
-    buffer.push(item);
-  });
-  if (buffer.length) {
-    segments.push({ zoneKey: currentZone, items: buffer });
-  }
-  return segments;
-}
-
-function ArcIntroCard({
-  areaKey,
-  zoneKey,
-  variant = "default",
-}: {
-  areaKey: OmniAreaKey;
-  zoneKey: ArcZoneKey;
-  variant?: "default" | "compact";
-}) {
-  const arcSet = OMNI_KUNO_ARC_INTROS[areaKey];
-  const arc = arcSet?.[zoneKey];
-  if (!arc) return null;
-  const zoneIndex = ARC_ZONE_ORDER.indexOf(zoneKey);
-  const zoneLabel = zoneIndex >= 0 ? `Zona ${zoneIndex + 1}` : "Zona";
-  const containerClasses =
-    variant === "compact"
-      ? "rounded-2xl border border-[#E7DED3] bg-white/85 px-4 py-3 text-sm"
-      : "rounded-3xl border border-[#E7DED3] bg-white/85 px-4 py-4 text-base";
-  return (
-    <div className={`${containerClasses} text-[#2C2C2C] shadow-sm`}>
-      <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">
-        {zoneLabel} · {arc.title}
-      </p>
-      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#4D3F36]">{arc.body}</p>
-    </div>
-  );
-}
-
-function renderArcIntro(areaKey: OmniAreaKey, zoneKey: ArcZoneKey | null) {
-  if (!zoneKey) return null;
-  const arcSet = OMNI_KUNO_ARC_INTROS[areaKey];
-  if (!arcSet || !arcSet[zoneKey]) return null;
-  return <ArcIntroCard areaKey={areaKey} zoneKey={zoneKey} />;
-}
-
 function getFinalTestConfig(areaKey: OmniAreaKey, lang: "ro" | "en"): ModuleFinalTestContent | null {
   if (!(areaKey in FINAL_TEST_COPY)) return null;
   const copy = FINAL_TEST_COPY[areaKey as SupportedFinalTestArea];
@@ -311,6 +161,7 @@ export default function OmniKunoPage() {
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [overviewOpen, setOverviewOpen] = useState(false);
   const moduleEntries = useMemo(() => Object.entries(OMNIKUNO_MODULES) as Array<[OmniAreaKey, OmniKunoModuleConfig]>, []);
   const moduleParam = searchParams?.get("module");
   const areaParam = searchParams?.get("area");
@@ -402,28 +253,40 @@ export default function OmniKunoPage() {
   const initialLessonIdForModule = resolvedLessonIdFromQuery ?? (lessonHasExplicitNone ? null : fallbackLessonId);
   useEffect(() => {
     const needsAreaSync = areaParam !== activeAreaKey;
-    const needsModuleSync = moduleParam !== activeAreaKey;
+    const needsModuleSync = moduleParam !== activeModule.moduleId;
     const needsLessonSync =
       initialLessonIdForModule != null ? lessonQueryParam !== initialLessonIdForModule : !lessonHasExplicitNone;
+
     if (needsAreaSync || needsModuleSync || needsLessonSync) {
       updateUrl({
         area: activeAreaKey,
-        module: activeAreaKey,
+        module: activeModule.moduleId,
         lesson: initialLessonIdForModule ?? null,
       });
     }
-  }, [activeAreaKey, areaParam, moduleParam, initialLessonIdForModule, lessonHasExplicitNone, lessonQueryParam, updateUrl]);
+  }, [
+    activeAreaKey,
+    activeModule.moduleId,
+    areaParam,
+    moduleParam,
+    initialLessonIdForModule,
+    lessonHasExplicitNone,
+    lessonQueryParam,
+    updateUrl,
+  ]);
 const areaStats = useMemo(() => {
   return Object.fromEntries(
     moduleEntries.map(([areaKey, module]) => {
       const snapshot = kunoFacts.modules[module.moduleId];
-      const completedIds = snapshot?.completedIds ?? [];
-      const progressPct = Math.round(((completedIds.length ?? 0) / module.lessons.length) * 100);
+      const lessonIdSet = new Set(module.lessons.map((lesson) => lesson.id));
+      const completedIds = (snapshot?.completedIds ?? []).filter((id) => lessonIdSet.has(id));
+      const totalLessons = module.lessons.length;
+      const progressPct = totalLessons > 0 ? Math.round((completedIds.length / totalLessons) * 100) : 0;
       return [
         areaKey,
         {
-          completed: completedIds.length ?? 0,
-          total: module.lessons.length,
+          completed: completedIds.length,
+          total: totalLessons,
           percentage: Number.isFinite(progressPct) ? Math.min(100, Math.max(0, progressPct)) : 0,
         },
       ];
@@ -543,6 +406,8 @@ const areaStats = useMemo(() => {
                 progressSummary={headerMetaSummary}
                 adaptiveMessage={adaptiveMessage}
                 onDismissAdaptive={() => setAdaptiveMessage(null)}
+                overviewLabel={lang === "ro" ? "Vezi toate lecțiile" : "View all lessons"}
+                onOpenOverview={() => setOverviewOpen(true)}
               />
               {adaptiveHistory.length ? (
                 <div className="rounded-xl border border-dashed border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3">
@@ -614,6 +479,8 @@ const areaStats = useMemo(() => {
               profileId={profile?.id}
               completedIdsFromFacts={completedIdsFromFacts}
               initialPerformance={normalizedPerformance}
+              initialLessonId={initialLessonIdForModule}
+              lessonHasExplicitNone={lessonHasExplicitNone}
               onActiveLessonChange={handleActiveLessonChange}
               onToast={setToastMsg}
               showFinalTest={showFinalTest}
@@ -621,8 +488,9 @@ const areaStats = useMemo(() => {
               onToggleFinalTest={setShowFinalTest}
               onFinalTestComplete={(result) => setFinalTestResult(result)}
               finalTestConfig={finalTestConfig}
-              initialLessonId={initialLessonIdForModule}
               onLessonSelect={handleLessonSelect}
+              overviewOpen={overviewOpen}
+              onCloseOverview={() => setOverviewOpen(false)}
             />
           </section>
         </div>
@@ -640,6 +508,7 @@ type ExperienceProps = {
   completedIdsFromFacts: string[];
   initialPerformance: KunoPerformanceSnapshot;
   initialLessonId?: string | null;
+  lessonHasExplicitNone?: boolean;
   onLessonSelect?: (lessonId: string | null) => void;
   onActiveLessonChange?: (meta: { id: string; difficulty: LessonDifficulty } | null) => void;
   onToast?: (message: string) => void;
@@ -648,6 +517,8 @@ type ExperienceProps = {
   onToggleFinalTest?: (value: boolean) => void;
   onFinalTestComplete?: (result: { correct: number; total: number }) => void;
   finalTestConfig?: ModuleFinalTestContent | null;
+  overviewOpen: boolean;
+  onCloseOverview: () => void;
 };
 
 function ModuleExperience({
@@ -657,6 +528,7 @@ function ModuleExperience({
   completedIdsFromFacts,
   initialPerformance,
   initialLessonId = null,
+  lessonHasExplicitNone = false,
   onLessonSelect,
   onActiveLessonChange,
   onToast,
@@ -665,64 +537,138 @@ function ModuleExperience({
   onToggleFinalTest,
   onFinalTestComplete,
   finalTestConfig = null,
+  overviewOpen,
+  onCloseOverview,
 }: ExperienceProps) {
   const { t, lang } = useI18n();
   const [localCompleted, setLocalCompleted] = useState<string[]>(() => completedIdsFromFacts);
   const [localPerformance, setLocalPerformance] = useState<KunoPerformanceSnapshot>(initialPerformance);
+  const [lessonProgressByModule, setLessonProgressByModule] = useState<
+    Record<string, Record<string, { current: number; total: number }>>
+  >({});
+  const moduleLessonProgress = lessonProgressByModule[module.moduleId] ?? {};
+  const [openLessonsByModule, setOpenLessonsByModule] = useState<Record<string, string | null>>({});
   const timeline = useMemo(
-    () => computeLessonsStatus(module.lessons, localCompleted, localPerformance),
-    [module.lessons, localCompleted, localPerformance],
+    () => computeLessonsStatus(module.lessons, localCompleted),
+    [module.lessons, localCompleted],
   );
-  const timelineSegments = useMemo(() => {
-    if (!MODULE_ZONE_RULES[areaKey]) {
-      return [{ zoneKey: null, items: timeline }];
+  const flatTimeline = useMemo(() => timeline.slice().sort((a, b) => a.order - b.order), [timeline]);
+  const timelineWithMeta = useMemo<TimelineItemWithMeta[]>(() => {
+    return flatTimeline.map((item) => {
+      const lessonDef = module.lessons.find((lesson) => lesson.id === item.id) ?? null;
+      const difficultyKey = lessonDef ? asDifficulty(lessonDef.difficulty) : "easy";
+      const levelLabel = lessonDef ? String(t(`omnikuno.difficulty.${difficultyKey}Label`)) : "";
+      const centerLabel = (() => {
+        if (!lessonDef?.center) return "";
+        const map =
+          lang === "ro"
+            ? { mind: "Minte", body: "Corp", heart: "Inimă", combined: "Integrat" }
+            : { mind: "Mind", body: "Body", heart: "Heart", combined: "Integrated" };
+        return map[lessonDef.center];
+      })();
+      const durationLabel = lessonDef?.durationMin ? `~${lessonDef.durationMin} min` : "";
+      const description = lessonDef ? getLessonObjective(lessonDef, lang) : "";
+      return {
+        ...item,
+        lesson: lessonDef,
+        displayIndex: lessonDef?.order ?? item.order,
+        levelLabel,
+        centerLabel,
+        durationLabel,
+        description,
+      } as TimelineItemWithMeta;
+    });
+  }, [flatTimeline, module.lessons, lang, t]);
+  const moduleCompleted = useMemo(() => timelineWithMeta.every((item) => item.status === "done"), [timelineWithMeta]);
+  const completedCount = useMemo(() => timelineWithMeta.filter((item) => item.status === "done").length, [timelineWithMeta]);
+  const completionPct = timelineWithMeta.length ? Math.round((completedCount / timelineWithMeta.length) * 100) : 0;
+  const activeItem = timelineWithMeta.find((item) => item.status === "active") ?? null;
+  const visibleTimeline = useMemo(() => {
+    const result: TimelineItemWithMeta[] = [];
+    let lockedIncluded = false;
+    for (const item of timelineWithMeta) {
+      if (item.status === "locked") {
+        if (lockedIncluded) {
+          continue;
+        }
+        lockedIncluded = true;
+      }
+      result.push(item);
     }
-    return groupTimelineSegments(areaKey, timeline);
-  }, [areaKey, timeline]);
-  const moduleCompleted = useMemo(() => timeline.every((item) => item.status === "done"), [timeline]);
-  const completedCount = useMemo(() => timeline.filter((item) => item.status === "done").length, [timeline]);
-  const completionPct = timeline.length ? Math.round((completedCount / timeline.length) * 100) : 0;
-  const timelineIdSet = useMemo(() => new Set(timeline.map((item) => item.id)), [timeline]);
-  const resolvedLessonId = useMemo(() => {
-    if (initialLessonId && timelineIdSet.has(initialLessonId)) {
+    return result;
+  }, [timelineWithMeta]);
+  const defaultOpenLessonId = useMemo(() => {
+    if (lessonHasExplicitNone || !timelineWithMeta.length) return null;
+    if (initialLessonId && timelineWithMeta.some((item) => item.id === initialLessonId)) {
       return initialLessonId;
     }
-    return null;
-  }, [initialLessonId, timelineIdSet]);
-  const resolvedLesson = useMemo(() => {
-    if (resolvedLessonId) {
-      const explicit = module.lessons.find((lesson) => lesson.id === resolvedLessonId);
-      if (explicit) return explicit;
-    }
-    return null;
-  }, [module.lessons, resolvedLessonId]);
-  const renderZoneIntroForTimeline = useCallback(
-    (zoneKey: ArcZoneKey | null) => renderArcIntro(areaKey, zoneKey),
-    [areaKey],
-  );
-  const timelineTranslation = useCallback(
-    (key: string): string | number => {
-      const value = t(key);
-      if (typeof value === "string" || typeof value === "number") return value;
-      return String(value ?? "");
+    return activeItem?.id ?? null;
+  }, [activeItem?.id, initialLessonId, lessonHasExplicitNone, timelineWithMeta]);
+  const openLessonId = Object.prototype.hasOwnProperty.call(openLessonsByModule, module.moduleId)
+    ? openLessonsByModule[module.moduleId] ?? null
+    : defaultOpenLessonId;
+  const setOpenLessonForModule = useCallback(
+    (nextLessonId: string | null) => {
+      setOpenLessonsByModule((prev) => {
+        const prevHas = Object.prototype.hasOwnProperty.call(prev, module.moduleId);
+        const prevValue = prev[module.moduleId] ?? null;
+        if (prevHas && prevValue === nextLessonId) {
+          return prev;
+        }
+        return { ...prev, [module.moduleId]: nextLessonId };
+      });
     },
-    [t],
+    [module.moduleId],
   );
   useEffect(() => {
+    onLessonSelect?.(openLessonId);
+  }, [openLessonId, onLessonSelect]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const payload = {
+        moduleId: module.moduleId,
+        areaKey,
+        lessonId: openLessonId,
+        updatedAt: Date.now(),
+      };
+      window.localStorage.setItem("omnikuno_last_module", JSON.stringify(payload));
+      window.dispatchEvent(new CustomEvent("omnikuno:last-module", { detail: payload }));
+    } catch {
+      // ignore write errors (private / quota)
+    }
+  }, [areaKey, module.moduleId, openLessonId]);
+  useEffect(() => {
     if (!onActiveLessonChange) return;
-    if (resolvedLesson) {
-      onActiveLessonChange({ id: resolvedLesson.id, difficulty: asDifficulty(resolvedLesson.difficulty) });
+    if (activeItem?.lesson) {
+      onActiveLessonChange({ id: activeItem.lesson.id, difficulty: asDifficulty(activeItem.lesson.difficulty) });
     } else {
       onActiveLessonChange(null);
     }
-  }, [onActiveLessonChange, resolvedLesson]);
+  }, [activeItem, onActiveLessonChange]);
+  const langKey: "ro" | "en" = lang === "ro" ? "ro" : "en";
+  const handleLessonProgress = useCallback(
+    (lessonId: string, current: number, total: number) => {
+      setLessonProgressByModule((prev) => {
+        const prevModuleMap = prev[module.moduleId] ?? {};
+        const existing = prevModuleMap[lessonId];
+        if (existing && existing.current === current && existing.total === total) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [module.moduleId]: { ...prevModuleMap, [lessonId]: { current, total } },
+        };
+      });
+    },
+    [module.moduleId],
+  );
   const handleLessonCompleted = useCallback(
     (
       lessonId: string,
       meta?: { updatedPerformance?: KunoPerformanceSnapshot; score?: number; timeSpentSec?: number },
     ) => {
       setLocalCompleted((prev) => (prev.includes(lessonId) ? prev : [...prev, lessonId]));
-      onLessonSelect?.(null);
       if (meta?.updatedPerformance) {
         setLocalPerformance(meta.updatedPerformance);
       }
@@ -737,30 +683,36 @@ function ModuleExperience({
           onToast(lang === "ro" ? "Lecție finalizată și XP actualizat." : "Lesson completed and XP updated.");
         }
       }
+      setOpenLessonForModule(null);
     },
-    [lang, onLessonSelect, onToast],
+    [lang, onToast, setOpenLessonForModule],
   );
-  const handleLockedLessonAttempt = useCallback(() => {
-    if (!onToast) return;
-    onToast(
-      lang === "ro"
-        ? "Finalizează lecțiile anterioare pentru a debloca această lecție."
-        : "Finish the previous lessons to unlock this step.",
-    );
-  }, [lang, onToast]);
-
+  const translate = useCallback(
+    (key: string) => {
+      const value = t(key);
+      if (typeof value === "string" || typeof value === "number") return value;
+      return undefined;
+    },
+    [t],
+  );
   return (
     <div className="space-y-8">
       <KunoContainer align="left">
         <KunoActivePanel
           progressSummary={
             lang === "ro"
-              ? `Progres: ${completedCount}/${timeline.length} misiuni`
-              : `Progress: ${completedCount}/${timeline.length} missions`
+              ? `Progres: ${completedCount}/${timelineWithMeta.length} misiuni`
+              : `Progress: ${completedCount}/${timelineWithMeta.length} missions`
           }
-          nextLessonTitle={resolvedLesson?.title ?? null}
-          onContinue={resolvedLesson ? () => onLessonSelect?.(resolvedLesson.id) : undefined}
-          disabled={!resolvedLesson}
+          nextLessonTitle={activeItem?.lesson?.title ?? null}
+          onContinue={
+            activeItem
+              ? () => {
+                  setOpenLessonForModule(activeItem.id);
+                }
+              : undefined
+          }
+          disabled={!activeItem}
         >
           <div className="h-2 rounded-full bg-[#F4EDE4]">
             <div className="h-2 rounded-full bg-[#C07963]" style={{ width: `${Math.min(100, completionPct)}%` }} />
@@ -768,22 +720,62 @@ function ModuleExperience({
         </KunoActivePanel>
       </KunoContainer>
       <KunoContainer align="left">
-        <KunoTimeline
-          areaKey={areaKey}
-          segments={timelineSegments as Array<{ zoneKey: ArcZoneKey | null; items: ReturnType<typeof computeLessonsStatus> }>}
-          module={module}
-          lang={lang}
-          profileId={profileId}
-          resolvedLessonId={resolvedLessonId}
-          localCompleted={localCompleted}
-          localPerformance={localPerformance}
-          onLessonSelect={(lessonId) => onLessonSelect?.(lessonId)}
-          onLessonCompleted={handleLessonCompleted}
-          onLockedAttempt={handleLockedLessonAttempt}
-          renderZoneIntro={renderZoneIntroForTimeline}
-          renderEffortBadges={renderEffortBadges}
-          t={timelineTranslation}
-        />
+        {visibleTimeline.length ? (
+          <div className="space-y-3 md:space-y-4">
+            {visibleTimeline.map((item, idx) => {
+              const lessonConfig = item.lesson ?? module.lessons.find((lesson) => lesson.id === item.id);
+              const isOpen = item.status === "active" && item.id === openLessonId;
+              const progress = moduleLessonProgress[item.id];
+              const currentStep = progress?.current ?? 1;
+              const totalSteps =
+                progress?.total ??
+                lessonConfig?.screensCount ??
+                (lessonConfig?.type === "quiz" ? 1 : 1);
+              return (
+                <LessonAccordionItem
+                  key={item.id}
+                  id={item.id}
+                  index={idx + 1}
+                  title={item.title}
+                  description={item.description ?? ""}
+                  level={item.levelLabel ?? ""}
+                  center={item.centerLabel ?? ""}
+                  duration={item.durationLabel ?? ""}
+                  status={item.status}
+                  currentStep={currentStep}
+                  totalSteps={totalSteps}
+                  isOpen={Boolean(isOpen)}
+                  onToggle={() => {
+                    if (item.status !== "active") return;
+                    const next = openLessonId === item.id ? null : item.id;
+                    setOpenLessonForModule(next);
+                  }}
+                  lang={langKey}
+                  justActivated={item.id === (activeItem?.id ?? null)}
+                >
+                  {isOpen && lessonConfig ? (
+                    <ActiveLessonInner
+                      areaKey={areaKey}
+                      module={module}
+                      lesson={lessonConfig}
+                      existingCompletedIds={localCompleted}
+                      ownerId={profileId}
+                      performanceSnapshot={localPerformance}
+                      onLessonCompleted={(lessonId, meta) => handleLessonCompleted(lessonId, meta)}
+                      onProgressChange={(lessonId, current, total) => handleLessonProgress(lessonId, current, total)}
+                    />
+                  ) : null}
+                </LessonAccordionItem>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-[#E4DAD1] bg-white/70 px-4 py-6 text-center text-sm text-[#7B6B60]">
+            {lang === "ro"
+              ? "Acest modul nu are încă misiuni configurate."
+              : "This module does not have missions configured yet."}
+          </div>
+        )}
       </KunoContainer>
       {moduleCompleted && finalTestConfig ? (
         <KunoContainer align="left">
@@ -810,6 +802,18 @@ function ModuleExperience({
           </div>
         </KunoContainer>
       ) : null}
+      <ModuleOverviewDialog
+        open={overviewOpen}
+        onClose={onCloseOverview}
+        timeline={flatTimeline}
+        module={module}
+        lang={lang}
+        t={translate}
+        onSelectLesson={(lessonId) => {
+          setOpenLessonForModule(lessonId);
+          onCloseOverview();
+        }}
+      />
     </div>
   );
 }
@@ -829,15 +833,4 @@ function buildAdaptiveMessage(
     return String(t("omnikuno.adaptive.mediumMessage"));
   }
   return null;
-}
-
-function renderEffortBadges(module: OmniKunoModuleConfig, lessonId: string, lang: string) {
-  const lesson = module.lessons.find((l) => l.id === lessonId);
-  if (!lesson) return null;
-  const minutes = getLessonDuration(lesson);
-  return (
-    <div className="mt-1 text-[10px] text-[#7B6B60]">
-      {minutes ? `${minutes} ${lang === "ro" ? "min" : "min"}` : ""}
-    </div>
-  );
 }

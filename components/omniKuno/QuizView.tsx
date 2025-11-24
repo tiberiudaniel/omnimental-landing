@@ -20,6 +20,8 @@ export type QuizViewProps = {
     lessonId: string,
     meta: { score: number; timeSpentSec: number; updatedPerformance: KunoPerformanceSnapshot },
   ) => void;
+  onStepChange?: (current: number, total: number) => void;
+  showHeader?: boolean;
 };
 
 export default function QuizView({
@@ -30,6 +32,8 @@ export default function QuizView({
   ownerId,
   performanceSnapshot,
   onCompleted,
+  onStepChange,
+  showHeader = true,
 }: QuizViewProps) {
   const { t } = useI18n();
   const difficultyKey = asDifficulty(lesson.difficulty);
@@ -82,8 +86,14 @@ export default function QuizView({
     }
   };
 
+  useEffect(() => {
+    const total = Math.max(1, questions.length);
+    onStepChange?.(1, total);
+  }, [questions.length, onStepChange]);
+
   return (
     <div className="space-y-4">
+      {showHeader ? (
       <div>
         <p className="text-xs uppercase tracking-[0.25em] text-[#7B6B60]">Quiz</p>
         <h3 className="text-xl font-bold text-[#2C2C2C]">{lesson.title}</h3>
@@ -94,6 +104,7 @@ export default function QuizView({
           </span>
         </div>
       </div>
+      ) : null}
       <div className="space-y-3">
         {questions.map((question) => (
           <div key={question.id} className="rounded-xl border border-[#F0E8E0] bg-[#FFFBF7] p-3">

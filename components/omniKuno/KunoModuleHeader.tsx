@@ -10,6 +10,8 @@ type KunoModuleHeaderProps = {
   progressSummary: string;
   adaptiveMessage: string | null;
   onDismissAdaptive: () => void;
+  overviewLabel?: string;
+  onOpenOverview?: () => void;
 };
 
 export function KunoModuleHeader({
@@ -19,6 +21,8 @@ export function KunoModuleHeader({
   progressSummary,
   adaptiveMessage,
   onDismissAdaptive,
+  overviewLabel,
+  onOpenOverview,
 }: KunoModuleHeaderProps) {
   const { t } = useI18n();
   const adaptiveCopy = String(t("omnikuno.adaptive.headerExplainerShort"));
@@ -30,11 +34,23 @@ export function KunoModuleHeader({
       <h1 className="text-2xl font-bold text-[#2C2C2C]">
         {title} <span className="text-xl text-[#C07963]">· {focusLabel}</span>
       </h1>
-      <div className="mt-3 space-y-1 text-sm text-[#4D3F36]">
-        <p className="font-semibold text-[#2C2C2C]">
-          {focusLabel} <span className="text-[#B08A78]">· {moduleLevelLabel}</span>
-        </p>
-        <p className="text-[#7B6B60]">{progressSummary}</p>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-1 text-sm text-[#4D3F36]">
+          <p className="font-semibold text-[#2C2C2C]">
+            {focusLabel} <span className="text-[#B08A78]">· {moduleLevelLabel}</span>
+          </p>
+          <p className="text-[#7B6B60]">{progressSummary}</p>
+        </div>
+        {overviewLabel && onOpenOverview ? (
+          <button
+            type="button"
+            onClick={onOpenOverview}
+            className="rounded-full border border-[#E4DAD1] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7B6B60] transition hover:border-[#C07963] hover:text-[#C07963]"
+            data-testid="omnikuno-overview-button"
+          >
+            {overviewLabel}
+          </button>
+        ) : null}
       </div>
       <div className="mt-3 flex items-center gap-2 text-[12px] text-[#7B6B60]">
         <span>{adaptiveCopy}</span>

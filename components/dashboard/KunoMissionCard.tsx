@@ -17,18 +17,31 @@ export type KunoMissionCardData = {
   performance?: KunoPerformanceSnapshot;
 };
 
+export type KunoNextModuleSuggestion = {
+  moduleId: OmniKunoModuleId;
+  firstLessonId?: string | null;
+};
+
 type KunoMissionCardProps = {
   lang: string;
   focusAreaLabel?: string | null;
   omniCunoScore: number;
   kunoDelta: number | null;
   missionData: KunoMissionCardData | null;
+  nextModuleSuggestion?: KunoNextModuleSuggestion | null;
 };
 
-export default function KunoMissionCard({ lang, focusAreaLabel, omniCunoScore, kunoDelta, missionData }: KunoMissionCardProps) {
+export default function KunoMissionCard({
+  lang,
+  focusAreaLabel,
+  omniCunoScore,
+  kunoDelta,
+  missionData,
+  nextModuleSuggestion,
+}: KunoMissionCardProps) {
   const timeline = useMemo(() => {
     if (!missionData) return [];
-    return computeLessonsStatus(missionData.module.lessons, missionData.completedIds, missionData.performance);
+    return computeLessonsStatus(missionData.module.lessons, missionData.completedIds);
   }, [missionData]);
   const completedCount = timeline.filter((item) => item.status === "done").length;
   const totalLessons = missionData?.module.lessons.length ?? 0;
@@ -36,18 +49,44 @@ export default function KunoMissionCard({ lang, focusAreaLabel, omniCunoScore, k
   const missionModuleId = missionData?.module.moduleId as OmniKunoModuleId | undefined;
   const moduleLabel = missionModuleId ? getModuleLabel(missionModuleId, lang === "ro" ? "ro" : "en") : null;
   const focusLabel = focusAreaLabel ?? moduleLabel ?? (lang === "ro" ? "focusul tău" : "your focus theme");
+  const moduleCompleted = timeline.length > 0 && timeline.every((item) => item.status === "done");
+  const pendingLesson = timeline.find((item) => item.status !== "done");
   const activeLesson =
     timeline.find((item) => item.status === "active") ??
-    timeline.find((item) => item.status !== "done") ??
-    timeline[timeline.length - 1];
+    (!moduleCompleted ? pendingLesson : null);
   const areaParam = missionData ? encodeURIComponent(missionData.areaKey) : "calm";
   const moduleQuery = missionData ? `&module=${encodeURIComponent(missionData.module.moduleId)}` : "";
   const lessonQuery = activeLesson ? `&lesson=${encodeURIComponent(activeLesson.id)}` : "";
-  const ctaHref = missionData ? `/omni-kuno?area=${areaParam}${moduleQuery}${lessonQuery}` : "/omni-kuno";
+  const nextModuleLabel = nextModuleSuggestion
+    ? getModuleLabel(nextModuleSuggestion.moduleId, lang === "ro" ? "ro" : "en")
+    : null;
+  const nextLessonQuery =
+    nextModuleSuggestion?.firstLessonId && nextModuleSuggestion.firstLessonId.length
+      ? `&lesson=${encodeURIComponent(nextModuleSuggestion.firstLessonId)}`
+      : "";
+  const nextModuleHref = nextModuleSuggestion
+    ? `/omni-kuno?area=${encodeURIComponent(nextModuleSuggestion.moduleId)}&module=${encodeURIComponent(
+        nextModuleSuggestion.moduleId,
+      )}${nextLessonQuery}`
+    : "/omni-kuno";
+  const defaultLessonHref =
+    !missionData || moduleCompleted
+      ? "/omni-kuno"
+      : `/omni-kuno?area=${areaParam}${moduleQuery}${lessonQuery}`;
+  const ctaHref = moduleCompleted ? nextModuleHref : defaultLessonHref;
   const scoreDelta =
     kunoDelta != null && Number.isFinite(kunoDelta)
       ? `${kunoDelta >= 0 ? "+" : ""}${Math.round(kunoDelta)}`
       : null;
+  const ctaLabel = (() => {
+    if (moduleCompleted) {
+      if (nextModuleLabel) {
+        return lang === "ro" ? `Începe ${nextModuleLabel}` : `Start ${nextModuleLabel}`;
+      }
+      return lang === "ro" ? "Vezi alte module" : "Browse more modules";
+    }
+    return lang === "ro" ? "Continuă misiunea" : "Continue mission";
+  })();
 
   const statusLine = lang === "ro"
     ? `Lecții finalizate: ${completedCount}/${totalLessons}`
@@ -68,21 +107,48 @@ export default function KunoMissionCard({ lang, focusAreaLabel, omniCunoScore, k
             {lang === "ro" ? "Acumulează cunoaștere pe tema" : "Accumulate knowledge on"}{" "}
             <span className="text-[#C07963]">· {focusLabel}</span>
           </p>
-          <p className="mt-1 text-[11px] italic text-[#4D3F36] sm:text-[12px]">
-            {lang === "ro"
-              ? "Cunoașterea îți dă puterea de a alege."
-              : "Knowledge gives you the power to choose."}
-         </p>
         </header>
 
-        <div className="mt-4 rounded-2xl border border-[#E4DAD1] bg-white px-3 py-3 text-[12px] font-semibold text-[#2C2C2C]">
-          {statusLine}
-        </div>
-        <div className="mt-4 rounded-2xl border border-[#E4DAD1] bg-white px-4 py-4 text-sm text-[#4D3F36]">
+        <div className="mt-1 text-right text-[12px] font-semibold text-[#7B6B60]">{statusLine}</div>
+        <div className="mt-3 rounded-2xl border border-[#E4DAD1] bg-white px-4 py-4 text-sm text-[#4D3F36]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B08A78]">
-            {lang === "ro" ? "Următorul pas" : "Next step"}
+            {moduleCompleted
+              ? lang === "ro"
+                ? "Modul finalizat"
+                : "Module completed"
+              : lang === "ro"
+                ? "Următorul pas"
+                : "Next step"}
           </p>
-          {activeLesson ? (
+          {moduleCompleted ? (
+            <div className="mt-3 space-y-2 text-sm text-[#4D3F36]">
+              <p>
+                {lang === "ro"
+                  ? `Ai parcurs toate lecțiile pentru ${moduleLabel ?? "acest modul"}.`
+                  : `You completed every lesson for ${moduleLabel ?? "this module"}.`}
+              </p>
+              {nextModuleLabel ? (
+                <>
+                  <p className="text-[13px] font-semibold text-[#2C2C2C]">
+                    {lang === "ro"
+                      ? `Următorul parcurs recomandat: ${nextModuleLabel}.`
+                      : `Next suggested path: ${nextModuleLabel}.`}
+                  </p>
+                  <p className="text-[12px] text-[#7B6B60]">
+                    {lang === "ro"
+                      ? "Pornește când ești gata — progresul tău se mută automat pe noul modul."
+                      : "Start when you’re ready — your progress switches automatically to the new module."}
+                  </p>
+                </>
+              ) : (
+                <p className="text-[12px] text-[#7B6B60]">
+                  {lang === "ro"
+                    ? "Poți alege alt modul OmniKuno sau poți relua lecțiile preferate din aplicație."
+                    : "Pick another OmniKuno module or revisit any lesson you want from the app."}
+                </p>
+              )}
+            </div>
+          ) : activeLesson ? (
             <div className="mt-3 flex items-center gap-3">
               <span
                 className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold ${
@@ -107,28 +173,35 @@ export default function KunoMissionCard({ lang, focusAreaLabel, omniCunoScore, k
           )}
         </div>
 
-        <div className="mt-4 flex justify-center">
+        <div className="mt-4 flex flex-col items-center gap-2">
           <Link
             href={ctaHref}
-            className="inline-flex w-full max-w-sm items-center justify-center rounded-full bg-gradient-to-b from-[#C07963] to-[#B36654] px-5 py-3 text-base font-semibold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(192,121,99,0.35)] transition hover:brightness-110 hover:shadow-[0_12px_26px_rgba(192,121,99,0.4)] active:translate-y-[1px]"
+            className="inline-flex w-full max-w-sm items-center justify-start rounded-full bg-gradient-to-b from-[#C07963] to-[#B36654] px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.18em] text-white shadow-[0_8px_20px_rgba(192,121,99,0.3)] transition text-left hover:brightness-110 hover:shadow-[0_10px_22px_rgba(192,121,99,0.35)] active:translate-y-[1px]"
           >
-            {lang === "ro" ? "Continuă misiunea" : "Continue mission"}
+            {ctaLabel}
+          </Link>
+          <Link
+            href="/omni-kuno"
+            className="inline-flex items-center text-[11px] font-semibold text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline"
+          >
+            {lang === "ro" ? "Vezi toate misiunile" : "View all missions"}
           </Link>
         </div>
-
-        <div className="mt-3 rounded-2xl border border-[#E4DAD1] bg-white px-4 py-3 text-sm text-[#4D3F36]">
+        <div className="mt-5 rounded-2xl border border-[#E4DAD1] bg-white px-4 py-3 text-sm text-[#4D3F36]">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B08A78]">
-              {lang === "ro" ? "Indicatori recenți" : "Recent indicators"}
-            </p>
-            <InfoTooltip
-              items={[
-                lang === "ro"
-                  ? "XP arată câți pași (lecții + quiz-uri) ai finalizat recent, iar scorul adaptiv arată calitatea și ritmul ultimelor sesiuni."
-                  : "XP shows how many steps (lessons + quizzes) you completed recently, while the adaptive score reflects the quality and rhythm of your latest sessions.",
-              ]}
-              label={lang === "ro" ? "Detalii indicatori" : "Indicator details"}
-            />
+            <span className="flex items-center gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B08A78]">
+                {lang === "ro" ? "Indicatori recenți" : "Recent indicators"}
+              </p>
+              <InfoTooltip
+                items={[
+                  lang === "ro"
+                    ? "XP arată câți pași (lecții + quiz-uri) ai finalizat recent, iar scorul adaptiv arată calitatea și ritmul ultimelor sesiuni."
+                    : "XP shows how many steps (lessons + quizzes) you completed recently, while the adaptive score reflects the quality and rhythm of your latest sessions.",
+                ]}
+                label={lang === "ro" ? "Detalii indicatori" : "Indicator details"}
+              />
+            </span>
           </div>
           <div className="mt-3 space-y-2 text-[12px] text-[#2C2C2C]">
             <div className="flex items-center justify-between">
@@ -154,14 +227,7 @@ export default function KunoMissionCard({ lang, focusAreaLabel, omniCunoScore, k
           </div>
         </div>
 
-        <div className="mt-4 pb-4">
-          <Link
-            href="/omni-kuno"
-            className="inline-flex items-center text-[11px] font-semibold text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline"
-          >
-            {lang === "ro" ? "Vezi toate misiunile" : "View all missions"}
-          </Link>
-        </div>
+        <div className="mt-3 pb-5" />
       </Card>
     </motion.div>
   );

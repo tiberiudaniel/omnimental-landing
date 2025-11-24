@@ -12,7 +12,7 @@ import { getWizardStepTestId } from "./useWizardSteps";
 type IntentWord = {
   key: string;
   label: string;
-  category: string;
+  category: IntentPrimaryCategory;
   size: number;
   shift: number;
 };
@@ -117,10 +117,13 @@ export default function IntentCloud({
       const hash = Math.abs([...base].reduce((acc, char) => acc + char.charCodeAt(0), index));
       const size = hash % 2;
       const shift = (hash % 9) - 4;
+      const category = CATEGORY_TINTS[item.category as IntentPrimaryCategory]
+        ? (item.category as IntentPrimaryCategory)
+        : "clarity";
       return {
         key: item.id ?? `${item.label}-${index.toString()}`,
         label: item.label,
-        category: item.category,
+        category,
         size,
         shift,
       };
@@ -236,8 +239,12 @@ export default function IntentCloud({
         </div>
 
         <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-2 md:gap-3" data-testid={`${getWizardStepTestId("intent")}-cloud`}>
-          {words.map(({ key, label }) => {
+          {words.map(({ key, label, category }) => {
             const isActive = selected.includes(key);
+            const tint = CATEGORY_TINTS[category] ?? CATEGORY_TINTS.clarity;
+            const baseClasses =
+              "min-h-[34px] rounded-full border px-3 py-2 text-sm md:text-base font-medium shadow-[0_6px_14px_rgba(31,41,55,0.08)] transition focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E60012]";
+            const stateClasses = isActive ? tint.active + " shadow-[0_10px_24px_rgba(31,41,55,0.15)]" : tint.idle;
             return (
               <motion.button
                 key={key}
@@ -245,11 +252,7 @@ export default function IntentCloud({
                 whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={() => toggleWord(key)}
-                className={`min-h-[34px] rounded-full border px-3 py-2 text-sm md:text-base font-medium shadow-[0_6px_14px_rgba(31,41,55,0.08)] transition focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E60012] ${
-                  isActive
-                    ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                    : "border-[#D6C7B8] bg-[#FCF7F1] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
-                }`}
+                className={`${baseClasses} ${stateClasses}`}
                 style={{ borderStyle: "solid", transitionProperty: "transform, box-shadow, border, color, background" }}
                 aria-pressed={isActive}
               >
@@ -285,3 +288,28 @@ export default function IntentCloud({
     </section>
   );
 }
+const CATEGORY_TINTS: Record<
+  IntentPrimaryCategory,
+  { idle: string; active: string }
+> = {
+  clarity: {
+    idle: "border-[#D9D0FF] bg-[#F7F3FF] text-[#3A2E66] hover:border-[#BBA9FF] hover:text-[#5B4ACB]",
+    active: "border-[#8B7BFF] bg-[#E3DCFF] text-[#251B57]",
+  },
+  relationships: {
+    idle: "border-[#F4C9D5] bg-[#FFF1F5] text-[#6F233D] hover:border-[#E49BB1] hover:text-[#C24B71]",
+    active: "border-[#E07B98] bg-[#FFE1EA] text-[#5C1C33]",
+  },
+  stress: {
+    idle: "border-[#F7D7C4] bg-[#FFF9F4] text-[#70321E] hover:border-[#E9B79B] hover:text-[#C25A32]",
+    active: "border-[#E39A72] bg-[#FFE9DD] text-[#5B2A17]",
+  },
+  confidence: {
+    idle: "border-[#CBDDF2] bg-[#F2F8FF] text-[#1F3C62] hover:border-[#AAC4E8] hover:text-[#2F5F96]",
+    active: "border-[#7FB1E8] bg-[#E1F0FF] text-[#16304F]",
+  },
+  balance: {
+    idle: "border-[#CDE4CB] bg-[#F4FBF2] text-[#2F4B32] hover:border-[#A9D5A6] hover:text-[#4B7A4F]",
+    active: "border-[#7BCB7B] bg-[#E4F6E4] text-[#244226]",
+  },
+};
