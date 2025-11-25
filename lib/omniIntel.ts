@@ -99,6 +99,13 @@ export type OmniBlock = {
       updatedAt?: Date | { toDate: () => Date };
     };
   };
+  initiation?: {
+    firstAction?: {
+      text?: string | null;
+      theme?: string | null;
+      savedAt?: Date | { toDate: () => Date };
+    };
+  };
   flow?: {
     flowIndex: number; // 0-100
     streakCurrent: number;
