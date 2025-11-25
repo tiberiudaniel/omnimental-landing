@@ -23,7 +23,7 @@ export default function StepMiniKunoStart({ onContinue }: { onContinue: () => vo
         <p className="text-sm text-[#4A3A30]">{desc}</p>
         <div className="mt-3 flex items-center justify-between">
           <a
-            href="/experience-onboarding?flow=initiation&step=omnikuno-test"
+            href="/experience-onboarding?flow=initiation&step=welcome&from=wizard"
             className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
             data-testid="need-minikuno-open"
           >
@@ -42,4 +42,3 @@ export default function StepMiniKunoStart({ onContinue }: { onContinue: () => vo
     </section>
   );
 }
-

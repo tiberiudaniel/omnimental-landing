@@ -7,7 +7,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
 import { CATEGORY_LABELS } from "@/lib/categoryLabels";
-import onboardingHero from "@/public/assets/onboarding-welcome.jpg";
+import onboardingHero from "@/public/assets/onboarding-init-hero.jpg";
 
 const ROADMAP_MARKERS = [
   { label: "Omni-Scop", left: "54%", top: "105%", scale: 1.2, fade: 0.65 },
@@ -159,8 +159,8 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
             </button>
             <p className="text-sm text-[#6A4A3A] md:ml-4">
               {lang === "ro"
-                ? "7 pași ghidați · 12 minute · simți primele schimbări."
-                : "7 guided steps · about 12 minutes · feel the first shifts."}
+                ? "10 pași ghidați · aproximativ 12–15 minute."
+                : "10 guided steps · about 12–15 minutes."}
             </p>
           </div>
         </div>

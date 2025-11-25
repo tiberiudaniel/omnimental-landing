@@ -52,7 +52,12 @@ export default function InitiationStepKunoContext({ userId, onContinue }: { user
   return (
     <section className="space-y-4">
       <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
-        <Typewriter text={lang === 'ro' ? 'Câteva scenarii și reflecții (nepunctate) pentru a calibra recomandările.' : 'A few scenarios and reflections (not scored) to calibrate recommendations.'} />
+        <Typewriter text={lang === 'ro' ? 'Testezi cum gândești, nu cât știi.' : 'You’re testing how you think, not how much you know.'} />
+        <p className="mt-2 text-sm text-[#4A3A30]">
+          {lang === 'ro'
+            ? 'Câteva scenarii și reflecții (nepunctate) pentru a calibra recomandările.'
+            : 'A few scenarios and reflections (not scored) to calibrate recommendations.'}
+        </p>
       </div>
       {pool.length === 0 ? (
         <GuideCard title={lang === 'ro' ? 'Gata pentru pasul următor' : 'Ready for next step'}>
@@ -68,6 +73,8 @@ export default function InitiationStepKunoContext({ userId, onContinue }: { user
           styleLabel={q.style as 'knowledge' | 'scenario' | 'reflection' | 'microSkill' | undefined}
           index={idx}
           total={pool.length}
+          questionTestId="init-kuno-question"
+          optionTestId="init-kuno-option"
         />
       ))}
       <div className="flex justify-end">
@@ -75,6 +82,7 @@ export default function InitiationStepKunoContext({ userId, onContinue }: { user
           disabled={!allAnswered}
           onClick={save}
           className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
+          data-testid="init-kuno-continue"
         >
           {lang === 'ro' ? 'Continuă' : 'Continue'}
         </button>

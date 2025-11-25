@@ -15,7 +15,6 @@ import StepProgressRedirect from "./steps/StepProgressRedirect";
 import StepJournal from "./steps/StepJournal";
 import StepBreathPractice from "./steps/StepBreathPractice";
 import StepProjection from "./steps/StepProjection";
-import InitiationStepJournal from "./steps/InitiationStepJournal";
 import InitiationStepKunoContext from "./steps/InitiationStepKunoContext";
 import InitiationStepOmniScope from "./steps/InitiationStepOmniScope";
 import InitiationStepDailyState from "./steps/InitiationStepDailyState";
@@ -59,6 +58,8 @@ function ExperienceOnboardingContent() {
   const requireLogin = process.env.NEXT_PUBLIC_REQUIRE_LOGIN_FOR_ONBOARDING === '1';
   const bypassAuth = Boolean(search?.get("demo") || search?.get("e2e") === "1");
   const [blocked, setBlocked] = useState(false);
+  const rawQuery = search?.toString() ?? "";
+  const hasQueryParams = rawQuery.length > 0;
 
   // Read/normalize navigation state and step hooks BEFORE any early return to keep hook order stable
   const start = search?.get("start") === "1";
@@ -73,6 +74,14 @@ function ExperienceOnboardingContent() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [score, setScore] = useState<{ raw: number; max: number }>({ raw: 0, max: 0 });
   const [miniMeta, setMiniMeta] = useState<{ topicKey?: string; questions?: Array<{ id: string; correctIndex: number; style?: string }> } | undefined>();
+
+  useEffect(() => {
+    if (hasQueryParams) return;
+    const params = new URLSearchParams();
+    params.set("flow", "initiation");
+    params.set("step", "welcome");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [hasQueryParams, router]);
 
   // Optional gate: require login before onboarding/initiation
   useEffect(() => {
@@ -200,19 +209,27 @@ function ExperienceOnboardingContent() {
               />
             )}
             {step === 'first-action' && (
-              <FirstAction userId={profile?.id ?? null} themeLabel={focusThemeLabel} />
+              <FirstAction
+                userId={profile?.id ?? null}
+                themeLabel={focusThemeLabel}
+                onComplete={() => go('omnikuno-context')}
+              />
             )}
             {step === 'omnikuno-context' && (
-              <InitiationStepKunoContext userId={profile?.id ?? null} onContinue={() => router.push('/progress?from=initiation&step=omnikuno-test-done')} />
+              <InitiationStepKunoContext userId={profile?.id ?? null} onContinue={() => go('journal')} />
             )}
             {step === 'journal' && (
-              <InitiationStepJournal />
+              <StepJournal
+                userId={profile?.id ?? null}
+                onSaved={() => go('omniscope')}
+                onSkip={() => go('omniscope')}
+              />
             )}
             {step === 'omniscope' && (
-              <InitiationStepOmniScope userId={profile?.id ?? null} />
+              <InitiationStepOmniScope userId={profile?.id ?? null} onComplete={() => go('daily-state')} />
             )}
             {step === 'daily-state' && (
-              <InitiationStepDailyState />
+              <InitiationStepDailyState onComplete={() => go('omnikuno-lesson')} />
             )}
             {step === 'omnikuno-lesson' && (
               <InitiationStepLesson userId={profile?.id ?? null} onNext={() => go('omnikuno-lesson-quiz')} />

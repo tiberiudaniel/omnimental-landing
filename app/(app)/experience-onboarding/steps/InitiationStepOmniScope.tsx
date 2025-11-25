@@ -53,7 +53,7 @@ function Mixer({ label, value, setValue, min = 1, max = 10, ticks = 10, lowLabel
   );
 }
 
-export default function InitiationStepOmniScope({ userId }: { userId: string | null }) {
+export default function InitiationStepOmniScope({ userId, onComplete }: { userId: string | null; onComplete?: () => void }) {
   const { lang } = useI18n();
   const router = useRouter();
   const { profile } = useProfile();
@@ -91,13 +91,16 @@ export default function InitiationStepOmniScope({ userId }: { userId: string | n
       console.warn('initiation omniscope save failed', e);
     } finally {
       setBusy(false);
-      router.push('/progress?from=initiation&step=omniscope-done');
+      if (onComplete) onComplete();
+      else router.push('/progress?from=initiation&step=omniscope-done');
     }
   };
   return (
-    <section className="space-y-4">
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
-        <Typewriter text={lang === 'ro' ? 'Hai să înțelegem pe scurt situația ta.' : 'Let’s quickly understand your situation.'} />
+    <section className="relative space-y-4 overflow-hidden rounded-[24px]">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.18]" style={{ backgroundImage: "url('/assets/onboarding-path-geometry.jpg')", backgroundSize: "cover", backgroundPosition: "center" }} />
+      <div className="relative z-10 space-y-4">
+        <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
+        <Typewriter text={lang === 'ro' ? 'Unde ești acum pe hartă în raport cu tema în focus?' : 'Where are you right now relative to your focus theme?'} />
       </div>
       <GuideCard title={lang === 'ro' ? 'Trei întrebări scurte' : 'Three quick questions'}>
         <div className="space-y-4">
@@ -146,6 +149,7 @@ export default function InitiationStepOmniScope({ userId }: { userId: string | n
           </div>
         </div>
       </GuideCard>
+      </div>
     </section>
   );
 }

@@ -93,15 +93,39 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
       ))}
       <div className="flex items-center justify-between">
         <p className="text-sm text-[#4A3A30]">{lang === 'ro' ? 'Scor' : 'Score'}: {score}/{questions.length}</p>
-        <button
-          disabled={!allAnswered}
-          onClick={submit}
-          className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
-          data-testid="init-lesson-quiz-submit"
-        >
-          {lang === 'ro' ? 'Continuă' : 'Continue'}
-        </button>
       </div>
+      <section className="mt-2 rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+          {lang === 'ro' ? 'Inițiere completă' : 'Initiation complete'}
+        </h3>
+        <p className="mt-2 text-sm text-[#4A3A30]">
+          {lang === 'ro'
+            ? 'Ai calibrat tema în focus, ți-ai notat prima acțiune și ai parcurs o micro-lecție aplicată.'
+            : 'You calibrated your focus theme, captured a first action, and completed an applied micro-lesson.'}
+        </p>
+        <ul className="mt-3 list-disc pl-5 text-sm text-[#4A3A30]">
+          <li>{lang === 'ro' ? 'Ai deschis jurnalul cu o primă reflecție.' : 'You opened the journal with a first reflection.'}</li>
+          <li>{lang === 'ro' ? 'Ai măsurat starea de azi și motivația pentru tema aleasă.' : 'You measured today’s state and motivation for your theme.'}</li>
+          <li>{lang === 'ro' ? 'Ai testat cunoașterea de bază în zona aleasă.' : 'You tested your baseline knowledge in the chosen area.'}</li>
+        </ul>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!allAnswered}
+            className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-sm font-medium tracking-[0.12em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
+            data-testid="init-lesson-quiz-submit"
+          >
+            {lang === 'ro' ? 'Mergi la progres' : 'Go to progress'}
+          </button>
+          <a
+            href="/recommendation?from=initiation"
+            className="rounded-[10px] border border-[#D8C6B6] px-5 py-2 text-sm font-medium tracking-[0.12em] text-[#7B6B60] hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+          >
+            {lang === 'ro' ? 'Vezi recomandarea ta' : 'See your recommendation'}
+          </a>
+        </div>
+      </section>
     </section>
   );
 }

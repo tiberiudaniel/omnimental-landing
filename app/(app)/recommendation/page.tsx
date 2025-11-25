@@ -331,7 +331,7 @@ function RecommendationContent() {
           <p className="text-sm text-[#4A3A30]">{pageSubtitle}</p>
           <div className="mt-1 flex justify-center">
             <Link
-              href="/experience-onboarding?flow=initiation&step=omnikuno-test"
+              href="/experience-onboarding?flow=initiation&step=welcome&from=recommendation"
               className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
               data-testid="reco-initiation-cta"
             >

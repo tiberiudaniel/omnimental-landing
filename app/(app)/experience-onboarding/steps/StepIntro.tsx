@@ -9,16 +9,24 @@ export default function StepIntro({ onStart }: { onStart: () => void }) {
   return (
     <section className="rounded-[24px] border-none bg-transparent px-0 py-0">
       <div className="relative overflow-hidden rounded-[24px] border border-[#E4DAD1] bg-[#FFF8F4] px-6 py-8 shadow-[0_32px_80px_rgba(48,21,8,0.18)]">
+        <div className="pointer-events-none absolute inset-0 opacity-25" style={{ backgroundImage: "url('/assets/onboarding-kuno-signs.jpg')", backgroundSize: "cover", backgroundPosition: "center" }} />
         <div className="relative z-10 text-[#3D1C10]">
-          <div className="mb-3 text-xs uppercase tracking-[0.4em] text-[#96705B]">{lang === 'ro' ? 'Pas 1/7' : 'Step 1/7'}</div>
+          <div className="mb-3 text-xs uppercase tracking-[0.4em] text-[#96705B]">
+            {lang === 'ro' ? 'Start Omni-Kuno' : 'Start Omni-Kuno'}
+          </div>
           <Typewriter
-            className="text-base leading-relaxed text-white/95 md:text-lg"
+            className="text-base leading-relaxed text-[#3D1C10] md:text-lg"
             text={
               lang === 'ro'
-                ? "Bine ai venit în onboarding-ul experiențial OmniMental. În câteva minute simți cum funcționează: un mini‑test, un jurnal scurt și un exercițiu de respirație."
-                : "Welcome to the experiential onboarding. In a few minutes you’ll feel how it works: a mini‑quiz, a short journal, and a breathing exercise."
+                ? "Bine ai venit în inițierea OmniMental. În următoarele minute clarificăm tema ta în focus și calibrăm trei lucruri esențiale: ce știi deja, cum te simți acum și care este primul pas concret pe care îl poți face."
+                : "Welcome to the OmniMental initiation. In the next minutes we’ll clarify your focus theme and calibrate three essentials: what you already know, how you feel right now, and the first concrete step you can take."
             }
           />
+          <p className="mt-3 text-sm text-[#4A3A30]">
+            {lang === 'ro'
+              ? 'Vei trece printr-o mini-lecție, o acțiune ghidată, un jurnal scurt și o calibrare a stării de azi.'
+              : 'You’ll go through a mini-lesson, a guided action, a short journal, and a calibration of today’s state.'}
+          </p>
         </div>
       </div>
       {/* removed top start button; primary Start lives inside the Omni‑Kuno card */}

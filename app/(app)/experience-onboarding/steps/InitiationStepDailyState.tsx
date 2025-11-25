@@ -9,7 +9,7 @@ import { recordPracticeSession, recordQuickAssessment } from "@/lib/progressFact
 
 type Key = "energy" | "stress" | "sleep" | "clarity" | "confidence" | "focus";
 
-export default function InitiationStepDailyState() {
+export default function InitiationStepDailyState({ onComplete }: { onComplete?: () => void }) {
   const { lang } = useI18n();
   const router = useRouter();
   const [vals, setVals] = useState<Record<Key, number>>({
@@ -31,7 +31,8 @@ export default function InitiationStepDailyState() {
       console.warn('initiation daily-state failed', e);
     } finally {
       setBusy(false);
-      router.push('/progress?from=initiation&step=daily-state-done');
+      if (onComplete) onComplete();
+      else router.push('/progress?from=initiation&step=daily-state-done');
     }
   };
   const labels: Record<Key, string> = {
@@ -83,9 +84,11 @@ export default function InitiationStepDailyState() {
     );
   }
   return (
-    <section className="space-y-4">
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
-        <Typewriter text={lang === 'ro' ? 'Mini‑stare pentru azi (1–10).' : 'Mini state for today (1–10).'} />
+    <section className="relative space-y-4 overflow-hidden rounded-[24px]">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.18]" style={{ backgroundImage: "url('/assets/onboarding-path-arrow.jpg')", backgroundSize: "cover", backgroundPosition: "center" }} />
+      <div className="relative z-10 space-y-4">
+        <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
+        <Typewriter text={lang === 'ro' ? 'Cum arată azi resursele tale interne?' : 'How do your inner resources look today?'} />
       </div>
       <GuideCard title={lang === 'ro' ? 'Evaluare rapidă (1–10)' : 'Quick check (1–10)'}>
         <div className="grid gap-3 md:grid-cols-2">
@@ -104,6 +107,7 @@ export default function InitiationStepDailyState() {
           </button>
         </div>
       </GuideCard>
+      </div>
     </section>
   );
 }

@@ -23,7 +23,7 @@ function KunoHub() {
           <Link href="/kuno/learn" className="rounded-[12px] border border-[#E4D8CE] bg-white px-5 py-4 text-sm text-[#2C2C2C] shadow-sm hover:border-[#C07963] hover:text-[#C07963]">
             Lecții scurte per categorie
           </Link>
-          <Link href="/experience-onboarding?start=1" className="rounded-[12px] border border-[#E4D8CE] bg-white px-5 py-4 text-sm text-[#2C2C2C] shadow-sm hover:border-[#C07963] hover:text-[#C07963]">
+          <Link href="/experience-onboarding?flow=initiation&step=welcome&from=kuno" className="rounded-[12px] border border-[#E4D8CE] bg-white px-5 py-4 text-sm text-[#2C2C2C] shadow-sm hover:border-[#C07963] hover:text-[#C07963]">
             Încearcă experiența ghidată
           </Link>
         </div>
