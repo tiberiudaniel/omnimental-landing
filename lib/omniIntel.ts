@@ -93,6 +93,12 @@ export type OmniBlock = {
     evaluationsCount: number;
     consistencyIndex: number; // 0-100
   };
+  journal?: {
+    today?: {
+      status?: "completed" | "pending";
+      updatedAt?: Date | { toDate: () => Date };
+    };
+  };
   flow?: {
     flowIndex: number; // 0-100
     streakCurrent: number;

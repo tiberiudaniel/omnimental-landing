@@ -25,16 +25,18 @@ import type { JournalContext } from "@/components/journal/useJournal";
 import { useWindowWidth } from "@/lib/useWindowSize";
 
 const TAB_ITEMS = [
-  { key: "os", label: "Omni-Scop", description: "Scop & intenție" },
-  { key: "oc", label: "Omni Kuno", description: "Cunoaștere & concepte" },
-  { key: "ose", label: "Omni-Flex", description: "Flexibilitate psihologică" },
-  { key: "oa", label: "Omni-Abil", description: "Abilități practice" },
-  { key: "oi", label: "Omni-Intel", description: "Stare integrativă" },
+  { key: "os", label: "Omni-Scop", description: "Scop & intenție", status: "live" },
+  { key: "oc", label: "Omni-Kuno", description: "Cunoaștere & concepte", status: "live" },
+  { key: "oa", label: "Omni-Abil", description: "Abilități practice", status: "live" },
+  { key: "ose", label: "Omni-Flex", description: "Flexibilitate psihologică", status: "preview" },
+  { key: "oi", label: "Omni-Intel", description: "Stare integrativă", status: "preview" },
 ] as const;
 
 // Tab helper copy is now in i18n: antrenamentTabHelp.{os|oc|ose|oa|oi}
 
 type TabKey = (typeof TAB_ITEMS)[number]["key"];
+const DEFAULT_TAB: TabKey = "oc";
+const PREVIEW_TABS = TAB_ITEMS.filter((tab) => tab.status === "preview").map((tab) => tab.key) as TabKey[];
 
 function AntrenamentContent() {
   const router = useRouter();
@@ -55,7 +57,10 @@ function AntrenamentContent() {
   const allKeys = useMemo(() => TAB_ITEMS.map((t) => t.key), []);
   const activeTab = useMemo<TabKey>(() => {
     const q = searchParams?.get("tab");
-    return (allKeys.includes(q as TabKey) ? (q as TabKey) : TAB_ITEMS[0].key) as TabKey;
+    if (q && allKeys.includes(q as TabKey) && !PREVIEW_TABS.includes(q as TabKey)) {
+      return q as TabKey;
+    }
+    return DEFAULT_TAB;
   }, [allKeys, searchParams]);
   const accessTier = profile?.accessTier ?? "member";
   const isMember = Boolean(profile?.id) || accessTier !== "public";
@@ -164,7 +169,7 @@ function AntrenamentContent() {
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href="/omni-kuno"
-                className="inline-flex items-center rounded-full bg-[#2C2C2C] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#C07963]"
+                className="inline-flex items-center rounded-full bg-[linear-gradient(135deg,#4F2C1F,#A55B3C)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#FFF8F0] shadow-[0_12px_28px_rgba(79,44,31,0.22)] transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C07963]"
               >
                 {String(t("antrenament.oc.missionCta"))}
               </Link>
@@ -242,35 +247,39 @@ function AntrenamentContent() {
         >
           {TAB_ITEMS.map((tab) => {
             const isActive = activeTab === tab.key;
-            const disabled = tab.key === 'ose' || tab.key === 'oa';
+            const isComingSoon = tab.status === "preview";
             return (
               <button
                 key={tab.key}
                 type="button"
-                role="tab"
-                aria-selected={isActive}
-                aria-disabled={disabled}
-                disabled={disabled}
+                role={isComingSoon ? undefined : "tab"}
+                aria-selected={!isComingSoon ? isActive : undefined}
+                aria-disabled={isComingSoon || undefined}
+                aria-hidden={isComingSoon || undefined}
+                tabIndex={isComingSoon ? -1 : undefined}
                 onClick={() => {
-                  if (disabled) return;
+                  if (isComingSoon) return;
                   const params = new URLSearchParams(searchParams?.toString() ?? "");
                   params.set("tab", tab.key);
                   const qs = params.toString();
                   router.replace(qs ? `/antrenament?${qs}` : "/antrenament");
                   void recordEvaluationTabChange(tab.key);
                 }}
-                className={`flex flex-col rounded-[10px] border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E60012] ${
-                  disabled
-                    ? "cursor-not-allowed border-dashed border-[#E4D8CE] text-[#A08F82]"
+                className={`flex flex-col rounded-[10px] border px-4 py-3 text-left transition duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E60012] ${
+                  isComingSoon
+                    ? "cursor-default border-dashed border-[#F2E7DA] bg-white/70 text-[#A08F82] opacity-10 hover:opacity-45"
                     : isActive
-                    ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                    : "border-transparent text-[#4A3A30] hover:border-[#D8C6B6]"
+                    ? "border-transparent bg-[linear-gradient(135deg,#4F2C1F,#A55B3C)] text-[#FFF8F0] shadow-[0_10px_30px_rgba(79,44,31,0.25)]"
+                    : "border border-[#E4D8CE] bg-[#FCF7F1] text-[#5C4F45] hover:border-[#D8C6B6] hover:bg-white"
                 }`}
               >
-                <span className="text-sm font-semibold uppercase tracking-[0.3em] inline-flex items-center gap-1">
+                <span className={`inline-flex items-center gap-1 text-sm font-semibold uppercase ${isActive ? "tracking-[0.2em]" : "tracking-[0.27em]"}`}>
                   {tab.label}
-                  {disabled ? (
-                    <InfoTooltip items={[lang === 'ro' ? 'În curând' : 'Coming soon']} label={lang === 'ro' ? 'În curând' : 'Coming soon'} />
+                  {isComingSoon ? (
+                    <InfoTooltip
+                      items={[lang === "ro" ? "În curând" : "Coming soon"]}
+                      label={lang === "ro" ? "În curând" : "Coming soon"}
+                    />
                   ) : null}
                 </span>
                 <span className="text-xs text-current">{tab.description}</span>

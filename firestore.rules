@@ -31,6 +31,11 @@ service cloud.firestore {
     match /userJournals/{userId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId);
+
+      match /entries/{entryId} {
+        allow read, create: if isOwner(userId);
+        allow update, delete: if isOwner(userId);
+      }
     }
 
     // Snapshots and journeys: owner-only access. Allow create if profileId matches auth uid.

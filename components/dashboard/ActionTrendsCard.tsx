@@ -316,15 +316,6 @@ export default function ActionTrendsCard({
               <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[10px] sm:text-[11px]">
                 <button
                   type="button"
-                  onClick={() => setTimeframe("day")}
-                  className={`rounded px-1.5 py-0.5 transition ${timeframe === "day" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
-                  aria-label="Toggle to day view"
-                  data-testid="trend-toggle-day"
-                >
-                  {lang === "ro" ? "Azi" : "Day"}
-                </button>
-                <button
-                  type="button"
                   onClick={() => setTimeframe("week")}
                   className={`rounded px-1.5 py-0.5 transition ${timeframe === "week" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
                   aria-label="Toggle to week view"

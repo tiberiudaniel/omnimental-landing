@@ -161,17 +161,17 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
 
       <div className="words-overlay absolute inset-0 overflow-hidden pointer-events-none" />
 
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none translate-y-14">
-        <div className="pointer-events-auto flex flex-col gap-3 sm:flex-row">
+      <div className="absolute inset-0 flex items-center justify-center px-6 pointer-events-none translate-y-10 sm:translate-y-14">
+        <div className="pointer-events-auto flex w-full max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:items-center">
           <button
-            className="rounded-[14px] border border-[#2C2C2C] bg-white/95 px-12 py-4 sm:px-16 sm:py-5 text-xl sm:text-2xl font-semibold tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] font-['Courier_Prime',monospace]"
+            className="rounded-[14px] border border-[#E2CFC2] bg-white/95 px-8 py-4 text-lg font-semibold uppercase tracking-[0.18em] text-[#4F2C1F] shadow-[0_10px_24px_rgba(79,44,31,0.18)] transition hover:bg-[#FFF5EE] hover:text-[#8E4C36] sm:px-14 sm:py-5 sm:text-2xl sm:tracking-[0.22em]"
             onClick={safeComplete}
             aria-label="Pornește animația"
           >
             START
           </button>
           <button
-            className="rounded-[14px] border border-[#2C2C2C] bg-white/85 px-10 py-3 text-base font-semibold tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] font-['Courier_Prime',monospace]"
+            className="rounded-[14px] border border-transparent bg-[#FFF4EC]/95 px-8 py-3 text-base font-semibold uppercase tracking-[0.16em] text-[#8B4E3A] shadow-[0_6px_16px_rgba(139,78,58,0.15)] transition hover:bg-[#FFE8DC] hover:text-[#5C2F20] sm:px-10 sm:text-lg"
             onClick={() => router.push(user && !user.isAnonymous ? "/progress" : "/auth")}
             aria-label="Deschide autentificarea"
           >

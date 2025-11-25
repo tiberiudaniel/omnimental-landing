@@ -257,7 +257,7 @@ export default function SiteHeader({
           </Link>
           {showOnboardingNav ? (
             <Link
-              href={{ pathname: "/experience-onboarding", query: { flow: "initiation", step: "intro" } }}
+              href={{ pathname: "/experience-onboarding", query: { flow: "initiation", step: "welcome" } }}
               className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
                 isActive("/experience-onboarding") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
               }`}

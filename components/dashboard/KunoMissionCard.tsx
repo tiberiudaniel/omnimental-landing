@@ -149,12 +149,15 @@ export default function KunoMissionCard({
               )}
             </div>
           ) : activeLesson ? (
-            <div className="mt-3 flex items-center gap-3">
+            <Link
+              href={ctaHref}
+              className="mt-3 flex items-center gap-3 rounded-2xl border border-transparent px-2 py-2 transition hover:border-[#F5A47E]/40 hover:bg-[#FFF8F4]/70"
+            >
               <span
-                className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold ${
+                className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${
                   activeLesson.type === "quiz"
                     ? "border-[#C07963] bg-[#FFF3EC] text-[#C07963]"
-                    : "border-[#1F7A43] bg-[#ECF8F0] text-[#1F7A43]"
+                    : "border-[#F5A47E] bg-[#FFF9F5] text-[#D55D2A]"
                 }`}
               >
                 ▶
@@ -165,7 +168,7 @@ export default function KunoMissionCard({
                   {activeLesson.type === "quiz" ? (lang === "ro" ? "Quiz" : "Quiz") : lang === "ro" ? "Lecție" : "Lesson"}
                 </p>
               </div>
-            </div>
+            </Link>
           ) : (
             <p className="mt-2 text-[12px] text-[#7B6B60]">
               {lang === "ro" ? "Nu avem momentan un pas activ." : "No active step right now."}
@@ -176,7 +179,7 @@ export default function KunoMissionCard({
         <div className="mt-4 flex flex-col items-center gap-2">
           <Link
             href={ctaHref}
-            className="inline-flex w-full max-w-sm items-center justify-start rounded-full bg-gradient-to-b from-[#C07963] to-[#B36654] px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.18em] text-white shadow-[0_8px_20px_rgba(192,121,99,0.3)] transition text-left hover:brightness-110 hover:shadow-[0_10px_22px_rgba(192,121,99,0.35)] active:translate-y-[1px]"
+            className="inline-flex w-full max-w-sm items-center justify-center rounded-full bg-gradient-to-b from-[#C07963] to-[#B36654] px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.18em] text-white shadow-[0_8px_20px_rgba(192,121,99,0.3)] transition hover:brightness-110 hover:shadow-[0_10px_22px_rgba(192,121,99,0.35)] active:translate-y-[1px]"
           >
             {ctaLabel}
           </Link>

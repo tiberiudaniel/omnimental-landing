@@ -30,7 +30,7 @@ export function KunoActivePanel({
             type="button"
             onClick={onContinue}
             disabled={disabled}
-            className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-b from-[#C07963] to-[#B36654] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-[0_10px_24px_rgba(192,121,99,0.25)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-[#E2CFC2] bg-white/90 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#4F2C1F] shadow-[0_6px_18px_rgba(79,44,31,0.15)] transition hover:bg-[#FFF3EB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C07963] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Continuă misiunea
           </button>

@@ -647,6 +647,14 @@ function ModuleExperience({
     }
   }, [activeItem, onActiveLessonChange]);
   const langKey: "ro" | "en" = lang === "ro" ? "ro" : "en";
+  const scrollToLesson = useCallback((lessonId: string) => {
+    if (typeof window === "undefined") return;
+    const el = document.getElementById(`kuno-lesson-${lessonId}`);
+    if (!el) return;
+    const yOffset = 120;
+    const targetTop = el.getBoundingClientRect().top + window.scrollY - yOffset;
+    window.scrollTo({ top: targetTop > 0 ? targetTop : 0, behavior: "smooth" });
+  }, []);
   const handleLessonProgress = useCallback(
     (lessonId: string, current: number, total: number) => {
       setLessonProgressByModule((prev) => {
@@ -695,6 +703,11 @@ function ModuleExperience({
     },
     [t],
   );
+  const handleContinueMission = useCallback(() => {
+    if (!activeItem) return;
+    setOpenLessonForModule(activeItem.id);
+    scrollToLesson(activeItem.id);
+  }, [activeItem, scrollToLesson, setOpenLessonForModule]);
   return (
     <div className="space-y-8">
       <KunoContainer align="left">
@@ -705,13 +718,7 @@ function ModuleExperience({
               : `Progress: ${completedCount}/${timelineWithMeta.length} missions`
           }
           nextLessonTitle={activeItem?.lesson?.title ?? null}
-          onContinue={
-            activeItem
-              ? () => {
-                  setOpenLessonForModule(activeItem.id);
-                }
-              : undefined
-          }
+          onContinue={activeItem ? handleContinueMission : undefined}
           disabled={!activeItem}
         >
           <div className="h-2 rounded-full bg-[#F4EDE4]">
@@ -734,6 +741,7 @@ function ModuleExperience({
               return (
                 <LessonAccordionItem
                   key={item.id}
+                  containerId={`kuno-lesson-${item.id}`}
                   id={item.id}
                   index={idx + 1}
                   title={item.title}

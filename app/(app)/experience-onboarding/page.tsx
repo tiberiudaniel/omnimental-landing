@@ -7,6 +7,7 @@ import MenuOverlay from "@/components/MenuOverlay";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useProfile } from "@/components/ProfileProvider";
 import { useI18n } from "@/components/I18nProvider";
+import { useProgressFacts } from "@/components/useProgressFacts";
 import StepIntro from "./steps/StepIntro";
 import StepMiniTest from "./steps/StepMiniTest";
 import StepMiniTestScore from "./steps/StepMiniTestScore";
@@ -20,6 +21,9 @@ import InitiationStepOmniScope from "./steps/InitiationStepOmniScope";
 import InitiationStepDailyState from "./steps/InitiationStepDailyState";
 import InitiationStepLesson from "./steps/InitiationStepLesson";
 import InitiationStepLessonQuiz from "./steps/InitiationStepLessonQuiz";
+import { InitiationLesson } from "@/components/onboarding/InitiationLesson";
+import { FirstAction } from "@/components/onboarding/FirstAction";
+import InitiationStepWelcome from "./steps/InitiationStepWelcome";
 
 export type StepId =
   | "intro"
@@ -31,8 +35,10 @@ export type StepId =
   | "projection";
 
 type InitiationStepId =
+  | "welcome"
   | "intro"
   | "omnikuno-test"
+  | "first-action"
   | "omnikuno-context"
   | "journal"
   | "omniscope"
@@ -46,6 +52,9 @@ function ExperienceOnboardingContent() {
   const navLinks = useNavigationLinks();
   const { profile } = useProfile();
   const { lang } = useI18n();
+  const { data: progress } = useProgressFacts(profile?.id);
+  const focusThemeLabel =
+    (progress as { omni?: { scope?: { theme?: string | null } } } | null)?.omni?.scope?.theme ?? null;
   const [menuOpen, setMenuOpen] = useState(false);
   const requireLogin = process.env.NEXT_PUBLIC_REQUIRE_LOGIN_FOR_ONBOARDING === '1';
   const bypassAuth = Boolean(search?.get("demo") || search?.get("e2e") === "1");
@@ -59,7 +68,8 @@ function ExperienceOnboardingContent() {
     ? (stepParamRaw as InitiationStepId | null)
     : (stepParamRaw as StepId | null)
   ) ?? null;
-  const [step, setStep] = useState<string>(stepParam ?? (start ? "intro" : "intro"));
+  const fallbackStep = flow === 'initiation' ? "welcome" : "intro";
+  const [step, setStep] = useState<string>(stepParam ?? fallbackStep);
   const [answers, setAnswers] = useState<number[]>([]);
   const [score, setScore] = useState<{ raw: number; max: number }>({ raw: 0, max: 0 });
   const [miniMeta, setMiniMeta] = useState<{ topicKey?: string; questions?: Array<{ id: string; correctIndex: number; style?: string }> } | undefined>();
@@ -85,12 +95,12 @@ function ExperienceOnboardingContent() {
   useEffect(() => {
     if (start && !stepParam) {
       const params = new URLSearchParams(search?.toString() ?? "");
-      params.set("step", "intro");
+      params.set("step", fallbackStep);
       router.replace(`?${params.toString()}`, { scroll: false });
-      setStep("intro");
+      setStep(fallbackStep);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [start]);
+  }, [start, fallbackStep]);
 
   // NAV-02: keep local step in sync with URL at mount/refresh
   useEffect(() => {
@@ -122,7 +132,7 @@ function ExperienceOnboardingContent() {
         {/* Breadcrumb for Initiation flow */}
         {flow === 'initiation' ? (
           (() => {
-            const order: InitiationStepId[] = ['intro','omnikuno-test','omnikuno-context','journal','omniscope','daily-state','omnikuno-lesson','omnikuno-lesson-quiz'];
+            const order: InitiationStepId[] = ['welcome','intro','omnikuno-test','first-action','omnikuno-context','journal','omniscope','daily-state','omnikuno-lesson','omnikuno-lesson-quiz'];
             const idx = Math.max(0, order.indexOf((step as InitiationStepId))) + 1;
             const total = order.length;
             return (
@@ -177,37 +187,20 @@ function ExperienceOnboardingContent() {
         ) : (
           <>
             {/* Initiation flow */}
+            {step === 'welcome' && (
+              <InitiationStepWelcome onBegin={() => go('intro')} />
+            )}
             {step === 'intro' && (
               <StepIntro onStart={() => go('omnikuno-test')} />
             )}
             {step === 'omnikuno-test' && (
-              <>
-                {(() => {
-                  // render mini test then score
-                  if (answers.length && score.max > 0) {
-                    return (
-                      <StepMiniTestScore
-                        answers={answers}
-                        score={score}
-                        userId={profile?.id ?? null}
-                        topicKey={miniMeta?.topicKey}
-                        questionsMeta={miniMeta?.questions}
-                        onContinue={() => go('omnikuno-context')}
-                      />
-                    );
-                  }
-                  return (
-                    <StepMiniTest
-                      autoSubmitAfterMin
-                      onSubmit={(a, s, meta) => {
-                        setAnswers(a);
-                        setScore(s);
-                        setMiniMeta(meta);
-                      }}
-                    />
-                  );
-                })()}
-              </>
+              <InitiationLesson
+                themeLabel={focusThemeLabel}
+                onContinue={() => go('first-action')}
+              />
+            )}
+            {step === 'first-action' && (
+              <FirstAction userId={profile?.id ?? null} themeLabel={focusThemeLabel} />
             )}
             {step === 'omnikuno-context' && (
               <InitiationStepKunoContext userId={profile?.id ?? null} onContinue={() => router.push('/progress?from=initiation&step=omnikuno-test-done')} />

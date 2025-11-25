@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 type LessonAccordionItemProps = {
   id: string;
+  containerId?: string;
   index: number;
   title: string;
   description: string;
@@ -23,6 +24,7 @@ type LessonAccordionItemProps = {
 };
 
 export default function LessonAccordionItem({
+  containerId,
   index,
   title,
   description,
@@ -56,7 +58,7 @@ export default function LessonAccordionItem({
   const progressDots = Array.from({ length: Math.max(1, totalSteps) }, (_, idx) => idx < currentStep - 1);
 
   return (
-    <div className="rounded-3xl border border-transparent bg-transparent">
+    <div id={containerId} className="rounded-3xl border border-transparent bg-transparent">
       <motion.button
         type="button"
         disabled={!isClickable}
