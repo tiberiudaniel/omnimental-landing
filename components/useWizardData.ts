@@ -747,10 +747,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
   useEffect(() => {
     authUserRef.current = authUser ?? null;
   }, [authUser]);
-  const [accountPromptRequested, setAccountPromptRequested] = useState(false);
+  const [cardPromptVisible, setCardPromptVisible] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [pendingJourneyChoice, setPendingJourneyChoice] = useState<{ choice: WizardCardChoice; extra?: JourneyExtras } | null>(null);
-  const showAccountPrompt = accountPromptRequested && Boolean(pendingJourneyChoice);
+  const showAccountPrompt = cardPromptVisible && Boolean(pendingJourneyChoice);
 
   const ensurePersistableUser = useCallback(async () => {
     const current = authUserRef.current;
@@ -765,11 +765,11 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
   const requireFullAccountOrPrompt = useCallback(() => {
     const current = authUserRef.current;
     if (current && !current.isAnonymous) return true;
-    setAccountPromptRequested(true);
     return false;
   }, []);
 
   const queueJourneyChoice = useCallback((choice: WizardCardChoice, extra?: JourneyExtras) => {
+    setCardPromptVisible(true);
     setPendingJourneyChoice({ choice, extra });
     const current = authUserRef.current;
     if (current) {
@@ -781,8 +781,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
     if (!authUser) return;
     const stored = loadPendingChoiceFromLocal(authUser.uid);
     if (stored) {
+      console.log("[wizard] loaded pending journey from storage", stored);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPendingJourneyChoice(stored);
+      setCardPromptVisible(true);
     }
   }, [authUser]);
 
@@ -810,7 +812,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       const ok = await handleJourneyCardSelect(pendingJourneyChoice.choice, pendingJourneyChoice.extra);
       if (cancelled) return;
       if (ok) {
-        setAccountPromptRequested(false);
+        setCardPromptVisible(false);
         clearPendingChoiceFromLocal(authUser.uid);
       }
       setPendingJourneyChoice(null);
@@ -825,7 +827,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
   }, []);
 
   const dismissAccountPrompt = useCallback(() => {
-    setAccountPromptRequested(false);
+    setCardPromptVisible(false);
   }, []);
 
 
@@ -836,7 +838,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
       }
     } catch {}
     setPendingJourneyChoice(null);
-    setAccountPromptRequested(false);
+    setCardPromptVisible(false);
     setSaveError(null);
   }, []);
 

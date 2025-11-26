@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 // removed unused local step components
 import { useI18n } from "@/components/I18nProvider";
@@ -68,6 +68,7 @@ function WizardShell() {
   const returnTo = searchParams?.get("returnTo");
   const isResetFlow = searchParams?.get("reset") === "1";
   const { data: progress } = useProgressFacts(profile?.id);
+  const resumeAppliedRef = useRef(false);
 
   const {
     journalEntry,
@@ -177,11 +178,15 @@ function WizardShell() {
 
   useEffect(() => {
     if (searchParams?.get("reset") === "1") return;
+    if (resumeAppliedRef.current) return;
     if (searchParams?.get("resume") !== "1") return;
     const resumeStep = computeResumeStep(progress ?? null);
     if (resumeStep && resumeStep !== step) {
+      resumeAppliedRef.current = true;
       goToStep(resumeStep);
+      return;
     }
+    resumeAppliedRef.current = true;
   }, [progress, searchParams, step, goToStep]);
 
   useEffect(() => {
@@ -438,9 +443,10 @@ function WizardShell() {
   }, [selectedCard, step, goToStep]);
 
   const redirectToAuth = useCallback(() => {
+    console.log("[wizard] redirectToAuth invoked", { step, reason: "WizardShell" });
     dismissAccountPrompt();
     router.push("/auth");
-  }, [dismissAccountPrompt, router]);
+  }, [dismissAccountPrompt, router, step]);
 
   // Render-driven open: the modal will be open if either explicit state is true
 

@@ -94,7 +94,6 @@ const budgetLabel = (lang: string, budget: BudgetPreference) => {
 export function RecommendationStep(props: Props) {
   const {
     recommendation,
-    profile: _profile,
     showAccountPrompt,
     onAccountRequest,
     recommendedPath: recommendedPathProp,
@@ -313,6 +312,11 @@ export function RecommendationStep(props: Props) {
     return () => clearTimeout(h);
   }, [quickNote]);
 
+  const handleAccountRequestClick = () => {
+    console.log("[wizard] onAccountRequest clicked from RecommendationStep");
+    onAccountRequest();
+  };
+
   return (
     <section className="bg-[#FDFCF9] px-4 py-8" data-testid="recommendation-step">
       <div className="mx-auto max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
@@ -344,7 +348,7 @@ export function RecommendationStep(props: Props) {
               </ul>
               <button
                 type="button"
-                onClick={onAccountRequest}
+                onClick={handleAccountRequestClick}
                 className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
               >
                 {lang === "ro" ? "Mergi la autentificare" : "Go to sign-in"}

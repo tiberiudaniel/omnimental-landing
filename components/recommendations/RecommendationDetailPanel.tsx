@@ -81,7 +81,7 @@ export function RecommendationDetailPanel({ item }: { item: OmniRecommendation |
           {(item.sourceRef === 'path-recommendation' || item.id === 'base-path') ? (
             <>
               <Link
-                href="/?step=cards&sub=3&returnTo=recommendation"
+                href="/?step=cards"
                 className="rounded-[10px] border border-[#2C2C2C] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
               >
                 {lang === 'ro' ? 'Vezi opțiunile inițiale' : 'See initial options'}
