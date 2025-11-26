@@ -10,11 +10,11 @@ import { CATEGORY_LABELS } from "@/lib/categoryLabels";
 import onboardingHero from "@/public/assets/onboarding-init-hero.jpg";
 
 const ROADMAP_MARKERS = [
-  { label: "Omni-Scop", left: "54%", top: "105%", scale: 1.2, fade: 0.65 },
-  { label: "Omni-Kuno", left: "78%", top: "86%", scale: 1.1, fade: 0.58 },
-  { label: "Omni-Abil", left: "65%", top: "66%", scale: 0.95, fade: 0.48 },
-  { label: "Omni-Flex", left: "72%", top: "38%", scale: 0.78, fade: 0.35 },
-  { label: "Omni-Intel", left: "64%", top: "22%", scale: 0.62, fade: 0.25 },
+  { label: "Omni-Scop", left: "74%", top: "105%", scale: 1.2, fade: 0.65 },
+  { label: "Omni-Kuno", left: "98%", top: "86%", scale: 1.1, fade: 0.58 },
+  { label: "Omni-Abil", left: "85%", top: "66%", scale: 0.95, fade: 0.48 },
+  { label: "Omni-Flex", left: "92%", top: "38%", scale: 0.78, fade: 0.35 },
+  { label: "Omni-Intel", left: "84%", top: "22%", scale: 0.62, fade: 0.25 },
 ] as const;
 
 function formatFocusLabel(raw: string, lang: "ro" | "en"): string {
@@ -91,9 +91,41 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
   const { data: progressFacts } = useProgressFacts(profile?.id);
   const focusTheme = useMemo(() => getFocusTheme(progressFacts, normalizedLang), [progressFacts, normalizedLang]);
   return (
-    <section className="px-6 pt-4 pb-8">
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
-        <div className="relative inline-block rounded-[26px] border border-[#E6D7C8] bg-white p-2 shadow-[0_30px_90px_rgba(15,10,4,0.25)]">
+    <section className="px-6 pt-6 pb-10 md:px-10">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 rounded-[36px] bg-gradient-to-br from-[#FFFBF7] via-[#FFF6EF] to-[#FDF0E7] p-6 text-center shadow-[0_30px_90px_rgba(15,10,4,0.08)] md:flex-row md:items-center md:text-left">
+        <div className="order-1 flex flex-1 flex-col items-center text-center md:order-2 md:items-start md:text-left">
+          <p className="text-xs uppercase tracking-[0.45em] text-[#96705B]">
+            {lang === "ro" ? "Inițiere OmniMental" : "OmniMental Initiation"}
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold leading-snug text-[#2A140A] md:text-4xl">
+            {lang === "ro" ? "Respiră, observă, începe." : "Breathe, observe, begin."}
+          </h1>
+          <div className="mt-4 min-h-[120px] max-w-xl">
+            <Typewriter
+              className="text-base leading-relaxed text-[#3D1C10] md:text-lg"
+              text={
+                lang === "ro"
+                  ? "Înainte de mini‑test și exerciții, intri într-un spațiu de focus. Îți arătăm pașii și ce urmează, apoi pornești în ritmul tău."
+                  : "Before the mini-quiz and exercises, settle into a focused space. We’ll outline the path ahead and let you start at your own pace."
+              }
+            />
+          </div>
+          <div className="mt-6 flex flex-col items-center gap-4 md:flex-row md:justify-start">
+            <button
+              type="button"
+              onClick={onBegin}
+              className="inline-flex items-center justify-center rounded-full border border-[#C0937D] bg-white/90 px-6 py-3 text-sm font-semibold uppercase tracking-[0.25em] text-[#5C2D1A] shadow-[0_10px_24px_rgba(92,45,26,0.25)] transition hover:bg-white hover:text-[#8A4B2E]"
+            >
+              {lang === "ro" ? "Intră în inițiere" : "Enter initiation"}
+            </button>
+            <p className="text-sm text-[#6A4A3A] md:ml-4">
+              {lang === "ro"
+                ? "9 pași ghidați · aproximativ 12–15 minute."
+                : "9 guided steps · about 12–15 minutes."}
+            </p>
+          </div>
+        </div>
+        <div className="order-2 relative mx-auto inline-block max-w-[520px] rounded-[26px] border border-[#E6D7C8] bg-white p-2 shadow-[0_30px_90px_rgba(15,10,4,0.25)] md:order-1">
           <Image
             src={onboardingHero}
             alt={lang === "ro" ? "Drum ilustrat spre soare" : "Illustrated path toward the sun"}
@@ -130,38 +162,6 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
                 </div>
               );
             })}
-          </div>
-        </div>
-        <div className="max-w-2xl">
-          <p className="text-xs uppercase tracking-[0.45em] text-[#96705B]">
-            {lang === "ro" ? "Inițiere OmniMental" : "OmniMental Initiation"}
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold leading-snug text-[#2A140A] md:text-4xl">
-            {lang === "ro" ? "Respiră, observă, începe." : "Breathe, observe, begin."}
-          </h1>
-          <div className="mt-4">
-            <Typewriter
-              className="text-base leading-relaxed text-[#3D1C10] md:text-lg"
-              text={
-                lang === "ro"
-                  ? "Înainte de mini‑test și exerciții, intri într-un spațiu de focus. Îți arătăm pașii și ce urmează, apoi pornești în ritmul tău."
-                  : "Before the mini-quiz and exercises, settle into a focused space. We’ll outline the path ahead and let you start at your own pace."
-              }
-            />
-          </div>
-          <div className="mt-6 flex flex-col items-center gap-4 md:flex-row md:justify-center">
-            <button
-              type="button"
-              onClick={onBegin}
-              className="inline-flex items-center justify-center rounded-full border border-[#C0937D] bg-white/90 px-6 py-3 text-sm font-semibold uppercase tracking-[0.25em] text-[#5C2D1A] shadow-[0_10px_24px_rgba(92,45,26,0.25)] transition hover:bg-white hover:text-[#8A4B2E]"
-            >
-              {lang === "ro" ? "Intră în inițiere" : "Enter initiation"}
-            </button>
-            <p className="text-sm text-[#6A4A3A] md:ml-4">
-              {lang === "ro"
-                ? "10 pași ghidați · aproximativ 12–15 minute."
-                : "10 guided steps · about 12–15 minutes."}
-            </p>
           </div>
         </div>
       </div>

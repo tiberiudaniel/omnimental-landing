@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/I18nProvider";
-import GuideCard from "@/components/onboarding/GuideCard";
 import Typewriter from "@/components/onboarding/Typewriter";
 import { recordPracticeSession, recordOmniPatch } from "@/lib/progressFacts";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
+import Image from "next/image";
+import GuideCard from "@/components/onboarding/GuideCard";
+import onboardingPathGeometry from "@/public/assets/onboarding-path-geometry.jpg";
 // (no extra types needed)
 
-function Mixer({ label, value, setValue, min = 1, max = 10, ticks = 10, lowLabel, highLabel, testId }: {
+function Mixer({ label, value, setValue, min = 1, max = 10, ticks = 10, lowLabel, highLabel, testId, highlight = false, onAfterChange }: {
   label: string;
   value: number;
   setValue: (n: number) => void;
@@ -20,11 +22,13 @@ function Mixer({ label, value, setValue, min = 1, max = 10, ticks = 10, lowLabel
   lowLabel?: string;
   highLabel?: string;
   testId: string;
+  highlight?: boolean;
+  onAfterChange?: (n: number) => void;
 }) {
   const clamped = Math.max(min, Math.min(max, value));
   const fillPct = Math.max(0, Math.min(100, (clamped - min) * (100 / (max - min))));
   return (
-    <div className="panel-ghost px-4 py-4">
+    <div className="panel-ghost px-4 py-4" data-highlight={highlight ? 'true' : undefined}>
       <p className="text-sm font-medium text-[#2C2C2C]">{label}</p>
       <div className="mt-2">
         <div className={`mixer-wrap ${ticks === 10 ? 'ticks-10' : 'ticks-5'}`}>
@@ -36,7 +40,11 @@ function Mixer({ label, value, setValue, min = 1, max = 10, ticks = 10, lowLabel
             max={max}
             step={1}
             value={clamped}
-            onChange={(e) => setValue(Number(e.target.value))}
+            onChange={(e) => {
+              const next = Number(e.target.value);
+              setValue(next);
+              if (onAfterChange) onAfterChange(next);
+            }}
             data-testid={testId}
             className="mixer-range w-full"
           />
@@ -67,10 +75,16 @@ export default function InitiationStepOmniScope({ userId, onComplete }: { userId
       return key ? mapRo[key] : (lang === 'ro' ? 'această temă' : 'this area');
     } catch { return (lang === 'ro' ? 'această temă' : 'this area'); }
   })();
-  const [impact, setImpact] = useState(6);      // cât afectează azi
-  const [readiness, setReadiness] = useState(7); // disponibilitate de efort constant
-  const [frequency, setFrequency] = useState(6); // cât de des te gândești
+  const defaults = { impact: 6, readiness: 7, frequency: 6 } as const;
+  const [impact, setImpact] = useState<number>(defaults.impact);      // cât afectează azi
+  const [readiness, setReadiness] = useState<number>(defaults.readiness); // disponibilitate de efort constant
+  const [frequency, setFrequency] = useState<number>(defaults.frequency); // cât de des te gândești
   const [busy, setBusy] = useState(false);
+  const [touched, setTouched] = useState<{ impact: boolean; readiness: boolean; frequency: boolean }>({ impact: false, readiness: false, frequency: false });
+  const markTouched = (key: 'impact' | 'readiness' | 'frequency') => {
+    setTouched((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+  };
+  const allTouched = touched.impact && touched.readiness && touched.frequency;
   const submit = async () => {
     setBusy(true);
     try {
@@ -96,59 +110,77 @@ export default function InitiationStepOmniScope({ userId, onComplete }: { userId
     }
   };
   return (
-    <section className="relative space-y-4 overflow-hidden rounded-[24px]">
-      <div className="pointer-events-none absolute inset-0 opacity-[0.18]" style={{ backgroundImage: "url('/assets/onboarding-path-geometry.jpg')", backgroundSize: "cover", backgroundPosition: "center" }} />
-      <div className="relative z-10 space-y-4">
-        <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
-        <Typewriter text={lang === 'ro' ? 'Unde ești acum pe hartă în raport cu tema în focus?' : 'Where are you right now relative to your focus theme?'} />
-      </div>
-      <GuideCard title={lang === 'ro' ? 'Trei întrebări scurte' : 'Three quick questions'}>
-        <div className="space-y-4">
-          <Mixer
-            label={lang === 'ro' ? `Cât de mult îți afectează viața de zi cu zi faptul că ${primaryLabel} nu este încă așa cum ți-ai dori?` : `How much does it affect your day to day that ${primaryLabel} isn’t how you want it (yet)?`}
-            value={impact}
-            setValue={setImpact}
-            min={1}
-            max={10}
-            ticks={10}
-            lowLabel={lang === 'ro' ? 'Puțin' : 'Little'}
-            highLabel={lang === 'ro' ? 'Mult' : 'A lot'}
-            testId="init-scope-impact"
-          />
-          <Mixer
-            label={lang === 'ro' ? `Cât de pregătit(ă) te simți să depui efort constant (nu perfect) pentru a progresa în ${primaryLabel}?` : `How ready do you feel to put in steady (not perfect) effort to progress in ${primaryLabel}?`}
-            value={readiness}
-            setValue={setReadiness}
-            min={1}
-            max={10}
-            ticks={10}
-            lowLabel={lang === 'ro' ? 'Deloc' : 'Not at all'}
-            highLabel={lang === 'ro' ? 'Gata' : 'Ready'}
-            testId="init-scope-readiness"
-          />
-          <Mixer
-            label={lang === 'ro' ? 'Cât de des te gândești la această temă?' : 'How often do you think about this?'}
-            value={frequency}
-            setValue={setFrequency}
-            min={1}
-            max={10}
-            ticks={10}
-            lowLabel={lang === 'ro' ? 'Rar' : 'Rarely'}
-            highLabel={lang === 'ro' ? 'Des' : 'Often'}
-            testId="init-scope-frequency"
-          />
-          <div className="flex justify-end">
-            <button
-              disabled={busy}
-              onClick={submit}
-              className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
-              data-testid="init-scope-continue"
-            >
-              {lang === 'ro' ? 'Continuă' : 'Continue'}
-            </button>
+    <section className="px-0 py-0">
+      <div className="rounded-[24px] border border-[#E4DAD1] bg-white px-4 py-4 shadow-sm md:px-6 md:py-6">
+        <div className="flex flex-col gap-6 md:flex-row">
+          <div className="md:w-[38%] flex justify-center">
+            <div className="relative mx-auto aspect-[3/4] w-full max-w-[360px] overflow-hidden rounded-[32px] border border-[#E4DAD1] shadow-[0_20px_45px_rgba(0,0,0,0.12)]">
+              <Image src={onboardingPathGeometry} alt={lang === 'ro' ? 'Ilustrație OmniScope' : 'OmniScope illustration'} fill className="object-cover" priority={false} />
+            </div>
+          </div>
+          <div className="flex-1 space-y-4">
+            <div className="rounded-[18px] border border-[#F0E8E0] bg-[#FFF8F4] px-5 py-5 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">{lang === 'ro' ? 'OmniScope' : 'OmniScope'}</p>
+              <h3 className="mt-2 text-xl font-semibold text-[#2C2C2C]">{lang === 'ro' ? 'Calibrezi harta temei în focus' : 'Calibrate the map for your focus theme'}</h3>
+              <div className="mt-3 text-sm text-[#4A3A30]">
+                <Typewriter text={lang === 'ro' ? 'Unde ești acum pe hartă în raport cu tema în focus?' : 'Where are you right now relative to your focus theme?'} />
+              </div>
+            </div>
+            <GuideCard title={lang === 'ro' ? 'Trei întrebări scurte' : 'Three quick questions'} className="w-full">
+              <div className="space-y-4">
+                <Mixer
+                  label={lang === 'ro' ? `Cât de mult îți afectează viața de zi cu zi faptul că ${primaryLabel} nu este încă așa cum ți-ai dori?` : `How much does it affect your day to day that ${primaryLabel} isn’t how you want it (yet)?`}
+                  value={impact}
+                  setValue={setImpact}
+                  min={1}
+                  max={10}
+                  ticks={10}
+                  lowLabel={lang === 'ro' ? 'Puțin' : 'Little'}
+                  highLabel={lang === 'ro' ? 'Mult' : 'A lot'}
+                  testId="init-scope-impact"
+                  highlight={!touched.impact}
+                  onAfterChange={() => markTouched('impact')}
+                />
+                <Mixer
+                  label={lang === 'ro' ? `Cât de pregătit(ă) te simți să depui efort constant (nu perfect) pentru a progresa în ${primaryLabel}?` : `How ready do you feel to put in steady (not perfect) effort to progress in ${primaryLabel}?`}
+                  value={readiness}
+                  setValue={setReadiness}
+                  min={1}
+                  max={10}
+                  ticks={10}
+                  lowLabel={lang === 'ro' ? 'Deloc' : 'Not at all'}
+                  highLabel={lang === 'ro' ? 'Gata' : 'Ready'}
+                  testId="init-scope-readiness"
+                  highlight={!touched.readiness}
+                  onAfterChange={() => markTouched('readiness')}
+                />
+                <Mixer
+                  label={lang === 'ro' ? 'Cât de des te gândești la această temă?' : 'How often do you think about this?'}
+                  value={frequency}
+                  setValue={setFrequency}
+                  min={1}
+                  max={10}
+                  ticks={10}
+                  lowLabel={lang === 'ro' ? 'Rar' : 'Rarely'}
+                  highLabel={lang === 'ro' ? 'Des' : 'Often'}
+                  testId="init-scope-frequency"
+                  highlight={!touched.frequency}
+                  onAfterChange={() => markTouched('frequency')}
+                />
+                <div className="flex justify-end">
+                  <button
+                    disabled={busy || !allTouched}
+                    onClick={submit}
+                    className="rounded-[999px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:bg-[#2C2C2C] hover:text-white"
+                    data-testid="init-scope-continue"
+                  >
+                    {lang === 'ro' ? 'Continuă' : 'Continue'}
+                  </button>
+                </div>
+              </div>
+            </GuideCard>
           </div>
         </div>
-      </GuideCard>
       </div>
     </section>
   );

@@ -10,6 +10,8 @@ import type { OmniKunoTopicKey } from "@/lib/omniKunoTypes";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
 import { recordPracticeSession } from "@/lib/progressFacts";
+import IllustratedStep from "@/components/onboarding/IllustratedStep";
+import onboardingKunoDocs from "@/public/assets/onboarding-kuno-docs.jpg";
 
 export default function InitiationStepKunoContext({ userId, onContinue }: { userId: string | null; onContinue: () => void }) {
   const { lang } = useI18n();
@@ -50,43 +52,52 @@ export default function InitiationStepKunoContext({ userId, onContinue }: { user
     onContinue();
   };
   return (
-    <section className="space-y-4">
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
-        <Typewriter text={lang === 'ro' ? 'Testezi cum gândești, nu cât știi.' : 'You’re testing how you think, not how much you know.'} />
-        <p className="mt-2 text-sm text-[#4A3A30]">
-          {lang === 'ro'
-            ? 'Câteva scenarii și reflecții (nepunctate) pentru a calibra recomandările.'
-            : 'A few scenarios and reflections (not scored) to calibrate recommendations.'}
-        </p>
-      </div>
+    <IllustratedStep
+      image={onboardingKunoDocs}
+      imageAlt={lang === 'ro' ? 'Note Omni-Kuno și instrumente de cunoaștere' : 'Omni-Kuno notes and learning tools'}
+      label={lang === 'ro' ? 'Context Omni-Kuno' : 'Omni-Kuno context'}
+      title={lang === 'ro' ? 'Hai să acumulăm cunoaștere' : 'Let’s gather knowledge'}
+      body={
+        <div className="space-y-2">
+          <Typewriter text={lang === 'ro' ? 'Când pornești la drum te pregătești, aduni instrucțiuni și cunoștințe despre ce vrei să explorezi.' : 'When you set off on a journey you prepare, gather instructions, and learn about what you want to explore.'} />
+          <p className="text-sm text-[#4A3A30]">
+            {lang === 'ro'
+              ? 'Câteva scenarii și reflecții (nepunctate) te ajută să cunoști terenul și să vezi ce rezultate urmărești.'
+              : 'A few unscored scenarios and reflections help you know the terrain and clarify the outcome you’re aiming for.'}
+          </p>
+        </div>
+      }
+    >
       {pool.length === 0 ? (
         <GuideCard title={lang === 'ro' ? 'Gata pentru pasul următor' : 'Ready for next step'}>
           <p>{lang === 'ro' ? 'Continuă — îți vom clarifica contextul în pașii următori.' : 'Continue — we will clarify your context in the next steps.'}</p>
         </GuideCard>
       ) : null}
-      {pool.map((q, idx) => (
-        <TestQuestionCard
-          key={q.id}
-          item={{ id: q.id, question: q.text, options: q.options.map((o) => o.label), correctIndex: -1, explanation: q.defaultFeedback ?? '' }}
-          onAnswer={(sel) => setAnswers((prev) => prev.map((v, i) => (i === idx ? sel : v)))}
-          scored={false}
-          styleLabel={q.style as 'knowledge' | 'scenario' | 'reflection' | 'microSkill' | undefined}
-          index={idx}
-          total={pool.length}
-          questionTestId="init-kuno-question"
-          optionTestId="init-kuno-option"
-        />
-      ))}
+      <div className="space-y-4">
+        {pool.map((q, idx) => (
+          <TestQuestionCard
+            key={q.id}
+            item={{ id: q.id, question: q.text, options: q.options.map((o) => o.label), correctIndex: -1, explanation: q.defaultFeedback ?? '' }}
+            onAnswer={(sel) => setAnswers((prev) => prev.map((v, i) => (i === idx ? sel : v)))}
+            scored={false}
+            styleLabel={q.style as 'knowledge' | 'scenario' | 'reflection' | 'microSkill' | undefined}
+            index={idx}
+            total={pool.length}
+            questionTestId="init-kuno-question"
+            optionTestId="init-kuno-option"
+          />
+        ))}
+      </div>
       <div className="flex justify-end">
         <button
           disabled={!allAnswered}
           onClick={save}
-          className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
+          className="rounded-[999px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:bg-[#2C2C2C] hover:text-white"
           data-testid="init-kuno-continue"
         >
           {lang === 'ro' ? 'Continuă' : 'Continue'}
         </button>
       </div>
-    </section>
+    </IllustratedStep>
   );
 }

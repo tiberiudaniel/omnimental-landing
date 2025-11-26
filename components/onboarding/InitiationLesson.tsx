@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/I18nProvider";
+import OnboardingLessonShell from "@/components/onboarding/OnboardingLessonShell";
 
 type ThemeKey = "clarity" | "balance" | "energy" | "trust" | "generic";
 
@@ -111,35 +112,30 @@ export function InitiationLesson({ themeLabel, onContinue }: InitiationLessonPro
   );
 
   return (
-    <div className="mx-auto max-w-3xl rounded-[28px] border border-[#E4DAD1] bg-white/97 px-6 py-8 shadow-[0_30px_80px_rgba(0,0,0,0.12)]">
-      <div className="space-y-2 text-left">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">
-          {normalizedLang === "ro" ? "Lecția 0 — Inițiere" : "Lesson 0 — Initiation"}
-        </p>
-        <h2 className="text-2xl font-bold leading-snug text-[#2A140A]">{copy.title[normalizedLang]}</h2>
-        <p className="text-sm text-[#7B6B60]">{CTA_HINT[normalizedLang]}</p>
-      </div>
-      <div className="prose prose-neutral mt-6 max-w-none text-[#2C2C2C]">
-        <ol className="space-y-4 text-base leading-relaxed text-[#3D1C10]">
-          {points.map((text, idx) => (
-            <li key={`point-${idx}`} className="rounded-[14px] border border-[#F0E8E0] bg-[#FFFBF7] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.05)]">
-              {text}
-            </li>
-          ))}
-        </ol>
-      </div>
-      <div className="mt-6 flex items-center justify-end">
-        <button
-          type="button"
-          onClick={() => {
-            if (onContinue) onContinue();
-            else router.push("/experience-onboarding?flow=initiation&step=first-action");
-          }}
-          className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:bg-[#2C2C2C] hover:text-white"
-        >
-          {CTA_LABEL[normalizedLang]}
-        </button>
-      </div>
-    </div>
+    <OnboardingLessonShell
+      label={normalizedLang === "ro" ? "Lecția 0 — Inițiere" : "Lesson 0 — Initiation"}
+      title={copy.title[normalizedLang]}
+      subtitle={CTA_HINT[normalizedLang]}
+      meta={normalizedLang === "ro" ? "Inițiere · Minte · ~3 min" : "Initiation · Mind · ~3 min"}
+      statusLabel={normalizedLang === "ro" ? "În desfășurare" : "In progress"}
+      stepIndex={0}
+      stepCount={1}
+      continueLabel={CTA_LABEL[normalizedLang]}
+      onContinue={() => {
+        if (onContinue) onContinue();
+        else router.push("/experience-onboarding?flow=initiation&step=first-action");
+      }}
+    >
+      <ol className="space-y-4 text-base leading-relaxed text-[#3D1C10]">
+        {points.map((text, idx) => (
+          <li
+            key={`point-${idx}`}
+            className="rounded-[14px] border border-[#F0E8E0] bg-[#FFFBF7] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.05)]"
+          >
+            {text}
+          </li>
+        ))}
+      </ol>
+    </OnboardingLessonShell>
   );
 }

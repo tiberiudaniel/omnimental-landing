@@ -1,16 +1,18 @@
 "use client";
 
+type GuideCardProps = {
+  title?: string;
+  children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+};
+
 export default function GuideCard({
   title,
   children,
   className = "",
   onClick,
-}: {
-  title: string;
-  children: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-}) {
+}: GuideCardProps) {
   const interactive = typeof onClick === 'function';
   return (
     <div
@@ -26,8 +28,8 @@ export default function GuideCard({
         }
       }}
     >
-      <h3 className="text-base font-semibold text-[#1F1F1F]">{title}</h3>
-      <div className="mt-3 text-sm text-[#2C2C2C]">{children}</div>
+      {title ? <h3 className="text-base font-semibold text-[#1F1F1F]">{title}</h3> : null}
+      <div className={`${title ? 'mt-3' : ''} text-sm text-[#2C2C2C]`}>{children}</div>
     </div>
   );
 }

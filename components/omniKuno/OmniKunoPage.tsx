@@ -365,20 +365,11 @@ const areaStats = useMemo(() => {
       ? `Lecții finalizate: ${completedLessonsCount}/${activeModule.lessons.length}`
       : `Lessons completed: ${completedLessonsCount}/${activeModule.lessons.length}`;
   const totalXp = Math.max(0, Math.round(kunoFacts.global?.totalXp ?? 0));
-  const { level: kunoLevel, nextThreshold } = getKunoLevel(totalXp);
-  const nextLevelCopy =
-    nextThreshold != null
-      ? lang === "ro"
-        ? `Următorul nivel la ${nextThreshold} XP`
-        : `Next level at ${nextThreshold} XP`
-      : lang === "ro"
-        ? "Nivel maxim atins"
-        : "Max level reached";
+  const { level: kunoLevel } = getKunoLevel(totalXp);
   const headerXpSummary =
     lang === "ro"
-      ? `XP: ${totalXp} · Nivel ${kunoLevel} · ${nextLevelCopy}`
-      : `XP: ${totalXp} · Level ${kunoLevel} · ${nextLevelCopy}`;
-  const headerMetaSummary = `${headerProgressSummary} · ${headerXpSummary}`;
+      ? `XP: ${totalXp} · Nivel global ${kunoLevel}`
+      : `XP: ${totalXp} · Global level ${kunoLevel}`;
   const moduleLevelLabel = lang === "ro" ? "Nivel 1" : "Level 1";
 
   const goToAuth = useCallback(() => router.push("/auth"), [router]);
@@ -403,7 +394,8 @@ const areaStats = useMemo(() => {
                 }
                 focusLabel={focusLabel}
                 moduleLevelLabel={moduleLevelLabel}
-                progressSummary={headerMetaSummary}
+                progressSummary={headerProgressSummary}
+                xpSummary={headerXpSummary}
                 adaptiveMessage={adaptiveMessage}
                 onDismissAdaptive={() => setAdaptiveMessage(null)}
                 overviewLabel={lang === "ro" ? "Vezi toate lecțiile" : "View all lessons"}

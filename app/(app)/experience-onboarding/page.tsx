@@ -20,7 +20,6 @@ import InitiationStepOmniScope from "./steps/InitiationStepOmniScope";
 import InitiationStepDailyState from "./steps/InitiationStepDailyState";
 import InitiationStepLesson from "./steps/InitiationStepLesson";
 import InitiationStepLessonQuiz from "./steps/InitiationStepLessonQuiz";
-import { InitiationLesson } from "@/components/onboarding/InitiationLesson";
 import { FirstAction } from "@/components/onboarding/FirstAction";
 import InitiationStepWelcome from "./steps/InitiationStepWelcome";
 
@@ -36,7 +35,6 @@ export type StepId =
 type InitiationStepId =
   | "welcome"
   | "intro"
-  | "omnikuno-test"
   | "first-action"
   | "omnikuno-context"
   | "journal"
@@ -44,6 +42,21 @@ type InitiationStepId =
   | "daily-state"
   | "omnikuno-lesson-quiz"
   | "omnikuno-lesson";
+
+const INITIATION_ORDER: InitiationStepId[] = [
+  "welcome",
+  "intro",
+  "daily-state",
+  "omnikuno-context",
+  "omnikuno-lesson",
+  "first-action",
+  "omniscope",
+  "journal",
+  "omnikuno-lesson-quiz",
+];
+
+const isInitiationStep = (value: string | null): value is InitiationStepId =>
+  Boolean(value) && INITIATION_ORDER.includes(value as InitiationStepId);
 
 function ExperienceOnboardingContent() {
   const router = useRouter();
@@ -63,17 +76,27 @@ function ExperienceOnboardingContent() {
 
   // Read/normalize navigation state and step hooks BEFORE any early return to keep hook order stable
   const start = search?.get("start") === "1";
-  const flow = (search?.get("flow") || "default").toLowerCase();
   const stepParamRaw = search?.get("step") as string | null;
-  const stepParam = (flow === 'initiation'
-    ? (stepParamRaw as InitiationStepId | null)
-    : (stepParamRaw as StepId | null)
-  ) ?? null;
-  const fallbackStep = flow === 'initiation' ? "welcome" : "intro";
+  const flowParamRaw = search?.get("flow");
+  const desiredFlow = (flowParamRaw || "default").toLowerCase();
+  const shouldForceInitiation = !flowParamRaw && isInitiationStep(stepParamRaw);
+  const flow = shouldForceInitiation ? "initiation" : desiredFlow;
+  const stepParam =
+    flow === "initiation"
+      ? (isInitiationStep(stepParamRaw) ? stepParamRaw : null)
+      : ((stepParamRaw as StepId | null) ?? null);
+  const fallbackStep = flow === "initiation" ? "welcome" : "intro";
   const [step, setStep] = useState<string>(stepParam ?? fallbackStep);
   const [answers, setAnswers] = useState<number[]>([]);
   const [score, setScore] = useState<{ raw: number; max: number }>({ raw: 0, max: 0 });
   const [miniMeta, setMiniMeta] = useState<{ topicKey?: string; questions?: Array<{ id: string; correctIndex: number; style?: string }> } | undefined>();
+
+  useEffect(() => {
+    if (!shouldForceInitiation) return;
+    const params = new URLSearchParams(search?.toString() ?? "");
+    params.set("flow", "initiation");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [shouldForceInitiation, router, search]);
 
   useEffect(() => {
     if (hasQueryParams) return;
@@ -124,8 +147,8 @@ function ExperienceOnboardingContent() {
     if (extra) {
       for (const [k, v] of Object.entries(extra)) params.set(k, String(v));
     }
-    // Initiation: replace without creating per-step history
-    router.replace(`?${params.toString()}`, { scroll: false });
+    const navigate = flow === 'initiation' ? router.push : router.replace;
+    navigate(`?${params.toString()}`, { scroll: false });
     setStep(next);
   };
 
@@ -141,9 +164,9 @@ function ExperienceOnboardingContent() {
         {/* Breadcrumb for Initiation flow */}
         {flow === 'initiation' ? (
           (() => {
-            const order: InitiationStepId[] = ['welcome','intro','omnikuno-test','first-action','omnikuno-context','journal','omniscope','daily-state','omnikuno-lesson','omnikuno-lesson-quiz'];
-            const idx = Math.max(0, order.indexOf((step as InitiationStepId))) + 1;
-            const total = order.length;
+            const total = INITIATION_ORDER.length;
+            const foundIndex = INITIATION_ORDER.indexOf(step as InitiationStepId);
+            const idx = foundIndex >= 0 ? foundIndex + 1 : 1;
             return (
               <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">
                 {lang === 'ro' ? `Pas ${idx}/${total}` : `Step ${idx}/${total}`}
@@ -200,39 +223,33 @@ function ExperienceOnboardingContent() {
               <InitiationStepWelcome onBegin={() => go('intro')} />
             )}
             {step === 'intro' && (
-              <StepIntro onStart={() => go('omnikuno-test')} />
+              <StepIntro onStart={() => go('daily-state')} />
             )}
-            {step === 'omnikuno-test' && (
-              <InitiationLesson
-                themeLabel={focusThemeLabel}
-                onContinue={() => go('first-action')}
-              />
+            {step === 'daily-state' && (
+              <InitiationStepDailyState onComplete={() => go('omnikuno-context')} />
+            )}
+            {step === 'omnikuno-context' && (
+              <InitiationStepKunoContext userId={profile?.id ?? null} onContinue={() => go('omnikuno-lesson')} />
+            )}
+            {step === 'omnikuno-lesson' && (
+              <InitiationStepLesson userId={profile?.id ?? null} onNext={() => go('first-action')} />
             )}
             {step === 'first-action' && (
               <FirstAction
                 userId={profile?.id ?? null}
                 themeLabel={focusThemeLabel}
-                onComplete={() => go('omnikuno-context')}
+                onComplete={() => go('omniscope')}
               />
             )}
-            {step === 'omnikuno-context' && (
-              <InitiationStepKunoContext userId={profile?.id ?? null} onContinue={() => go('journal')} />
+            {step === 'omniscope' && (
+              <InitiationStepOmniScope userId={profile?.id ?? null} onComplete={() => go('journal')} />
             )}
             {step === 'journal' && (
               <StepJournal
                 userId={profile?.id ?? null}
-                onSaved={() => go('omniscope')}
-                onSkip={() => go('omniscope')}
+                onSaved={() => go('omnikuno-lesson-quiz')}
+                onSkip={() => go('omnikuno-lesson-quiz')}
               />
-            )}
-            {step === 'omniscope' && (
-              <InitiationStepOmniScope userId={profile?.id ?? null} onComplete={() => go('daily-state')} />
-            )}
-            {step === 'daily-state' && (
-              <InitiationStepDailyState onComplete={() => go('omnikuno-lesson')} />
-            )}
-            {step === 'omnikuno-lesson' && (
-              <InitiationStepLesson userId={profile?.id ?? null} onNext={() => go('omnikuno-lesson-quiz')} />
             )}
             {step === 'omnikuno-lesson-quiz' && (
               <InitiationStepLessonQuiz onDone={() => router.push('/progress?from=initiation&completed=1')} />

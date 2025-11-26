@@ -711,3 +711,500 @@ Rol: jurnal scurt de inițiere, separat și recognoscibil.
 4. **PAS 5/10 – journal (StepJournal)**  
    - Imagine de jurnal, text clar „Jurnal – Inițiere”.  
    - Salvare standard + `onSaved/onSkip` → `go("omniscope")`.
+
+
+
+simplificare și o aliniere a onboarding-ului de inițiere cu designul OmniKuno, pe baza fișierelor actuale din app/(app)/experience-onboarding și components/onboarding.
+
+
+Am deschis proiectul din zip și am urmărit efectiv flow-ul din cod:
+
+app/(app)/experience-onboarding/page.tsx – flow flow=initiation cu pașii:
+
+welcome → intro → omnikuno-test → first-action → omnikuno-context → journal → omniscope → daily-state → omnikuno-lesson → omnikuno-lesson-quiz.
+
+Componente cheie:
+
+steps/StepIntro.tsx
+
+components/onboarding/InitiationLesson.tsx (Lecția 0 – Inițiere, folosit la step='omnikuno-test')
+
+components/onboarding/FirstAction.tsx
+
+steps/InitiationStepKunoContext.tsx
+
+steps/StepJournal.tsx
+
+steps/InitiationStepOmniScope.tsx
+
+steps/InitiationStepDailyState.tsx
+
+steps/InitiationStepLesson.tsx + steps/InitiationStepLessonQuiz.tsx
+
+components/omniKuno/LessonView.tsx (modelul vizual pe care îl vrei).
+
+În acest moment:
+
+Step-urile de „lecție” (Lecția 0, lecția finală, quiz) NU arată ca LessonView.
+
+Imaginile sepia (drumul, săgeata, semnele, jurnalul) sunt folosite mai mult ca background cu opacitate mică, nu ca ilustrații clare, cu text lângă ele.
+
+Layout-ul e diferit de la pas la pas (uneori full-bleed, uneori card simplu) → senzație de „complicat”.
+
+Mai jos ai o propunere clară, direct legată de fișiere, ca să ajungi la un onboarding simplu, profesionist, aliniat cu OmniKuno.
+
+1. Concept: 2 tipuri de ecrane în Onboarding
+
+Tip A – „Lecție”
+– tot ce poartă numele de „lecție” să arate ca OmniKuno (LessonView): header + bară de progres + card central + butoane Înapoi / Continuă.
+
+Astea sunt:
+
+Lecția 0 – Inițiere (components/onboarding/InitiationLesson.tsx, step omnikuno-test)
+
+Lecția din final (steps/InitiationStepLesson.tsx, step omnikuno-lesson)
+
+Quizul final (steps/InitiationStepLessonQuiz.tsx, step omnikuno-lesson-quiz – aici poți păstra layoutul actual, dar îl putem încadra în aceeași „coajă” vizuală).
+
+Tip B – „Pas ilustrat”
+– ecrane cu o singură idee + o singură acțiune, cu imagine sepia clară + text lângă:
+
+StepIntro (Start Omni-Kuno)
+
+InitiationStepKunoContext
+
+FirstAction
+
+StepJournal
+
+InitiationStepOmniScope
+
+InitiationStepDailyState
+
+Pentru asta propun două componente noi reutilizabile și apoi modificări punctuale.
+
+2. Componentă nouă 1 – IllustratedStep
+
+Fișier nou: components/onboarding/IllustratedStep.tsx
+
+Rol: layout standard imagine + text (exact ce vrei: imagine întreagă, clară, cu text în stânga/dreapta, fluid).
+
+"use client";
+
+import { ReactNode } from "react";
+import Image, { StaticImageData } from "next/image";
+import GuideCard from "@/components/onboarding/GuideCard";
+
+type Orientation = "imageLeft" | "imageRight";
+
+type IllustratedStepProps = {
+  image: StaticImageData;
+  imageAlt: string;
+  label?: string;
+  title?: string;
+  body?: ReactNode;          // poate fi Typewriter sau text simplu
+  orientation?: Orientation; // default: "imageLeft"
+  children?: ReactNode;      // formulare, butoane etc.
+};
+
+export function IllustratedStep({
+  image,
+  imageAlt,
+  label,
+  title,
+  body,
+  orientation = "imageLeft",
+  children,
+}: IllustratedStepProps) {
+  const imageFirst = orientation === "imageLeft";
+
+  return (
+    <section className="rounded-[24px] border-none bg-transparent px-0 py-0">
+      <GuideCard>
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.2fr)] items-center">
+          {imageFirst && (
+            <div className="relative h-48 md:h-64">
+              <Image
+                src={image}
+                alt={imageAlt}
+                fill
+                className="rounded-[20px] object-cover shadow-[0_20px_50px_rgba(0,0,0,0.15)]"
+                priority
+              />
+            </div>
+          )}
+
+          <div className="space-y-4 text-[#3D1C10]">
+            {label ? (
+              <p className="text-[11px] uppercase tracking-[0.35em] text-[#B08A78]">
+                {label}
+              </p>
+            ) : null}
+            {title ? (
+              <h2 className="text-xl md:text-2xl font-bold leading-snug text-[#2C2C2C]">
+                {title}
+              </h2>
+            ) : null}
+            {body ? (
+              <div className="text-sm md:text-base leading-relaxed text-[#4A3A30]">
+                {body}
+              </div>
+            ) : null}
+            {children ? <div className="space-y-4">{children}</div> : null}
+          </div>
+
+          {!imageFirst && (
+            <div className="relative h-48 md:h-64">
+              <Image
+                src={image}
+                alt={imageAlt}
+                fill
+                className="rounded-[20px] object-cover shadow-[0_20px_50px_rgba(0,0,0,0.15)]"
+                priority
+              />
+            </div>
+          )}
+        </div>
+      </GuideCard>
+    </section>
+  );
+}
+
+3. Componentă nouă 2 – OnboardingLessonShell
+
+Fișier nou: components/onboarding/OnboardingLessonShell.tsx
+
+Rol: să copieze structura vizuală de lesson din components/omniKuno/LessonView.tsx:
+
+label mic „Lecție”
+
+titlu lecție
+
+subtitlu
+
+meta (ex. „Minte · Ușor · ~3 min”)
+
+rând cu puncte de progres + „Pas X din Y”
+
+card central cu conținut
+
+butoane Înapoi / Continuă
+
+Cod de bază:
+
+"use client";
+
+import { ReactNode } from "react";
+
+type OnboardingLessonShellProps = {
+  label: string;        // ex: "Lecția 0 — Inițiere"
+  title: string;        // ex: "De ce se simte începutul complicat?"
+  subtitle?: string;    // hint/descriere
+  meta?: string;        // ex: "Minte · Ușor · ~3 min"
+  stepIndex?: number;   // 0-based
+  stepCount?: number;   // ex: 1, 3, 5
+  children: ReactNode;  // conținutul real al lecției (bullets etc.)
+  onBack?: () => void;
+  onContinue?: () => void;
+  backLabel?: string;
+  continueLabel?: string;
+};
+
+export function OnboardingLessonShell({
+  label,
+  title,
+  subtitle,
+  meta,
+  stepIndex = 0,
+  stepCount = 1,
+  children,
+  onBack,
+  onContinue,
+  backLabel = "Înapoi",
+  continueLabel = "Continuă",
+}: OnboardingLessonShellProps) {
+  const current = stepIndex + 1;
+
+  return (
+    <section className="space-y-4" data-testid="initiation-lesson-shell">
+      {/* Header în stil LessonView */}
+      <div className="rounded-[24px] border border-[#F3D8C4] bg-[#FFF8F4] px-6 py-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.35em] text-[#B08A78]">
+              {label}
+            </p>
+            <h3 className="text-xl font-bold leading-tight text-[#2C2C2C]">
+              {title}
+            </h3>
+            {subtitle ? (
+              <p className="mt-1 text-[13px] text-[#7B6B60]">{subtitle}</p>
+            ) : null}
+          </div>
+          {meta ? (
+            <p className="text-[11px] text-[#7B6B60]">{meta}</p>
+          ) : null}
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-[#7B6B60]">
+          <div className="flex gap-1">
+            {Array.from({ length: stepCount }).map((_, idx) => (
+              <span
+                key={idx}
+                className={`h-2 w-2 rounded-full ${
+                  idx === stepIndex ? "bg-[#C07963]" : "bg-[#E4DAD1]"
+                }`}
+              />
+            ))}
+          </div>
+          <p>{`Pas ${current} din ${stepCount}`}</p>
+        </div>
+      </div>
+
+      {/* Card central cu conținut */}
+      <div className="rounded-[24px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-[0_24px_60px_rgba(0,0,0,0.06)]">
+        {children}
+        <div className="mt-6 flex items-center justify-between gap-3">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="rounded-[999px] border border-[#E4DAD1] px-5 py-2 text-[13px] font-medium text-[#7B6B60] hover:border-[#C07963] hover:text-[#C07963]"
+            >
+              {backLabel}
+            </button>
+          ) : (
+            <span />
+          )}
+          {onContinue ? (
+            <button
+              type="button"
+              onClick={onContinue}
+              className="rounded-[999px] border border-[#2C2C2C] px-6 py-2 text-[13px] font-semibold tracking-[0.18em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+            >
+              {continueLabel}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+Codex poate ajusta culorile/clasele copiind exact din LessonView.tsx ca să fie 1:1 cu lecțiile OmniKuno.
+
+4. Modificări concrete pe pași (fișier cu fișier)
+4.1. steps/StepIntro.tsx – Start Omni-Kuno
+
+Schimbă complet JSX-ul și folosește IllustratedStep.
+
+Imagine: onboarding-kuno-signs.jpg (drumul cu panouri).
+Import:
+import onboardingKunoSigns from "@/public/assets/onboarding-kuno-signs.jpg";
+
+Logică propusă:
+
+import Typewriter from "@/components/onboarding/Typewriter";
+import { useI18n } from "@/components/I18nProvider";
+import { IllustratedStep } from "@/components/onboarding/IllustratedStep";
+import onboardingKunoSigns from "@/public/assets/onboarding-kuno-signs.jpg";
+
+export default function StepIntro({ onStart }: { onStart: () => void }) {
+  const { lang } = useI18n();
+  const isRo = lang === "ro";
+
+  return (
+    <IllustratedStep
+      image={onboardingKunoSigns}
+      imageAlt={isRo ? "Drum cu panouri de progres" : "Path with progress signs"}
+      label="Start Omni-Kuno"
+      title={isRo ? "Inițierea ta ghidată începe aici" : "Your guided initiation starts here"}
+      body={
+        <Typewriter
+          className="text-sm md:text-base"
+          text={
+            isRo
+              ? "În câteva minute clarificăm tema ta în focus și calibrăm trei lucruri esențiale: ce știi deja, cum te simți acum și care este primul pas concret pe care îl poți face."
+              : "In the next minutes we’ll clarify your focus theme and calibrate three essentials: what you already know, how you feel right now, and the first concrete step you can take."
+          }
+        />
+      }
+      orientation="imageLeft"
+    >
+      <div className="flex justify-start">
+        <button
+          data-testid="eo-start"
+          onClick={onStart}
+          className="rounded-[999px] border border-[#2C2C2C] px-6 py-2 text-[13px] font-semibold tracking-[0.18em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+        >
+          {isRo ? "ÎNCEPE" : "START"}
+        </button>
+      </div>
+    </IllustratedStep>
+  );
+}
+
+
+Rezultat: ecran ușor, imagine clară, text scurt, un singur buton.
+
+4.2. components/onboarding/InitiationLesson.tsx – Lecția 0 în stil OmniKuno
+
+În locul cardului simplu actual, folosește OnboardingLessonShell.
+
+Importă noua componentă:
+
+import { OnboardingLessonShell } from "@/components/onboarding/OnboardingLessonShell";
+
+
+În return, înlocuiește div-ul principal cu:
+
+  const shellLabel = normalizedLang === "ro" ? "3. Lecție" : "Lesson 3";
+  // sau pur și simplu "Lecția 0 — Inițiere" dacă vrei să păstrezi exact așa
+
+  return (
+    <OnboardingLessonShell
+      label={normalizedLang === "ro" ? "Lecția 0 — Inițiere" : "Lesson 0 — Initiation"}
+      title={copy.title[normalizedLang]}
+      subtitle={CTA_HINT[normalizedLang]}
+      meta={
+        normalizedLang === "ro"
+          ? "Inițiere · Minte · ~3 min"
+          : "Initiation · Mind · ~3 min"
+      }
+      stepIndex={0}
+      stepCount={1}
+      onContinue={() => {
+        if (onContinue) onContinue();
+        else router.push("/experience-onboarding?flow=initiation&step=first-action");
+      }}
+      continueLabel={CTA_LABEL[normalizedLang]}
+    >
+      <ol className="space-y-4 text-base leading-relaxed text-[#3D1C10]">
+        {points.map((text, idx) => (
+          <li
+            key={`point-${idx}`}
+            className="rounded-[14px] border border-[#F3D8C4] bg-[#FFFBF7] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.05)]"
+          >
+            {text}
+          </li>
+        ))}
+      </ol>
+    </OnboardingLessonShell>
+  );
+
+
+Astfel, Lecția 0 are header + bară de progres + card central exact din familia vizuală OmniKuno.
+
+4.3. components/onboarding/FirstAction.tsx – imagine clară + acțiune simplă
+
+În momentul ăsta cardul e decent, dar imaginea e doar overlay. Folosește IllustratedStep + onboarding-path-arrow.jpg.
+
+Import:
+
+import { IllustratedStep } from "@/components/onboarding/IllustratedStep";
+import onboardingPathArrow from "@/public/assets/onboarding-path-arrow.jpg";
+
+
+În return, înlocuiește div-ul mare cu:
+
+  const isRo = normalizedLang === "ro";
+
+  return (
+    <IllustratedStep
+      image={onboardingPathArrow}
+      imageAlt={isRo ? "Drum cu săgeată către următorul pas" : "Path with an arrow to the next step"}
+      label={isRo ? "Acțiune ghidată" : "Guided action"}
+      title={isRo ? "Prima ta acțiune" : "Your first action"}
+      body={
+        <p className="text-sm md:text-base leading-relaxed">
+          {isRo
+            ? "Stabilești o singură acțiune clară pe care o vei face în următoarele 24 de ore. Nu trebuie să fie perfectă, doar concretă și realistă."
+            : "You’ll choose one concrete action to take in the next 24 hours. It doesn’t have to be perfect — just clear and realistic."}
+        </p>
+      }
+      orientation="imageRight"
+    >
+      <div className="space-y-3 text-sm text-[#4A3A30]">
+        <p className="font-semibold">
+          {isRo ? "Protocol scurt de respirație (opțional):" : "Short breathing protocol (optional):"}
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>{isRo ? "Inspiră 4 secunde adânc." : "Inhale for 4 seconds."}</li>
+          <li>{isRo ? "Ține aerul 4 secunde, observă tensiunea." : "Hold for 4 seconds, notice the tension."}</li>
+          <li>{isRo ? "Expiră lent 6 secunde." : "Exhale slowly for 6 seconds."}</li>
+        </ul>
+
+        <label className="mt-4 block text-[13px] font-semibold text-[#7B6B60]">
+          {isRo
+            ? "Ce acțiune concretă vrei să faci în următoarele 24 de ore?"
+            : "What concrete action will you take in the next 24 hours?"}
+        </label>
+        <textarea
+          value={action}
+          onChange={(e) => setAction(e.target.value)}
+          rows={3}
+          className="mt-1 w-full rounded-[12px] border border-[#E4DAD1] bg-white px-3 py-2 text-sm text-[#2C2C2C] outline-none focus:border-[#C07963]"
+        />
+        {error ? <p className="text-xs text-[#D64045]">{error}</p> : null}
+
+        <div className="flex justify-end pt-2">
+          <button
+            type="button"
+            data-testid="first-action-submit"
+            onClick={handleSubmit}
+            disabled={saving}
+            className="inline-flex items-center justify-center rounded-[999px] border border-[#2C2C2C] px-6 py-2 text-[13px] font-semibold tracking-[0.18em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isRo ? "SALVEAZĂ ACȚIUNEA" : "SAVE ACTION"}
+          </button>
+        </div>
+      </div>
+    </IllustratedStep>
+  );
+
+
+Logica actuală de persistAction / recordOmniPatch rămâne neschimbată.
+
+4.4. steps/StepJournal.tsx – e deja aproape corect
+
+Codul folosește onboarding-journal-hero.jpg, dar imaginea e mică și cardul e separat.
+
+Aici aș face doar un mic refactor: în return, în loc de layoutul actual, folosește și tu IllustratedStep:
+
+Imagine: journalHero (deja importată).
+
+Body: textul cu Typewriter.
+
+În children: textarea + butoanele Salvează jurnalul / Sari peste.
+
+Nu mai detaliez codul, schema e aceeași ca FirstAction.
+
+4.5. steps/InitiationStepKunoContext.tsx, InitiationStepOmniScope.tsx, InitiationStepDailyState.tsx
+
+Idea e identică: fiecare dintre ele:
+
+importă IllustratedStep;
+
+alege câte una din imaginile:
+
+onboarding-path-geometry.jpg pentru OmniScope;
+
+onboarding-path-geometry.jpg sau onboarding-welcome.jpg pentru DailyState;
+
+pentru KunoContext, poți folosi tot onboarding-kuno-signs.jpg sau onboarding-path-geometry.jpg.
+
+Mută textul introductiv + Typewriter în body;
+
+pune întrebările / slider-ele / opțiunile în children.
+
+Rezultatul: tot onboarding-ul va arăta unitar: imagine sepia stânga/dreapta + card Omni-style.
+
+4.6. steps/InitiationStepLesson.tsx și steps/InitiationStepLessonQuiz.tsx
+
+Aici nu intru foarte adânc în logică (salvări, patch-uri etc.), dar la nivel vizual:
+
+În InitiationStepLesson, înlocuiește wrapper-ul de top cu OnboardingLessonShell exact cum am făcut la Lecția 0.
+
+children să conțină conținutul actual (text, bullet-uri, ce folosește getMicroLesson).
+
+Pentru LessonQuiz, poți folosi fie același OnboardingLessonShell, fie layout actual, dar cu header preluat din OnboardingLessonShell pentru coerență.
