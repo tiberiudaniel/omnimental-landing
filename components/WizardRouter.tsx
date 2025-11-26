@@ -5,6 +5,7 @@ import Link from "next/link";
 import FirstScreen from "./FirstScreen";
 import WizardReflection from "./WizardReflection";
 import { useProfile } from "./ProfileProvider";
+import { useAuth } from "./AuthProvider";
 import IntentCloud, { type IntentCloudResult } from "./IntentCloud";
 import IntentSummary from "./IntentSummary";
 import RecommendationStep from "./RecommendationStep";
@@ -100,9 +101,10 @@ type Props = {
 };
 
 export default function WizardRouter(props: Props) {
-  const { s } = useTStrings();
+  const { s, sa } = useTStrings();
   // Use hooks at the top to respect the Rules of Hooks
   const profileCtx = useProfile();
+  const { user: authUser } = useAuth();
   const {
     step,
     lang,
@@ -181,9 +183,9 @@ export default function WizardRouter(props: Props) {
         />
       );
     case "reflectionPrompt": {
-      const v = s('wizard.reflectionPrompt');
-      const lines = Array.isArray(v)
-        ? (v as string[])
+      const translated = sa("wizard.reflectionPrompt");
+      const lines = translated.length
+        ? translated
         : (lang === 'en'
             ? [
                 'What you wrote is not just a complaint — it’s a candid photo of your mind today.',
@@ -206,9 +208,9 @@ export default function WizardRouter(props: Props) {
     }
     case "intent": {
       const intentTestId = getWizardStepTestId("intent");
-      const linesRaw = s('wizard.intent');
-      const lines = Array.isArray(linesRaw)
-        ? (linesRaw as string[])
+      const linesRaw = sa("wizard.intent");
+      const lines = linesRaw.length
+        ? linesRaw
         : (lang === 'en'
             ? [
                 'Your mind isn’t only in the brain: your heart and gut also send signals when making decisions.',
@@ -247,9 +249,9 @@ export default function WizardRouter(props: Props) {
       );
     }
     case "reflectionSummary": {
-      const v = s('wizard.reflectionSummary');
-      const lines = Array.isArray(v)
-        ? (v as string[])
+      const translatedSummary = sa("wizard.reflectionSummary");
+      const lines = translatedSummary.length
+        ? translatedSummary
         : (lang === 'en'
             ? [
                 'You said what hurts and picked a direction: this is your starting point in OmniMental.',
@@ -259,7 +261,7 @@ export default function WizardRouter(props: Props) {
             : [
                 'Ai spus ce te doare și ai ales o direcție: acesta este punctul tău de start în OmniMental.',
                 'În continuare vei primi combinații scurte de explicații, exerciții și reflecții, nu doar sfaturi generale.',
-                'Scopul este să devii mai clar, mai flexibil și mai greu de doborât decât erai în ziua asta.',
+                'Scopul este să devii mai clar, mai flexibil și mai rezistent în fața provocărilor zilnice.',
               ]);
       const canJournal = Boolean(
         profileCtx?.profile?.id &&
@@ -276,7 +278,7 @@ export default function WizardRouter(props: Props) {
             categoryLabels={categoryLabels}
             cardTestId={`${summaryTestId}-card`}
           />
-          {/* Mobile FAB: Journal only if selection allows; else prompts account/choice */}
+          {/* Mobile FAB: inform anonymous users instead of forcing an auth prompt mid-wizard. */}
           <div className="pointer-events-none fixed bottom-4 right-4 z-40 block sm:hidden">
             <button
               type="button"
@@ -287,9 +289,19 @@ export default function WizardRouter(props: Props) {
                     url.searchParams.set("open", "journal");
                     window.location.assign(url.pathname + url.search);
                   }
-                } else {
-                  onAccountRequestCards();
+                  return;
                 }
+                if (!authUser || authUser.isAnonymous) {
+                  if (typeof window !== "undefined") {
+                    window.alert(
+                      lang === "ro"
+                        ? "Jurnalul detaliat se deschide după ce finalizezi wizardul și îți creezi contul."
+                        : "The full journal unlocks after you finish the wizard and create your account.",
+                    );
+                  }
+                  return;
+                }
+                onAccountRequestCards();
               }}
               className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#2C2C2C] bg-white text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] shadow-md"
               aria-label="Journal"
@@ -374,19 +386,30 @@ export default function WizardRouter(props: Props) {
     }
     case "microLessonInfo": {
       const title = lang === 'ro' ? 'Probabil ai auzit deja,  că mintea se poate antrena ca un mușchi?' : 'Did you know the mind can be trained like a muscle?';
-      const body = (
-        lang === 'ro'
-          ? [
-              'Știai că Mental Coaching a apărut la intersecția dintre psihologie sportivă și pregătirea pentru performanță de vârf? Antrenorii mentali au început să lucreze cu sportivi de elită ca să își gestioneze stresul, emoțiile și concentrarea, iar apoi metodele au fost adaptate pentru antreprenori, profesioniști și, mai nou, pentru traderi.',
-            ]
-          : [
-              'Did you know Mental Coaching emerged at the crossroads of sport psychology and elite performance training? Mental coaches first worked with top athletes to manage stress, emotions and focus, then the methods were adapted for entrepreneurs and professionals — and more recently for traders.',
-            ]
-      );
+      const body = lang === 'ro'
+        ? [
+            'Mental Coaching a apărut la intersecția dintre psihologie sportivă și pregătirea pentru performanță de vârf.',
+            'Astăzi, nu doar sportivii de elită, ci și liderii, profesioniștii, antreprenorii și freelancerii caută să își gestioneze stresul, emoțiile și concentrarea, apelând proactiv la mental coaching ca să fie mai bine pregătiți pentru situațiile imprevizibile ale timpurilor actuale.',
+          ]
+        : [
+            'Mental Coaching emerged at the crossroads of sport psychology and elite performance training.',
+            'Mental coaches first worked with top athletes to manage stress, emotions and focus, then the methods were adapted for entrepreneurs and professionals — and more recently for traders.',
+          ];
       const definition = lang === 'ro'
-        ? 'Mental Coaching înseamnă un antrenament structurat al atenției, emoțiilor și dialogului interior, astfel încât să poți lua decizii mai lucide, să rămâi stabil în stres și să folosești la maxim resursele tale mentale.'
-        : 'Mental Coaching means a structured training of attention, emotions and inner dialogue so you can decide more clearly, stay stable under stress and use your mental resources better.';
+        ? (
+            <>
+              <strong>Mental Coaching</strong> înseamnă un antrenament structurat al atenției, emoțiilor și dialogului interior, astfel încât să poți lua decizii mai lucide, să rămâi stabil în stres și să folosești la maxim resursele tale mentale.
+            </>
+          )
+        : (
+            <>
+              <strong>Mental Coaching</strong> means a structured training of attention, emotions and inner dialogue so you can decide more clearly, stay stable under stress and use your mental resources better.
+            </>
+          );
       const familiarity = lang === 'ro' ? 'Tu cât de familiar ești cu Mental Coaching?' : 'How familiar are you with Mental Coaching?';
+      const familiarityHint = lang === 'ro'
+        ? 'Alege răspunsul care descrie cel mai bine cât de bine cunoști conceptul — ne ajută să calibrăm următoarea explicație.'
+        : 'Pick the option that best matches your familiarity so we can tailor the next explanation.';
       const btns = (
         lang === 'ro'
           ? ['Știam','Am auzit ceva','Nu știam']
@@ -396,57 +419,68 @@ export default function WizardRouter(props: Props) {
         <div className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8" data-testid={getWizardStepTestId("microLessonInfo")}>
         <section className="mx-auto w-full max-w-4xl px-4 md:px-6">
           {/* Eyebrow */}
-          <div className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#C07963]">
+          <div className="mb-4 text-[11px] uppercase tracking-[0.35em] text-[#C07963]">
             {lang === 'ro' ? 'Mini‑lecție' : 'Micro‑lesson'}
           </div>
           {/* Card consistent with wizard cards */}
-          <div className="rounded-[12px] border border-[#E4D8CE] bg-white/92 px-6 py-5 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
-            <div className="mb-1">
-              <div onClick={() => { /* detect skip in parent via bubbling */ }}>
-                <TypewriterText
-                  text={title}
-                  wrapperClassName="mb-0 w-full bg-[#FFFBF7] px-4 py-3 text-center rounded-[10px] border border-[#F0E6DA]"
-                  headingClassName="text-xl md:text-2xl"
-                />
+          <div className="rounded-[12px] border border-[#E4D8CE] bg-white/92 px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] space-y-6">
+            <article className="space-y-3">
+              <TypewriterText
+                text={title}
+                wrapperClassName="mb-0 w-full bg-[#FFFBF7] px-5 py-4 text-left rounded-[10px] border border-[#F0E6DA]"
+                headingClassName="text-xl md:text-2xl"
+              />
+              <p className="text-sm text-[#6A4A3A]">
+                {lang === 'ro'
+                  ? 'Un rezumat rapid înainte să intrăm în exerciții: citești câteva idei care pun temele tale într-un context practic.'
+                  : 'A quick primer before the exercises: this mini-lesson gives you the context you need for the themes you selected.'}
+              </p>
+            </article>
+            <article className="space-y-3 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7]/70 px-5 py-4">
+              <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z" stroke="#A08F82" strokeWidth="1.2" strokeLinejoin="round" />
+                  <path d="M12 7v4" stroke="#A08F82" strokeWidth="1.2" strokeLinecap="round" />
+                  <circle cx="12" cy="15" r="0.8" fill="#A08F82" />
+                </svg>
+                {lang === 'ro' ? 'Știai că…' : 'Did you know…'}
               </div>
-              <p className="mt-1 text-center text-[10px] text-[#8C7C70]">{lang === 'ro' ? 'Apasă pentru a afișa tot textul' : 'Tap to reveal quickly'}</p>
-            </div>
-            {/* Sub-head: Știai că…? */}
-            <div className="mb-1 text-center text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">
-              {lang === 'ro' ? 'Știai că…?' : 'Did you know…?'}
-            </div>
-            <motion.div
-              className="mx-auto max-w-[64ch] space-y-2 text-[15px] md:text-[16px] leading-[1.8] text-[#2C2C2C]"
-              initial="hidden"
-              animate="show"
-              variants={{
-                hidden: { opacity: 0, y: 4 },
-                show: { opacity: 1, y: 0, transition: { staggerChildren: 0.06, delayChildren: 0.08 } },
-              }}
-            >
-              {body.map((p, i) => (
-                <motion.p key={i} variants={{ hidden: { opacity: 0, y: 3 }, show: { opacity: 1, y: 0 } }}>{p}</motion.p>
-              ))}
-            </motion.div>
+              <motion.div
+                className="max-w-[60ch] space-y-3 text-[15px] md:text-[16px] leading-[1.8] text-[#2C2C2C]"
+                initial="hidden"
+                animate="show"
+                variants={{
+                  hidden: { opacity: 0, y: 4 },
+                  show: { opacity: 1, y: 0, transition: { staggerChildren: 0.06, delayChildren: 0.08 } },
+                }}
+              >
+                {body.map((p, i) => (
+                  <motion.p key={i} variants={{ hidden: { opacity: 0, y: 3 }, show: { opacity: 1, y: 0 } }}>{p}</motion.p>
+                ))}
+              </motion.div>
+            </article>
             {/* Definition in a soft box */}
-            <motion.div
-              className="mx-auto mt-4 max-w-[64ch] rounded-[10px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-3 text-[14px] md:text-[15px] leading-relaxed text-[#4A3A30] border-l-2 border-l-[#C07963]"
+            <motion.section
+              className="rounded-[12px] border border-[#F0E6DA] bg-white px-5 py-4 text-[14px] md:text-[15px] leading-relaxed text-[#4A3A30] shadow-sm"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28, delay: 0.25 }}
             >
-              <div className="mb-1 flex items-center gap-2 text-[12px] font-semibold text-[#2C2C2C]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <circle cx="12" cy="12" r="10" stroke="#C07963" strokeWidth="1.2"/>
-                  <path d="M12 7.5v.8M11.3 10.8h1.4v5h-1.4z" stroke="#C07963" strokeWidth="1.2" strokeLinecap="round"/>
+              <div className="mb-2 flex items-center gap-2 text-[12px] font-semibold text-[#2C2C2C]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <circle cx="12" cy="12" r="10" stroke="#C07963" strokeWidth="1.1"/>
+                  <path d="M12 7.5v.8M11.3 10.8h1.4v5h-1.4z" stroke="#C07963" strokeWidth="1.1" strokeLinecap="round"/>
                 </svg>
                 {lang === 'ro' ? 'Definiție:' : 'Definition:'}
               </div>
-              <div>{definition}</div>
-            </motion.div>
-            <div className="mt-5">
-              <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">{familiarity}</p>
-              <div className="mx-auto grid max-w-xl grid-cols-1 gap-2 sm:grid-cols-3">
+              <article>{definition}</article>
+            </motion.section>
+            <section className="space-y-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">{familiarity}</p>
+                <p className="text-[12px] text-[#6A4A3A]">{familiarityHint}</p>
+              </div>
+              <div className="grid max-w-xl grid-cols-1 gap-2 sm:grid-cols-3">
                 {btns.map((label, idx) => (
                   <button
                     key={label}
@@ -465,12 +499,12 @@ export default function WizardRouter(props: Props) {
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="mx-auto mt-3 max-w-[64ch] text-center text-[10px] text-[#8C7C70]">
-              {lang === 'ro'
-                ? 'Primele studii: Norman Triplett (1898) — efectul competiției la cicliști; termenul „sport psychology” (1900) — Pierre de Coubertin; anii 1920–1930 — Coleman Griffith lucrează cu echipe (ex. Chicago Cubs).'
-                : 'Early studies: Norman Triplett (1898) — cyclists and competition; “sport psychology” term (1900) — Pierre de Coubertin; 1920s–1930s — Coleman Griffith works with teams (e.g., Chicago Cubs).'}
-            </div>
+              <p className="text-[10px] text-[#8C7C70]">
+                {lang === 'ro'
+                  ? 'Primele studii: Norman Triplett (1898) — efectul competiției la cicliști; termenul „sport psychology” (1900) — Pierre de Coubertin; anii 1920–1930 — Coleman Griffith lucrează cu echipe (ex. Chicago Cubs).'
+                  : 'Early studies: Norman Triplett (1898) — cyclists and competition; “sport psychology” term (1900) — Pierre de Coubertin; 1920s–1930s — Coleman Griffith works with teams (e.g., Chicago Cubs).'}
+              </p>
+            </section>
           </div>
         </section>
         </div>

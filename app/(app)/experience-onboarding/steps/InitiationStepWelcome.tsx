@@ -115,6 +115,7 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
               type="button"
               onClick={onBegin}
               className="inline-flex items-center justify-center rounded-full border border-[#C0937D] bg-white/90 px-6 py-3 text-sm font-semibold uppercase tracking-[0.25em] text-[#5C2D1A] shadow-[0_10px_24px_rgba(92,45,26,0.25)] transition hover:bg-white hover:text-[#8A4B2E]"
+              data-testid="init-welcome-begin"
             >
               {lang === "ro" ? "Intră în inițiere" : "Enter initiation"}
             </button>

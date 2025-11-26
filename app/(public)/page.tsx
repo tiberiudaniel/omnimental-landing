@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 // removed unused local step components
 import { useI18n } from "@/components/I18nProvider";
 import SiteHeader from "@/components/SiteHeader";
+import { useAuth } from "@/components/AuthProvider";
 import MenuOverlay from "@/components/MenuOverlay";
 import type { IntentCloudResult } from "@/components/IntentCloud";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
@@ -56,7 +57,7 @@ function computeResumeStep(progress: ReturnType<typeof useProgressFacts>["data"]
   return "details";
 }
 
-function PageContent() {
+function WizardShell() {
   const { t, lang } = useI18n();
   const { s } = useTStrings();
   const { profile } = useProfile();
@@ -65,6 +66,7 @@ function PageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const returnTo = searchParams?.get("returnTo");
+  const isResetFlow = searchParams?.get("reset") === "1";
   const { data: progress } = useProgressFacts(profile?.id);
 
   const {
@@ -76,6 +78,7 @@ function PageContent() {
     setIntentUrgency,
     selectedCard,
     showAccountPrompt,
+    isAnonymousUser,
     saveError,
     isSavingIntentSnapshot,
     isSavingJourney,
@@ -94,8 +97,11 @@ function PageContent() {
     handleIntentComplete: recordIntentSelection,
     handleIntentSummaryComplete: persistIntentSnapshot,
     handleCardSelect: persistJourneyChoice,
+    requireFullAccountOrPrompt,
+    queueJourneyChoice,
     dismissAccountPrompt,
     resetError,
+    resetWizardStateHard,
     setResolutionSpeed,
     setDetermination,
     setTimeCommitmentHours,
@@ -105,7 +111,10 @@ function PageContent() {
     setGroupComfort,
     setLearnFromOthers,
     setScheduleFit,
-  } = useWizardData({ lang, profileId: profile?.id ?? null });
+  } = useWizardData({
+    lang,
+    profileId: profile?.id ?? null,
+  });
 
   const cachedReco = useMemo(() => {
     try {
@@ -156,6 +165,7 @@ function PageContent() {
 
   useEffect(() => {
     if (!progress) return;
+    if (isResetFlow) return;
     const completed =
       Boolean(progress.intent) &&
       Boolean(progress.evaluation) &&
@@ -163,9 +173,10 @@ function PageContent() {
     if (completed) {
       router.replace("/omniscop");
     }
-  }, [progress, router]);
+  }, [progress, router, isResetFlow]);
 
   useEffect(() => {
+    if (searchParams?.get("reset") === "1") return;
     if (searchParams?.get("resume") !== "1") return;
     const resumeStep = computeResumeStep(progress ?? null);
     if (resumeStep && resumeStep !== step) {
@@ -355,12 +366,17 @@ function PageContent() {
 
   const handleCardSelect = useCallback(
     async (type: "individual" | "group") => {
-      const success = await persistJourneyChoice(type, {
+      const extra = {
         recommendedPath,
         recommendationReasonKey,
         algoVersion: 1,
         dimensionScores,
-      });
+      } as const;
+      if (!requireFullAccountOrPrompt()) {
+        queueJourneyChoice(type, extra);
+        return;
+      }
+      const success = await persistJourneyChoice(type, extra);
       if (!success) {
         console.warn("journey choice could not be persisted; staying on recommendation");
         return;
@@ -402,10 +418,24 @@ function PageContent() {
           updateSelectedPath(type);
         }
       } catch {}
-      navigateToStep("details");
     },
-    [dimensionScores, navigateToStep, persistJourneyChoice, recommendationReasonKey, recommendedPath, profile?.id, lang],
+    [
+      dimensionScores,
+      persistJourneyChoice,
+      recommendationReasonKey,
+      recommendedPath,
+      profile?.id,
+      lang,
+      requireFullAccountOrPrompt,
+      queueJourneyChoice,
+    ],
   );
+
+  useEffect(() => {
+    if (selectedCard && step === "cards") {
+      goToStep("details");
+    }
+  }, [selectedCard, step, goToStep]);
 
   const redirectToAuth = useCallback(() => {
     dismissAccountPrompt();
@@ -455,6 +485,7 @@ function PageContent() {
                 : 'Start over? Your current progress will be kept as a draft.'
             );
             if (!confirmed) return;
+            try { resetWizardStateHard(); } catch {}
             try { clearWizardState(); } catch {}
             const params = new URLSearchParams(searchParams?.toString() ?? "");
             params.set("step", "preIntro");
@@ -570,7 +601,7 @@ function PageContent() {
           setScheduleFit={setScheduleFit}
           onIntentSummaryContinue={() => void handleIntentSummaryComplete(intentUrgency)}
           profile={profile}
-          showAccountPrompt={showAccountPrompt}
+          showAccountPrompt={showAccountPrompt && isAnonymousUser}
           onAccountRequestCards={redirectToAuth}
           recommendedPath={recommendedPath}
           recommendedBadgeLabel={recommendedBadgeLabel}
@@ -590,6 +621,18 @@ function PageContent() {
       </main>
     </div>
   );
+}
+
+function PageContent() {
+  const { authReady } = useAuth();
+  if (!authReady) {
+    return (
+      <div className="bg-[#FAF7F2] min-h-screen flex items-center justify-center">
+        <p className="text-sm text-[#4A3A30]">Se pregătește spațiul tău...</p>
+      </div>
+    );
+  }
+  return <WizardShell />;
 }
 
 export default function Page() {

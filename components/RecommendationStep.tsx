@@ -94,12 +94,12 @@ const budgetLabel = (lang: string, budget: BudgetPreference) => {
 export function RecommendationStep(props: Props) {
   const {
     recommendation,
-    profile,
+    profile: _profile,
     showAccountPrompt,
     onAccountRequest,
     recommendedPath: recommendedPathProp,
     // recommendedBadgeLabel: recommendedBadgeLabelProp,
-    // onCardSelect,
+    onCardSelect,
     isSavingChoice,
     // savingChoiceType,
     errorMessage,
@@ -316,8 +316,8 @@ export function RecommendationStep(props: Props) {
   return (
     <section className="bg-[#FDFCF9] px-4 py-8" data-testid="recommendation-step">
       <div className="mx-auto max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
-        <div className="mx-auto flex max-w-4xl flex-col gap-5 text-center">
-          {!profile && showAccountPrompt ? (
+          <div className="mx-auto flex max-w-4xl flex-col gap-5 text-center">
+          {showAccountPrompt ? (
             <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-5 py-4 text-left text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
               <p className="text-base font-semibold text-[#1F1F1F]">
                 {lang === "ro" ? "Salvează-ți progresul" : "Save your progress"}
@@ -449,6 +449,17 @@ export function RecommendationStep(props: Props) {
               const primary = choosePrimaryProduct({ budget, urgency: urgencyVal });
               return <FirstOfferPanel primaryProduct={primary} lang={lang} />;
             })()}
+          </div>
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => { void onCardSelect(effectiveRecommendedPath); }}
+              disabled={isSavingChoice}
+              className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
+              data-testid="wizard-save-path"
+            >
+              {lang === "ro" ? "Salvează traseul și începe" : "Save this path and start"}
+            </button>
           </div>
           {isSavingChoice ? (
             <p className="text-xs text-[#2C2C2C]">{savingLabel}</p>

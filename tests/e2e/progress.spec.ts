@@ -21,25 +21,25 @@ test.describe('Progress dashboard (demo)', () => {
     await expect(page.getByText(ro.insightTitle)).toBeVisible();
     await expect(page.getByText(ro.todayQuest)).toBeVisible();
 
-    // The trends title includes Day/Week and metric
-    const title = page.locator('h3', { hasText: ro.trendsTitle });
-    await expect(title).toBeVisible();
+    // Weekly trend by default
+    await expect(page.locator('h3', { hasText: ro.trendsTitle })).toBeVisible();
 
-    // Toggle Day (title shows "Trend zilnic")
-    await page.getByTestId('trend-toggle-day').click();
-    await expect(page.locator('h3', { hasText: 'Trend zilnic' })).toBeVisible();
+    // Switch to monthly then back to weekly view (chart aria labels change with timeframe)
+    await page.getByTestId('trend-toggle-month').click();
+    await expect(page.getByTestId('trends-chart')).toHaveAttribute('aria-label', /Trend lunar/i);
+    await page.getByTestId('trend-toggle-week').click();
+    await expect(page.getByTestId('trends-chart')).toHaveAttribute('aria-label', /Trend săptămânal/i);
 
-    // Toggle Sessions (header remains the timeframe label)
+    // Toggle metrics: sessions + score should update the legend text
+    await expect(page.getByText('Evoluția activităților')).toBeVisible();
     await page.getByTestId('trend-toggle-sessions').click();
-    await expect(page.locator('h3', { hasText: 'Trend zilnic' })).toBeVisible();
+    await expect(page.getByText('Evoluția activităților')).toBeVisible();
+    await page.getByTestId('trend-toggle-score').click();
+    await expect(page.getByText('Scor activitate (0–100)')).toBeVisible();
+    await page.getByTestId('trend-toggle-minutes').click();
 
     // Numeric labels above bars should be visible (at least one number)
     const anyNumber = page.getByTestId('trends-chart').locator('svg text').filter({ hasText: /\d+/ });
     await expect(anyNumber.first()).toBeVisible();
-
-    // Switch to Week + Minutes
-    await page.getByTestId('trend-toggle-week').click();
-    await page.getByTestId('trend-toggle-minutes').click();
-    await expect(page.locator('h3', { hasText: 'Trend săptămânal' })).toBeVisible();
   });
 });

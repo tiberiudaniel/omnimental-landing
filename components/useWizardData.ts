@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import type { User } from "firebase/auth";
 import type { IntentCloudResult } from "./IntentCloud";
 import { getDb, ensureAuth, areWritesDisabled } from "@/lib/firebase";
+import { useAuth } from "./AuthProvider";
 import {
   type ResolutionSpeed,
   type BudgetPreference,
@@ -26,6 +28,14 @@ import {
   recordRecommendationProgressFact,
 } from "@/lib/progressFacts";
 
+/**
+ * TODO(anon-auth-refactor):
+ *  - ensureAuth() already creates anonymous users (see lib/firebase.ts), so every persistence call below must
+ *    rely solely on that UID and never on a "full account" assumption.
+ *  - confirm `requireFullAccountOrPrompt` is only invoked from the cards CTA (WizardRouter + RecommendationStep);
+ *    journal, intent etc. must NOT trigger requestAccountPrompt anymore.
+ *  - `pendingJourneyChoice` gets persisted in state/localStorage so post-link flows can resume automatically.
+ */
 const db = getDb();
 const MAX_JOURNAL_LENGTH = 1000;
 const GENERIC_SAVE_ERROR = "A apărut o problemă la salvare. Poți încerca din nou.";
@@ -79,10 +89,43 @@ type JourneyExtras = {
   dimensionScores?: DimensionScores;
 };
 
+type PendingJourneyPayload = {
+  choice: WizardCardChoice;
+  extra?: JourneyExtras;
+};
+
+const PENDING_JOURNEY_KEY_PREFIX = "OMNI_PENDING_JOURNEY_";
+
+const pendingKey = (uid: string) => `${PENDING_JOURNEY_KEY_PREFIX}${uid}`;
+
+const savePendingChoiceToLocal = (payload: PendingJourneyPayload, uid: string) => {
+  if (typeof window === "undefined" || !uid) return;
+  try {
+    window.localStorage.setItem(pendingKey(uid), JSON.stringify(payload));
+  } catch {}
+};
+
+const loadPendingChoiceFromLocal = (uid: string): PendingJourneyPayload | null => {
+  if (typeof window === "undefined" || !uid) return null;
+  try {
+    const raw = window.localStorage.getItem(pendingKey(uid));
+    return raw ? (JSON.parse(raw) as PendingJourneyPayload) : null;
+  } catch {
+    return null;
+  }
+};
+
+const clearPendingChoiceFromLocal = (uid: string) => {
+  if (typeof window === "undefined" || !uid) return;
+  try {
+    window.localStorage.removeItem(pendingKey(uid));
+  } catch {}
+};
+
 type JournalHookArgs = {
   lang: string;
   setSaveError: (value: string | null) => void;
-  requestAccountPrompt: (value: boolean) => void;
+  ensurePersistableUser: () => Promise<User | null>;
 };
 
 type JournalHookState = {
@@ -92,7 +135,7 @@ type JournalHookState = {
   handleFirstInputSubmit: (text: string, meta?: FirstExpressionMeta) => Promise<boolean>;
 };
 
-export function useWizardJournalState({ lang, setSaveError, requestAccountPrompt }: JournalHookArgs): JournalHookState {
+export function useWizardJournalState({ lang, setSaveError, ensurePersistableUser }: JournalHookArgs): JournalHookState {
   const [journalEntry, setJournalEntry] = useState("");
   const [firstIntentExpression, setFirstIntentExpression] = useState<string | null>(null);
   const [firstIntentCategory, setFirstIntentCategory] = useState<IntentPrimaryCategory | null>(null);
@@ -111,14 +154,13 @@ export function useWizardJournalState({ lang, setSaveError, requestAccountPrompt
       setJournalEntry(cleanText);
       setSaveError(null);
       try {
-        const user = await ensureAuth();
+        const user = await ensurePersistableUser();
         if (!user) {
           const message =
             lang === "ro"
-              ? "Te rugăm să te conectezi pentru a salva și continua."
-              : "Please sign in to save and continue.";
+              ? "Nu am putut iniția sesiunea ta. Te rugăm să reîncerci."
+              : "We couldn't start your session. Please try again.";
           setSaveError(message);
-          requestAccountPrompt(true);
           return false;
         }
         if (!areWritesDisabled()) {
@@ -153,7 +195,7 @@ export function useWizardJournalState({ lang, setSaveError, requestAccountPrompt
       }
       return true;
     },
-    [lang, setSaveError, requestAccountPrompt],
+    [lang, setSaveError, ensurePersistableUser],
   );
 
   return {
@@ -222,7 +264,6 @@ type JourneyHookArgs = {
   lang: string;
   profileId: string | null;
   setSaveError: (value: string | null) => void;
-  requestAccountPrompt: (value: boolean) => void;
   journalEntry: string;
   firstIntentExpression: string | null;
   firstIntentCategory: IntentPrimaryCategory | null;
@@ -230,6 +271,7 @@ type JourneyHookArgs = {
   intentCategories: IntentCategoryCount[];
   intentSelectionIds: string[];
   intentCategoryScores: Record<IntentPrimaryCategory, number>;
+  ensurePersistableUser: () => Promise<User | null>;
 };
 
 type JourneyHookState = {
@@ -267,7 +309,6 @@ export function useWizardJourneyState({
   lang,
   profileId,
   setSaveError,
-  requestAccountPrompt,
   journalEntry,
   firstIntentExpression,
   firstIntentCategory,
@@ -275,6 +316,7 @@ export function useWizardJourneyState({
   intentCategories,
   intentSelectionIds,
   intentCategoryScores,
+  ensurePersistableUser,
 }: JourneyHookArgs): JourneyHookState {
   const [intentUrgency, setIntentUrgency] = useState(6);
   const [selectedCard, setSelectedCard] = useState<WizardCardChoice | null>(null);
@@ -315,7 +357,7 @@ export function useWizardJourneyState({
         return true;
       }
       setIsSavingIntentSnapshot(true);
-      const snapshotAuth = await ensureAuth();
+      const snapshotAuth = await ensurePersistableUser();
       const snapshotOwnerId = profileId ?? snapshotAuth?.uid ?? null;
       const tags = sanitizeTags(intentTags);
       const categories = sanitizeCategories(intentCategories);
@@ -502,18 +544,12 @@ export function useWizardJourneyState({
             console.error("progress fact recommendation failed", progressError);
           });
         }
-        if (!profileId) {
-          requestAccountPrompt(true);
-        }
         return true;
       } catch (error) {
         console.error("intent summary save failed", error);
         if (includeExtras) {
           try {
             await attemptSnapshotSave(false);
-            if (!profileId) {
-              requestAccountPrompt(true);
-            }
             return true;
           } catch (fallbackError) {
             console.error("intent summary fallback save failed", fallbackError);
@@ -545,7 +581,7 @@ export function useWizardJourneyState({
       scheduleFit,
       formatPreference,
       setSaveError,
-      requestAccountPrompt,
+      ensurePersistableUser,
     ],
   );
 
@@ -562,7 +598,7 @@ export function useWizardJourneyState({
       const safeEntry = sanitizeJournalText(journalEntry) ?? "";
       const tags = sanitizeTags(intentTags);
       const categories = sanitizeCategories(intentCategories);
-      const journeyAuth = await ensureAuth();
+      const journeyAuth = await ensurePersistableUser();
       const journeyOwnerId = profileId ?? journeyAuth?.uid ?? null;
       const includeExtras =
         Boolean(extra.recommendedPath) ||
@@ -600,6 +636,9 @@ export function useWizardJourneyState({
           await addDoc(collection(db, "userJourneys"), buildJourneyPayload(includeExtras));
         }
         setSelectedCard(type);
+        if (journeyAuth?.uid) {
+          clearPendingChoiceFromLocal(journeyAuth.uid);
+        }
         try {
           const { updateProfileSelection } = await import("@/lib/selection");
           void updateProfileSelection(type);
@@ -627,6 +666,9 @@ export function useWizardJourneyState({
           try {
             await addDoc(collection(db, "userJourneys"), buildJourneyPayload(false));
             setSelectedCard(type);
+            if (journeyAuth?.uid) {
+              clearPendingChoiceFromLocal(journeyAuth.uid);
+            }
             try {
               const { updateProfileSelection } = await import("@/lib/selection");
               void updateProfileSelection(type);
@@ -662,6 +704,7 @@ export function useWizardJourneyState({
       profileId,
       lang,
       setSaveError,
+      ensurePersistableUser,
     ],
   );
 
@@ -698,17 +741,57 @@ export function useWizardJourneyState({
 }
 
 export function useWizardData({ lang, profileId }: UseWizardDataParams) {
+  const { user: authUser } = useAuth();
+  const isAnonymousUser = Boolean(authUser?.isAnonymous);
+  const authUserRef = useRef<User | null>(null);
+  useEffect(() => {
+    authUserRef.current = authUser ?? null;
+  }, [authUser]);
   const [accountPromptRequested, setAccountPromptRequested] = useState(false);
-  const showAccountPrompt = accountPromptRequested && !profileId;
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [pendingJourneyChoice, setPendingJourneyChoice] = useState<{ choice: WizardCardChoice; extra?: JourneyExtras } | null>(null);
+  const showAccountPrompt = accountPromptRequested && Boolean(pendingJourneyChoice);
 
-  const journal = useWizardJournalState({ lang, setSaveError, requestAccountPrompt: setAccountPromptRequested });
+  const ensurePersistableUser = useCallback(async () => {
+    const current = authUserRef.current;
+    if (current) return current;
+    const ensured = await ensureAuth();
+    if (ensured) {
+      authUserRef.current = ensured;
+    }
+    return ensured;
+  }, []);
+
+  const requireFullAccountOrPrompt = useCallback(() => {
+    const current = authUserRef.current;
+    if (current && !current.isAnonymous) return true;
+    setAccountPromptRequested(true);
+    return false;
+  }, []);
+
+  const queueJourneyChoice = useCallback((choice: WizardCardChoice, extra?: JourneyExtras) => {
+    setPendingJourneyChoice({ choice, extra });
+    const current = authUserRef.current;
+    if (current) {
+      savePendingChoiceToLocal({ choice, extra }, current.uid);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authUser) return;
+    const stored = loadPendingChoiceFromLocal(authUser.uid);
+    if (stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendingJourneyChoice(stored);
+    }
+  }, [authUser]);
+
+  const journal = useWizardJournalState({ lang, setSaveError, ensurePersistableUser });
   const intent = useWizardIntentState();
   const journey = useWizardJourneyState({
     lang,
     profileId,
     setSaveError,
-    requestAccountPrompt: setAccountPromptRequested,
     journalEntry: journal.journalEntry,
     firstIntentExpression: journal.firstIntentExpression,
     firstIntentCategory: journal.firstIntentCategory,
@@ -716,7 +799,26 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
     intentCategories: intent.intentCategories,
     intentSelectionIds: intent.intentSelectionIds,
     intentCategoryScores: intent.intentCategoryScores,
+    ensurePersistableUser,
   });
+  const handleJourneyCardSelect = journey.handleCardSelect;
+
+  useEffect(() => {
+    if (!authUser || authUser.isAnonymous || !pendingJourneyChoice) return;
+    let cancelled = false;
+    (async () => {
+      const ok = await handleJourneyCardSelect(pendingJourneyChoice.choice, pendingJourneyChoice.extra);
+      if (cancelled) return;
+      if (ok) {
+        setAccountPromptRequested(false);
+        clearPendingChoiceFromLocal(authUser.uid);
+      }
+      setPendingJourneyChoice(null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser, pendingJourneyChoice, handleJourneyCardSelect]);
 
   const resetError = useCallback(() => {
     setSaveError(null);
@@ -724,6 +826,18 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
 
   const dismissAccountPrompt = useCallback(() => {
     setAccountPromptRequested(false);
+  }, []);
+
+
+  const resetWizardStateHard = useCallback(() => {
+    try {
+      if (typeof window !== "undefined" && authUserRef.current?.uid) {
+        clearPendingChoiceFromLocal(authUserRef.current.uid);
+      }
+    } catch {}
+    setPendingJourneyChoice(null);
+    setAccountPromptRequested(false);
+    setSaveError(null);
   }, []);
 
   return {
@@ -738,6 +852,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
     setIntentUrgency: journey.setIntentUrgency,
     selectedCard: journey.selectedCard,
     showAccountPrompt,
+    isAnonymousUser,
     saveError,
     isSavingIntentSnapshot: journey.isSavingIntentSnapshot,
     isSavingJourney: journey.isSavingJourney,
@@ -755,9 +870,10 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
     handleFirstInputSubmit: journal.handleFirstInputSubmit,
     handleIntentComplete: intent.handleIntentComplete,
     handleIntentSummaryComplete: journey.handleIntentSummaryComplete,
-    handleCardSelect: journey.handleCardSelect,
+    handleCardSelect: handleJourneyCardSelect,
     dismissAccountPrompt,
     resetError,
+    resetWizardStateHard,
     setResolutionSpeed: journey.setResolutionSpeed,
     setDetermination: journey.setDetermination,
     setTimeCommitmentHours: journey.setTimeCommitmentHours,
@@ -768,5 +884,7 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
     setLearnFromOthers: journey.setLearnFromOthers,
     setScheduleFit: journey.setScheduleFit,
     setFormatPreference: journey.setFormatPreference,
+    requireFullAccountOrPrompt,
+    queueJourneyChoice,
   };
 }

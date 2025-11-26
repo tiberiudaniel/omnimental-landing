@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { NEED_SURVEY_CONFIG, type NeedOptionId } from '@/config/needSurveyConfig';
-import GuideCard from '@/components/onboarding/GuideCard';
 import TypewriterText from '@/components/TypewriterText';
 import { useI18n } from '@/components/I18nProvider';
 import { getWizardStepTestId } from '@/components/useWizardSteps';
@@ -35,24 +34,31 @@ export default function StepNeedMain({ onNext }: { onNext: (sel: NeedOptionId[],
       return prev;
     });
   };
+  const hint = lang === 'ro'
+    ? `Alege maximum ${maxSelections} teme prioritare (încearcă să te limitezi la ${minSelections} dacă poți).`
+    : `Pick up to ${maxSelections} focus areas (ideally at least ${minSelections}).`;
   return (
     <section className="space-y-4" data-testid={getWizardStepTestId("needMain")}>
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
+      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm space-y-2">
         <TypewriterText text={lang === 'ro' ? q.label.ro : q.label.en} />
+        <p className="text-sm text-[#6A4A3A]">{hint}</p>
       </div>
-      <GuideCard title={lang === 'ro' ? 'Alege maxim 2' : 'Choose up to 2'}>
+      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
         <div className="grid gap-3 md:grid-cols-2">
-          {q.options.filter((opt) => opt.id !== 'need_other').map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => toggle(opt.id)}
-              className={`rounded-[12px] border px-4 py-3 text-left shadow-sm transition ${selected.includes(opt.id) ? 'border-[#1F7A53] bg-[#F0FFF6]' : 'border-[#E4DAD1] bg-white hover:border-[#2C2C2C]'}`}
-              data-testid={`need-opt-${opt.id}`}
-            >
-              <p className="text-sm font-semibold text-[#2C2C2C]">{lang === 'ro' ? opt.label.ro : opt.label.en}</p>
-            </button>
-          ))}
+          {q.options.filter((opt) => opt.id !== 'need_other').map((opt) => {
+            const label = lang === 'ro' ? opt.label.ro : opt.label.en;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => toggle(opt.id)}
+                className={`rounded-[14px] border px-4 py-3 text-left shadow-sm transition ${selected.includes(opt.id) ? 'border-[#1F7A53] bg-[#F0FFF6]' : 'border-[#E4DAD1] bg-white hover:border-[#2C2C2C]'}`}
+                data-testid={`need-opt-${opt.id}`}
+              >
+                <span className="text-sm font-medium text-[#2C2C2C]">{label}</span>
+              </button>
+            );
+          })}
         </div>
         {/* need_other removed from this flow per request */}
         <div className="mt-4 flex justify-end">
@@ -66,7 +72,7 @@ export default function StepNeedMain({ onNext }: { onNext: (sel: NeedOptionId[],
             {lang === 'ro' ? 'Continuă' : 'Continue'}
           </button>
         </div>
-      </GuideCard>
+      </div>
     </section>
   );
 }

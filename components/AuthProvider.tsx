@@ -10,14 +10,16 @@ import {
   useState,
 } from "react";
 import {
+  EmailAuthProvider,
   isSignInWithEmailLink,
+  linkWithCredential,
   onAuthStateChanged,
   sendSignInLinkToEmail,
   signInWithEmailLink,
   signOut,
   type User,
 } from "firebase/auth";
-import { getFirebaseAuth } from "../lib/firebase";
+import { getFirebaseAuth, ensureAuth } from "../lib/firebase";
 import { migrateAnonToUser } from "@/lib/migrateUserData";
 
 const AUTH_EMAIL_STORAGE_KEY = "omnimental_auth_email";
@@ -39,6 +41,7 @@ type AuthContextValue = {
   signOutUser: () => Promise<void>;
   authNotice: { message: string } | null;
   clearAuthNotice: () => void;
+  authReady: boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -49,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [sendingLink, setSendingLink] = useState(false);
   const [linkSentTo, setLinkSentTo] = useState<string | undefined>(undefined);
   const [authNotice, setAuthNotice] = useState<{ message: string } | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const pendingRememberRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -71,6 +75,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {}
     });
     return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await ensureAuth();
+      } finally {
+        if (!cancelled) {
+          setAuthReady(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -104,7 +124,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     if (email) {
       pendingRememberRef.current = stored?.remember ?? false;
-      void signInWithEmailLink(auth, email, window.location.href)
+      const current = auth.currentUser;
+      const isAnon = current && current.isAnonymous;
+      const operation = isAnon
+        ? linkWithCredential(current, EmailAuthProvider.credentialWithLink(email, window.location.href))
+        : signInWithEmailLink(auth, email, window.location.href);
+      void operation
         .then(() => {
           window.localStorage.removeItem(AUTH_EMAIL_STORAGE_KEY);
           if (pendingRememberRef.current) {
@@ -251,8 +276,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOutUser,
       authNotice,
       clearAuthNotice,
+      authReady,
     }),
-    [authNotice, clearAuthNotice, linkSentTo, loading, sendMagicLink, sendingLink, signOutUser, user],
+    [authNotice, authReady, clearAuthNotice, linkSentTo, loading, sendMagicLink, sendingLink, signOutUser, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

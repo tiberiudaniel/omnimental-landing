@@ -76,6 +76,7 @@ export default function StepJournal({ userId, onSaved, onSkip }: { userId: strin
           disabled={!text || busy}
           onClick={save}
           className="rounded-[999px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:bg-[#2C2C2C] hover:text-white"
+          data-testid="eo-journal-save"
         >
           {lang === 'ro' ? 'Salvează' : 'Save'}
         </button>

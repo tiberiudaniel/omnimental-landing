@@ -13,58 +13,84 @@ test.describe('Onboarding flow (RO, demo)', () => {
     });
   });
 
-  test('intro → self‑assessment → mini‑cuno → recommendation (with optional experience step)', async ({ page }) => {
-    // Intro
+  test('initiation experience → progress redirect', async ({ page }) => {
     await resetSession(page);
-    await go(page, '/onboarding?demo=1&lang=ro&e2e=1');
-    // Pick the first choice via testid and continue
-    await expect(page.getByTestId('onboarding-intro')).toBeVisible();
-    await page.getByTestId('onboarding-choice-calm_clarity').click();
-    const cont = page.getByTestId('onboarding-continue');
-    // If state is slow to propagate, cycle choices until enabled
-    if (await cont.isDisabled()) {
-      const choices = page.locator('[data-testid^="onboarding-choice-"]');
-      const total = await choices.count();
-      for (let i = 0; i < total && (await cont.isDisabled()); i++) {
-        await choices.nth(i).click();
-      }
-    }
-    await expect(cont).toBeEnabled({ timeout: 8000 });
-    await cont.click();
+    await go(page, '/experience-onboarding?flow=initiation&step=welcome&demo=1&lang=ro&e2e=1');
 
-    // Self‑assessment: set each slider to a mid/high value and continue
-    const sliders = page.locator('input[type="range"]');
-    const count = await sliders.count();
-    for (let i = 0; i < count; i++) {
-      await sliders.nth(i).evaluate((el) => { (el as HTMLInputElement).value = '7'; el.dispatchEvent(new Event('input', { bubbles: true })); });
-    }
-    const selfCont = page.getByTestId('onboarding-self-continue');
-    await expect(selfCont).toBeEnabled({ timeout: 5000 });
-    await selfCont.click();
+    // Welcome → Intro
+    await expect(page.getByTestId('init-welcome-begin')).toBeVisible({ timeout: 15000 });
+    await page.getByTestId('init-welcome-begin').click();
+    await expect(page).toHaveURL(/step=intro/);
+    const startBtn = page.getByTestId('eo-start');
+    await expect(startBtn).toBeVisible({ timeout: 15000 });
+    await startBtn.click();
 
-    // Mini‑Cuno: answer each question (click first option for each) and save
-    const questionBlocks = page.locator('article');
-    const qCount = await questionBlocks.count();
-    for (let i = 0; i < qCount; i++) {
-      const firstOption = questionBlocks.nth(i).locator('button').first();
+    // Daily state sliders: touch each mixer so continue activates
+    const dailyKeys = ['energy', 'stress', 'sleep', 'clarity', 'confidence', 'focus'] as const;
+    for (const key of dailyKeys) {
+      const slider = page.getByTestId(`init-daily-${key}`).first();
+      await slider.waitFor({ state: 'visible', timeout: 15000 });
+      await slider.evaluate((el) => {
+        (el as HTMLInputElement).value = '8';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    }
+    await page.getByTestId('init-daily-continue').click();
+
+    // Kuno context questions (if any)
+    const kunoQuestions = page.getByTestId('init-kuno-question');
+    const questionCount = await kunoQuestions.count();
+    for (let i = 0; i < questionCount; i++) {
+      const firstOption = kunoQuestions.nth(i).getByTestId('init-kuno-option').first();
       await firstOption.click();
     }
-    await page.getByTestId('onboarding-minicuno-save').click();
-    // Wait explicitly for recommendation step (concise diagnostics)
-    await expectVisibleShort(page, page.getByTestId('recommendation-step'), 'recommendation-step', 20000);
+    await page.getByTestId('init-kuno-continue').click();
 
-    // Optional Experience step (only for member profiles). If present, select 1–2 chips and continue.
-    const expTitle = page.getByText(/Hai să vedem cum ar fi|Let’s see how/i);
-    if (await expTitle.isVisible()) {
-      const chips = page.locator('button', { hasText: /claritate|emoție calmă|motivație|idee|apartenență|exercițiu|feedback/i });
-      if (await chips.count()) {
-        await chips.first().click();
-        await page.getByRole('button', { name: /Continuă/i }).click();
-      }
+    // Lesson carousel: advance through content blocks, answer inline quiz
+    for (let step = 0; step < 6; step++) {
+      const continueBtn = page.getByTestId('onboarding-lesson-shell').getByRole('button', { name: /continuă|continue/i }).last();
+      await continueBtn.click();
     }
+    const inlineQuestion = page.getByTestId('init-lesson-inline-question');
+    await expect(inlineQuestion).toBeVisible({ timeout: 15000 });
+    await inlineQuestion.getByTestId('init-lesson-inline-option').first().click();
+    await page.getByTestId('init-lesson-complete').click();
 
-    // Final assert: recommendation still visible and no UI error strings
-    await expectVisibleShort(page, page.getByTestId('recommendation-step'), 'recommendation-step');
-    await expect(page.getByText(/Nu am putut|eroare|error/i)).toHaveCount(0);
+    // First action: describe an action and continue
+    const actionText = `Plan inițiere ${Date.now()}`;
+    await expect(page.getByTestId('first-action-plan')).toBeVisible({ timeout: 15000 });
+    await page.getByTestId('first-action-plan').fill(actionText);
+    await page.getByTestId('first-action-submit').click();
+
+    // OmniScope sliders
+    const scopeKeys = ['impact', 'readiness', 'frequency'] as const;
+    for (const key of scopeKeys) {
+      const slider = page.getByTestId(`init-scope-${key}`);
+      await slider.waitFor({ state: 'visible', timeout: 15000 });
+      await slider.evaluate((el) => {
+        (el as HTMLInputElement).value = '8';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    }
+    await page.getByTestId('init-scope-continue').click();
+
+    // Journal reflection
+    const journalEntry = `Inițiere E2E ${Date.now()}`;
+    await expect(page.getByTestId('eo-journal-text')).toBeVisible({ timeout: 15000 });
+    await page.getByTestId('eo-journal-text').fill(journalEntry);
+    await page.getByTestId('eo-journal-save').click();
+
+    // Final quiz (2 questions)
+    const finalQuestions = page.getByTestId('eo-question');
+    const finalCount = await finalQuestions.count();
+    for (let i = 0; i < finalCount; i++) {
+      await finalQuestions.nth(i).getByTestId('eo-option').first().click();
+    }
+    await page.getByRole('button', { name: /Finalizează|Finalize/i }).click();
+    await page.getByTestId('init-lesson-quiz-submit').click();
+
+    // Redirect to progress dashboard
+    await expect(page).toHaveURL(/\/progress/);
+    await expectVisibleShort(page, page.getByTestId('trends-chart'), 'progress-trends', 20000);
   });
 });

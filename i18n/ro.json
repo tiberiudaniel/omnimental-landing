@@ -220,9 +220,9 @@
     { "key": "clarity_meaning", "label": "Vreau să simt că trăiesc cu sens.", "category": "clarity" }
   ],
   "intentCloudSliderLabel": "Cât de intens simți asta acum?",
-  "intentMotivationTitle": "„Orice salt în rezultate cere un salt în disciplină.”",
-  "intentMotivationDescription": "Profilul vizual de mai jos arată cum se distribuie selecțiile tale înainte să mergem mai departe.",
-  "intentMotivationIntensityQuestion": "Cât de urgent simți să lucrezi la aceste teme?",
+  "intentMotivationTitle": "„Claritatea senzațiilor e combustibilul clarității în decizii.”",
+  "intentMotivationDescription": "Pornește de la această hartă a selecțiilor tale ca să vezi unde investești energie mentală și ce intervale rămân fără atenție.",
+  "intentMotivationIntensityQuestion": "Cât de urgent simți să lucrezi la aceste teme chiar în această săptămână?",
   "intentMotivationIntensityLow": "Relaxat",
   "intentMotivationIntensityHigh": "Foarte urgent",
   "intentMotivationButton": "Continuă",
@@ -638,7 +638,7 @@
     ],
     "reflectionPrompt": [
       "Cuvintele tale sunt o oglindă: arată felul în care te porți cu tine.",
-      "În ele se ascund tensiuni, frici, oboseală — dar și direcția..",
+      "În ele se ascund tensiunile, temerile, oboseala — dar și direcția..",
       "Noi folosim aceste semnale ca să-ți desenăm harta. >>"
     ],
     "intent": [
@@ -649,7 +649,7 @@
     "intentInstruction": "Alege 7 afirmații care te descriu cel mai bine acum. >>",
     "reflectionSummary": [
       "Ai spus ce te preocupa și ai ales o direcție: acesta este punctul tău de start în OmniMental.",
-      "Scopul este să devii mai clar, mai flexibil și mai greu de doborât decât erai în ziua anterioara. >>"
+      "Scopul este să devii mai clar, mai flexibil și mai rezistent în fața provocărilor zilnice. >>"
     ]
   },
   "onboarding.intro.title": "În diverse perioade, viața ne provoacă la adaptare.",

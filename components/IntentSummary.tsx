@@ -150,6 +150,10 @@ export default function IntentSummary({
     lang === "ro" ? "ore/săptămână" : "hrs/week",
   );
 
+  const instructions = lang === "ro"
+    ? "Completezi 3 micro-pași: clarificăm ritmul, resursele și disponibilitatea ta, apoi primești traseul recomandat."
+    : "You’ll pass 3 micro-steps—pace, resources, availability—then we suggest the best track.";
+
   const areaLabel = ((): string => {
     if (primaryAreaLabel && primaryAreaLabel.length > 0) return primaryAreaLabel;
     return lang === 'ro' ? 'temele selectate' : 'selected themes';
@@ -193,8 +197,13 @@ export default function IntentSummary({
                       ? "Cât de repede vrei să rezolvi claritate și direcție?"
                       : "How quickly do you want to make progress on clarity and direction?",
                   );
-                  return tpl.includes('{{area}}') ? tpl.replace('{{area}}', areaLabel) : tpl;
-                })()}
+                return tpl.includes('{{area}}') ? tpl.replace('{{area}}', areaLabel) : tpl;
+              })()}
+              </p>
+              <p className="text-xs text-[#7B6B60]">
+                {lang === 'ro'
+                  ? 'Alege intervalul în care vrei să vezi schimbări vizibile.'
+                  : 'Pick the timeframe in which you expect visible progress.'}
               </p>
               <div className="mt-2">
                 <SegmentedControl
@@ -214,6 +223,11 @@ export default function IntentSummary({
             {/* 2) Urgency second */}
             <div className={`panel-ghost px-4 py-4 ${nudge && !goalTouched ? 'border border-[#E60012] animate-pulse' : ''}`}>
               <p className="text-sm font-medium text-[#2C2C2C]">{urgencyQuestion}</p>
+              <p className="text-xs text-[#7B6B60]">
+                {lang === 'ro'
+                  ? 'Mută sliderul spre dreapta dacă simți presiune să acționezi imediat.'
+                  : 'Slide right if you feel pressure to act immediately.'}
+              </p>
               {/* Mixer slider for urgency */}
               <div className="mt-2">
                 <div className="mixer-wrap ticks-10">
@@ -250,6 +264,11 @@ export default function IntentSummary({
                     ? "Cât de hotărât(ă) te simți să faci efectiv schimbări?"
                     : "How determined are you to actually make changes?",
                 )}
+              </p>
+              <p className="text-xs text-[#7B6B60]">
+                {lang === 'ro'
+                  ? 'Indicatorul acesta vorbește despre disciplina ta personală.'
+                  : 'This gauge reflects your personal discipline right now.'}
               </p>
               <div className="mt-2">
                 <div className="mixer-fluid">
@@ -298,6 +317,11 @@ export default function IntentSummary({
                     : "How much weekly time can you realistically invest?",
                 )}
               </p>
+              <p className="text-xs text-[#7B6B60]">
+                {lang === 'ro'
+                  ? 'Chiar și sesiuni scurte, recurente, pot conta — bifează ce știi că poți susține.'
+                  : 'Even short, recurring sessions matter—select what you can actually sustain.'}
+              </p>
               <div className="mt-2">
                 <div className="mixer-fluid">
                   <div className="mixer-wrap ticks-10">
@@ -333,6 +357,11 @@ export default function IntentSummary({
                     : "What budget feels realistic for this goal?",
                 )}
               </p>
+              <p className="text-xs text-[#7B6B60]">
+                {lang === 'ro'
+                  ? 'Gândește-te la cât ai investi într-un program de 6–12 săptămâni.'
+                  : 'Think of what you’d invest in a 6–12 week program.'}
+              </p>
               <div className="mt-3 grid grid-cols-3 gap-3">
                 {budgetOptions.map((option) => (
                   <button
@@ -364,6 +393,11 @@ export default function IntentSummary({
                 {lang === "ro"
                   ? "Cum ai descrie cel mai bine ce vrei să lucrezi acum?"
                   : "How would you best describe what you want to work on now?"}
+              </p>
+              <p className="text-xs text-[#7B6B60]">
+                {lang === 'ro'
+                  ? 'Bifează varianta care se potrivește cel mai bine felului în care ai selectat temele.'
+                  : 'Pick the option that best mirrors how you grouped your themes.'}
               </p>
               <div className="mt-3 space-y-3">
                 {(Object.keys(goalTypeLabels) as GoalType[]).map((option) => (
@@ -403,6 +437,11 @@ export default function IntentSummary({
                   ? "Cât de ușor îți este să respecți același interval orar în fiecare săptămână?"
                   : "How easy is it for you to stick to the same weekly time slot?"}
               </p>
+              <p className="text-xs text-[#7B6B60]">
+                {lang === 'ro'
+                  ? 'Răspunsul ne ajută să alegem între programe cu ritm fix sau flexibil.'
+                  : 'This helps us pick between fixed-pace or flexible programs.'}
+              </p>
               <div className="mixer-fluid mt-3">
                 <div className="mixer-wrap ticks-10">
                   <span className="mixer-slot" aria-hidden="true"></span>
@@ -436,6 +475,11 @@ export default function IntentSummary({
                 {lang === "ro"
                   ? "Cât de mult te ajută să auzi întrebările și greșelile altor persoane?"
                   : "How much does it help you to hear others’ questions and mistakes?"}
+              </p>
+              <p className="text-xs text-[#7B6B60]">
+                {lang === 'ro'
+                  ? 'După scorul tău decidem cât de multă interacțiune de grup includem.'
+                  : 'We’ll use this score to decide how much group interaction to include.'}
               </p>
               <div className="mixer-fluid mt-3">
                 <div className="mixer-wrap ticks-10">
@@ -471,6 +515,11 @@ export default function IntentSummary({
                   ? "Cum ai descrie starea ta emoțională din ultimele două săptămâni?"
                   : "How would you describe your emotional state during the past two weeks?"}
               </p>
+              <p className="text-xs text-[#7B6B60]">
+                {lang === 'ro'
+                  ? 'Alege varianta sinceră — ne ghidează în privința nivelului de suport.'
+                  : 'Be candid; this guides the level of support we recommend.'}
+              </p>
               <div className="mt-3 space-y-3">
                 {(Object.keys(emotionalStateLabels) as EmotionalState[]).map((option) => (
                   <button
@@ -504,6 +553,11 @@ export default function IntentSummary({
                 {lang === "ro"
                   ? "Cât de confortabil te simți cu ideea de a discuta aceste teme într-un grup mic online?"
                   : "How comfortable are you with discussing these topics in a small group online?"}
+              </p>
+              <p className="text-xs text-[#7B6B60]">
+                {lang === 'ro'
+                  ? 'Dacă scorul e mic, vom recomanda mai mult input individual.'
+                  : 'Lower scores steer us toward more individual input.'}
               </p>
                 <div className="mixer-fluid mt-3">
                   <div className="mixer-wrap ticks-10">
@@ -667,9 +721,10 @@ export default function IntentSummary({
     <section data-testid={getWizardStepTestId("intentMotivation")} className="bg-[#FDFCF9] px-4 md:px-6 py-10">
       <div className="page-wrap w-full flex flex-col items-center gap-6 md:gap-8">
         {step === 0 ? (
-          <div className="panel-ghost px-8 py-8 text-left">
+          <div className="panel-ghost px-8 py-8 text-left space-y-3">
             <TypewriterText key={title} text={title} speed={90} enableSound />
-            {description ? <p className="mt-3 text-sm text-[#2C2C2C]/80">{description}</p> : null}
+            {description ? <p className="text-sm text-[#2C2C2C]/80">{description}</p> : null}
+            <p className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">{instructions}</p>
           </div>
         ) : null}
 

@@ -13,29 +13,34 @@ import { FEEDBACK_BY_TAG } from '@/config/needSurveyFeedback';
 export default function StepNeedConfidence({ selectedOptions, onDone }: { selectedOptions: NeedOptionId[]; onDone: (profile: ReturnType<typeof buildNeedProfile>) => void }) {
   const { lang } = useI18n();
   const q = NEED_SURVEY_CONFIG.questions.find((x) => x.id === 'need_q2_self_efficacy' && x.type === 'likert_1_5')! as Extract<(typeof NEED_SURVEY_CONFIG)['questions'][number], { id: 'need_q2_self_efficacy' }>;
-  const [score, setScore] = useState<number>(3);
+  const [score, setScore] = useState<number | null>(null);
   const optionToTags: Record<NeedOptionId, NeedChannelTag[]> = useMemo(() => {
     const q1 = NEED_SURVEY_CONFIG.questions.find((x) => x.id === 'need_q1_main' && x.type === 'multi_select')! as Extract<(typeof NEED_SURVEY_CONFIG)['questions'][number], { id: 'need_q1_main' }>;
     const map = {} as Record<NeedOptionId, NeedChannelTag[]>;
     q1.options.forEach((o) => { map[o.id as NeedOptionId] = o.channelTags; });
     return map;
   }, []);
-  const profile = useMemo(() => buildNeedProfile({ selectedOptionsQ1: selectedOptions, selfEfficacyScoreQ2: score, optionToTags }), [selectedOptions, score, optionToTags]);
-  const fb = profile.primaryTag ? FEEDBACK_BY_TAG[profile.primaryTag] : null;
+  const profile = useMemo(() => {
+    if (score === null) return null;
+    return buildNeedProfile({ selectedOptionsQ1: selectedOptions, selfEfficacyScoreQ2: score, optionToTags });
+  }, [selectedOptions, score, optionToTags]);
+  const fb = profile?.primaryTag ? FEEDBACK_BY_TAG[profile.primaryTag] : null;
   const [saving, setSaving] = useState(false);
   const save = async () => {
     setSaving(true);
     try {
-      await recordNeedProfile({
-        primaryOptionId: profile.primaryOptionId,
-        secondaryOptionId: profile.secondaryOptionId,
-        primaryTag: profile.primaryTag,
-        allTags: profile.allTags,
-        selfEfficacyScore: profile.selfEfficacyScore,
-      });
+      if (profile) {
+        await recordNeedProfile({
+          primaryOptionId: profile.primaryOptionId,
+          secondaryOptionId: profile.secondaryOptionId,
+          primaryTag: profile.primaryTag,
+          allTags: profile.allTags,
+          selfEfficacyScore: profile.selfEfficacyScore,
+        });
+      }
     } catch {}
     setSaving(false);
-    onDone(profile);
+    if (profile) onDone(profile);
   };
   return (
     <section className="space-y-4" data-testid={getWizardStepTestId("needConfidence")}>
@@ -72,7 +77,7 @@ export default function StepNeedConfidence({ selectedOptions, onDone }: { select
         <div className="mt-4 flex items-center justify-end">
           <button
             type="button"
-            disabled={saving}
+            disabled={saving || score === null}
             onClick={save}
             className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
             data-testid="need-confidence-continue"

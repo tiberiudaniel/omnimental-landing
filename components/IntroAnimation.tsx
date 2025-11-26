@@ -162,16 +162,16 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
       <div className="words-overlay absolute inset-0 overflow-hidden pointer-events-none" />
 
       <div className="absolute inset-0 flex items-center justify-center px-6 pointer-events-none translate-y-10 sm:translate-y-14">
-        <div className="pointer-events-auto flex w-full max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:items-center">
+        <div className="pointer-events-auto flex w-full max-w-md flex-col gap-3 rounded-[22px] border border-[#E4D8CE] bg-white/90 px-6 py-6 shadow-[0_18px_32px_rgba(0,0,0,0.15)] sm:w-auto sm:flex-row sm:items-center sm:justify-center sm:gap-5 sm:px-6 sm:py-4">
           <button
-            className="rounded-[14px] border border-[#E2CFC2] bg-white/95 px-8 py-4 text-lg font-semibold uppercase tracking-[0.18em] text-[#4F2C1F] shadow-[0_10px_24px_rgba(79,44,31,0.18)] transition hover:bg-[#FFF5EE] hover:text-[#8E4C36] sm:px-14 sm:py-5 sm:text-2xl sm:tracking-[0.22em]"
+            className="inline-flex items-center justify-center rounded-[999px] border border-[#2C2C2C] bg-white/95 px-8 py-3 text-[12px] font-semibold uppercase tracking-[0.3em] text-[#2C2C2C] shadow-[0_12px_24px_rgba(0,0,0,0.12)] transition hover:bg-[#2C2C2C] hover:text-white sm:px-12 sm:py-4"
             onClick={safeComplete}
             aria-label="Pornește animația"
           >
             START
           </button>
           <button
-            className="rounded-[14px] border border-transparent bg-[#FFF4EC]/95 px-8 py-3 text-base font-semibold uppercase tracking-[0.16em] text-[#8B4E3A] shadow-[0_6px_16px_rgba(139,78,58,0.15)] transition hover:bg-[#FFE8DC] hover:text-[#5C2F20] sm:px-10 sm:text-lg"
+            className="inline-flex items-center justify-center rounded-[999px] border border-[#C07963] bg-[#FFF4EC]/95 px-8 py-3 text-[12px] font-semibold uppercase tracking-[0.25em] text-[#8B4E3A] shadow-[0_10px_20px_rgba(192,121,99,0.2)] transition hover:bg-[#C07963] hover:text-white sm:px-12 sm:py-4"
             onClick={() => router.push(user && !user.isAnonymous ? "/progress" : "/auth")}
             aria-label="Deschide autentificarea"
           >

@@ -77,6 +77,7 @@ export function getFirebaseAuth() {
   return auth;
 }
 
+// ensureAuth guarantees a Firebase user (anonymous or full) exists before writes.
 export async function ensureAuth() {
   if (typeof window === "undefined") return null;
   const auth = getFirebaseAuth();
