@@ -4,6 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { readWizardState, writeWizardState } from "./wizardStorage";
 
+const enqueueMicrotask =
+  typeof queueMicrotask === "function"
+    ? queueMicrotask
+    : (cb: () => void) => {
+        // Promise microtask fallback for Safari < 15.4 / older Android WebViews
+        void Promise.resolve().then(cb);
+      };
+
 export const WIZARD_STEP_IDS = [
   "preIntro",
   "intro",
@@ -70,7 +78,7 @@ export function useWizardSteps(initialStep: WizardStepId = "preIntro") {
     if (isStep(paramStep)) {
       const normalized = LEGACY_ALIASES[paramStep as string] ?? (paramStep as WizardStepId);
       if (normalized !== localStep) {
-        queueMicrotask(() => setLocalStep((prev) => (prev !== normalized ? normalized : prev)));
+        enqueueMicrotask(() => setLocalStep((prev) => (prev !== normalized ? normalized : prev)));
       }
       if (!hasQueryStepRef.current) {
         hasQueryStepRef.current = true;
@@ -78,7 +86,7 @@ export function useWizardSteps(initialStep: WizardStepId = "preIntro") {
       return;
     }
     if (!hasQueryStepRef.current) {
-      queueMicrotask(() => {
+      enqueueMicrotask(() => {
         if (hasQueryStepRef.current) return;
         const stored = readWizardState();
         if (stored?.step && isStep(stored.step)) {
