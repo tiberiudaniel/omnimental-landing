@@ -31,6 +31,12 @@ const FOCUS_MAP: Record<string, OmniKunoModuleId> = {
   obiceiuri: "energy_body",
   sens: "self_trust",
   general: "focus_clarity",
+  vointa: "willpower_perseverance",
+  vointă: "willpower_perseverance",
+  willpower: "willpower_perseverance",
+  perseverenta: "willpower_perseverance",
+  perseverance: "willpower_perseverance",
+  disciplina: "willpower_perseverance",
 };
 
 export function getCurrentFocusTag(facts: ProgressFact | null | undefined): OmniKunoModuleId | undefined {

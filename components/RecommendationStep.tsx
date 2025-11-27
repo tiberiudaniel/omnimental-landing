@@ -162,6 +162,7 @@ export function RecommendationStep(props: Props) {
       energy_body: "echilibru",
       decision_discernment: "incredere",
       self_trust: "incredere",
+      willpower_perseverance: "disciplina",
     };
     const roKey = mapToRoKey[top];
     const item = roKey ? CATEGORY_LABELS[roKey] : undefined;

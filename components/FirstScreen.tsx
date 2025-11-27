@@ -31,6 +31,7 @@ const CATEGORY_ORDER: IntentPrimaryCategory[] = [
   "stress",
   "confidence",
   "balance",
+  "willpower_perseverance",
 ];
 
 // Utility kept minimal; placeholder uses static template
@@ -81,6 +82,7 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
       stress: labels.stress[locale] ?? labels.stress.ro,
       confidence: labels.confidence[locale] ?? labels.confidence.ro,
       balance: labels.balance[locale] ?? labels.balance.ro,
+      willpower_perseverance: labels.willpower_perseverance[locale] ?? labels.willpower_perseverance.ro,
     };
   }, [locale]);
   const buildPrimaryOptions = useCallback(() => {

@@ -32,6 +32,7 @@ const FALLBACK_WORDS: IntentCloudWord[] = [
   { id: "calm_body", label: "Calm în corp", category: "stress" },
   { id: "focus_flow", label: "Focus în flux", category: "clarity" },
   { id: "habits", label: "Obiceiuri stabile", category: "balance" },
+  { id: "willpower_anchor", label: "Voință și continuitate", category: "willpower_perseverance" },
 ];
 
 type IntentCloudProps = {
@@ -39,6 +40,7 @@ type IntentCloudProps = {
   minSelection?: number;
   maxSelection?: number;
   words?: IntentCloudWord[];
+  distributionHint?: string;
 };
 
 const DEFAULT_MIN = INTENT_MIN_SELECTION;
@@ -49,6 +51,7 @@ export default function IntentCloud({
   minSelection = DEFAULT_MIN,
   maxSelection = DEFAULT_MAX,
   words: presetWords,
+  distributionHint,
 }: IntentCloudProps) {
   const { t, lang } = useI18n();
   const db = getDb();
@@ -216,6 +219,9 @@ export default function IntentCloud({
             <p className="t-body text-center">{helper}</p>
           </div>
         ) : null}
+        {distributionHint ? (
+          <p className="text-xs text-[#7B6B60]">{distributionHint}</p>
+        ) : null}
 
         <div className="mx-auto flex w-full max-w-xl flex-col gap-2">
           <div className="flex items-center justify-between text-xs font-medium text-[#2C2C2C]/70">
@@ -311,5 +317,9 @@ const CATEGORY_TINTS: Record<
   balance: {
     idle: "border-[#CDE4CB] bg-[#F4FBF2] text-[#2F4B32] hover:border-[#A9D5A6] hover:text-[#4B7A4F]",
     active: "border-[#7BCB7B] bg-[#E4F6E4] text-[#244226]",
+  },
+  willpower_perseverance: {
+    idle: "border-[#F2D3A2] bg-[#FFF8EF] text-[#6B3F07] hover:border-[#E2B773] hover:text-[#A35A10]",
+    active: "border-[#D08A2D] bg-[#FFEFD6] text-[#4A2802]",
   },
 };

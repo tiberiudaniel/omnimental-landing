@@ -22,6 +22,12 @@ const CATEGORY_TO_MODULE: Record<string, OmniKunoModuleId> = {
   performance: "decision_discernment",
   health: "energy_body",
   general: "emotional_balance",
+  willpower: "willpower_perseverance",
+  discipline: "willpower_perseverance",
+  perseverance: "willpower_perseverance",
+  resilience: "willpower_perseverance",
+  vointa: "willpower_perseverance",
+  perseverenta: "willpower_perseverance",
 };
 
 function PracticeInner() {

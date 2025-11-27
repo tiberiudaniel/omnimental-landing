@@ -4543,6 +4543,566 @@ export const OMNI_KUNO_MODULE_CONTENT: Record<string, OmniKunoModuleContent> = {
         ]
       }
     ]
+  },
+  "willpower_perseverance": {
+    "id": "willpower_perseverance",
+    "title": "Voință & Perseverență",
+    "arcIntros": {
+      "trezire": {
+        "id": "willpower_perseverance_arc_01_trezire",
+        "title": "Trezirea",
+        "body": "Voința nu este infinită. Este o resursă interioară care se consumă, se reîncarcă și se disciplinează prin atenție, ritm și grija de sine. Trezirea începe când înțelegi că nu „ești slab”, ci ești epuizat."
+      },
+      "primele_ciocniri": {
+        "id": "willpower_perseverance_arc_02_primele_ciocniri",
+        "title": "Primele Ciocniri",
+        "body": "Când încerci să schimbi obiceiuri, te lovești rapid de limitele energiei mentale. Perseverența nu e despre forțare continuă, ci despre dozare și a ști când să încetinești."
+      },
+      "profunzime": {
+        "id": "willpower_perseverance_arc_03_profunzime",
+        "title": "Profunzime",
+        "body": "Adevărata putere vine din a prioritiza. Nu poți face totul. Dar poți face un singur lucru bine, apoi altul. Perseverența este o artă a limitelor bine alese."
+      },
+      "maestrie": {
+        "id": "willpower_perseverance_arc_04_maestrie",
+        "title": "Maestrie",
+        "body": "Maestria nu înseamnă intensitate. Înseamnă continuitate. Pași mici, repetați calm. Ritm, nu efort eroic. Claritate, nu încăpățânare."
+      }
+    },
+    "lessons": [
+      {
+        "lessonId": "willpower_perseverance_protocol",
+        "screens": [
+          {
+            "kind": "protocol",
+            "title": "Protocolul de protecție a voinței",
+            "steps": [
+              "Aleg un singur obiectiv major pentru 7 zile.",
+              "Îl sparg în pași de maxim 10 minute.",
+              "Evit să încep două obiceiuri noi în aceeași zi.",
+              "Definiesc un „minim acceptabil” pentru zilele grele."
+            ],
+            "id": "willpower_perseverance_protocol-screen-1"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_01_definition",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Ce este voința",
+            "body": "Voința este energia mentală pe care o folosești pentru a începe o sarcină, a controla impulsurile și a rămâne pe direcția aleasă.",
+            "id": "willpower_perseverance_l1_01_definition-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Nu e infinită",
+            "body": "Voința se consumă pe parcursul zilei. Nu este o problemă de caracter, ci de biologie și energie mentală.",
+            "id": "willpower_perseverance_l1_01_definition-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Amintește-ți un moment în care voința ți-a scăzut fără motiv aparent."
+            ],
+            "helper": "Voința scade natural dacă nu este protejată.",
+            "id": "willpower_perseverance_l1_01_definition-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Voință",
+            "question": "Ce descrie cel mai bine voința?",
+            "options": [
+              "O energie finită.",
+              "O trăsătură fixă."
+            ],
+            "correctIndex": 0,
+            "id": "willpower_perseverance_l1_01_definition-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Conștientizare",
+            "prompt": "„Un moment recent în care mi-a căzut voința a fost ___.”",
+            "id": "willpower_perseverance_l1_01_definition-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_02_finite",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "O resursă limitată",
+            "body": "Voința nu poate susține multe schimbări simultan. Obiective multiple concurează pentru aceeași energie.",
+            "id": "willpower_perseverance_l1_02_finite-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Prea multe sarcini noi",
+            "body": "Cu cât introduci mai multe obiceiuri deodată, cu atât rata de eșec crește.",
+            "id": "willpower_perseverance_l1_02_finite-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Câte obiceiuri noi vrei să începi simultan?"
+            ],
+            "helper": "Voința se fragmentează ușor.",
+            "id": "willpower_perseverance_l1_02_finite-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Capacitate",
+            "question": "Ce se întâmplă când încerci să schimbi prea multe lucruri simultan?",
+            "options": [
+              "Devii mai disciplinat.",
+              "Scade probabilitatea de succes."
+            ],
+            "correctIndex": 1,
+            "id": "willpower_perseverance_l1_02_finite-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Simplificare",
+            "prompt": "„Un obicei pe care îl pot amâna pentru a păstra energie este ___.”",
+            "id": "willpower_perseverance_l1_02_finite-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_03_small_start",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Puterea începutului mic",
+            "body": "Un început mic este sustenabil. Un început mare este spectaculos, dar obosește rapid.",
+            "id": "willpower_perseverance_l1_03_small_start-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Intensitatea păcălește",
+            "body": "Îți promiți prea mult când ești motivat, dar nu vei putea susține intensitatea într-o zi normală.",
+            "id": "willpower_perseverance_l1_03_small_start-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observă",
+            "steps": [
+              "Gândește-te la un obicei început prea intens și abandonat."
+            ],
+            "helper": "Intensitatea nu este sustenabilă.",
+            "id": "willpower_perseverance_l1_03_small_start-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Start",
+            "question": "Care start este mai sigur?",
+            "options": [
+              "Mare și exigent.",
+              "Mic și repetabil."
+            ],
+            "correctIndex": 1,
+            "id": "willpower_perseverance_l1_03_small_start-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Ajustare",
+            "prompt": "„O variantă mai mică a obiectivului meu ar putea fi ___.”",
+            "id": "willpower_perseverance_l1_03_small_start-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_04_priority",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Nu poți face totul",
+            "body": "Voința ta are nevoie de direcție. Un singur obiectiv important îți stabilește ritmul.",
+            "id": "willpower_perseverance_l1_04_priority-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Prioritatea reală",
+            "body": "Un lucru clar făcut este mai valoros decât cinci intenții vagi.",
+            "id": "willpower_perseverance_l1_04_priority-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Care este obiectivul tău #1 pentru această săptămână?"
+            ],
+            "helper": "Prioritatea aduce claritate.",
+            "id": "willpower_perseverance_l1_04_priority-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Prioritate",
+            "question": "Ce îți protejează voința?",
+            "options": [
+              "Un singur obiectiv clar.",
+              "Mai multe obiective simultane."
+            ],
+            "correctIndex": 0,
+            "id": "willpower_perseverance_l1_04_priority-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Focus",
+            "prompt": "„Prioritatea mea reală pentru următoarele 7 zile este ___.”",
+            "id": "willpower_perseverance_l1_04_priority-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_05_minimum",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Pragul minim",
+            "body": "Zilele grele sunt inevitabile. Dacă nu ai un nivel minim acceptabil, vei abandona complet.",
+            "id": "willpower_perseverance_l1_05_minimum-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Continuitate în loc de perfecțiune",
+            "body": "„1 minut” în ziua grea păstrează ritualul viu.",
+            "id": "willpower_perseverance_l1_05_minimum-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observă",
+            "steps": [
+              "Care ar putea fi minimul tău pentru zilele grele?"
+            ],
+            "helper": "Continuitatea te salvează.",
+            "id": "willpower_perseverance_l1_05_minimum-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Minim",
+            "question": "Ce menține obiceiul pe termen lung?",
+            "options": [
+              "Perfecțunea.",
+              "Minimum acceptabil repetat."
+            ],
+            "correctIndex": 1,
+            "id": "willpower_perseverance_l1_05_minimum-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Prag",
+            "prompt": "„Minimul meu pentru zile grele ar putea fi ___.”",
+            "id": "willpower_perseverance_l1_05_minimum-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_06_energy_precedes",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Corpul conduce",
+            "body": "Fără energie fizică minimă, voința nu funcționează. Corpul obosit reduce autocontrolul.",
+            "id": "willpower_perseverance_l1_06_energy_precedes-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Voință și metabolism",
+            "body": "Fluctuațiile de glicemie, somnul slab sau lipsa hranei slăbesc voința.",
+            "id": "willpower_perseverance_l1_06_energy_precedes-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Ce se întâmplă cu voința ta când ești foarte obosit(ă)?"
+            ],
+            "helper": "Corpul influențează disciplina.",
+            "id": "willpower_perseverance_l1_06_energy_precedes-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Energie",
+            "question": "Ce susține voința?",
+            "options": [
+              "Mașina de cafea.",
+              "Un corp relativ stabil."
+            ],
+            "correctIndex": 1,
+            "id": "willpower_perseverance_l1_06_energy_precedes-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Conexiune",
+            "prompt": "„Un gest care îmi susține energia este ___.”",
+            "id": "willpower_perseverance_l1_06_energy_precedes-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_07_attempts",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Tentative repetate",
+            "body": "Perseverența nu înseamnă intensitate continuă, ci revenirea constantă după pauze.",
+            "id": "willpower_perseverance_l1_07_attempts-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Ritm, nu eroism",
+            "body": "Ritmul constant creează transformarea.",
+            "id": "willpower_perseverance_l1_07_attempts-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Amintește-ți o situație în care ai revenit după o pauză."
+            ],
+            "helper": "Revenirea este parte din proces.",
+            "id": "willpower_perseverance_l1_07_attempts-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Perseverență",
+            "question": "Ce definește perseverența?",
+            "options": [
+              "Forță continuă.",
+              "Revenire repetată."
+            ],
+            "correctIndex": 1,
+            "id": "willpower_perseverance_l1_07_attempts-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Revenire",
+            "prompt": "„În zona ___ pot reveni mâine cu un pas mic.”",
+            "id": "willpower_perseverance_l1_07_attempts-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_08_environment",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Mediul câștigă",
+            "body": "Voința ta este puternică, dar mediul este mai puternic. Elimină fricțiunile.",
+            "id": "willpower_perseverance_l1_08_environment-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Fricțiuni mici",
+            "body": "Ce este greu de început trebuie simplificat vizibil.",
+            "id": "willpower_perseverance_l1_08_environment-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Ce obstacol de mediu îți consumă cel mai mult voința?"
+            ],
+            "helper": "Mediul poate conserva energie.",
+            "id": "willpower_perseverance_l1_08_environment-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Mediu",
+            "question": "Ce rol are mediul?",
+            "options": [
+              "Îți consumă sau conservă voința.",
+              "Nu are relevanță."
+            ],
+            "correctIndex": 0,
+            "id": "willpower_perseverance_l1_08_environment-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Ajustare",
+            "prompt": "„Un obstacol de mediu pe care îl pot elimina este ___.”",
+            "id": "willpower_perseverance_l1_08_environment-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_09_mental_friction",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Fricțiunea invizibilă",
+            "body": "Uneori nu acțiunea este dificilă, ci gândurile asociate începerii.",
+            "id": "willpower_perseverance_l1_09_mental_friction-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Claritate, nu presiune",
+            "body": "O întrebare simplă ajută: „Care este primul pas de 2 minute?”",
+            "id": "willpower_perseverance_l1_09_mental_friction-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Ce gând îți îngreunează cel mai mult începutul?"
+            ],
+            "helper": "Gândurile pot crea rezistență.",
+            "id": "willpower_perseverance_l1_09_mental_friction-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Fricțiune",
+            "question": "Ce reduce fricțiunea mentală?",
+            "options": [
+              "Perfecționismul.",
+              "Să identifici primul pas mic."
+            ],
+            "correctIndex": 1,
+            "id": "willpower_perseverance_l1_09_mental_friction-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Claritate",
+            "prompt": "„Primul pas mic pe care îl pot face este ___.”",
+            "id": "willpower_perseverance_l1_09_mental_friction-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_10_pauses",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Pauza întărește",
+            "body": "Voința se reîncarcă în pauze, nu în forțare.",
+            "id": "willpower_perseverance_l1_10_pauses-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Pauze mici",
+            "body": "O pauză de 2 minute poate crește disciplina cu 20%.",
+            "id": "willpower_perseverance_l1_10_pauses-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Ce pauză scurtă te-ar ajuta azi?"
+            ],
+            "helper": "Pauza nu este slăbiciune.",
+            "id": "willpower_perseverance_l1_10_pauses-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Pauză",
+            "question": "Ce face pauza?",
+            "options": [
+              "Slăbește ritmul.",
+              "Reîncarcă voința."
+            ],
+            "correctIndex": 1,
+            "id": "willpower_perseverance_l1_10_pauses-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Resetare",
+            "prompt": "„O pauză scurtă pe care o pot face azi este ___.”",
+            "id": "willpower_perseverance_l1_10_pauses-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_11_tracking",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Monitorizare calmă",
+            "body": "Nu trebuie să notezi totul. Dar un mic semn zilnic îți păstrează continuitatea vizibilă.",
+            "id": "willpower_perseverance_l1_11_tracking-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Vizibilitate",
+            "body": "Vizibilitatea te menține pe direcție mai mult decât autocritica.",
+            "id": "willpower_perseverance_l1_11_tracking-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Ce semn vizibil ai putea folosi (bifat, bară, punct)?"
+            ],
+            "helper": "Vizibilitatea creează progres.",
+            "id": "willpower_perseverance_l1_11_tracking-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Monitorizare",
+            "question": "Ce susține perseverența?",
+            "options": [
+              "Să nu urmărești nimic.",
+              "Monitorizare blândă și vizibilă."
+            ],
+            "correctIndex": 1,
+            "id": "willpower_perseverance_l1_11_tracking-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Alegere",
+            "prompt": "„Semnul meu simplu de monitorizare ar putea fi ___.”",
+            "id": "willpower_perseverance_l1_11_tracking-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "willpower_perseverance_l1_12_ritual",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Ritualul de început",
+            "body": "Un ritual scurt și repetabil reduce fricțiunea de început.",
+            "id": "willpower_perseverance_l1_12_ritual-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "3 pași simpli",
+            "body": "Clarific pasul → pregătesc minimul → încep 2 minute.",
+            "id": "willpower_perseverance_l1_12_ritual-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Ce ritual simplu ai putea crea pentru tine?"
+            ],
+            "helper": "Ritualul reduce rezistența.",
+            "id": "willpower_perseverance_l1_12_ritual-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Ritual",
+            "question": "Ce face un ritual?",
+            "options": [
+              "Încarcă voința.",
+              "Scade fricțiunea de început."
+            ],
+            "correctIndex": 1,
+            "id": "willpower_perseverance_l1_12_ritual-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Ritualul meu",
+            "prompt": "„Ritualul meu simplu ar putea fi: întâi ___, apoi ___.”",
+            "id": "willpower_perseverance_l1_12_ritual-screen-5"
+          }
+        ]
+      }
+    ]
   }
 };
 
@@ -4677,6 +5237,28 @@ export const OMNI_KUNO_ARC_INTROS: OmniKunoArcIntroGroups = {
       "id": "decision_discernment_arc_04_maestrie",
       "title": "Maestrie",
       "body": "Maestria în decizii nu înseamnă să alegi perfect de fiecare dată. Înseamnă să știi să te oprești o clipă, să clarifici ce vrei, ce riști și ce e important pentru tine, apoi să accepți consecințele cu calm. Chiar și când iese altfel decât ai sperat, te poți uita înapoi și spune: „Am ales cât de bine am putut, în acord cu mine.”"
+    }
+  },
+  "willpower_perseverance": {
+    "trezire": {
+      "id": "willpower_perseverance_arc_01_trezire",
+      "title": "Trezirea",
+      "body": "Voința nu este infinită. Este o resursă interioară care se consumă, se reîncarcă și se disciplinează prin atenție, ritm și grija de sine. Trezirea începe când înțelegi că nu „ești slab”, ci ești epuizat."
+    },
+    "primele_ciocniri": {
+      "id": "willpower_perseverance_arc_02_primele_ciocniri",
+      "title": "Primele Ciocniri",
+      "body": "Când încerci să schimbi obiceiuri, te lovești rapid de limitele energiei mentale. Perseverența nu e despre forțare continuă, ci despre dozare și a ști când să încetinești."
+    },
+    "profunzime": {
+      "id": "willpower_perseverance_arc_03_profunzime",
+      "title": "Profunzime",
+      "body": "Adevărata putere vine din a prioritiza. Nu poți face totul. Dar poți face un singur lucru bine, apoi altul. Perseverența este o artă a limitelor bine alese."
+    },
+    "maestrie": {
+      "id": "willpower_perseverance_arc_04_maestrie",
+      "title": "Maestrie",
+      "body": "Maestria nu înseamnă intensitate. Înseamnă continuitate. Pași mici, repetați calm. Ritm, nu efort eroic. Claritate, nu încăpățânare."
     }
   }
 };
@@ -8986,6 +9568,538 @@ export const OMNI_KUNO_LESSON_CONTENT: Record<string, OmniKunoLessonContent> = {
         "title": "Ritual mental",
         "prompt": "„Pentru a-mi calma corpul când iau decizii, pot repeta: ___.”",
         "id": "decision_discernment_l3_14_mind_to_body-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_protocol": {
+    "lessonId": "willpower_perseverance_protocol",
+    "screens": [
+      {
+        "kind": "protocol",
+        "title": "Protocolul de protecție a voinței",
+        "steps": [
+          "Aleg un singur obiectiv major pentru 7 zile.",
+          "Îl sparg în pași de maxim 10 minute.",
+          "Evit să încep două obiceiuri noi în aceeași zi.",
+          "Definiesc un „minim acceptabil” pentru zilele grele."
+        ],
+        "id": "willpower_perseverance_protocol-screen-1"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_01_definition": {
+    "lessonId": "willpower_perseverance_l1_01_definition",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Ce este voința",
+        "body": "Voința este energia mentală pe care o folosești pentru a începe o sarcină, a controla impulsurile și a rămâne pe direcția aleasă.",
+        "id": "willpower_perseverance_l1_01_definition-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Nu e infinită",
+        "body": "Voința se consumă pe parcursul zilei. Nu este o problemă de caracter, ci de biologie și energie mentală.",
+        "id": "willpower_perseverance_l1_01_definition-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Amintește-ți un moment în care voința ți-a scăzut fără motiv aparent."
+        ],
+        "helper": "Voința scade natural dacă nu este protejată.",
+        "id": "willpower_perseverance_l1_01_definition-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Voință",
+        "question": "Ce descrie cel mai bine voința?",
+        "options": [
+          "O energie finită.",
+          "O trăsătură fixă."
+        ],
+        "correctIndex": 0,
+        "id": "willpower_perseverance_l1_01_definition-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Conștientizare",
+        "prompt": "„Un moment recent în care mi-a căzut voința a fost ___.”",
+        "id": "willpower_perseverance_l1_01_definition-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_02_finite": {
+    "lessonId": "willpower_perseverance_l1_02_finite",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "O resursă limitată",
+        "body": "Voința nu poate susține multe schimbări simultan. Obiective multiple concurează pentru aceeași energie.",
+        "id": "willpower_perseverance_l1_02_finite-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Prea multe sarcini noi",
+        "body": "Cu cât introduci mai multe obiceiuri deodată, cu atât rata de eșec crește.",
+        "id": "willpower_perseverance_l1_02_finite-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Câte obiceiuri noi vrei să începi simultan?"
+        ],
+        "helper": "Voința se fragmentează ușor.",
+        "id": "willpower_perseverance_l1_02_finite-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Capacitate",
+        "question": "Ce se întâmplă când încerci să schimbi prea multe lucruri simultan?",
+        "options": [
+          "Devii mai disciplinat.",
+          "Scade probabilitatea de succes."
+        ],
+        "correctIndex": 1,
+        "id": "willpower_perseverance_l1_02_finite-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Simplificare",
+        "prompt": "„Un obicei pe care îl pot amâna pentru a păstra energie este ___.”",
+        "id": "willpower_perseverance_l1_02_finite-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_03_small_start": {
+    "lessonId": "willpower_perseverance_l1_03_small_start",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Puterea începutului mic",
+        "body": "Un început mic este sustenabil. Un început mare este spectaculos, dar obosește rapid.",
+        "id": "willpower_perseverance_l1_03_small_start-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Intensitatea păcălește",
+        "body": "Îți promiți prea mult când ești motivat, dar nu vei putea susține intensitatea într-o zi normală.",
+        "id": "willpower_perseverance_l1_03_small_start-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observă",
+        "steps": [
+          "Gândește-te la un obicei început prea intens și abandonat."
+        ],
+        "helper": "Intensitatea nu este sustenabilă.",
+        "id": "willpower_perseverance_l1_03_small_start-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Start",
+        "question": "Care start este mai sigur?",
+        "options": [
+          "Mare și exigent.",
+          "Mic și repetabil."
+        ],
+        "correctIndex": 1,
+        "id": "willpower_perseverance_l1_03_small_start-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Ajustare",
+        "prompt": "„O variantă mai mică a obiectivului meu ar putea fi ___.”",
+        "id": "willpower_perseverance_l1_03_small_start-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_04_priority": {
+    "lessonId": "willpower_perseverance_l1_04_priority",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Nu poți face totul",
+        "body": "Voința ta are nevoie de direcție. Un singur obiectiv important îți stabilește ritmul.",
+        "id": "willpower_perseverance_l1_04_priority-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Prioritatea reală",
+        "body": "Un lucru clar făcut este mai valoros decât cinci intenții vagi.",
+        "id": "willpower_perseverance_l1_04_priority-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Care este obiectivul tău #1 pentru această săptămână?"
+        ],
+        "helper": "Prioritatea aduce claritate.",
+        "id": "willpower_perseverance_l1_04_priority-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Prioritate",
+        "question": "Ce îți protejează voința?",
+        "options": [
+          "Un singur obiectiv clar.",
+          "Mai multe obiective simultane."
+        ],
+        "correctIndex": 0,
+        "id": "willpower_perseverance_l1_04_priority-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Focus",
+        "prompt": "„Prioritatea mea reală pentru următoarele 7 zile este ___.”",
+        "id": "willpower_perseverance_l1_04_priority-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_05_minimum": {
+    "lessonId": "willpower_perseverance_l1_05_minimum",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Pragul minim",
+        "body": "Zilele grele sunt inevitabile. Dacă nu ai un nivel minim acceptabil, vei abandona complet.",
+        "id": "willpower_perseverance_l1_05_minimum-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Continuitate în loc de perfecțiune",
+        "body": "„1 minut” în ziua grea păstrează ritualul viu.",
+        "id": "willpower_perseverance_l1_05_minimum-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observă",
+        "steps": [
+          "Care ar putea fi minimul tău pentru zilele grele?"
+        ],
+        "helper": "Continuitatea te salvează.",
+        "id": "willpower_perseverance_l1_05_minimum-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Minim",
+        "question": "Ce menține obiceiul pe termen lung?",
+        "options": [
+          "Perfecțunea.",
+          "Minimum acceptabil repetat."
+        ],
+        "correctIndex": 1,
+        "id": "willpower_perseverance_l1_05_minimum-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Prag",
+        "prompt": "„Minimul meu pentru zile grele ar putea fi ___.”",
+        "id": "willpower_perseverance_l1_05_minimum-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_06_energy_precedes": {
+    "lessonId": "willpower_perseverance_l1_06_energy_precedes",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Corpul conduce",
+        "body": "Fără energie fizică minimă, voința nu funcționează. Corpul obosit reduce autocontrolul.",
+        "id": "willpower_perseverance_l1_06_energy_precedes-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Voință și metabolism",
+        "body": "Fluctuațiile de glicemie, somnul slab sau lipsa hranei slăbesc voința.",
+        "id": "willpower_perseverance_l1_06_energy_precedes-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Ce se întâmplă cu voința ta când ești foarte obosit(ă)?"
+        ],
+        "helper": "Corpul influențează disciplina.",
+        "id": "willpower_perseverance_l1_06_energy_precedes-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Energie",
+        "question": "Ce susține voința?",
+        "options": [
+          "Mașina de cafea.",
+          "Un corp relativ stabil."
+        ],
+        "correctIndex": 1,
+        "id": "willpower_perseverance_l1_06_energy_precedes-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Conexiune",
+        "prompt": "„Un gest care îmi susține energia este ___.”",
+        "id": "willpower_perseverance_l1_06_energy_precedes-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_07_attempts": {
+    "lessonId": "willpower_perseverance_l1_07_attempts",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Tentative repetate",
+        "body": "Perseverența nu înseamnă intensitate continuă, ci revenirea constantă după pauze.",
+        "id": "willpower_perseverance_l1_07_attempts-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Ritm, nu eroism",
+        "body": "Ritmul constant creează transformarea.",
+        "id": "willpower_perseverance_l1_07_attempts-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Amintește-ți o situație în care ai revenit după o pauză."
+        ],
+        "helper": "Revenirea este parte din proces.",
+        "id": "willpower_perseverance_l1_07_attempts-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Perseverență",
+        "question": "Ce definește perseverența?",
+        "options": [
+          "Forță continuă.",
+          "Revenire repetată."
+        ],
+        "correctIndex": 1,
+        "id": "willpower_perseverance_l1_07_attempts-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Revenire",
+        "prompt": "„În zona ___ pot reveni mâine cu un pas mic.”",
+        "id": "willpower_perseverance_l1_07_attempts-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_08_environment": {
+    "lessonId": "willpower_perseverance_l1_08_environment",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Mediul câștigă",
+        "body": "Voința ta este puternică, dar mediul este mai puternic. Elimină fricțiunile.",
+        "id": "willpower_perseverance_l1_08_environment-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Fricțiuni mici",
+        "body": "Ce este greu de început trebuie simplificat vizibil.",
+        "id": "willpower_perseverance_l1_08_environment-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Ce obstacol de mediu îți consumă cel mai mult voința?"
+        ],
+        "helper": "Mediul poate conserva energie.",
+        "id": "willpower_perseverance_l1_08_environment-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Mediu",
+        "question": "Ce rol are mediul?",
+        "options": [
+          "Îți consumă sau conservă voința.",
+          "Nu are relevanță."
+        ],
+        "correctIndex": 0,
+        "id": "willpower_perseverance_l1_08_environment-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Ajustare",
+        "prompt": "„Un obstacol de mediu pe care îl pot elimina este ___.”",
+        "id": "willpower_perseverance_l1_08_environment-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_09_mental_friction": {
+    "lessonId": "willpower_perseverance_l1_09_mental_friction",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Fricțiunea invizibilă",
+        "body": "Uneori nu acțiunea este dificilă, ci gândurile asociate începerii.",
+        "id": "willpower_perseverance_l1_09_mental_friction-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Claritate, nu presiune",
+        "body": "O întrebare simplă ajută: „Care este primul pas de 2 minute?”",
+        "id": "willpower_perseverance_l1_09_mental_friction-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Ce gând îți îngreunează cel mai mult începutul?"
+        ],
+        "helper": "Gândurile pot crea rezistență.",
+        "id": "willpower_perseverance_l1_09_mental_friction-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Fricțiune",
+        "question": "Ce reduce fricțiunea mentală?",
+        "options": [
+          "Perfecționismul.",
+          "Să identifici primul pas mic."
+        ],
+        "correctIndex": 1,
+        "id": "willpower_perseverance_l1_09_mental_friction-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Claritate",
+        "prompt": "„Primul pas mic pe care îl pot face este ___.”",
+        "id": "willpower_perseverance_l1_09_mental_friction-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_10_pauses": {
+    "lessonId": "willpower_perseverance_l1_10_pauses",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Pauza întărește",
+        "body": "Voința se reîncarcă în pauze, nu în forțare.",
+        "id": "willpower_perseverance_l1_10_pauses-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Pauze mici",
+        "body": "O pauză de 2 minute poate crește disciplina cu 20%.",
+        "id": "willpower_perseverance_l1_10_pauses-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Ce pauză scurtă te-ar ajuta azi?"
+        ],
+        "helper": "Pauza nu este slăbiciune.",
+        "id": "willpower_perseverance_l1_10_pauses-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Pauză",
+        "question": "Ce face pauza?",
+        "options": [
+          "Slăbește ritmul.",
+          "Reîncarcă voința."
+        ],
+        "correctIndex": 1,
+        "id": "willpower_perseverance_l1_10_pauses-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Resetare",
+        "prompt": "„O pauză scurtă pe care o pot face azi este ___.”",
+        "id": "willpower_perseverance_l1_10_pauses-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_11_tracking": {
+    "lessonId": "willpower_perseverance_l1_11_tracking",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Monitorizare calmă",
+        "body": "Nu trebuie să notezi totul. Dar un mic semn zilnic îți păstrează continuitatea vizibilă.",
+        "id": "willpower_perseverance_l1_11_tracking-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Vizibilitate",
+        "body": "Vizibilitatea te menține pe direcție mai mult decât autocritica.",
+        "id": "willpower_perseverance_l1_11_tracking-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Ce semn vizibil ai putea folosi (bifat, bară, punct)?"
+        ],
+        "helper": "Vizibilitatea creează progres.",
+        "id": "willpower_perseverance_l1_11_tracking-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Monitorizare",
+        "question": "Ce susține perseverența?",
+        "options": [
+          "Să nu urmărești nimic.",
+          "Monitorizare blândă și vizibilă."
+        ],
+        "correctIndex": 1,
+        "id": "willpower_perseverance_l1_11_tracking-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Alegere",
+        "prompt": "„Semnul meu simplu de monitorizare ar putea fi ___.”",
+        "id": "willpower_perseverance_l1_11_tracking-screen-5"
+      }
+    ]
+  },
+  "willpower_perseverance_l1_12_ritual": {
+    "lessonId": "willpower_perseverance_l1_12_ritual",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Ritualul de început",
+        "body": "Un ritual scurt și repetabil reduce fricțiunea de început.",
+        "id": "willpower_perseverance_l1_12_ritual-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "3 pași simpli",
+        "body": "Clarific pasul → pregătesc minimul → încep 2 minute.",
+        "id": "willpower_perseverance_l1_12_ritual-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Ce ritual simplu ai putea crea pentru tine?"
+        ],
+        "helper": "Ritualul reduce rezistența.",
+        "id": "willpower_perseverance_l1_12_ritual-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Ritual",
+        "question": "Ce face un ritual?",
+        "options": [
+          "Încarcă voința.",
+          "Scade fricțiunea de început."
+        ],
+        "correctIndex": 1,
+        "id": "willpower_perseverance_l1_12_ritual-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Ritualul meu",
+        "prompt": "„Ritualul meu simplu ar putea fi: întâi ___, apoi ___.”",
+        "id": "willpower_perseverance_l1_12_ritual-screen-5"
       }
     ]
   }

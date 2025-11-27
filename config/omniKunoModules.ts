@@ -1,4 +1,4 @@
-export type OmniKunoLegacyModuleKey = "calm" | "focus" | "relations" | "energy" | "performance" | "sense";
+export type OmniKunoLegacyModuleKey = "calm" | "focus" | "relations" | "energy" | "performance" | "sense" | "willpower";
 
 type ModuleMeta = {
   id: string;
@@ -43,6 +43,12 @@ export const OMNIKUNO_MODULES = [
     label: { ro: "Discernământ & Decizii", en: "Discernment & Decisions" },
     legacyKey: "performance",
     aliases: ["performance", "decision", "decisions", "discernment", "direction"],
+  },
+  {
+    id: "willpower_perseverance",
+    label: { ro: "Voință & Perseverență", en: "Willpower & Perseverance" },
+    legacyKey: "willpower",
+    aliases: ["willpower", "perseverance", "discipline", "resilience"],
   },
 ] as const satisfies readonly ModuleMeta[];
 

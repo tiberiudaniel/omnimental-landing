@@ -454,5 +454,69 @@ export const OMNI_KUNO_FINAL_TESTS: Record<string, OmniKunoFinalTest> = {
       badge: "Badge · Ieși din blocaj și alegi în acord cu tine. Următorul pas: folosește aceste decizii în modulele de execuție.",
     },
   },
+  willpower_perseverance_final_test: {
+    testId: "willpower_perseverance_final_test",
+    moduleId: "willpower_perseverance",
+    intro: {
+      title: "Mini-Test — Voință & Perseverență",
+      body: "Acest test scurt verifică ce ai integrat despre voință ca resursă finită, pași mici, priorități și ritualuri de consistență.",
+    },
+    questions: [
+      {
+        id: "willpower_final_q1",
+        type: "singleChoice",
+        question: "Ce descrie corect voința?",
+        options: [
+          "Este o energie finită care trebuie protejată.",
+          "Este infinită și ține doar de motivație.",
+        ],
+        correctIndex: 0,
+      },
+      {
+        id: "willpower_final_q2",
+        type: "scenario",
+        question:
+          "Încerci să începi 4 obiceiuri noi în aceeași săptămână și deja ai obosit. Ce alegi conform modulului?",
+        options: [
+          "Continui așa, este doar o chestiune de disciplină.",
+          "Alegi un singur obicei principal și reduci restul pentru a păstra energie.",
+          "Renunți complet la orice obicei.",
+        ],
+        correctIndex: 1,
+      },
+      {
+        id: "willpower_final_q3",
+        type: "singleChoice",
+        question: "Ce start este mai sigur pe termen lung?",
+        options: [
+          "Un start intens și mare.",
+          "Un start mic și repetabil.",
+        ],
+        correctIndex: 1,
+      },
+      {
+        id: "willpower_final_q4",
+        type: "fillBlank",
+        question: "Completează: „În zilele grele, continuitatea este păstrată prin ___.”",
+        answer: "minimum acceptabil",
+        variations: ["minimul acceptabil", "nivelul minim acceptabil"],
+      },
+      {
+        id: "willpower_final_q5",
+        type: "reflectionShort",
+        question: "Scrie o propoziție scurtă:",
+        prompt: "„Un lucru concret pe care îl voi aplica în următoarele 7 zile este ___.”",
+      },
+    ],
+    completion: {
+      title: "Ai finalizat modulul Voință & Perseverență.",
+      body: "Continuă să revii la pașii mici, la minimul acceptabil și la ritualul de protecție a energiei ori de câte ori simți oboseală mentală.",
+      suggestions: [
+        "Aplică protocolul de protecție a voinței pentru următoarele 7 zile pe un singur obiectiv.",
+        "Notează zilnic minimul acceptabil și revizuiește-l la final de săptămână.",
+      ],
+      badge: "Badge · Îți protejezi voința și perseverezi cu pași mici. Următorul pas: combină acest modul cu ritmurile de Energie & Corp.",
+    },
+  },
 
 };

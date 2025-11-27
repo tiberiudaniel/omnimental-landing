@@ -77,6 +77,7 @@ function mapTokensToIndicators(tokens: Record<string, number>, lang: "ro" | "en"
       else if (/energ|obos|somn|dorm|echilibru|obicei|stil|sanat/i.test(w)) add("energy_body", c);
       else if (/product|obiectiv|tinta|perform|motiva|curaj|eficac|progres/i.test(w)) add("decision_discernment", c);
       else if (/sens|valo|identit|incredere|rost/i.test(w)) add("self_trust", c);
+      else if (/voin|disciplin|persever|rezilien|ritual|consist|minim/i.test(w)) add("willpower_perseverance", c);
     } else {
       if (/stress|anxiet|panic|relax|calm|overwhelm|pressure/i.test(w)) add("emotional_balance", c);
       else if (/clarit|direct|decid|decision|focus|stuck|vision|choose/i.test(w)) add("focus_clarity", c);
@@ -84,6 +85,7 @@ function mapTokensToIndicators(tokens: Record<string, number>, lang: "ro" | "en"
       else if (/energy|tired|sleep|insom|balance|habit|lifestyle|health/i.test(w)) add("energy_body", c);
       else if (/product|goal|target|perform|motivat|courage|efficac|progress/i.test(w)) add("decision_discernment", c);
       else if (/meaning|purpose|identity|values|sense|trust/i.test(w)) add("self_trust", c);
+      else if (/willpower|disciplin|persever|resilien|ritual|consisten/i.test(w)) add("willpower_perseverance", c);
     }
   }
   return ic;

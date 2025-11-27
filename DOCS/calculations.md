@@ -10,6 +10,17 @@ Calculi și surse — OmniMental
   - În pasul „rezumat intenție”: `userIntentSnapshots` + `userIntentInsights`.
   - Mirror în profil: `userProgressFacts.intent` via `recordIntentProgressFact`.
 
+### Intent Cloud – reguli de afișare (v3)
+- Lista brută rămâne `intentCloudList` din i18n (poate avea oricâte item-uri).
+- `generateAdaptiveIntentCloudWords` extrage **același număr de afirmații din fiecare categorie**:
+  - Desktop & tablet: `itemsPerCategory = 5` ⇒ 6 categorii × 5 = **30** chip-uri.
+  - Mobil (`viewport < 640px`): `itemsPerCategory = 4` ⇒ **24** chip-uri.
+- Numerele pot fi ajustate prin env:
+  - `NEXT_PUBLIC_CLOUD_ITEMS_PER_CATEGORY` (implicit `5`).
+  - `NEXT_PUBLIC_CLOUD_ITEMS_PER_CATEGORY_MOBILE` (implicit `4`).
+- Nu mai există bias de volum pentru categoria detectată la inputul liber; singura diferență este ordinea: dacă `firstIntentCategory` este definită, chip-urile respective sunt afișate primele, dar tot 5/4 bucăți.
+- `IntentCloud` afișează un helper scurt („Lista include 5 afirmații din fiecare temă principală”) astfel încât userul știe din start la ce se uită.
+
 2) Agregare categorii (sursa unică)
 - Fișier: `lib/intentSelection.ts`.
   - `INTENT_MIN_SELECTION = 5`, `INTENT_MAX_SELECTION = 7`.

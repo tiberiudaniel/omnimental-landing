@@ -297,7 +297,8 @@
     "career": "professional pressure and performance",
     "clarity": "clarity and direction",
     "boundaries": "healthy boundaries",
-    "selfTrust": "self-trust and identity"
+    "selfTrust": "self-trust and identity",
+    "willpower_perseverance": "willpower and perseverance"
   },
   "reflectionTwoIntro": "From your selections, it looks like you need {{categorySummary}}.",
   "reflectionTwoBody": "Here are two paths you can start with right now. Pick the one that feels right in this moment.",
@@ -360,7 +361,17 @@
     { "key": "career_productive", "label": "I want to be more productive.", "category": "career" },
     { "key": "clarity_mind", "label": "I want to understand my mind.", "category": "clarity" },
     { "key": "clarity_adrift", "label": "I feel adrift.", "category": "clarity" },
-    { "key": "clarity_meaning", "label": "I want to feel I'm living with purpose.", "category": "clarity" }
+    { "key": "clarity_meaning", "label": "I want to feel I'm living with purpose.", "category": "clarity" },
+    { "key": "wp_1", "label": "I want more willpower every day.", "category": "willpower_perseverance" },
+    { "key": "wp_2", "label": "I lose motivation quickly when it gets hard.", "category": "willpower_perseverance" },
+    { "key": "wp_3", "label": "It's hard to keep habits consistent over time.", "category": "willpower_perseverance" },
+    { "key": "wp_4", "label": "I delay and avoid important things.", "category": "willpower_perseverance" },
+    { "key": "wp_5", "label": "I start intense and then give up soon after.", "category": "willpower_perseverance" },
+    { "key": "wp_6", "label": "I want to take projects all the way to the finish.", "category": "willpower_perseverance" },
+    { "key": "wp_7", "label": "I struggle to keep promises to myself.", "category": "willpower_perseverance" },
+    { "key": "wp_8", "label": "I swing between highly disciplined and chaotic stretches.", "category": "willpower_perseverance" },
+    { "key": "wp_9", "label": "I want to learn to come back after breaks or failures.", "category": "willpower_perseverance" },
+    { "key": "wp_10", "label": "My willpower runs out too fast.", "category": "willpower_perseverance" }
   ],
   "chooseOption": "Choose the option that suits you",
   "individual": "Individual Sessions",

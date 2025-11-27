@@ -131,6 +131,7 @@ export function getDemoProgressFacts(locale: "ro" | "en" = "ro", variant: 1 | 2 
         relationships_communication: 3,
         decision_discernment: 3,
         self_trust: 1,
+        willpower_perseverance: 2,
       },
       updatedAt: now,
     },

@@ -446,6 +446,8 @@ export default function ProgressDashboard({
       anxiety: lang === "ro" ? "Anxietate" : "Anxiety",
       stress: lang === "ro" ? "Stres" : "Stress",
       balance: lang === "ro" ? "Echilibru emoțional" : "Emotional balance",
+      willpower_perseverance: lang === "ro" ? "Voință & Perseverență" : "Willpower & Perseverance",
+      discipline: lang === "ro" ? "Voință & Perseverență" : "Willpower & Perseverance",
     };
     const normalizedCategory = topCategory ? topCategory.toLowerCase() : undefined;
     const resolvedModuleId = resolveModuleId(normalizedCategory);

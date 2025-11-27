@@ -217,7 +217,17 @@
     { "key": "career_productive", "label": "Vreau să fiu mai productiv.", "category": "career" },
     { "key": "clarity_mind", "label": "Vreau să-mi înțeleg mintea.", "category": "clarity" },
     { "key": "clarity_adrift", "label": "Mă simt în derivă.", "category": "clarity" },
-    { "key": "clarity_meaning", "label": "Vreau să simt că trăiesc cu sens.", "category": "clarity" }
+    { "key": "clarity_meaning", "label": "Vreau să simt că trăiesc cu sens.", "category": "clarity" },
+    { "key": "wp_1", "label": "Vreau să am mai multă voință zi de zi.", "category": "willpower_perseverance" },
+    { "key": "wp_2", "label": "Îmi pierd repede motivația când devine greu.", "category": "willpower_perseverance" },
+    { "key": "wp_3", "label": "Îmi este greu să mențin obiceiurile în timp.", "category": "willpower_perseverance" },
+    { "key": "wp_4", "label": "Amân și evit lucrurile importante.", "category": "willpower_perseverance" },
+    { "key": "wp_5", "label": "Pornez tare, dar abandonez la scurt timp.", "category": "willpower_perseverance" },
+    { "key": "wp_6", "label": "Vreau să duc proiectele până la capăt.", "category": "willpower_perseverance" },
+    { "key": "wp_7", "label": "Îmi este greu să îmi respect promisiunile față de mine.", "category": "willpower_perseverance" },
+    { "key": "wp_8", "label": "Oscilez între perioade foarte disciplinate și perioade de haos.", "category": "willpower_perseverance" },
+    { "key": "wp_9", "label": "Vreau să învăț să revin după pauze și eșecuri.", "category": "willpower_perseverance" },
+    { "key": "wp_10", "label": "Simt că voința mea se termină prea repede.", "category": "willpower_perseverance" }
   ],
   "intentCloudSliderLabel": "Cât de intens simți asta acum?",
   "intentMotivationTitle": "„Claritatea senzațiilor e combustibilul clarității în decizii.”",
@@ -322,7 +332,8 @@
     "career": "presiune profesională și performanță",
     "clarity": "claritate și direcție",
     "boundaries": "limite sănătoase",
-    "selfTrust": "încredere și identitate"
+    "selfTrust": "încredere și identitate",
+    "willpower_perseverance": "voință și perseverență"
   },
   "reflectionTwoIntro": "Din ce ai ales, reiese că îți dorești {{categorySummary}}.",
   "reflectionTwoBody": "Îți propun două căi prin care poți începe să lucrezi la asta chiar acum. Alege-o pe cea care se simte potrivită acum.",

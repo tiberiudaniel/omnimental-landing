@@ -49,6 +49,7 @@ type Props = {
   words?: IntentCloudWord[];
   cloudKey?: string;
   onIntentComplete: (result: IntentCloudResult) => void;
+  cloudDistributionHint?: string;
 
   // Intent summary
   isSavingIntent: boolean;
@@ -124,6 +125,7 @@ export default function WizardRouter(props: Props) {
     words,
     cloudKey,
     onIntentComplete,
+    cloudDistributionHint,
     isSavingIntent,
     saveError,
     savingLabel,
@@ -233,16 +235,17 @@ export default function WizardRouter(props: Props) {
               </div>
             </div>
             <div className="mt-2">
-              <IntentCloud
-                key={cloudKey}
-                minSelection={minSelection}
-                maxSelection={maxSelection}
-                onComplete={(result) => {
-                  onIntentComplete(result);
-                  navigateToStep("reflectionSummary");
-                }}
+             <IntentCloud
+               key={cloudKey}
+               minSelection={minSelection}
+               maxSelection={maxSelection}
+               onComplete={(result) => {
+                 onIntentComplete(result);
+                 navigateToStep("reflectionSummary");
+               }}
                 words={words}
-              />
+                distributionHint={cloudDistributionHint}
+             />
             </div>
           </div>
         </section>

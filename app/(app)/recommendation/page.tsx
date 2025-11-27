@@ -282,46 +282,6 @@ function RecommendationContent() {
 
   // Arrow animates via key change; no setState in effect
 
-  if (needsAccount) {
-    return (
-      <div className="min-h-screen bg-[#FAF7F2]">
-        <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={redirectToAuth} />
-        <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-        <main className="px-4 py-12 md:px-8">
-          <section className="mx-auto max-w-3xl rounded-[18px] border border-[#E4D8CE] bg-white px-6 py-8 text-center shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]">
-              {lang === "ro" ? "Recomandările tale" : "Your recommendations"}
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold text-[#2C2C2C]">
-              {lang === "ro" ? "Salvează traseul și autentifică-te pentru a continua" : "Save your path and sign in to continue"}
-            </h1>
-            <p className="mt-3 text-sm text-[#4A3A30]/80">
-              {lang === "ro"
-                ? "Ai nevoie de un cont complet pentru a vedea istoricul recomandărilor. Finalizează wizardul și apoi creează contul ca să rămână salvate toate datele."
-                : "A full account is required to see the recommendations hub. Finish the wizard and create your account to keep everything saved."}
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <button
-                type="button"
-                onClick={() => router.push("/?step=cards")}
-                className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
-              >
-                {lang === "ro" ? "Reia wizardul" : "Resume wizard"}
-              </button>
-              <button
-                type="button"
-                onClick={redirectToAuth}
-                className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] bg-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:opacity-90"
-              >
-                {lang === "ro" ? "Creează cont" : "Create account"}
-              </button>
-            </div>
-          </section>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#FDFCF9]">
       <SiteHeader
@@ -346,6 +306,39 @@ function RecommendationContent() {
       />
 
       <main className="px-4 py-12 md:px-8" data-testid="recommendation-step">
+        {needsAccount ? (
+          <section className="mx-auto mb-6 max-w-3xl rounded-[18px] border border-[#E4D8CE] bg-white px-6 py-8 text-center shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]">
+              {lang === "ro" ? "Recomandările tale" : "Your recommendations"}
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold text-[#2C2C2C]">
+              {lang === "ro"
+                ? "Ai deja un plan personalizat. Hai să nu-l pierzi."
+                : "You already have a personalised path. Let’s not lose it."}
+            </h1>
+            <p className="mt-3 text-sm text-[#4A3A30]/80">
+              {lang === "ro"
+                ? "Poți vedea direcția recomandată și ca invitat, dar ca să păstrăm traseul, jurnalul și pașii următori în timp, e nevoie de un cont OmniMental."
+                : "You can see your recommended direction as a guest, but to keep your path, journal, and next steps over time, you’ll need an OmniMental account."}
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={() => router.push("/?step=cards")}
+                className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+              >
+                {lang === "ro" ? "Reia wizardul" : "Resume wizard"}
+              </button>
+              <button
+                type="button"
+                onClick={redirectToAuth}
+                className="inline-flex items-center justify-center rounded-[10px] bg-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:opacity-90"
+              >
+                {lang === "ro" ? "Creează cont" : "Create account"}
+              </button>
+            </div>
+          </section>
+        ) : null}
         {showChooseBanner ? (
           <div className="mx-auto mb-4 w-full max-w-4xl rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
             <div className="flex flex-wrap items-center justify-between gap-3">

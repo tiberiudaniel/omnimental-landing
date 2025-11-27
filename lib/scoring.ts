@@ -16,6 +16,7 @@ const CATEGORY_KEYWORDS: Array<{ pattern: RegExp; moduleId: OmniKunoModuleId }> 
   { pattern: /energ|oboseal|burnout|sleep|somn|habit|health|corp|body/i, moduleId: "energy_body" },
   { pattern: /perform|career|money|decis|discern|impact|strategie/i, moduleId: "decision_discernment" },
   { pattern: /incredere|trust|identity|identitate|meaning|purpose|valo|sense/i, moduleId: "self_trust" },
+  { pattern: /voin|willpower|disciplin|persever|resilien|consisten|ritual/i, moduleId: "willpower_perseverance" },
 ];
 
 function createZeroScores(): DimensionScores {

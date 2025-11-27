@@ -177,15 +177,16 @@ export function useWizardJournalState({ lang, setSaveError, ensurePersistableUse
         let resolvedCategory = meta?.category ?? detectCategoryFromRawInput(cleanText) ?? null;
         if (!resolvedCategory && lang === "ro") {
           const roCat = detectCategoryJSON(cleanText);
-          const map: Record<string, IntentPrimaryCategory> = {
-            claritate: "clarity",
-            relatii: "relationships",
-            stres: "stress",
-            incredere: "confidence",
-            echilibru: "balance",
-          };
-          resolvedCategory = roCat ? map[roCat] ?? null : null;
-        }
+        const map: Record<string, IntentPrimaryCategory> = {
+          claritate: "clarity",
+          relatii: "relationships",
+          stres: "stress",
+          incredere: "confidence",
+          echilibru: "balance",
+          disciplina: "willpower_perseverance",
+        };
+        resolvedCategory = roCat ? map[roCat] ?? null : null;
+      }
         setFirstIntentCategory(resolvedCategory);
         setFirstIntentExpression(meta?.expressionId ?? cleanText);
       } catch (error) {
@@ -224,6 +225,7 @@ export function useWizardIntentState(): IntentHookState {
     stress: 0,
     confidence: 0,
     balance: 0,
+    willpower_perseverance: 0,
   });
 
   const handleIntentComplete = useCallback((result: IntentCloudResult) => {
@@ -244,6 +246,7 @@ export function useWizardIntentState(): IntentHookState {
       stress: 0,
       confidence: 0,
       balance: 0,
+      willpower_perseverance: 0,
     };
     result.categories.forEach((entry) => {
       totals[entry.category] += entry.count;
@@ -373,6 +376,7 @@ export function useWizardJourneyState({
       const shareEnergy = Number(shares.energy_body ?? 0);
       const shareDecision = Number(shares.decision_discernment ?? 0);
       const shareSelfTrust = Number(shares.self_trust ?? 0);
+      const shareWillpower = Number(shares.willpower_perseverance ?? 0);
       const topShare = Math.max(
         shareClarity,
         shareRelationships,
@@ -380,6 +384,7 @@ export function useWizardJourneyState({
         shareEnergy,
         shareDecision,
         shareSelfTrust,
+        shareWillpower,
       );
       const topCategory = (() => {
         const pairs: Array<[string, number]> = [
@@ -389,6 +394,7 @@ export function useWizardJourneyState({
           ["energy_body", shareEnergy],
           ["decision_discernment", shareDecision],
           ["self_trust", shareSelfTrust],
+          ["willpower_perseverance", shareWillpower],
         ];
         pairs.sort((a, b) => b[1] - a[1]);
         return pairs[0]?.[0] ?? null;
@@ -780,13 +786,12 @@ export function useWizardData({ lang, profileId }: UseWizardDataParams) {
   useEffect(() => {
     if (!authUser) return;
     const stored = loadPendingChoiceFromLocal(authUser.uid);
-    if (stored) {
+    if (stored && !pendingJourneyChoice) {
       console.log("[wizard] loaded pending journey from storage", stored);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPendingJourneyChoice(stored);
-      setCardPromptVisible(true);
     }
-  }, [authUser]);
+  }, [authUser, pendingJourneyChoice]);
 
   const journal = useWizardJournalState({ lang, setSaveError, ensurePersistableUser });
   const intent = useWizardIntentState();

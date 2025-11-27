@@ -40,7 +40,8 @@ type SupportedFinalTestArea =
   | "relationships_communication"
   | "energy_body"
   | "self_trust"
-  | "decision_discernment";
+  | "decision_discernment"
+  | "willpower_perseverance";
 
 type TimelineItemWithMeta = ReturnType<typeof computeLessonsStatus>[number] & {
   lesson: OmniKunoLesson | null;
@@ -133,6 +134,20 @@ const FINAL_TEST_COPY: Record<
     },
     buttonLabel: { ro: "Mini-test Discernământ & Decizii", en: "Discernment & Decisions mini-test" },
     moduleName: { ro: "Discernământ & Decizii", en: "Discernment & Decisions" },
+  },
+  willpower_perseverance: {
+    testId: "willpower_perseverance_final_test",
+    heading: { ro: "Finalizare modul", en: "Module completion" },
+    title: {
+      ro: "Ai parcurs toate lecțiile Voință & Perseverență",
+      en: "You completed all Willpower & Perseverance lessons",
+    },
+    description: {
+      ro: "Încheie modulul cu mini-testul Voință & Perseverență pentru a întări pașii mici și ritualul de protecție a energiei.",
+      en: "Close the module with the Willpower & Perseverance mini-test to reinforce the small steps and energy protection ritual.",
+    },
+    buttonLabel: { ro: "Mini-test Voință & Perseverență", en: "Willpower & Perseverance mini-test" },
+    moduleName: { ro: "Voință & Perseverență", en: "Willpower & Perseverance" },
   },
 };
 
@@ -307,6 +322,7 @@ const areaStats = useMemo(() => {
         relationships_communication: "Relații & Comunicare",
         decision_discernment: "Discernământ & Decizii",
         self_trust: "Încredere în Sine",
+        willpower_perseverance: "Voință & Perseverență",
       };
     }
     return {
@@ -316,6 +332,7 @@ const areaStats = useMemo(() => {
       relationships_communication: "Relationships & Communication",
       decision_discernment: "Discernment & Decisions",
       self_trust: "Self-Trust",
+      willpower_perseverance: "Willpower & Perseverance",
     };
   }, [lang]);
   const finalTestConfig = useMemo(() => getFinalTestConfig(activeAreaKey, lang), [activeAreaKey, lang]);

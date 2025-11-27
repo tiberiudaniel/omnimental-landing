@@ -42,6 +42,17 @@ import { useTStrings } from "@/components/useTStrings";
 const MIN_INTENT_SELECTIONS = 5;
 const MAX_INTENT_SELECTIONS = 7;
 
+const parsePositiveInt = (value: string | undefined, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+};
+
+const CLOUD_ITEMS_PER_CATEGORY_DESKTOP = parsePositiveInt(process.env.NEXT_PUBLIC_CLOUD_ITEMS_PER_CATEGORY, 5);
+const CLOUD_ITEMS_PER_CATEGORY_MOBILE = parsePositiveInt(
+  process.env.NEXT_PUBLIC_CLOUD_ITEMS_PER_CATEGORY_MOBILE,
+  4,
+);
+
 function computeResumeStep(progress: ReturnType<typeof useProgressFacts>["data"] | null): WizardStepId {
   if (!progress) return "firstInput";
   const hasIntent = Boolean(progress.intent && progress.intent.firstExpression);
@@ -132,17 +143,17 @@ function WizardShell() {
       relationships_communication: 0,
       decision_discernment: 0,
       self_trust: 0,
+      willpower_perseverance: 0,
     }
   ));
   const [recommendedPath, setRecommendedPath] = useState<SessionType>(() => (cachedReco?.recommendation?.path as SessionType | undefined) ?? "group");
   const [recommendationReasonKey, setRecommendationReasonKey] =
     useState<string>(() => cachedReco?.recommendation?.reasonKey ?? "reason_default");
   const viewportWidth = useWindowWidth();
-  const cloudWordCount = useMemo(() => {
-    if (viewportWidth === 0) return 25;
-    if (viewportWidth < 640) return 18;
-    if (viewportWidth < 1024) return 22;
-    return 25;
+  const itemsPerCategory = useMemo(() => {
+    if (viewportWidth === 0) return CLOUD_ITEMS_PER_CATEGORY_DESKTOP;
+    if (viewportWidth < 640) return CLOUD_ITEMS_PER_CATEGORY_MOBILE;
+    return CLOUD_ITEMS_PER_CATEGORY_DESKTOP;
   }, [viewportWidth]);
 
   const adaptiveCloudWords = useMemo(
@@ -150,17 +161,31 @@ function WizardShell() {
       generateAdaptiveIntentCloudWords({
         locale: lang === "en" ? "en" : "ro",
         primaryCategory: firstIntentCategory ?? undefined,
-        total: cloudWordCount,
+        itemsPerCategory,
         // Exclude the exact curated expression id if present so it doesn't reappear in cloud
         excludeIds: firstIntentExpression ? [firstIntentExpression] : [],
       }),
-    [cloudWordCount, firstIntentCategory, firstIntentExpression, lang],
+    [itemsPerCategory, firstIntentCategory, firstIntentExpression, lang],
   );
 
   const adaptiveCloudKey = useMemo(
     () => adaptiveCloudWords.map((word) => word.id).join("|"),
     [adaptiveCloudWords],
   );
+
+  const cloudDistributionHint = useMemo(() => {
+    const desktop = CLOUD_ITEMS_PER_CATEGORY_DESKTOP;
+    const mobile = CLOUD_ITEMS_PER_CATEGORY_MOBILE;
+    const same = desktop === mobile;
+    if (lang === "ro") {
+      return same
+        ? `Lista include ${desktop} afirmații din fiecare temă principală.`
+        : `Lista include ${desktop} afirmații din fiecare temă (și ${mobile} pe mobil).`;
+    }
+    return same
+      ? `You’re seeing ${desktop} statements per focus area.`
+      : `You’re seeing ${desktop} statements per focus area (${mobile} on mobile).`;
+  }, [lang]);
 
   // No set-state-in-effect for cache restore: initialize state lazily above
 
@@ -170,7 +195,7 @@ function WizardShell() {
     const completed =
       Boolean(progress.intent) &&
       Boolean(progress.evaluation) &&
-      Boolean(progress.recommendation && (progress.recommendation.selectedPath || progress.recommendation.suggestedPath));
+      Boolean(progress.recommendation && progress.recommendation.selectedPath);
     if (completed) {
       router.replace("/omniscop");
     }
@@ -236,6 +261,12 @@ function WizardShell() {
       identity: "self_trust",
       health: "self_trust",
       performance: "decision_discernment",
+      discipline: "willpower_perseverance",
+      perseverenta: "willpower_perseverance",
+      perseverance: "willpower_perseverance",
+      willpower: "willpower_perseverance",
+      resilience: "willpower_perseverance",
+      rezilienta: "willpower_perseverance",
     };
     Object.entries(manualFallbacks).forEach(([alias, moduleId]) => {
       if (!base[alias]) {
@@ -252,6 +283,7 @@ function WizardShell() {
     ensure("stres", "stres");
     ensure("incredere", "incredere");
     ensure("echilibru", "echilibru");
+    ensure("disciplina", "disciplina");
     return base;
   }, [t, lang]);
   const recommendedBadgeValue = s("cardsRecommendedLabel", "");
@@ -443,10 +475,18 @@ function WizardShell() {
   }, [selectedCard, step, goToStep]);
 
   const redirectToAuth = useCallback(() => {
+    if (step !== "cards" || !showAccountPrompt || !isAnonymousUser) {
+      console.log("[wizard] redirectToAuth ignored", {
+        step,
+        showAccountPrompt,
+        isAnonymousUser,
+      });
+      return;
+    }
     console.log("[wizard] redirectToAuth invoked", { step, reason: "WizardShell" });
     dismissAccountPrompt();
     router.push("/auth");
-  }, [dismissAccountPrompt, router, step]);
+  }, [dismissAccountPrompt, router, step, showAccountPrompt, isAnonymousUser]);
 
   // Render-driven open: the modal will be open if either explicit state is true
 
@@ -582,6 +622,7 @@ function WizardShell() {
           words={adaptiveCloudWords}
           cloudKey={adaptiveCloudKey}
           onIntentComplete={handleIntentComplete}
+          cloudDistributionHint={cloudDistributionHint}
           isSavingIntent={isSavingIntentSnapshot}
           saveError={saveError}
           savingLabel={savingGenericLabel}

@@ -11,7 +11,8 @@ export type IntentPrimaryCategory =
   | "relationships"
   | "stress"
   | "confidence"
-  | "balance";
+  | "balance"
+  | "willpower_perseverance";
 
 export type IntentExpression = {
   id: string;
@@ -50,6 +51,10 @@ const CATEGORY_METADATA: Record<
   balance: {
     indicator: "energy_body",
     label: { ro: "Energie & echilibru interior", en: "Energy & inner balance" },
+  },
+  willpower_perseverance: {
+    indicator: "willpower_perseverance",
+    label: { ro: "Voință & Perseverență", en: "Willpower & Perseverance" },
   },
 };
 
@@ -115,6 +120,18 @@ const BASE_EXPRESSIONS: Record<IntentPrimaryCategory, Array<{ id: string; ro: st
       { id: "balance_patience", ro: "Vreau să am mai multă răbdare.", en: "I want more patience." },
       { id: "balance_inner_calm", ro: "Vreau să-mi regăsesc calmul interior.", en: "I want to regain inner calm." },
     ],
+    willpower_perseverance: [
+      { id: "willpower_daily", ro: "Vreau să am voință zi de zi.", en: "I want daily willpower." },
+      { id: "willpower_motivation_drop", ro: "Îmi pierd motivația când devine greu.", en: "I lose motivation once it gets hard." },
+      { id: "willpower_habits", ro: "Îmi este greu să mențin obiceiurile.", en: "It’s hard to keep habits going." },
+      { id: "willpower_procrastinate", ro: "Amân lucrurile importante.", en: "I postpone the things that matter." },
+      { id: "willpower_abandon", ro: "Pornez tare și abandonez rapid.", en: "I start strong and abandon quickly." },
+      { id: "willpower_finish_projects", ro: "Vreau să duc proiectele până la capăt.", en: "I want to finish the projects I begin." },
+      { id: "willpower_self_promises", ro: "Îmi calc promisiunile față de mine.", en: "I break the promises I make to myself." },
+      { id: "willpower_swings", ro: "Oscilez între disciplină și haos.", en: "I oscillate between discipline and chaos." },
+      { id: "willpower_comeback", ro: "Vreau să revin după pauze și eșecuri.", en: "I want to bounce back after breaks or failures." },
+      { id: "willpower_runs_out", ro: "Simt că voința se termină prea repede.", en: "My willpower feels depleted too fast." },
+    ],
   };
 
 export const intentExpressions: IntentExpression[] = Object.entries(BASE_EXPRESSIONS).flatMap(
@@ -139,6 +156,7 @@ export function getIntentExpressions(locale: Locale = "ro"): LocalizedIntentExpr
       stres: "stress",
       incredere: "confidence",
       echilibru: "balance",
+      disciplina: "willpower_perseverance",
     };
     const records: LocalizedIntentExpression[] = [];
     for (const [cat, items] of Object.entries(roDb as Record<string, string[]>)) {
@@ -160,7 +178,7 @@ export function getIntentExpressions(locale: Locale = "ro"): LocalizedIntentExpr
   }
   if (locale === "en") {
     const records: LocalizedIntentExpression[] = [];
-    const allowed = ["clarity", "relationships", "stress", "confidence", "balance"] as const;
+    const allowed = ["clarity", "relationships", "stress", "confidence", "balance", "willpower_perseverance"] as const;
     for (const [primary, items] of Object.entries(enDb as Record<string, string[]>)) {
       if (!allowed.includes(primary as typeof allowed[number])) continue;
       const cat = primary as IntentPrimaryCategory;
@@ -201,7 +219,16 @@ export const intentCategoryLabels = Object.fromEntries(
   Object.entries(CATEGORY_METADATA).map(([key, meta]) => [key, meta.label]),
 ) as Record<IntentPrimaryCategory, Record<Locale, string>>;
 
-const CATEGORY_ORDER: IntentPrimaryCategory[] = ["clarity", "relationships", "stress", "confidence", "balance"];
+const CATEGORY_ORDER: IntentPrimaryCategory[] = [
+  "clarity",
+  "relationships",
+  "stress",
+  "confidence",
+  "balance",
+  "willpower_perseverance",
+];
+
+export const INTENT_PRIMARY_CATEGORIES: IntentPrimaryCategory[] = [...CATEGORY_ORDER];
 
 function shuffleArray<T>(input: T[]): T[] {
   const array = [...input];
@@ -227,14 +254,14 @@ function sampleUnique<T extends { id: string }>(pool: T[], count: number, exclud
 type AdaptiveCloudOptions = {
   locale: Locale;
   primaryCategory?: IntentPrimaryCategory | null;
-  total?: number;
+  itemsPerCategory?: number;
   excludeIds?: readonly string[];
 };
 
 export function generateAdaptiveIntentCloudWords({
   locale,
   primaryCategory = null,
-  total = 25,
+  itemsPerCategory = 5,
   excludeIds = [],
 }: AdaptiveCloudOptions): IntentCloudWord[] {
   const expressions = getIntentExpressions(locale);
@@ -249,43 +276,54 @@ export function generateAdaptiveIntentCloudWords({
       stress: [],
       confidence: [],
       balance: [],
+      willpower_perseverance: [],
     },
   );
 
+  const perCategory = Math.max(1, Math.floor(itemsPerCategory));
   const selectionIds = new Set<string>(excludeIds ?? []);
-  const words: LocalizedIntentExpression[] = [];
 
-  if (primaryCategory && wordsByCategory[primaryCategory].length) {
-    const primaryTarget = Math.min(Math.ceil(total / 2), wordsByCategory[primaryCategory].length);
-    words.push(...sampleUnique(wordsByCategory[primaryCategory], primaryTarget, selectionIds));
-  }
-
-  const remainingSlots = total - words.length;
-  const secondaryCategories = CATEGORY_ORDER.filter((category) => category !== primaryCategory);
-
-  let slotsLeft = remainingSlots;
-  secondaryCategories.forEach((category, index) => {
-    if (slotsLeft <= 0) {
-      return;
-    }
+  const buckets = CATEGORY_ORDER.map((category) => {
     const pool = wordsByCategory[category];
     if (!pool.length) {
-      return;
+      return { category, entries: [] as LocalizedIntentExpression[] };
     }
-    const categoriesLeft = secondaryCategories.length - index;
-    const target = Math.max(1, Math.floor(slotsLeft / categoriesLeft));
-    const sampled = sampleUnique(pool, target, selectionIds);
-    words.push(...sampled);
-    slotsLeft -= sampled.length;
+    const sampled = sampleUnique(pool, perCategory, selectionIds);
+    return { category, entries: sampled };
   });
 
-  if (slotsLeft > 0) {
+  const desiredTotal = perCategory * CATEGORY_ORDER.length;
+
+  // Dacă o categorie are mai puține expresii disponibile, completează din fallback global
+  if (buckets.some((bucket) => bucket.entries.length < perCategory)) {
     const fallbackPool = expressions.filter((entry) => !selectionIds.has(entry.id));
-    words.push(...sampleUnique(fallbackPool, slotsLeft, selectionIds));
+    buckets.forEach((bucket) => {
+      while (bucket.entries.length < perCategory && fallbackPool.length) {
+        const [extra] = sampleUnique(fallbackPool, 1, selectionIds);
+        if (!extra) break;
+        bucket.entries.push(extra);
+      }
+    });
   }
 
-  const finalWords = shuffleArray(words).slice(0, total);
-  return finalWords.map((entry) => ({
+  const orderedCategories = primaryCategory
+    ? [primaryCategory, ...CATEGORY_ORDER.filter((category) => category !== primaryCategory)]
+    : CATEGORY_ORDER;
+
+  const flattened: LocalizedIntentExpression[] = [];
+  orderedCategories.forEach((category) => {
+    const bucket = buckets.find((item) => item.category === category);
+    if (bucket) {
+      flattened.push(...bucket.entries);
+    }
+  });
+
+  if (flattened.length < desiredTotal) {
+    const fallbackPool = expressions.filter((entry) => !selectionIds.has(entry.id));
+    flattened.push(...sampleUnique(fallbackPool, desiredTotal - flattened.length, selectionIds));
+  }
+
+  return flattened.slice(0, desiredTotal).map((entry) => ({
     id: entry.id,
     label: entry.label,
     category: entry.category,
