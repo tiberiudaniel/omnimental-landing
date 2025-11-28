@@ -5,7 +5,8 @@ import { recordOmniPatch } from "@/lib/progressFacts";
 export type DailyCheckinPayload = {
   clarity: number;
   energy: number;
-  emotion: number;
+  stress: number;
+  sleep?: number | null;
 };
 
 export type DailySummaryInput = {
@@ -45,7 +46,9 @@ export async function loadDailyCheckin(userId: string) {
   const todayKey = `${userId}_${getTodayKey()}`;
   const ref = doc(getDb(), "userDailyCheckins", todayKey);
   const snap = await getDoc(ref);
-  return snap.exists() ? (snap.data() as DailyCheckinPayload & { date: string }) : null;
+  return snap.exists()
+    ? (snap.data() as DailyCheckinPayload & { date: string })
+    : null;
 }
 
 export async function saveDailyCheckin(
@@ -60,12 +63,17 @@ export async function saveDailyCheckin(
   const date = getTodayKey();
   const checkinId = `${userId}_${date}`;
   const ref = doc(getDb(), "userDailyCheckins", checkinId);
+  const entry = {
+    energy: values.energy,
+    stress: values.stress,
+    clarity: values.clarity,
+    ...(typeof values.sleep === "number" ? { sleep: values.sleep } : {}),
+  };
+
   await setDoc(ref, {
     userId,
     date,
-    clarity: values.clarity,
-    energy: values.energy,
-    emotion: values.emotion,
+    ...entry,
     createdAt: serverTimestamp(),
   });
   const yesterdayKey = getPreviousDateKey(date);
@@ -74,7 +82,14 @@ export async function saveDailyCheckin(
   const streakDays = continuesStreak ? summary.prevStreak! + 1 : 1;
   await recordOmniPatch(
     {
-      daily: { streakDays, lastCheckinDate: date },
+      daily: {
+        streakDays,
+        lastCheckinDate: date,
+        today: entry,
+        history: {
+          [date]: entry,
+        },
+      },
       kuno: {
         global: {
           totalXp: increment(5) as unknown as number,

@@ -1,14 +1,14 @@
 import type { HTMLAttributes, ReactNode } from "react";
 
 type DashboardCardProps = {
-  title: string;
-  subtitle?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
   ctaLabel?: ReactNode;
   onCtaClick?: () => void;
   footer?: ReactNode;
   headerExtra?: ReactNode;
   children: ReactNode;
-} & HTMLAttributes<HTMLDivElement>;
+} & Omit<HTMLAttributes<HTMLDivElement>, "title">;
 
 export default function DashboardCard({
   title,
@@ -36,17 +36,29 @@ export default function DashboardCard({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p
-            className="text-[10px] font-semibold uppercase tracking-[0.35em]"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {title}
-          </p>
-          {subtitle ? (
-            <p className="mt-1 text-base font-semibold leading-tight sm:text-lg">
-              {subtitle}
+          {typeof title === "string" || typeof title === "number" ? (
+            <p
+              className="text-[10px] font-semibold uppercase tracking-[0.35em]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {title}
             </p>
-          ) : null}
+          ) : (
+            <div>{title}</div>
+          )}
+          {subtitle
+            ? typeof subtitle === "string" || typeof subtitle === "number"
+              ? (
+                <p className="mt-1 text-base font-semibold leading-tight sm:text-lg">
+                  {subtitle}
+                </p>
+              )
+              : (
+                <div className="mt-1">
+                  {subtitle}
+                </div>
+              )
+            : null}
         </div>
         {headerExtra ? <div className="text-right text-[11px]">{headerExtra}</div> : null}
         {ctaLabel && onCtaClick ? (

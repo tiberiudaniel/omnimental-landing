@@ -8,13 +8,12 @@ import type { ProgressFact } from "@/lib/progressFacts";
 import type { useI18n } from "@/components/I18nProvider";
 import { formatUtcShort } from "@/lib/format";
 import { toMsLocal } from "@/lib/dashboard/progressSelectors";
-import type { extractSessions } from "@/lib/progressAnalytics";
 import KunoMissionCard, { type KunoMissionCardData, type KunoNextModuleSuggestion } from "./KunoMissionCard";
 import type { OmniKunoModuleId } from "@/config/omniKunoModules";
-import { buildOmniAbilSnapshot } from "./omniAbilSnapshot";
 import { useEffect, useState } from "react";
 import { OmniAbilCard } from "./OmniAbilCard";
 import { SeasonCard } from "./SeasonCard";
+import { buildOmniGuidance, type OmniDailySnapshot, type OmniGuidance } from "@/lib/omniState";
 
 export type FocusThemeInfo = {
   area?: string | null;
@@ -184,66 +183,75 @@ function FocusThemeCard({ lang, focusTheme }: { lang: string; focusTheme: FocusT
 
 export function TodayGuidanceCard({
   lang,
+  snapshot,
   facts,
-  sessions,
-  refMs,
-  currentFocusTag,
-  nowAnchor,
 }: {
   lang: string;
+  snapshot: OmniDailySnapshot | null;
   facts: ProgressFact | null;
-  sessions: ReturnType<typeof extractSessions>;
-  refMs: number;
-  currentFocusTag?: string;
-  nowAnchor: number;
 }) {
-  const snapshot = buildOmniAbilSnapshot({ lang, facts, sessions, refMs, currentFocusTag, nowAnchor });
+  type ActivityShape = { activityEvents?: Array<Record<string, unknown>> };
+  const events = ((facts as ActivityShape | null)?.activityEvents ?? []) as Array<Record<string, unknown>>;
+  const guidance = buildOmniGuidance({
+    lang: lang === "ro" ? "ro" : "en",
+    daily: snapshot,
+    activityEvents: events,
+  });
+  const badgeMap: Record<OmniGuidance["badge"], { ro: string; en: string; cls: string }> = {
+    focus: { ro: "FOCUS", en: "FOCUS", cls: "bg-[#ECF8F0] text-[#1F7A43]" },
+    recovery: { ro: "RESET", en: "RESET", cls: "bg-[#FFF1ED] text-[#B8472B]" },
+    light: { ro: "LIGHT", en: "LIGHT", cls: "bg-[#FFF7E8] text-[#B0660D]" },
+    normal: { ro: "RITUAL", en: "CADENCE", cls: "bg-[#E9E4FF] text-[#5A3998]" },
+  };
+  const badge = badgeMap[guidance.badge];
+  const altLinks = [
+    { label: lang === "ro" ? "Mini OmniKuno" : "Mini OmniKuno", href: { pathname: "/antrenament", query: { tab: "oc" } } },
+    {
+      label: lang === "ro" ? "Jurnal ghidat" : "Guided journal",
+      href: { pathname: "/progress", query: { open: "journal", tab: "NOTE_LIBERE" } },
+    },
+  ];
   return (
     <motion.div variants={fadeDelayed(0.2)} {...hoverScale}>
       <Card className="rounded-2xl border border-[#E4DAD1] bg-white p-3 shadow-sm sm:p-4">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">
-            <span className="rounded-full bg-[#FFF3EC] px-2 py-0.5 text-[#C07963]">
-              {lang === "ro" ? "Omni-Abil" : "Omni-Abil"}
-            </span>
-            <span>{lang === "ro" ? "acțiuni concrete" : "concrete actions"}</span>
+            <span className={`rounded-full px-2 py-0.5 ${badge.cls}`}>{lang === "ro" ? badge.ro : badge.en}</span>
+            <span>{lang === "ro" ? "ghidaj de azi" : "today guidance"}</span>
           </div>
           <div className="space-y-2 rounded-2xl border border-[#E7DED3] bg-white/70 px-3 py-3">
             <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B08A78] sm:text-xs">
-              {lang === "ro" ? "Pasul principal" : "Primary step"}
+              {lang === "ro" ? "Recomandarea ta" : "Your recommendation"}
             </div>
             <div>
-              <p className="text-[14px] font-bold leading-tight text-[#2C2C2C] sm:text-base">{snapshot.primary.title}</p>
-              <p className="mt-1 text-[11px] text-[#7B6B60] sm:text-[12px]">{snapshot.primaryDesc}</p>
+              <p className="text-[14px] font-bold leading-tight text-[#2C2C2C] sm:text-base">{guidance.title}</p>
+              <p className="mt-1 text-[11px] text-[#7B6B60] sm:text-[12px]">{guidance.description}</p>
             </div>
             <Link
-              href={snapshot.primary.href}
+              href={guidance.ctaHref}
               className="group flex items-center justify-between rounded-full bg-[#C07963] px-5 py-2.5 text-white shadow-sm transition hover:bg-[#A45E4F]"
             >
               <span className="text-[11px] font-semibold uppercase tracking-[0.2em] sm:text-[12px]">
-                {lang === "ro" ? "Începe acum" : "Start now"}
+                {guidance.ctaLabel}
               </span>
-              <span className="text-[10px] opacity-80">{snapshot.primary.dur}</span>
+              <span className="text-[10px] opacity-80">↗</span>
             </Link>
           </div>
           <div className="rounded-2xl border border-dashed border-[#E4DAD1] bg-white/80 px-3 py-2">
             <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.2em] text-[#A08F82]">
-              <span>{lang === "ro" ? "Variante light" : "Light options"}</span>
+              <span>{lang === "ro" ? "Variante rapide" : "Quick options"}</span>
               <span>~5 min</span>
             </div>
             <div className="space-y-1 text-[11px] text-[#2C2C2C] sm:text-xs">
-              <Link
-                href={{ pathname: "/antrenament", query: { tab: "oc" } }}
-                className="block rounded-[10px] border border-transparent px-2 py-1 transition hover:border-[#E4DAD1] hover:bg-[#FFFBF7]"
-              >
-                • {snapshot.alt1}
-              </Link>
-              <Link
-                href={{ pathname: "/progress", query: { open: "journal", tab: "NOTE_LIBERE" } }}
-                className="block rounded-[10px] border border-transparent px-2 py-1 transition hover:border-[#E4DAD1] hover:bg-[#FFFBF7]"
-              >
-                • {snapshot.alt2}
-              </Link>
+              {altLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="block rounded-[10px] border border-transparent px-2 py-1 transition hover:border-[#E4DAD1] hover:bg-[#FFFBF7]"
+                >
+                  • {link.label}
+                </Link>
+              ))}
             </div>
           </div>
         </div>

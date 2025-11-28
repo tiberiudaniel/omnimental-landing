@@ -64,6 +64,7 @@ export function areWritesDisabled(): boolean {
 }
 
 let authInstance: Auth | null = null;
+let authInitPromise: Promise<import("firebase/auth").User | null> | null = null;
 
 export function getFirebaseAuth() {
   if (authInstance) return authInstance;
@@ -77,11 +78,33 @@ export function getFirebaseAuth() {
   return auth;
 }
 
+async function waitForExistingUser(auth: Auth) {
+  if (auth.currentUser) return auth.currentUser;
+  if (!authInitPromise) {
+    authInitPromise = new Promise((resolve) => {
+      const unsub = onAuthStateChanged(
+        auth,
+        (existing) => {
+          unsub();
+          authInitPromise = null;
+          resolve(existing);
+        },
+        () => {
+          authInitPromise = null;
+          resolve(null);
+        },
+      );
+    });
+  }
+  return authInitPromise;
+}
+
 // ensureAuth guarantees a Firebase user (anonymous or full) exists before writes.
 export async function ensureAuth() {
   if (typeof window === "undefined") return null;
   const auth = getFirebaseAuth();
-  if (auth.currentUser) return auth.currentUser;
+  const existing = await waitForExistingUser(auth);
+  if (existing) return existing;
   try {
     await signInAnonymously(auth);
     return auth.currentUser ?? null;

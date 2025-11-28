@@ -10,15 +10,16 @@ import type { Dispatch, SetStateAction } from "react";
 import type { adaptProgressFacts } from "@/lib/progressAdapter";
 import type { getDailyInsight } from "@/lib/insights";
 import type { extractSessions } from "@/lib/progressAnalytics";
+import type { OmniDailySnapshot } from "@/lib/omniState";
 import { TodayGuidanceCard } from "./CenterColumnCards";
 import { buildOmniAbilSnapshot, type OmniAbilSnapshot } from "./omniAbilSnapshot";
-import { DailyResetCard } from "./DailyResetCard";
 
 type SidebarCardsProps = {
   debugGrid?: boolean;
   lang: string;
   t: ReturnType<typeof useI18n>["t"];
   facts: ProgressFact | null;
+  snapshot: OmniDailySnapshot | null;
   profile: { id?: string; simulatedInsights?: string[] } | null;
   quest: { title: string; text: string };
   questPreview: string;
@@ -39,6 +40,7 @@ export default function SidebarCards({
   lang,
   t,
   facts,
+  snapshot,
   profile,
   quest,
   questPreview,
@@ -66,15 +68,9 @@ export default function SidebarCards({
       <motion.div variants={fadeDelayed(0.2)} {...hoverScale}>
         <TodayGuidanceCard
           lang={lang}
+          snapshot={snapshot}
           facts={facts}
-          sessions={sessions}
-          refMs={refMs}
-          currentFocusTag={currentFocusTag}
-          nowAnchor={nowAnchor}
         />
-      </motion.div>
-      <motion.div variants={fadeDelayed(0.23)} {...hoverScale}>
-        <DailyResetCard lang={lang} profileId={profile?.id ?? null} summary={facts?.omni?.daily} />
       </motion.div>
       <motion.div variants={fadeDelayed(0.26)} {...hoverScale}>
         <PracticeSnapshotCard prog={prog} />

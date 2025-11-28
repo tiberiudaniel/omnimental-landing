@@ -75,12 +75,23 @@ export default function LessonAccordionItem({
           !isClickable && "cursor-default",
           justActivated && status === "active" ? "ring-2 ring-[#F5A47E]/70" : "",
         )}
+        whileHover={
+          isClickable
+            ? {
+                x: 4,
+                boxShadow: "0 18px 36px rgba(242,114,75,0.25)",
+              }
+            : {}
+        }
+        transition={{
+          duration: justActivated ? 0.9 : 0.25,
+          ease: justActivated ? "easeOut" : "easeInOut",
+        }}
         animate={
           justActivated && status === "active"
             ? { scale: [1, 1.02, 1], boxShadow: "0 18px 36px rgba(242,114,75,0.28)" }
             : { scale: 1 }
         }
-        transition={{ duration: justActivated ? 0.6 : 0.2 }}
       >
         <div className="flex flex-1 items-start gap-3">
           <div
@@ -95,7 +106,7 @@ export default function LessonAccordionItem({
               key={status}
               initial={{ scale: 0.7, rotate: status === "done" ? -90 : 0, opacity: 0 }}
               animate={{ scale: 1, rotate: 0, opacity: 1 }}
-              transition={{ duration: 0.35 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
             >
               {icon}
             </motion.span>
@@ -136,8 +147,8 @@ export default function LessonAccordionItem({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="overflow-hidden rounded-3xl border border-[#F2B39B]/60 bg-[#FFF8F4] shadow-[0_20px_45px_rgba(242,114,75,0.18)]"
+            transition={{ duration: 0.35 }}
+            className="mx-2 overflow-hidden rounded-[26px] border border-[#F2B39B]/60 bg-[#FFF8F4] shadow-[0_20px_45px_rgba(242,114,75,0.18)] md:mx-4 lg:mx-6"
           >
             <div className="px-4 py-5 md:px-6">
               <div className="flex flex-col gap-2 text-xs text-neutral-600">

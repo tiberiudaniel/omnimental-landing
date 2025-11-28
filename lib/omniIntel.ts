@@ -96,6 +96,25 @@ export type OmniBlock = {
   daily?: {
     streakDays?: number;
     lastCheckinDate?: string;
+    today?: {
+      energy?: number;
+      stress?: number;
+      clarity?: number;
+      sleep?: number;
+      confidence?: number;
+      focus?: number;
+    };
+    history?: Record<
+      string,
+      {
+        energy?: number;
+        stress?: number;
+        clarity?: number;
+        sleep?: number;
+        confidence?: number;
+        focus?: number;
+      }
+    >;
   };
   intel: {
     unlocked: boolean;

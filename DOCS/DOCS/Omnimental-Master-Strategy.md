@@ -289,5 +289,145 @@ Acest document servește ca:
 Acest fișier se actualizează pe măsură ce platforma evoluează.
 
 ---
+1.1. Axele principale ale stării (ce vede userul peste tot)
+
+OmniMental folosește trei axe principale pentru a descrie starea psihologică și energetică a utilizatorului:
+
+Claritate mentală
+– Cât de limpede gândește, cât de ușor își organizează ideile, cât de bine se poate concentra.
+– Include: atenție, focus, senzația de „minte încețoșată” vs. minte clară.
+– Exemple:
+
+Scor mare: „Îmi vin ideile ușor, știu ce am de făcut, nu mă simt împrăștiat.”
+
+Scor mic: „Sunt confuz, nu mă pot concentra, mi se împrăștie mintea.”
+
+Echilibru emoțional
+– Cât de bine gestionează emoțiile și stresul cotidian.
+– Nu înseamnă lipsă de emoții, ci faptul că emoțiile și stresul nu îl dau peste cap.
+– Include: nivel de stres, anxietate, iritabilitate, sentimentul de „sunt ok cu mine”.
+– Exemple:
+
+Scor mare: „Mă simt stabil, am emoții dar le pot duce, stresul e sub control.”
+
+Scor mic: „Mă simt copleșit, încordat, ușor de declanșat emoțional.”
+
+Energie fizică
+– Câtă „benzină în rezervor” are, din punct de vedere fizic.
+– Include: oboseală, tonus fizic, calitatea somnului (indirect).
+– Exemple:
+
+Scor mare: „Simt că am energie pentru lucruri grele, pot susține efortul.”
+
+Scor mic: „Sunt stors, fără vlagă, corpul îmi e greu.”
+
+Aceste 3 axe sunt afișate coerent peste tot: KPI, Daily Reset (după completare), Today Guidance, eventual grafice de progres.
+
+1.2. Cele 6 scale detaliate (nivel „de profunzime”)
+
+În spatele celor 3 axe principale, OmniMental folosește 6 scale detaliate pe o scală 0–10:
+
+Energie (câtă energie simți în corp acum)
+
+Stres (nivelul perceput de stres / tensiune)
+
+Claritate (cât de limpede simți gândirea)
+
+Somn (calitatea somnului recent)
+
+Încredere (încredere în tine / auto-eficacitate)
+
+Focus (capacitatea de a rămâne concentrat pe ceva fără să te pierzi)
+
+Aceste scale:
+
+sunt folosite în onboarding și în re-evaluări periodice (săptămânale / bilunare);
+
+pot fi folosite și în statistici avansate și în recomandări mai inteligente;
+
+sunt mapate matematic pe cele 3 axe principale, nu duplică structuri paralele.
+
+1.3. Maparea 6 scale → 3 axe
+
+3 axe principale sunt derivate din cele 6 scale, aproximativ astfel:
+
+Claritate mentală
+= media dintre (Claritate + Focus + Încredere)
+– accent pe gândire limpede, atenție, sentimentul că „poți face față”.
+
+Echilibru emoțional
+= combinație dintre (încredere + emoții pozitive − stres)
+– tehnic: se folosește stres inversat (10 − stres) + Încredere.
+
+Energie fizică
+= media dintre (Energie + Somn)
+– energia percepută este filtrată prin calitatea somnului.
+
+Formulele exacte pot fi ajustate, dar logica rămâne:
+
+stresul este sub-componentă a echilibrului emoțional,
+
+somnul este sub-componentă a energiei fizice,
+
+focusul și încrederea intră în claritate mentală.
+
+1.4. Două niveluri de evaluare: zilnic vs. aprofundat
+
+Evaluarea zilnică („Daily Reset”)
+– Userul completează zilnic 3–4 slider-e simple:
+
+Energie (0–10)
+
+Stres (0–10)
+
+Claritate (0–10)
+
+(opțional) Somn (0–10) pentru noaptea anterioară
+– Din aceste valori + baseline (încredere, focus) se recalculează:
+
+Claritate mentală
+
+Echilibru emoțional
+
+Energie fizică
+– Feedback-ul zilnic, recomandările și badge-urile pornesc din această evaluare rapidă.
+
+Evaluarea aprofundată (săptămânal / bilunar)
+– Ecran separat sau card în dashboard, cu toate cele 6 scale:
+Energie, Stres, Claritate, Somn, Încredere, Focus.
+– Aceste valori:
+
+actualizează baseline-ul personal,
+
+sunt folosite pentru KPI-uri pe termen mediu/lung,
+
+recalibrează interpretarea valorilor zilnice (deviații față de „normalul personal”).
+
+1.5. Deviații față de baseline („+2” / „-1 față de media ta”)
+
+Intern, OmniMental nu folosește doar scorul brut (ex. Energie = 7/10), ci și diferența față de baseline:
+
+baseline Energie (din evaluările aprofundate) → ex: 6
+
+energia de azi după Daily Reset → 8
+
+delta = +2 față de media personală
+
+Aceste deviații sunt folosite:
+
+în Today Guidance (ce tip de zi este: „Focus”, „Recovery”, „Light Day”),
+
+în mesaje motivante („azi ești mult mai clar decât de obicei”),
+
+în gamificare și badge-uri.
+
+Userul vede în UI:
+
+scorul actual 0–10,
+
+plus un comentariu clar: „(+2 față de media ta)”, nu un scor criptic -5…+5
+
+
+
 
 **Sfârșitul documentului.**

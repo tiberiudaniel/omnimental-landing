@@ -687,10 +687,11 @@ function ModuleExperience({
       if (highlightTimeoutRef.current) {
         window.clearTimeout(highlightTimeoutRef.current);
       }
+      // Keep the highlight a bit longer so the user clearly sees the transition to the next lesson
       highlightTimeoutRef.current = window.setTimeout(() => {
         setJustActivatedLessonId(null);
         highlightTimeoutRef.current = null;
-      }, 1800) as unknown as number;
+      }, 2800) as unknown as number;
     }
   }, []);
   useEffect(() => {

@@ -41,6 +41,8 @@ import SidebarCards from "@/components/dashboard/SidebarCards";
 import type { KunoMissionCardData, KunoNextModuleSuggestion } from "@/components/dashboard/KunoMissionCard";
 import { normalizeKunoFacts } from "@/lib/kunoFacts";
 import { RecentEntriesCard } from "@/components/dashboard/RecentEntriesCard";
+import { DailyResetCard } from "@/components/dashboard/DailyResetCard";
+import { buildOmniDailySnapshot } from "@/lib/omniState";
 
 export default function ProgressDashboard({
   profileId,
@@ -128,6 +130,7 @@ export default function ProgressDashboard({
     };
   }, [baseFacts, localRecentEntries]);
   const kunoFacts = useMemo(() => normalizeKunoFacts(facts?.omni?.kuno), [facts?.omni?.kuno]);
+  const omniSnapshot = useMemo(() => buildOmniDailySnapshot({ progress: facts, facts }), [facts]);
   const [timeframe, setTimeframe] = useState<"day" | "week" | "month">("week");
   const [qaOpen, setQaOpen] = useState(false);
   const [qaCategory, setQaCategory] = useState<'practice' | 'reflection' | 'knowledge'>('practice');
@@ -694,15 +697,18 @@ export default function ProgressDashboard({
                 debugGrid ? "outline outline-1 outline-[#C24B17]/40" : ""
               }`}
             >
-              <h2 className="mt-0 mb-1.5 text-base font-bold text-[#A08F82] sm:mt-0 sm:text-lg lg:mt-0 lg:text-xl">
-                OmniMental Progress
-              </h2>
+              <DailyResetCard
+                lang={lang}
+                profileId={profile?.id ?? profileId ?? null}
+                facts={facts}
+              />
               <InternalKpiCard
                 lang={lang}
                 t={t}
                 timeframe={timeframe}
                 setTimeframe={setTimeframe}
                 facts={facts}
+                snapshot={omniSnapshot}
               />
               <ActionTrendsCard
                 lang={lang}
@@ -778,6 +784,7 @@ export default function ProgressDashboard({
             lang={lang}
             t={t}
             facts={facts}
+            snapshot={omniSnapshot}
             profile={profile}
             quest={quest}
             questPreview={questPreview}
