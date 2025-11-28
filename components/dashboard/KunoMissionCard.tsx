@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
+import DashboardCard from "@/components/dashboard/DashboardCard";
 import { fadeDelayed, hoverScale } from "@/components/dashboard/motionPresets";
 import InfoTooltip from "@/components/InfoTooltip";
 import type { OmniKunoModuleConfig } from "@/config/omniKunoLessons";
@@ -39,6 +40,7 @@ export default function KunoMissionCard({
   missionData,
   nextModuleSuggestion,
 }: KunoMissionCardProps) {
+  const router = useRouter();
   const timeline = useMemo(() => {
     if (!missionData) return [];
     return computeLessonsStatus(missionData.module.lessons, missionData.completedIds);
@@ -92,26 +94,55 @@ export default function KunoMissionCard({
     ? `Lecții finalizate: ${completedCount}/${totalLessons}`
     : `Lessons completed: ${completedCount}/${totalLessons}`;
 
+  const activeAccent =
+    activeLesson?.type === "quiz" ? "var(--accent-main)" : "var(--accent-strong)";
+  const activeBg = `color-mix(in srgb, ${activeAccent ?? "var(--accent-main)"} 12%, var(--bg-card))`;
+
   return (
     <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
-      <Card
-        className="rounded-2xl border border-[#E4DAD1] bg-[#FFFBF7] px-3 py-3 shadow-sm sm:px-4 sm:py-4"
-        data-testid="dashboard-kuno-card"
+      <DashboardCard
+        title="OmniKuno"
+        subtitle={lang === "ro" ? "Misiunea ta de azi" : "Your mission today"}
+        footer={
+          <div className="flex flex-col gap-2">
+            <span>{lang === "ro" ? statusLine : statusLine}</span>
+            <button
+              type="button"
+              onClick={() => router.push(ctaHref)}
+              className="w-full rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] transition"
+              style={{
+                borderColor: "var(--border-subtle)",
+                color: "var(--accent-main)",
+                backgroundColor: "color-mix(in srgb, var(--accent-main) 10%, transparent)",
+              }}
+            >
+              {ctaLabel}
+            </button>
+          </div>
+        }
       >
-        <header className="rounded-2xl border border-[#F0E8E0] bg-white/85 px-3 py-3">
-          <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">
-            <span className="rounded-full bg-[#FFF3EC] px-2 py-0.5 text-[#C07963]">OmniKuno</span>
+        <div data-testid="dashboard-kuno-card">
+        <header
+          className="rounded-2xl border px-3 py-3"
+          style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+        >
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em]" style={{ color: "var(--text-muted)" }}>
+            <span
+              className="rounded-full px-2 py-0.5"
+              style={{ backgroundColor: "color-mix(in srgb, var(--accent-main) 12%, var(--bg-card))", color: "var(--accent-main)" }}
+            >
+              OmniKuno
+            </span>
             <span>{lang === "ro" ? "Misiunea ta de azi" : "Your mission today"}</span>
           </div>
-          <p className="mt-2 text-[14px] font-semibold text-[#2C2C2C] sm:text-base">
+          <p className="mt-2 text-[14px] font-semibold sm:text-base" style={{ color: "var(--text-main)" }}>
             {lang === "ro" ? "Acumulează cunoaștere pe tema" : "Accumulate knowledge on"}{" "}
-            <span className="text-[#C07963]">· {focusLabel}</span>
+            <span style={{ color: "var(--accent-main)" }}>· {focusLabel}</span>
           </p>
         </header>
 
-        <div className="mt-1 text-right text-[12px] font-semibold text-[#7B6B60]">{statusLine}</div>
-        <div className="mt-3 rounded-2xl border border-[#E4DAD1] bg-white px-4 py-4 text-sm text-[#4D3F36]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B08A78]">
+        <div className="mt-3 rounded-2xl border px-4 py-4 text-sm" style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)", color: "var(--text-main)" }}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] theme-text-muted">
             {moduleCompleted
               ? lang === "ro"
                 ? "Modul finalizat"
@@ -121,7 +152,7 @@ export default function KunoMissionCard({
                 : "Next step"}
           </p>
           {moduleCompleted ? (
-            <div className="mt-3 space-y-2 text-sm text-[#4D3F36]">
+            <div className="mt-3 space-y-2 text-sm theme-text-main">
               <p>
                 {lang === "ro"
                   ? `Ai parcurs toate lecțiile pentru ${moduleLabel ?? "acest modul"}.`
@@ -129,19 +160,19 @@ export default function KunoMissionCard({
               </p>
               {nextModuleLabel ? (
                 <>
-                  <p className="text-[13px] font-semibold text-[#2C2C2C]">
+                  <p className="text-[13px] font-semibold theme-text-main">
                     {lang === "ro"
                       ? `Următorul parcurs recomandat: ${nextModuleLabel}.`
                       : `Next suggested path: ${nextModuleLabel}.`}
                   </p>
-                  <p className="text-[12px] text-[#7B6B60]">
+                  <p className="text-[12px] theme-text-muted">
                     {lang === "ro"
                       ? "Pornește când ești gata — progresul tău se mută automat pe noul modul."
                       : "Start when you’re ready — your progress switches automatically to the new module."}
                   </p>
                 </>
               ) : (
-                <p className="text-[12px] text-[#7B6B60]">
+                <p className="text-[12px] theme-text-muted">
                   {lang === "ro"
                     ? "Poți alege alt modul OmniKuno sau poți relua lecțiile preferate din aplicație."
                     : "Pick another OmniKuno module or revisit any lesson you want from the app."}
@@ -151,26 +182,31 @@ export default function KunoMissionCard({
           ) : activeLesson ? (
             <Link
               href={ctaHref}
-              className="mt-3 flex items-center gap-3 rounded-2xl border border-transparent px-2 py-2 transition hover:border-[#F5A47E]/40 hover:bg-[#FFF8F4]/70"
+              className="mt-3 flex items-center gap-3 rounded-2xl border px-2 py-2 transition"
+              style={{
+                borderColor: "var(--border-subtle)",
+                backgroundColor: "var(--bg-card)",
+              }}
             >
               <span
-                className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${
-                  activeLesson.type === "quiz"
-                    ? "border-[#C07963] bg-[#FFF3EC] text-[#C07963]"
-                    : "border-[#F5A47E] bg-[#FFF9F5] text-[#D55D2A]"
-                }`}
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
+                style={{
+                  borderColor: activeAccent ?? "var(--accent-main)",
+                  backgroundColor: activeBg,
+                  color: activeAccent ?? "var(--accent-main)",
+                }}
               >
                 ▶
               </span>
               <div>
-                <p className="text-base font-semibold text-[#2C2C2C] leading-tight">{activeLesson.title}</p>
-                <p className="text-[11px] uppercase tracking-[0.2em] text-[#A08F82]">
+                <p className="text-base font-semibold theme-text-main leading-tight">{activeLesson.title}</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] theme-text-soft">
                   {activeLesson.type === "quiz" ? (lang === "ro" ? "Quiz" : "Quiz") : lang === "ro" ? "Lecție" : "Lesson"}
                 </p>
               </div>
             </Link>
           ) : (
-            <p className="mt-2 text-[12px] text-[#7B6B60]">
+            <p className="mt-2 text-[12px] theme-text-muted">
               {lang === "ro" ? "Nu avem momentan un pas activ." : "No active step right now."}
             </p>
           )}
@@ -178,22 +214,19 @@ export default function KunoMissionCard({
 
         <div className="mt-4 flex flex-col items-center gap-2">
           <Link
-            href={ctaHref}
-            className="inline-flex w-full max-w-sm items-center justify-center rounded-full bg-gradient-to-b from-[#C07963] to-[#B36654] px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.18em] text-white shadow-[0_8px_20px_rgba(192,121,99,0.3)] transition hover:brightness-110 hover:shadow-[0_10px_22px_rgba(192,121,99,0.35)] active:translate-y-[1px]"
-          >
-            {ctaLabel}
-          </Link>
-          <Link
             href="/omni-kuno"
-            className="inline-flex items-center text-[11px] font-semibold text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline"
+            className="inline-flex items-center text-[11px] font-semibold underline-offset-2 transition theme-link hover:underline"
           >
             {lang === "ro" ? "Vezi toate misiunile" : "View all missions"}
           </Link>
         </div>
-        <div className="mt-5 rounded-2xl border border-[#E4DAD1] bg-white px-4 py-3 text-sm text-[#4D3F36]">
+        <div
+          className="mt-5 rounded-2xl border px-4 py-3 text-sm theme-text-main"
+          style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+        >
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B08A78]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] theme-text-muted">
                 {lang === "ro" ? "Indicatori recenți" : "Recent indicators"}
               </p>
               <InfoTooltip
@@ -206,21 +239,24 @@ export default function KunoMissionCard({
               />
             </span>
           </div>
-          <div className="mt-3 space-y-2 text-[12px] text-[#2C2C2C]">
+          <div className="mt-3 space-y-2 text-[12px] theme-text-main">
             <div className="flex items-center justify-between">
-              <p className="text-[12px] font-semibold text-[#7B6B60]">
+              <p className="text-[12px] font-semibold theme-text-muted">
                 {lang === "ro" ? "XP (Pași finalizați)" : "XP (Steps completed)"}
               </p>
               <p className="text-[13px] font-semibold">{xp}</p>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <p className="text-[12px] font-semibold text-[#7B6B60]">
+              <p className="text-[12px] font-semibold theme-text-muted">
                 {lang === "ro" ? "Scor adaptiv" : "Adaptive score"}
               </p>
               <div className="flex items-center gap-3">
                 <p className="text-[13px] font-semibold">{omniCunoScore}</p>
                 {scoreDelta ? (
-                  <p className={`text-[11px] font-semibold ${Number(kunoDelta) >= 0 ? "text-[#1F7A43]" : "text-[#B8000E]"}`}>
+                  <p
+                    className="text-[11px] font-semibold"
+                    style={{ color: Number(kunoDelta) >= 0 ? "var(--success)" : "var(--danger)" }}
+                  >
                     {lang === "ro" ? "Progres: " : "Progress: "}
                     {scoreDelta}
                   </p>
@@ -231,7 +267,8 @@ export default function KunoMissionCard({
         </div>
 
         <div className="mt-3 pb-5" />
-      </Card>
+        </div>
+      </DashboardCard>
     </motion.div>
   );
 }

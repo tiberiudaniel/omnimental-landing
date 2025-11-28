@@ -244,20 +244,6 @@ export function computeActionTrend(
   return arr;
 }
 
-export function computeDistribution(sessions: PracticeSessionLite[]): {
-  reflection: number; breathing: number; drill: number; total: number;
-} {
-  let r = 0, b = 0, d = 0;
-  sessions.forEach((s) => {
-    const m = Math.max(0, Math.round((s.durationSec ?? 0) / 60));
-    if (s.type === "reflection") r += m;
-    else if (s.type === "breathing") b += m;
-    else if (s.type === "drill") d += m;
-  });
-  const total = r + b + d;
-  return { reflection: r, breathing: b, drill: d, total };
-}
-
 export function computeStreak(
   sessions: PracticeSessionLite[],
   referenceMs: number,

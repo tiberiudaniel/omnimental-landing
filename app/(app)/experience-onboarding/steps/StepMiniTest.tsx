@@ -140,8 +140,16 @@ export default function StepMiniTest({
   }, [autoSubmitAfterMin, canSubmit, handleSubmit]);
   return (
     <section className="space-y-4">
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
-        <div className="mb-1 text-xs uppercase tracking-[0.3em] text-[#A08F82]">{lang === 'ro' ? 'Pas 2/7' : 'Step 2/7'}</div>
+      <div
+        className="rounded-[16px] border px-6 py-6 shadow-sm"
+        style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+      >
+        <div
+          className="mb-1 text-xs uppercase tracking-[0.3em]"
+          style={{ color: "var(--text-soft)" }}
+        >
+          {lang === 'ro' ? 'Pas 2/7' : 'Step 2/7'}
+        </div>
         <Typewriter text={lang === 'ro' ? `Mini‑Cuno: ${questions.length} întrebări rapide. Vei vedea explicația corectă la fiecare răspuns.` : `Mini‑Cuno: ${questions.length} quick questions. You’ll see the explanation for the correct answer.`} />
       </div>
       {/* Legend removed here to keep the quiz simple and self‑evident (pure knowledge) */}
@@ -165,12 +173,14 @@ export default function StepMiniTest({
         );
       })}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-[#4A3A30]">{lang === 'ro' ? 'Scor curent' : 'Current score'}: {raw}/{max}</p>
+        <p className="text-sm" style={{ color: "var(--text-main)" }}>
+          {lang === 'ro' ? 'Scor curent' : 'Current score'}: {raw}/{max}
+        </p>
         <button
           disabled={!canSubmit}
           onClick={handleSubmit}
           data-testid="eo-submit"
-          className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
+          className="theme-btn-outline rounded-[10px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {lang === 'ro' ? 'Vezi scorul' : 'See score'}
         </button>

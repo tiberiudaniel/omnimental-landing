@@ -67,7 +67,7 @@ export default function StepJournal({ userId, onSaved, onSkip }: { userId: strin
         data-testid="eo-journal-text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className="w-full rounded-[12px] border border-[#E4DAD1] p-3 text-sm text-[#2C2C2C] outline-none transition focus:border-[#E60012] focus:ring-1 focus:ring-[#E60012]"
+        className="theme-input w-full rounded-[12px] p-3 text-sm"
         rows={4}
         placeholder={lang === 'ro' ? "Ce simți acum legat de tema ta în focus?" : "What do you feel right now about your focus theme?"}
       />
@@ -75,7 +75,7 @@ export default function StepJournal({ userId, onSaved, onSkip }: { userId: strin
         <button
           disabled={!text || busy}
           onClick={save}
-          className="rounded-[999px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:bg-[#2C2C2C] hover:text-white"
+          className="theme-btn-solid rounded-[999px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
           data-testid="eo-journal-save"
         >
           {lang === 'ro' ? 'Salvează' : 'Save'}
@@ -83,7 +83,7 @@ export default function StepJournal({ userId, onSaved, onSkip }: { userId: strin
         <button
           type="button"
           onClick={onSkip}
-          className="rounded-[999px] border border-[#D8C6B6] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7B6B60] hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+          className="theme-btn-outline rounded-[999px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
         >
           {lang === 'ro' ? 'Sari peste' : 'Skip'}
         </button>

@@ -71,7 +71,9 @@ export default function InitiationStepDailyState({ onComplete }: { onComplete?: 
     const fillPct = Math.max(0, Math.min(100, (clamped - 1) * (100 / 9)));
     return (
       <div className="panel-ghost px-4 py-4" data-highlight={!touched[k] ? "true" : undefined}>
-        <p className="text-sm font-medium text-[#2C2C2C] capitalize">{labels[k]}</p>
+        <p className="text-sm font-medium capitalize" style={{ color: "var(--text-main)" }}>
+          {labels[k]}
+        </p>
         <div className="mt-2">
           <div className="mixer-wrap ticks-10">
             <span className="mixer-slot" aria-hidden="true"></span>
@@ -92,9 +94,14 @@ export default function InitiationStepDailyState({ onComplete }: { onComplete?: 
             />
           </div>
         </div>
-        <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+        <div
+          className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em]"
+          style={{ color: "var(--text-soft)" }}
+        >
           <span>{lowHigh[k].low}</span>
-          <span className="text-[#7A6455]">{clamped}/10</span>
+          <span style={{ color: "var(--text-muted)" }}>
+            {clamped}/10
+          </span>
           <span>{lowHigh[k].high}</span>
         </div>
       </div>
@@ -102,18 +109,37 @@ export default function InitiationStepDailyState({ onComplete }: { onComplete?: 
   }
   return (
     <section className="px-0 py-0">
-      <div className="rounded-[24px] border border-[#E4DAD1] bg-white px-4 py-4 shadow-sm md:px-6 md:py-6">
+      <div
+        className="rounded-[24px] border px-4 py-4 shadow-sm md:px-6 md:py-6"
+        style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+      >
         <div className="flex flex-col gap-6 md:flex-row">
           <div className="md:w-[38%] flex justify-center">
-            <div className="relative mx-auto aspect-[3/4] w-full max-w-[320px] overflow-hidden rounded-[32px] border border-[#E4DAD1] shadow-[0_20px_45px_rgba(0,0,0,0.12)]">
+            <div
+              className="relative mx-auto aspect-[3/4] w-full max-w-[320px] overflow-hidden rounded-[32px] border shadow-[0_20px_45px_rgba(0,0,0,0.12)]"
+              style={{ borderColor: "var(--border-subtle)" }}
+            >
               <Image src={onboardingDailyState} alt={lang === 'ro' ? 'Ilustrație stare zilnică' : 'Daily state illustration'} fill className="object-cover" priority={false} />
             </div>
           </div>
           <div className="flex-1 space-y-4">
-            <div className="rounded-[18px] border border-[#F0E8E0] bg-[#FFF8F4] px-5 py-5 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">{lang === 'ro' ? 'Stare zilnică' : 'Daily state'}</p>
-              <h3 className="mt-2 text-xl font-semibold text-[#2C2C2C]">{lang === 'ro' ? 'Mică evaluare a resurselor de azi' : 'Quick evaluation of today’s resources'}</h3>
-              <div className="mt-3 text-sm text-[#4A3A30]">
+            <div
+              className="rounded-[18px] border px-5 py-5 shadow-sm"
+              style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card-soft)" }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.3em]"
+                style={{ color: "var(--text-soft)" }}
+              >
+                {lang === 'ro' ? 'Stare zilnică' : 'Daily state'}
+              </p>
+              <h3
+                className="mt-2 text-xl font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {lang === 'ro' ? 'Mică evaluare a resurselor de azi' : 'Quick evaluation of today’s resources'}
+              </h3>
+              <div className="mt-3 text-sm" style={{ color: "var(--text-main)" }}>
                 <Typewriter text={lang === 'ro' ? 'Cum arată azi resursele tale interne?' : 'How do your inner resources look today?'} />
               </div>
             </div>
@@ -127,7 +153,7 @@ export default function InitiationStepDailyState({ onComplete }: { onComplete?: 
                 <button
                   disabled={busy || !allTouched}
                   onClick={submit}
-                  className="rounded-[999px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:bg-[#2C2C2C] hover:text-white"
+                  className="theme-btn-solid rounded-[999px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
                   data-testid="init-daily-continue"
                 >
                   {lang === 'ro' ? 'Continuă' : 'Continue'}

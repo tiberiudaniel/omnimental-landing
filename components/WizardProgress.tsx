@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import type { WizardStepId } from "./useWizardSteps";
 
 const PROGRESS_STEPS = [
@@ -49,12 +50,18 @@ export function WizardProgress({ currentStep, lang, onReset: _onReset, onExit: _
     <div className="mx-auto mb-3 w-full max-w-4xl px-3">
       <div className="flex flex-col gap-2 rounded-[12px] border border-transparent bg-transparent px-2 py-2 shadow-none">
         <div className="flex flex-col items-start justify-between gap-1.5 sm:flex-row sm:items-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#A08F82]">
+          <p
+            className="text-[10px] font-semibold uppercase tracking-[0.28em]"
+            style={{ color: "var(--text-soft)" }}
+          >
             {lang === "ro"
               ? `Pasul ${activeIndex + 1} din ${totalSteps}`
               : `Step ${activeIndex + 1} of ${totalSteps}`}
           </p>
-          <p className="text-[11px] font-semibold text-[#4A3A30] sm:hidden">
+          <p
+            className="text-[11px] font-semibold sm:hidden"
+            style={{ color: "var(--text-main)" }}
+          >
             {lang === "ro"
               ? PROGRESS_STEPS[activeIndex]?.labelRo
               : PROGRESS_STEPS[activeIndex]?.labelEn}
@@ -63,24 +70,35 @@ export function WizardProgress({ currentStep, lang, onReset: _onReset, onExit: _
             {PROGRESS_STEPS.map((step, index) => {
               const isActive = index === activeIndex;
               const isCompleted = index < activeIndex;
-              const dotClass = isActive
-                ? "bg-[#FFF4EE] ring-2 ring-[#C07963]"
+              const dotStyle: CSSProperties = isActive
+                ? {
+                    backgroundColor: "var(--bg-card)",
+                    boxShadow: "0 0 0 2px var(--accent-main)",
+                  }
                 : isCompleted
-                ? "bg-[#F6F2EE]"
-                : "bg-[#F5EDE4]";
+                ? { backgroundColor: "var(--bg-elevated)" }
+                : { backgroundColor: "var(--bg-card-soft)" };
               return (
                 <div key={step.id} className="flex items-center gap-2">
                   <span
-                    className={`flex h-3 w-3 items-center justify-center rounded-full ${dotClass}`}
+                    className="flex h-3 w-3 items-center justify-center rounded-full"
+                    style={dotStyle}
                     aria-label={`${lang === 'ro' ? 'Pasul' : 'Step'} ${index + 1}`}
                   >
                     {/* minimalist bullet; number hidden for visual simplicity */}
                   </span>
-                  <span className="hidden text-[11px] font-semibold text-[#4A3A30] lg:inline">
+                  <span
+                    className="hidden text-[11px] font-semibold lg:inline"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     {lang === "ro" ? step.labelRo : step.labelEn}
                   </span>
                   {index < totalSteps - 1 ? (
-                    <span className="h-px w-6 bg-[#EADFD4]" aria-hidden="true" />
+                    <span
+                      className="h-px w-6"
+                      style={{ backgroundColor: "var(--border-subtle)" }}
+                      aria-hidden="true"
+                    />
                   ) : null}
                 </div>
               );
@@ -88,10 +106,16 @@ export function WizardProgress({ currentStep, lang, onReset: _onReset, onExit: _
           </div>
         </div>
         <div className="w-full" aria-hidden="true">
-          <div className="h-[3px] w-full overflow-hidden rounded-full bg-[#F5EDE4]">
+          <div
+            className="h-[3px] w-full overflow-hidden rounded-full"
+            style={{ backgroundColor: "var(--bg-card-soft)" }}
+          >
             <div
-              className="h-full rounded-full bg-[#C07963]/80 transition-[width] duration-500 ease-out"
-              style={{ width: `${progressPercent}%` }}
+              className="h-full rounded-full transition-[width] duration-500 ease-out"
+              style={{
+                width: `${progressPercent}%`,
+                backgroundColor: "var(--accent-main)",
+              }}
             />
           </div>
         </div>

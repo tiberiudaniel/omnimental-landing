@@ -4,10 +4,72 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --accent: #C07963;
-  --accent-hover: #A76452;
+  /* Neutral surfaces */
+  --bg-page: #FAF9F7;
+  --bg-elevated: #F5F2EC;
+  --bg-card: #F0EBE3;
+  --bg-card-soft: #E8E1D7;
+  --bg-deep: #C9B8A9;
+  --border-subtle: #E3DED6;
+  --border-strong: #CDBEAE;
+  --shadow-card: 0 12px 32px rgba(27, 20, 16, 0.12);
+
+  /* Typography */
+  --text-main: #1B1410;
+  --text-strong: #18120D;
+  --text-muted: #7F6B5E;
+  --text-soft: #A7978B;
+  --text-on-deep: #FCFAF7;
+
+  /* Accents */
+  --accent-main: #C46A3B;
+  --accent-soft: #F2C8AE;
+  --accent-strong: #9A4F2A;
+  --accent-alt: #D6A45C;
+
+  /* States */
+  --state-success: #3A7A52;
+  --state-success-soft: #DCEFE2;
+  --state-warning: #C1821C;
+  --state-warning-soft: #F8E3BD;
+  --state-danger: #B9483D;
+  --state-danger-soft: #F5D3CC;
+
+  /* Legacy fallbacks */
+  --background: var(--bg-page);
+  --foreground: var(--text-main);
+  --accent: var(--accent-main);
+  --accent-hover: var(--accent-strong);
+  --success: var(--state-success);
+  --warning: var(--state-warning);
+  --danger: var(--state-danger);
+  --chart-line-a: var(--accent-main);
+  --chart-line-b: var(--accent-alt);
+  --chart-line-c: var(--accent-strong);
+}
+
+.dark {
+  --bg-page: #2B1D14;
+  --bg-card: #3B2518;
+  --bg-card-soft: #4A2F1C;
+  --border-subtle: rgba(255, 211, 170, 0.16);
+  --shadow-card: 0 22px 60px rgba(0, 0, 0, 0.65);
+
+  --text-main: #f9fafb;
+  --text-muted: #e7e5e4;
+  --text-soft: #a8a29e;
+
+  --accent-main: #BF5909;
+  --accent-soft: #D2710F;
+  --accent-strong: #DD8721;
+
+  --success: #22c55e;
+  --warning: #fb923c;
+  --danger: #f87171;
+
+  --chart-line-a: #DD8721;
+  --chart-line-b: #BF5909;
+  --chart-line-c: #C6640D;
 }
 
 @theme inline {
@@ -21,11 +83,11 @@
 /* If we later add a dark theme, gate it behind an explicit class instead of prefers-color-scheme */
 
 body {
-  /* Use the product light background universally */
-  background: #FDFCF9;
-  color: #2C2C2C;
+  background: var(--bg-page);
+  color: var(--text-main);
   font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 /* Typography utilities (3–4 sizes unified across the app) */
@@ -50,7 +112,103 @@ body {
   .font-serif-display { font-family: var(--font-cormorant), Georgia, "Times New Roman", serif; letter-spacing: 0.01em; }
   /* Page/container and panel helpers */
   .page-wrap { max-width: 1120px; margin-left: auto; margin-right: auto; }
-  .panel-ghost { border: 1px solid #E4D8CE; background: rgba(255,255,255,0.92); box-shadow: 0 12px 32px rgba(0,0,0,0.08); border-radius: 16px; }
+}
+
+.theme-page {
+  background-color: var(--bg-page);
+  color: var(--text-main);
+}
+
+.theme-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
+}
+
+.theme-card-soft {
+  background-color: var(--bg-card-soft);
+}
+
+.theme-text-main {
+  color: var(--text-main);
+}
+
+.theme-text-muted {
+  color: var(--text-muted);
+}
+
+.theme-text-soft {
+  color: var(--text-soft);
+}
+
+.theme-border-subtle {
+  border-color: var(--border-subtle);
+}
+
+.theme-accent-bg {
+  background-color: var(--accent-main);
+  color: #ffffff;
+}
+
+.theme-accent-text {
+  color: var(--accent-main);
+}
+
+.theme-link {
+  color: var(--text-main);
+  transition: color 150ms ease;
+}
+.theme-link:hover {
+  color: var(--accent-main);
+}
+.theme-btn-solid {
+  background-color: var(--accent-main);
+  border: 1px solid var(--accent-main);
+  color: var(--text-on-deep);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.theme-btn-solid:hover {
+  background-color: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+.theme-btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-main);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.theme-btn-outline:hover {
+  border-color: var(--accent-main);
+  color: var(--accent-main);
+}
+.theme-input {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.theme-input::placeholder {
+  color: var(--text-soft);
+}
+.theme-input:focus {
+  border-color: var(--accent-main);
+  box-shadow: 0 0 0 1px var(--accent-main);
+  outline: none;
+}
+
+.theme-link:hover {
+  color: var(--accent-main);
+}
+
+.hover-theme-card-soft:hover {
+  background-color: var(--bg-card-soft);
+}
+
+.panel-ghost {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  border-radius: 16px;
 }
 
 /* Mixer-style range with neumorphic rail, ticks, and raised knob */
@@ -70,8 +228,15 @@ body {
 .mixer-range::-webkit-slider-thumb { appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 1px solid #D8C6B6; box-shadow: 0 10px 18px rgba(0,0,0,0.15), inset -2px -2px 3px rgba(0,0,0,0.04), inset 2px 2px 4px rgba(255,255,255,0.85), 0 0 0 6px rgba(192,121,99,0.12); margin-top: -9px; }
 .mixer-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 1px solid #D8C6B6; box-shadow: 0 10px 18px rgba(0,0,0,0.15), inset -2px -2px 3px rgba(0,0,0,0.04), inset 2px 2px 4px rgba(255,255,255,0.85), 0 0 0 6px rgba(192,121,99,0.12); }
 
-.panel-ghost[data-highlight="true"] { animation: sliderGlow 2s ease-in-out infinite; box-shadow: 0 0 0 2px rgba(192,121,99,0.35), 0 12px 32px rgba(0,0,0,0.08); }
-.panel-ghost[data-highlight="true"] .mixer-wrap { box-shadow: -6px -6px 14px rgba(255,255,255,0.9), 6px 6px 12px rgba(192,121,99,0.12), inset 0 0 0 1px rgba(192,121,99,0.3); }
+.panel-ghost[data-highlight="true"] {
+  animation: sliderGlow 2s ease-in-out infinite;
+  box-shadow: 0 0 0 2px rgba(192, 121, 99, 0.35), var(--shadow-card);
+}
+.panel-ghost[data-highlight="true"] .mixer-wrap {
+  box-shadow: -6px -6px 14px rgba(255, 255, 255, 0.9),
+    6px 6px 12px rgba(192, 121, 99, 0.18),
+    inset 0 0 0 1px rgba(192, 121, 99, 0.35);
+}
 @keyframes sliderGlow {
   0% { box-shadow: 0 0 0 2px rgba(192,121,99,0.15), 0 12px 32px rgba(0,0,0,0.08); }
   50% { box-shadow: 0 0 0 6px rgba(192,121,99,0.3), 0 12px 32px rgba(0,0,0,0.08); }
@@ -80,6 +245,208 @@ body {
 
 /* Fluid width wrapper so sliders adapt but don't stretch excessively */
 .mixer-fluid { width: 100%; max-width: 740px; }
+
+/* Legacy OmniKuno palette remapped to theme tokens */
+.text-\[\#2C2C2C\],
+.text-\[\#4D3F36\],
+.text-\[\#4F2C1F\],
+.text-\[\#5A4B43\],
+.text-\[\#513D32\] {
+  color: var(--text-main) !important;
+}
+.text-\[\#7B6B60\],
+.text-\[\#9A8777\],
+.text-\[\#A08F82\],
+.text-\[\#B08A78\],
+.text-\[\#B0A295\],
+.text-\[\#B99484\],
+.text-\[\#CAB7A8\],
+.text-\[\#6B6B6B\] {
+  color: var(--text-muted) !important;
+}
+.text-\[\#C07963\],
+.text-\[\#C24B17\],
+.text-\[\#D55D2A\],
+.text-\[\#F26F4B\],
+.text-\[\#F5A47E\],
+.text-\[\#F5BAA7\],
+.text-\[\#F2B39B\] {
+  color: var(--accent-main) !important;
+}
+.text-\[\#1F7A43\],
+.text-\[\#2F7A4D\],
+.text-\[\#1F3C2F\] {
+  color: var(--success) !important;
+}
+.text-\[\#5C2A1D\],
+.text-\[\#B03C2F\],
+.text-\[\#E54C38\] {
+  color: var(--danger) !important;
+}
+.bg-\[\#FFFBF7\],
+.bg-\[\#FFF8F4\],
+.bg-\[\#FFF4EE\],
+.bg-\[\#FFF3EB\],
+.bg-\[\#FFF3EC\],
+.bg-\[\#FFF7F5\] {
+  background-color: color-mix(in srgb, var(--accent-main) 6%, var(--bg-card)) !important;
+}
+.bg-\[\#E4DAD1\] {
+  background-color: color-mix(in srgb, var(--border-subtle) 40%, var(--bg-card)) !important;
+}
+.bg-\[\#F3FFF8\],
+.bg-\[\#ECF8F0\] {
+  background-color: color-mix(in srgb, var(--success) 10%, var(--bg-card)) !important;
+}
+.bg-\[\#FBEAE6\] {
+  background-color: color-mix(in srgb, var(--danger) 10%, var(--bg-card)) !important;
+}
+.bg-\[\#FCFBF9\],
+.bg-\[\#F4EDE4\],
+.bg-\[\#F3E9DF\],
+.bg-\[\#F0E8E0\] {
+  background-color: var(--bg-card-soft) !important;
+}
+.bg-\[\#C07963\] {
+  background-color: var(--accent-main) !important;
+}
+.bg-\[\#1F3C2F\] {
+  background-color: color-mix(in srgb, var(--success) 65%, var(--text-main)) !important;
+}
+.bg-\[\#F26F4B\],
+.bg-\[\#F5BAA7\],
+.bg-\[\#F2B39B\] {
+  background-color: color-mix(in srgb, var(--accent-main) 60%, var(--bg-card)) !important;
+}
+.border-\[\#E2CFC2\],
+.border-\[\#E4DAD1\],
+.border-\[\#E7DED3\],
+.border-\[\#F0E8E0\],
+.border-\[\#F3E9DF\],
+.border-\[\#CAB7A8\],
+.border-\[\#B08A78\] {
+  border-color: var(--border-subtle) !important;
+}
+.border-\[\#C07963\],
+.border-\[\#F2B39B\],
+.border-\[\#F5A47E\] {
+  border-color: color-mix(in srgb, var(--accent-main) 45%, transparent) !important;
+}
+.border-\[\#1F7A43\],
+.border-\[\#1F3C2F\],
+.border-\[\#82C29B\],
+.border-\[\#CBE8D7\] {
+  border-color: color-mix(in srgb, var(--success) 45%, transparent) !important;
+}
+.border-\[\#E54C38\],
+.border-\[\#F5C6C0\] {
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent) !important;
+}
+.text-\[\#C07963\] a,
+.text-\[\#C07963\] span,
+.text-\[\#C07963\] strong {
+  color: inherit;
+}
+[class*="shadow-[0_6px_18px_rgba(79,44,31,0.15)]"] {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2) !important;
+}
+[class*="shadow-[0_15px_35px_rgba(242,114,75,0.25)]"],
+[class*="shadow-[0_20px_45px_rgba(242,114,75,0.18)]"],
+[class*="shadow-[0_14px_40px_rgba(192,121,99,0.15)]"] {
+  box-shadow: 0 20px 45px color-mix(in srgb, var(--accent-main) 20%, rgba(0,0,0,0.2)) !important;
+}
+[class*="shadow-[0_25px_60px_rgba(0,0,0,0.25)]"] {
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25) !important;
+}
+.focus-visible\:ring-\[\#C07963\]:focus-visible {
+  --tw-ring-color: var(--accent-main);
+}
+.ring-\[\#F5A47E\]\/70 {
+  --tw-ring-color: color-mix(in srgb, var(--accent-main) 70%, transparent);
+}
+.hover\:bg-\[\#FFF3EB\]:hover,
+.hover\:bg-\[\#FFF4EE\]:hover {
+  background-color: color-mix(in srgb, var(--accent-main) 8%, var(--bg-card)) !important;
+}
+.hover\:bg-\[\#C07963\]:hover {
+  background-color: var(--accent-main) !important;
+}
+.hover\:bg-\[\#1F3C2F\]:hover {
+  background-color: color-mix(in srgb, var(--success) 65%, var(--text-main)) !important;
+}
+
+/* Wizard / OmniAbil surfaces */
+.bg-white {
+  background-color: var(--bg-card) !important;
+}
+.bg-white\/90 {
+  background-color: color-mix(in srgb, var(--bg-card) 90%, transparent) !important;
+}
+.bg-white\/92 {
+  background-color: color-mix(in srgb, var(--bg-card) 92%, transparent) !important;
+}
+.bg-white\/94 {
+  background-color: color-mix(in srgb, var(--bg-card) 94%, transparent) !important;
+}
+.bg-white\/80 {
+  background-color: color-mix(in srgb, var(--bg-card) 80%, transparent) !important;
+}
+.text-\[\#4A3A30\],
+.text-\[\#6A4A3A\] {
+  color: var(--text-main) !important;
+}
+.text-\[\#A08F82\] {
+  color: var(--text-muted) !important;
+}
+.text-\[\#E60012\] {
+  color: var(--danger) !important;
+}
+.text-\[\#1F7A53\] {
+  color: var(--success) !important;
+}
+.bg-\[\#F0FFF6\] {
+  background-color: color-mix(in srgb, var(--success) 12%, var(--bg-card)) !important;
+}
+.bg-\[\#FDFCF9\] {
+  background-color: color-mix(in srgb, var(--bg-card) 60%, var(--bg-page)) !important;
+}
+.border-\[\#F0E6DA\],
+.border-\[\#E4D8CE\] {
+  border-color: var(--border-subtle) !important;
+}
+.border-\[\#1F7A53\] {
+  border-color: color-mix(in srgb, var(--success) 55%, transparent) !important;
+}
+.border-\[\#2C2C2C\] {
+  border-color: color-mix(in srgb, var(--text-main) 70%, transparent) !important;
+}
+.hover\:border-\[\#2C2C2C\]:hover {
+  border-color: color-mix(in srgb, var(--text-main) 70%, transparent) !important;
+}
+.hover\:border-\[\#C07963\]:hover {
+  border-color: color-mix(in srgb, var(--accent-main) 45%, transparent) !important;
+}
+.hover\:text-\[\#E60012\]:hover {
+  color: var(--danger) !important;
+}
+.hover\:text-\[\#B8000E\]:hover {
+  color: color-mix(in srgb, var(--danger) 85%, var(--text-main)) !important;
+}
+.hover\:text-\[\#C07963\]:hover {
+  color: var(--accent-main) !important;
+}
+.hover\:text-\[\#2C2C2C\]:hover,
+.hover\:text-\[\#5C4F45\]:hover,
+.hover\:text-\[\#8A4B2E\]:hover,
+.hover\:text-\[\#A76452\]:hover {
+  color: var(--text-main) !important;
+}
+.hover\:text-\[\#1F7A53\]:hover {
+  color: var(--success) !important;
+}
+.text-\[\#8C7C70\] {
+  color: var(--text-muted) !important;
+}
 @media (min-width: 640px) { .mixer-fluid { max-width: 820px; } }
 
 html {

@@ -109,30 +109,41 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
             </div>
           ))}
           <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-[#4A3A30]">{lang === 'ro' ? 'Scor' : 'Score'}: {score}/{questions.length}</p>
+            <p className="text-sm" style={{ color: "var(--text-main)" }}>
+              {lang === 'ro' ? 'Scor' : 'Score'}: {score}/{questions.length}
+            </p>
           </div>
           <div className="mt-6 flex justify-end">
             <button
               type="button"
               onClick={() => setShowSummary(true)}
               disabled={!allAnswered}
-              className="rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-sm font-semibold tracking-[0.12em] text-[#2C2C2C] disabled:opacity-60 hover:bg-[#2C2C2C] hover:text-white"
+              className="theme-btn-solid rounded-[10px] px-6 py-2 text-sm font-semibold tracking-[0.12em] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {lang === 'ro' ? 'Finalizează' : 'Finalize'}
             </button>
           </div>
         </>
       ) : (
-        <section className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+        <section
+          className="rounded-[16px] border px-6 py-6 shadow-sm"
+          style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+        >
+          <h3
+            className="text-sm font-semibold uppercase tracking-[0.25em]"
+            style={{ color: "var(--text-soft)" }}
+          >
             {lang === 'ro' ? 'Inițiere completă' : 'Initiation complete'}
           </h3>
-          <p className="mt-2 text-sm text-[#4A3A30]">
+          <p className="mt-2 text-sm" style={{ color: "var(--text-main)" }}>
             {lang === 'ro'
               ? 'Ai ajuns la finalul inițierii: ți-ai luat pulsul zilnic, ai înțeles terenul și știi deja următorul gest concret.'
               : 'You reached the end of initiation: you checked today’s pulse, understood the terrain, and already chose the next concrete move.'}
           </p>
-          <ul className="mt-3 list-disc pl-5 text-sm text-[#4A3A30]">
+          <ul
+            className="mt-3 list-disc pl-5 text-sm"
+            style={{ color: "var(--text-main)" }}
+          >
             <li>{lang === 'ro' ? 'Ți-ai evaluat resursele și ai pus cap la cap contextul Omni-Kuno.' : 'You evaluated your resources and pieced together the Omni-Kuno context.'}</li>
             <li>{lang === 'ro' ? 'Ai absorbit micro-lecția despre reflexele mentale adaptabile.' : 'You absorbed the micro lesson on adaptive mental reflexes.'}</li>
             <li>{lang === 'ro' ? 'Ai ales o acțiune realistă pentru următoarele 24 de ore.' : 'You picked a realistic action for the next 24 hours.'}</li>
@@ -143,14 +154,14 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
             <button
               type="button"
               onClick={submit}
-              className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-sm font-medium tracking-[0.12em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+              className="theme-btn-solid rounded-[10px] px-5 py-2 text-sm font-medium tracking-[0.12em]"
               data-testid="init-lesson-quiz-submit"
             >
               {lang === 'ro' ? 'Mergi la progres' : 'Go to progress'}
             </button>
             <a
               href="/recommendation?from=initiation"
-              className="rounded-[10px] border border-[#D8C6B6] px-5 py-2 text-sm font-medium tracking-[0.12em] text-[#7B6B60] hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+              className="theme-btn-outline rounded-[10px] px-5 py-2 text-sm font-medium tracking-[0.12em]"
             >
               {lang === 'ro' ? 'Vezi recomandarea ta' : 'See your recommendation'}
             </a>

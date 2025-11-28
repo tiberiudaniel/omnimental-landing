@@ -17,7 +17,10 @@ export default function InitiationStepJournal() {
     router.replace(url.pathname + url.search);
   }, [router]);
   return (
-    <div className="mx-auto max-w-xl rounded-[12px] border border-[#E4DAD1] bg-white px-6 py-6 text-sm text-[#4A3A30]">
+    <div
+      className="mx-auto max-w-xl rounded-[12px] border px-6 py-6 text-sm"
+      style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)", color: "var(--text-main)" }}
+    >
       {lang === 'ro' ? 'Se deschide jurnalul…' : 'Opening the journal…'}
     </div>
   );

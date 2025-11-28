@@ -16,11 +16,22 @@ export default function StepBreathPractice({ userId, onDone, onSkip }: { userId?
   }, []);
   return (
     <section className="space-y-4">
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
-        <div className="mb-1 text-xs uppercase tracking-[0.3em] text-[#A08F82]">{lang === 'ro' ? 'Pas 6/7 — Pas 2/2' : 'Step 6/7 — Step 2/2'}</div>
+      <div
+        className="rounded-[16px] border px-6 py-6 shadow-sm"
+        style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+      >
+        <div
+          className="mb-1 text-xs uppercase tracking-[0.3em]"
+          style={{ color: "var(--text-soft)" }}
+        >
+          {lang === 'ro' ? 'Pas 6/7 — Pas 2/2' : 'Step 6/7 — Step 2/2'}
+        </div>
         <Typewriter text={lang === 'ro' ? "Exercițiu de respirație ghidată — 2 minute. Inspiră, ține, expiră, ține. Observă cum se schimbă starea." : "Guided breathing — 2 minutes. Inhale, hold, exhale, hold. Notice the shift."} />
       </div>
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white p-6 text-center shadow-sm">
+      <div
+        className="rounded-[16px] border p-6 text-center shadow-sm"
+        style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+      >
         <BreathAnimation seconds={120} />
         <div className="mt-4 flex items-center justify-center gap-2">
           <button
@@ -50,11 +61,16 @@ export default function StepBreathPractice({ userId, onDone, onSkip }: { userId?
               }
               onDone();
             }}
-            className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+            className="theme-btn-solid rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
           >
             {lang === 'ro' ? 'Am terminat' : 'Done'}
           </button>
-          <button onClick={onSkip} className="rounded-[10px] border border-[#D8C6B6] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7B6B60] hover:border-[#2C2C2C] hover:text-[#2C2C2C]">{lang === 'ro' ? 'Sari peste' : 'Skip'}</button>
+          <button
+            onClick={onSkip}
+            className="theme-btn-outline rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+          >
+            {lang === 'ro' ? 'Sari peste' : 'Skip'}
+          </button>
         </div>
       </div>
     </section>

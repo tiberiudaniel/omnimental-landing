@@ -29,7 +29,9 @@ function Mixer({ label, value, setValue, min = 1, max = 10, ticks = 10, lowLabel
   const fillPct = Math.max(0, Math.min(100, (clamped - min) * (100 / (max - min))));
   return (
     <div className="panel-ghost px-4 py-4" data-highlight={highlight ? 'true' : undefined}>
-      <p className="text-sm font-medium text-[#2C2C2C]">{label}</p>
+      <p className="text-sm font-medium" style={{ color: "var(--text-main)" }}>
+        {label}
+      </p>
       <div className="mt-2">
         <div className={`mixer-wrap ${ticks === 10 ? 'ticks-10' : 'ticks-5'}`}>
           <span className="mixer-slot" aria-hidden="true"></span>
@@ -51,9 +53,14 @@ function Mixer({ label, value, setValue, min = 1, max = 10, ticks = 10, lowLabel
         </div>
       </div>
       {(lowLabel || highLabel) ? (
-        <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+        <div
+          className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em]"
+          style={{ color: "var(--text-soft)" }}
+        >
           <span>{lowLabel}</span>
-          <span className="text-[#7A6455]">{clamped}/{max}</span>
+          <span style={{ color: "var(--text-muted)" }}>
+            {clamped}/{max}
+          </span>
           <span>{highLabel}</span>
         </div>
       ) : null}
@@ -111,18 +118,37 @@ export default function InitiationStepOmniScope({ userId, onComplete }: { userId
   };
   return (
     <section className="px-0 py-0">
-      <div className="rounded-[24px] border border-[#E4DAD1] bg-white px-4 py-4 shadow-sm md:px-6 md:py-6">
+      <div
+        className="rounded-[24px] border px-4 py-4 shadow-sm md:px-6 md:py-6"
+        style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+      >
         <div className="flex flex-col gap-6 md:flex-row">
           <div className="md:w-[38%] flex justify-center">
-            <div className="relative mx-auto aspect-[3/4] w-full max-w-[360px] overflow-hidden rounded-[32px] border border-[#E4DAD1] shadow-[0_20px_45px_rgba(0,0,0,0.12)]">
+            <div
+              className="relative mx-auto aspect-[3/4] w-full max-w-[360px] overflow-hidden rounded-[32px] border shadow-[0_20px_45px_rgba(0,0,0,0.12)]"
+              style={{ borderColor: "var(--border-subtle)" }}
+            >
               <Image src={onboardingPathGeometry} alt={lang === 'ro' ? 'Ilustrație OmniScope' : 'OmniScope illustration'} fill className="object-cover" priority={false} />
             </div>
           </div>
           <div className="flex-1 space-y-4">
-            <div className="rounded-[18px] border border-[#F0E8E0] bg-[#FFF8F4] px-5 py-5 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">{lang === 'ro' ? 'OmniScope' : 'OmniScope'}</p>
-              <h3 className="mt-2 text-xl font-semibold text-[#2C2C2C]">{lang === 'ro' ? 'Calibrezi harta temei în focus' : 'Calibrate the map for your focus theme'}</h3>
-              <div className="mt-3 text-sm text-[#4A3A30]">
+            <div
+              className="rounded-[18px] border px-5 py-5 shadow-sm"
+              style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card-soft)" }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.3em]"
+                style={{ color: "var(--text-soft)" }}
+              >
+                {lang === 'ro' ? 'OmniScope' : 'OmniScope'}
+              </p>
+              <h3
+                className="mt-2 text-xl font-semibold"
+                style={{ color: "var(--text-main)" }}
+              >
+                {lang === 'ro' ? 'Calibrezi harta temei în focus' : 'Calibrate the map for your focus theme'}
+              </h3>
+              <div className="mt-3 text-sm" style={{ color: "var(--text-main)" }}>
                 <Typewriter text={lang === 'ro' ? 'Unde ești acum pe hartă în raport cu tema în focus?' : 'Where are you right now relative to your focus theme?'} />
               </div>
             </div>
@@ -171,7 +197,7 @@ export default function InitiationStepOmniScope({ userId, onComplete }: { userId
                   <button
                     disabled={busy || !allTouched}
                     onClick={submit}
-                    className="rounded-[999px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:bg-[#2C2C2C] hover:text-white"
+                    className="theme-btn-solid rounded-[999px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
                     data-testid="init-scope-continue"
                   >
                     {lang === 'ro' ? 'Continuă' : 'Continue'}

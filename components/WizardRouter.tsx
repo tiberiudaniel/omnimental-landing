@@ -226,8 +226,15 @@ export default function WizardRouter(props: Props) {
               ]);
       // Instruction removed — we run only the scaffold lines
       return (
-        <section data-testid={intentTestId} className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8">
-          <div className="w-full max-w-5xl rounded-[12px] border border-[#E4D8CE] bg-white/92 px-6 py-5 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+        <section
+          data-testid={intentTestId}
+          className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center px-6 py-8"
+          style={{ backgroundColor: "var(--bg-page)", color: "var(--text-main)" }}
+        >
+          <div
+            className="w-full max-w-5xl rounded-[12px] border px-6 py-5 shadow-[0_8px_24px_rgba(27,20,16,0.12)]"
+            style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+          >
             {/* Single typewriter: use the scaffold lines in the lower position */}
             <div className="mb-4 w-full flex justify-center">
               <div className="max-w-xl text-left w-full">
@@ -306,7 +313,12 @@ export default function WizardRouter(props: Props) {
                 }
                 onAccountRequestCards();
               }}
-              className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#2C2C2C] bg-white text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] shadow-md"
+              className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center rounded-full border text-[11px] font-semibold uppercase tracking-[0.2em] shadow-md"
+              style={{
+                borderColor: "var(--border-strong)",
+                color: "var(--text-main)",
+                backgroundColor: "var(--bg-card)",
+              }}
               aria-label="Journal"
             >
               J
@@ -419,37 +431,49 @@ export default function WizardRouter(props: Props) {
           : ['I knew','Heard about it','Didn’t know']
       );
       return (
-        <div className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[#FDFCF9] px-6 py-8" data-testid={getWizardStepTestId("microLessonInfo")}>
+        <div
+          className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center px-6 py-8"
+          data-testid={getWizardStepTestId("microLessonInfo")}
+          style={{ backgroundColor: "var(--bg-page)", color: "var(--text-main)" }}
+        >
         <section className="mx-auto w-full max-w-4xl px-4 md:px-6">
           {/* Eyebrow */}
-          <div className="mb-4 text-[11px] uppercase tracking-[0.35em] text-[#C07963]">
+          <div className="mb-4 text-[11px] uppercase tracking-[0.35em]" style={{ color: "var(--accent-main)" }}>
             {lang === 'ro' ? 'Mini‑lecție' : 'Micro‑lesson'}
           </div>
           {/* Card consistent with wizard cards */}
-          <div className="rounded-[12px] border border-[#E4D8CE] bg-white/92 px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] space-y-6">
+          <div
+            className="rounded-[12px] border px-6 py-6 shadow-[0_8px_24px_rgba(27,20,16,0.12)] space-y-6"
+            style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+          >
             <article className="space-y-3">
-              <TypewriterText
-                text={title}
-                wrapperClassName="mb-0 w-full bg-[#FFFBF7] px-5 py-4 text-left rounded-[10px] border border-[#F0E6DA]"
-                headingClassName="text-xl md:text-2xl"
-              />
-              <p className="text-sm text-[#6A4A3A]">
+              <div
+                className="mb-0 w-full rounded-[10px] border px-5 py-4 text-left"
+                style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-subtle)" }}
+              >
+                <TypewriterText text={title} headingClassName="text-xl md:text-2xl" />
+              </div>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {lang === 'ro'
                   ? 'Un rezumat rapid înainte să intrăm în exerciții: citești câteva idei care pun temele tale într-un context practic.'
                   : 'A quick primer before the exercises: this mini-lesson gives you the context you need for the themes you selected.'}
               </p>
             </article>
-            <article className="space-y-3 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7]/70 px-5 py-4">
-              <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+            <article
+              className="space-y-3 rounded-[12px] border px-5 py-4"
+              style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card-soft)" }}
+            >
+              <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.25em]" style={{ color: "var(--text-soft)" }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z" stroke="#A08F82" strokeWidth="1.2" strokeLinejoin="round" />
-                  <path d="M12 7v4" stroke="#A08F82" strokeWidth="1.2" strokeLinecap="round" />
-                  <circle cx="12" cy="15" r="0.8" fill="#A08F82" />
+                  <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+                  <path d="M12 7v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                  <circle cx="12" cy="15" r="0.8" fill="currentColor" />
                 </svg>
                 {lang === 'ro' ? 'Știai că…' : 'Did you know…'}
               </div>
               <motion.div
-                className="max-w-[60ch] space-y-3 text-[15px] md:text-[16px] leading-[1.8] text-[#2C2C2C]"
+                className="max-w-[60ch] space-y-3 text-[15px] md:text-[16px] leading-[1.8]"
+                style={{ color: "var(--text-main)" }}
                 initial="hidden"
                 animate="show"
                 variants={{
@@ -464,15 +488,16 @@ export default function WizardRouter(props: Props) {
             </article>
             {/* Definition in a soft box */}
             <motion.section
-              className="rounded-[12px] border border-[#F0E6DA] bg-white px-5 py-4 text-[14px] md:text-[15px] leading-relaxed text-[#4A3A30] shadow-sm"
+              className="rounded-[12px] border px-5 py-4 text-[14px] md:text-[15px] leading-relaxed shadow-sm"
+              style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)", color: "var(--text-main)" }}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28, delay: 0.25 }}
             >
-              <div className="mb-2 flex items-center gap-2 text-[12px] font-semibold text-[#2C2C2C]">
+              <div className="mb-2 flex items-center gap-2 text-[12px] font-semibold" style={{ color: "var(--text-main)" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <circle cx="12" cy="12" r="10" stroke="#C07963" strokeWidth="1.1"/>
-                  <path d="M12 7.5v.8M11.3 10.8h1.4v5h-1.4z" stroke="#C07963" strokeWidth="1.1" strokeLinecap="round"/>
+                  <circle cx="12" cy="12" r="10" stroke="var(--accent-main)" strokeWidth="1.1"/>
+                  <path d="M12 7.5v.8M11.3 10.8h1.4v5h-1.4z" stroke="var(--accent-main)" strokeWidth="1.1" strokeLinecap="round"/>
                 </svg>
                 {lang === 'ro' ? 'Definiție:' : 'Definition:'}
               </div>
@@ -480,8 +505,8 @@ export default function WizardRouter(props: Props) {
             </motion.section>
             <section className="space-y-3">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">{familiarity}</p>
-                <p className="text-[12px] text-[#6A4A3A]">{familiarityHint}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em]" style={{ color: "var(--text-soft)" }}>{familiarity}</p>
+                <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{familiarityHint}</p>
               </div>
               <div className="grid max-w-xl grid-cols-1 gap-2 sm:grid-cols-3">
                 {btns.map((label, idx) => (
@@ -495,14 +520,14 @@ export default function WizardRouter(props: Props) {
                       } catch {}
                       navigateToStep('intentMotivation');
                     }}
-                    className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
-                    data-testid="wizard-microlesson-btn"
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[10px] text-[#8C7C70]">
+                  className="theme-btn-outline rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] transition-colors"
+                  data-testid="wizard-microlesson-btn"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+              <p className="text-[10px]" style={{ color: "var(--text-soft)" }}>
                 {lang === 'ro'
                   ? 'Primele studii: Norman Triplett (1898) — efectul competiției la cicliști; termenul „sport psychology” (1900) — Pierre de Coubertin; anii 1920–1930 — Coleman Griffith lucrează cu echipe (ex. Chicago Cubs).'
                   : 'Early studies: Norman Triplett (1898) — cyclists and competition; “sport psychology” term (1900) — Pierre de Coubertin; 1920s–1930s — Coleman Griffith works with teams (e.g., Chicago Cubs).'}
@@ -561,8 +586,14 @@ export default function WizardRouter(props: Props) {
             <SessionDetails type={selectedCard} />
 
             {/* Clear next-step CTAs to continue the journey */}
-            <div className="rounded-[14px] border border-[#F0E6DA] bg-[#FFFBF7] px-6 py-5 shadow-[0_8px_22px_rgba(0,0,0,0.05)]">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.35em] text-[#C07963]">
+            <div
+              className="rounded-[14px] border px-6 py-5 shadow-[0_8px_22px_rgba(0,0,0,0.05)]"
+              style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+            >
+              <p
+                className="mb-3 text-xs font-semibold uppercase tracking-[0.35em]"
+                style={{ color: "var(--accent-main)" }}
+              >
                 {s("wizardNextStepEyebrow", lang === 'ro' ? "Pasul următor" : "Next step")}
               </p>
               <div className="flex flex-wrap items-center gap-3">
@@ -571,13 +602,13 @@ export default function WizardRouter(props: Props) {
                   onClick={() => {
                     void recordEvaluationTabChange("os");
                   }}
-                  className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] bg-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:opacity-90"
+                  className="theme-btn-solid inline-flex items-center justify-center rounded-[12px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
                 >
                   {s("wizardCtaGoTraining", lang === 'ro' ? "Fă un antrenament complet" : "Start a full training")}
                 </Link>
                 <Link
                   href="/progress"
-                  className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                  className="theme-btn-outline inline-flex items-center justify-center rounded-[12px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
                 >
                   {s("wizardCtaGoDashboard", lang === 'ro' ? "Vezi tabloul tău de bord" : "Go to your dashboard")}
                 </Link>
@@ -589,7 +620,7 @@ export default function WizardRouter(props: Props) {
                 <button
                   type="button"
                   onClick={onReturnToOrigin}
-                  className="rounded-[12px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                  className="theme-btn-outline rounded-[12px] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
                 >
                   {returnLabel ?? s("wizardBack", lang === 'ro' ? "Înapoi" : "Back")}
                 </button>

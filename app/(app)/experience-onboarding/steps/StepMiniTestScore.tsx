@@ -153,11 +153,23 @@ export default function StepMiniTestScore({ answers, score, userId, topicKey, qu
   }, [answers, score.raw, score.max, userId, questionsMeta, topicKey]);
   return (
     <section className="space-y-4">
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
-        <div className="mb-1 text-xs uppercase tracking-[0.3em] text-[#A08F82]">{lang === 'ro' ? 'Pas 3/7' : 'Step 3/7'}</div>
+      <div
+        className="rounded-[16px] border px-6 py-6 shadow-sm"
+        style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+      >
+        <div
+          className="mb-1 text-xs uppercase tracking-[0.3em]"
+          style={{ color: "var(--text-soft)" }}
+        >
+          {lang === 'ro' ? 'Pas 3/7' : 'Step 3/7'}
+        </div>
         <Typewriter text={lang === 'ro' ? "Ai terminat mini‑testul. Iată scorul tău." : "You’ve finished the mini-test. Here is your score."} />
       </div>
-      <h3 className="text-base font-semibold text-[#1F1F1F]" data-testid="eo-score-heading">
+      <h3
+        className="text-base font-semibold"
+        style={{ color: "var(--text-main)" }}
+        data-testid="eo-score-heading"
+      >
         {lang === 'ro' ? 'Scor Mini' : 'Mini Score'}
       </h3>
       <ScoreCard raw={score.raw} max={score.max} title={lang === 'ro' ? 'Scor Omni‑Kuno (cunoștințe)' : 'Omni‑Kuno score (knowledge)'} />
@@ -171,13 +183,23 @@ export default function StepMiniTestScore({ answers, score, userId, topicKey, qu
             if (pct >= 40) return lang === 'ro' ? 'Bun început — mini‑lecțiile te vor ajuta să crești repede.' : 'Good start — micro‑lessons will help you grow quickly.';
             return lang === 'ro' ? 'E doar începutul — aici înveți rapid. Continuăm pas cu pas.' : 'It’s just the beginning — you learn fast here. Step by step.';
           })();
-          return <p className="-mt-2 text-center text-[12px] text-[#1F3C2F]">{msg}</p>;
+          return (
+            <p
+              className="-mt-2 text-center text-[12px]"
+              style={{ color: "var(--state-success)" }}
+            >
+              {msg}
+            </p>
+          );
         } catch { return null; }
       })()}
       {(() => {
         try {
           return (
-            <p className="-mt-2 text-center text-[12px] text-[#7B6B60]">
+            <p
+              className="-mt-2 text-center text-[12px]"
+              style={{ color: "var(--text-muted)" }}
+            >
               {lang === 'ro' ? `${score.raw} / ${score.max} răspunsuri corecte.` : `${score.raw} / ${score.max} correct answers.`}
             </p>
           );
@@ -186,16 +208,31 @@ export default function StepMiniTestScore({ answers, score, userId, topicKey, qu
       {/* Keep first contact simple: no extra explanation block */}
       {/* Removed extra facet summary to keep the score view simple for initiation */}
       {topicKey ? (
-        <div className="rounded-[12px] border border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3 text-sm text-[#4A3A30]">
+        <div
+          className="rounded-[12px] border px-4 py-3 text-sm"
+          style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card-soft)", color: "var(--text-main)" }}
+        >
           {lang === 'ro' ? 'Următorul pas util:' : 'Next useful step:'}{' '}
-          <Link href={`/kuno/practice?cat=${topicKey}`} className="underline hover:text-[#C07963]">{lang === 'ro' ? 'exersează în aceeași categorie' : 'practice in the same category'}</Link>.
+          <Link href={`/kuno/practice?cat=${topicKey}`} className="theme-link underline">
+            {lang === 'ro' ? 'exersează în aceeași categorie' : 'practice in the same category'}
+          </Link>.
         </div>
       ) : null}
       <div className="flex items-center justify-between">
-        <Link href="/progress?from=initiation&step=omnikuno-test-done" className="text-[12px] underline text-[#7B6B60] hover:text-[#2C2C2C]">
+        <Link
+          href="/progress?from=initiation&step=omnikuno-test-done"
+          className="theme-link text-[12px] underline"
+          style={{ color: "var(--text-muted)" }}
+        >
           {lang === 'ro' ? 'Mergi acum să vezi progresul' : 'Go see your progress now'}
         </Link>
-        <button data-testid="eo-continue" onClick={onContinue} className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]">{lang === 'ro' ? 'Continuă' : 'Continue'}</button>
+        <button
+          data-testid="eo-continue"
+          onClick={onContinue}
+          className="theme-btn-outline rounded-[10px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+        >
+          {lang === 'ro' ? 'Continuă' : 'Continue'}
+        </button>
       </div>
     </section>
   );

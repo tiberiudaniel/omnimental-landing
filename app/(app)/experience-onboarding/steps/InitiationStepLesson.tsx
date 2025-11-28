@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import GuideCard from "@/components/onboarding/GuideCard";
 import Typewriter from "@/components/onboarding/Typewriter";
@@ -22,27 +23,37 @@ function LessonSmallCard({
   variant?: CardVariant;
   icon?: React.ReactNode;
 }) {
-  const cls = (() => {
+  const surfaceStyle: CSSProperties = (() => {
     switch (variant) {
       case "accent":
-        return "border-[#E4DAD1] bg-[#FFFBF7]";
+        return { borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" };
       case "mint":
-        return "border-[#DDEBE3] bg-[#F3FAF7]";
+        return { borderColor: "var(--state-success)", backgroundColor: "var(--state-success-soft)" };
       case "lavender":
-        return "border-[#E3DDF0] bg-[#F7F2FF]";
+        return { borderColor: "var(--accent-main)", backgroundColor: "var(--accent-soft)" };
       case "tip":
-        return "border-[#DDEBE3] bg-[#F3FAF7]";
+        return { borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card-soft)" };
       default:
-        return "border-[#F0E6DA] bg-white";
+        return { borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" };
     }
   })();
   return (
-    <div className={`rounded-[14px] border px-4 py-3 shadow-[0_6px_16px_rgba(0,0,0,0.03)] ${cls}`}>
+    <div
+      className="rounded-[14px] border px-4 py-3 shadow-[0_6px_16px_rgba(0,0,0,0.03)]"
+      style={surfaceStyle}
+    >
       <div className="mb-1 flex items-center gap-2">
         {icon ?? null}
-        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">{title}</p>
+        <p
+          className="text-[11px] font-semibold uppercase tracking-[0.3em]"
+          style={{ color: "var(--text-soft)" }}
+        >
+          {title}
+        </p>
       </div>
-      <div className="text-sm text-[#2C2C2C]">{children}</div>
+      <div className="text-sm" style={{ color: "var(--text-main)" }}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -119,7 +130,10 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
       {
         id: "intro",
         render: (
-          <div className="space-y-3 text-sm text-[#4A3A30] md:text-base">
+          <div
+            className="space-y-3 text-sm md:text-base"
+            style={{ color: "var(--text-main)" }}
+          >
             <Typewriter
               text={
                 lang === "ro"
@@ -146,11 +160,25 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
       {
         id: "ideas",
         render: (
-          <LessonSmallCard title={lang === "ro" ? "3 idei cheie" : "3 key ideas"} variant="mint" icon={<span aria-hidden className="inline-block h-2 w-2 rounded-full bg-[#1F7A53]" />}>
+          <LessonSmallCard
+            title={lang === "ro" ? "3 idei cheie" : "3 key ideas"}
+            variant="mint"
+            icon={
+              <span
+                aria-hidden
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: "var(--state-success)" }}
+              />
+            }
+          >
             <ul className="space-y-1 pl-0">
               {lessonCopy.bullets.map((b, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <span className="mt-[6px] inline-block h-1.5 w-1.5 rounded-full bg-[#1F7A53]" aria-hidden />
+                  <span
+                    className="mt-[6px] inline-block h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: "var(--state-success)" }}
+                    aria-hidden
+                  />
                   <span>{b}</span>
                 </li>
               ))}
@@ -161,24 +189,37 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
       {
         id: "example",
         render: (
-          <LessonSmallCard title={lang === "ro" ? "Exemplul paharului" : "Glass example"} variant="lavender" icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M9 7h6M9 12h6M9 17h6" stroke="#7B6BDF" strokeWidth="1.4" strokeLinecap="round" />
-            </svg>
-          }>
-            <blockquote className="border-l-2 border-[#C7C1EE] pl-3 text-[13px] leading-relaxed text-[#2C2C2C]">{lessonCopy.example}</blockquote>
+          <LessonSmallCard
+            title={lang === "ro" ? "Exemplul paharului" : "Glass example"}
+            variant="lavender"
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden style={{ color: "var(--accent-main)" }}>
+                <path d="M9 7h6M9 12h6M9 17h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
+            }
+          >
+            <blockquote
+              className="border-l-2 pl-3 text-[13px] leading-relaxed"
+              style={{ borderColor: "var(--accent-soft)", color: "var(--text-main)" }}
+            >
+              {lessonCopy.example}
+            </blockquote>
           </LessonSmallCard>
         ),
       },
       {
         id: "exercise",
         render: (
-          <LessonSmallCard title={lang === "ro" ? "Protocolul de 3 minute" : "3-minute protocol"} variant="accent" icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <circle cx="12" cy="12" r="9" stroke="#C07963" strokeWidth="1.2" />
-              <path d="M8 12l3 3 5-6" stroke="#C07963" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          }>
+          <LessonSmallCard
+            title={lang === "ro" ? "Protocolul de 3 minute" : "3-minute protocol"}
+            variant="accent"
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden style={{ color: "var(--accent-main)" }}>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M8 12l3 3 5-6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            }
+          >
             <ol className="list-decimal pl-5 space-y-1">
               {lessonCopy.exercise.map((s, i) => (
                 <li key={i}>{s}</li>
@@ -190,12 +231,16 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
       {
         id: "action",
         render: (
-          <LessonSmallCard title={lang === "ro" ? "Acțiunea ta" : "Your action"} variant="tip" icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M12 6v6l4 2" stroke="#1F7A53" strokeWidth="1.4" strokeLinecap="round" />
-              <circle cx="12" cy="12" r="9" stroke="#1F7A53" strokeWidth="1.2" />
-            </svg>
-          }>
+          <LessonSmallCard
+            title={lang === "ro" ? "Acțiunea ta" : "Your action"}
+            variant="tip"
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden style={{ color: "var(--state-success)" }}>
+                <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+            }
+          >
             <p>{lessonCopy.action}</p>
           </LessonSmallCard>
         ),
@@ -205,7 +250,10 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
         requiresAnswer: true,
         render: (
           <div className="space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#A08F82]">
+            <p
+              className="text-sm font-semibold uppercase tracking-[0.2em]"
+              style={{ color: "var(--text-soft)" }}
+            >
               {lang === "ro" ? "Verificare rapidă" : "Quick check"}
             </p>
             <TestQuestionCard
@@ -242,7 +290,9 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
               optionTestId="init-lesson-inline-option"
             />
             {quizAnswer !== null ? (
-              <p className="text-sm text-[#4A3A30]">{lang === "ro" ? "Perfect, acesta este primul reflex pe care îl practici." : "Great—that’s the first reflex you’ll practice."}</p>
+              <p className="text-sm" style={{ color: "var(--text-main)" }}>
+                {lang === "ro" ? "Perfect, acesta este primul reflex pe care îl practici." : "Great—that’s the first reflex you’ll practice."}
+              </p>
             ) : null}
           </div>
         ),
@@ -271,11 +321,17 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
   if (done) {
     return (
       <section className="space-y-4">
-        <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
+        <div
+          className="rounded-[16px] border px-6 py-6 shadow-sm"
+          style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+        >
           <Typewriter text={lang === 'ro' ? 'Inițiere completă! Felicitări.' : 'Initiation complete! Well done.'} />
         </div>
         <GuideCard title={lang === 'ro' ? 'Ce ai făcut' : 'What you did'}>
-          <ul className="list-disc pl-5 text-sm text-[#2C2C2C]">
+          <ul
+            className="list-disc pl-5 text-sm"
+            style={{ color: "var(--text-main)" }}
+          >
             <li>{lang === 'ro' ? 'Ai testat OmniKuno pe tema principală.' : 'You tested OmniKuno on your main theme.'}</li>
             <li>{lang === 'ro' ? 'Ai scris o reflecție și ai clarificat contextul.' : 'You wrote a reflection and clarified your context.'}</li>
             <li>{lang === 'ro' ? 'Ai înregistrat starea de azi și ai completat o lecție.' : 'You recorded today’s state and completed a lesson.'}</li>
@@ -283,14 +339,14 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
           <div className="mt-4 flex gap-2">
             <a
               href="/progress?from=initiation&completed=1"
-              className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+              className="theme-btn-outline rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
               data-testid="init-final-progress"
             >
               {lang === 'ro' ? 'Mergi la progres' : 'Go to progress'}
             </a>
             <a
               href="/recommendation?from=initiation"
-              className="rounded-[10px] border border-[#D8C6B6] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7B6B60] hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+              className="theme-btn-outline rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
             >
               {lang === 'ro' ? 'Înapoi la recomandări' : 'Back to recommendations'}
             </a>

@@ -92,17 +92,29 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
   const focusTheme = useMemo(() => getFocusTheme(progressFacts, normalizedLang), [progressFacts, normalizedLang]);
   return (
     <section className="px-6 pt-6 pb-10 md:px-10">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 rounded-[36px] bg-gradient-to-br from-[#FFFBF7] via-[#FFF6EF] to-[#FDF0E7] p-6 text-center shadow-[0_30px_90px_rgba(15,10,4,0.08)] md:flex-row md:items-center md:text-left">
+      <div
+        className="mx-auto flex w-full max-w-5xl flex-col gap-8 rounded-[36px] p-6 text-center shadow-[0_30px_90px_rgba(15,10,4,0.08)] md:flex-row md:items-center md:text-left"
+        style={{
+          background: "linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-soft) 55%, var(--bg-page) 100%)",
+          border: "1px solid var(--border-subtle)",
+        }}
+      >
         <div className="order-1 flex flex-1 flex-col items-center text-center md:order-2 md:items-start md:text-left">
-          <p className="text-xs uppercase tracking-[0.45em] text-[#96705B]">
+          <p
+            className="text-xs uppercase tracking-[0.45em]"
+            style={{ color: "var(--text-soft)" }}
+          >
             {lang === "ro" ? "Inițiere OmniMental" : "OmniMental Initiation"}
           </p>
-          <h1 className="mt-3 text-3xl font-semibold leading-snug text-[#2A140A] md:text-4xl">
+          <h1
+            className="mt-3 text-3xl font-semibold leading-snug md:text-4xl"
+            style={{ color: "var(--text-main)" }}
+          >
             {lang === "ro" ? "Respiră, observă, începe." : "Breathe, observe, begin."}
           </h1>
-          <div className="mt-4 min-h-[120px] max-w-xl">
+          <div className="mt-4 min-h-[120px] max-w-xl" style={{ color: "var(--text-main)" }}>
             <Typewriter
-              className="text-base leading-relaxed text-[#3D1C10] md:text-lg"
+              className="text-base leading-relaxed md:text-lg"
               text={
                 lang === "ro"
                   ? "Înainte de mini‑test și exerciții, intri într-un spațiu de focus. Îți arătăm pașii și ce urmează, apoi pornești în ritmul tău."
@@ -114,19 +126,25 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
             <button
               type="button"
               onClick={onBegin}
-              className="inline-flex items-center justify-center rounded-full border border-[#C0937D] bg-white/90 px-6 py-3 text-sm font-semibold uppercase tracking-[0.25em] text-[#5C2D1A] shadow-[0_10px_24px_rgba(92,45,26,0.25)] transition hover:bg-white hover:text-[#8A4B2E]"
+              className="theme-btn-solid inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold uppercase tracking-[0.25em] shadow-[0_10px_24px_rgba(92,45,26,0.25)]"
               data-testid="init-welcome-begin"
             >
               {lang === "ro" ? "Intră în inițiere" : "Enter initiation"}
             </button>
-            <p className="text-sm text-[#6A4A3A] md:ml-4">
+            <p
+              className="text-sm md:ml-4"
+              style={{ color: "var(--text-muted)" }}
+            >
               {lang === "ro"
                 ? "9 pași ghidați · aproximativ 12–15 minute."
                 : "9 guided steps · about 12–15 minutes."}
             </p>
           </div>
         </div>
-        <div className="order-2 relative mx-auto inline-block max-w-[520px] rounded-[26px] border border-[#E6D7C8] bg-white p-2 shadow-[0_30px_90px_rgba(15,10,4,0.25)] md:order-1">
+        <div
+          className="order-2 relative mx-auto inline-block max-w-[520px] rounded-[26px] border p-2 shadow-[0_30px_90px_rgba(15,10,4,0.25)] md:order-1"
+          style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+        >
           <Image
             src={onboardingHero}
             alt={lang === "ro" ? "Drum ilustrat spre soare" : "Illustrated path toward the sun"}
@@ -150,13 +168,31 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
                     transform: `translate(-50%, -50%) scale(${marker.scale})`,
                   }}
                 >
-              <div
-                className={`peer pointer-events-auto flex items-center justify-center rounded-[10px] border border-black/30 bg-white/55 px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#29160D] shadow-[0_10px_25px_rgba(8,5,3,0.3)] transition duration-200 hover:bg-white/80 hover:shadow-[0_0_28px_rgba(255,255,255,0.95)] ${marker.label === "Omni-Kuno" ? "shadow-[0_15px_35px_rgba(0,0,0,0.45)] ring-2 ring-[#FCE2D4]" : ""}`}
-              >
-                {marker.label}
-              </div>
+                  <div
+                    className="peer pointer-events-auto flex items-center justify-center rounded-[10px] px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.25em] transition duration-200"
+                    style={{
+                      borderColor: "var(--border-strong)",
+                      backgroundColor: "var(--bg-card)",
+                      color: "var(--text-main)",
+                      boxShadow:
+                        marker.label === "Omni-Kuno"
+                          ? "0 15px 35px rgba(0,0,0,0.45)"
+                          : "0 10px 25px rgba(8,5,3,0.3)",
+                      outline:
+                        marker.label === "Omni-Kuno" ? `2px solid var(--accent-soft)` : undefined,
+                    }}
+                  >
+                    {marker.label}
+                  </div>
                   {marker.label === "Omni-Flex" || marker.label === "Omni-Intel" ? null : (
-                    <div className="pointer-events-none mt-2 w-60 rounded-[12px] border border-black/20 bg-[#120806]/90 px-4 py-3 text-[12px] font-medium leading-snug text-white opacity-0 transition duration-200 peer-hover:opacity-100 peer-focus-visible:opacity-100">
+                    <div
+                      className="pointer-events-none mt-2 w-60 rounded-[12px] border px-4 py-3 text-[12px] font-medium leading-snug opacity-0 transition duration-200 peer-hover:opacity-100 peer-focus-visible:opacity-100"
+                      style={{
+                        borderColor: "var(--border-strong)",
+                        backgroundColor: "var(--bg-deep)",
+                        color: "var(--text-on-deep)",
+                      }}
+                    >
                       {tooltip}
                     </div>
                   )}

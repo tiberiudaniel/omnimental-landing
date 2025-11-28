@@ -1,5 +1,6 @@
-import { computeConsistencyIndexFromDates } from "./omniIntel";
-import { computeDistribution, type PracticeSessionLite } from "./progressAnalytics";
+import { computeConsistencyIndexFromDates } from "./consistencyIndex";
+import { computeDistribution } from "./activityDistribution";
+import type { PracticeSessionLite } from "./progressAnalytics";
 import { normalizeKunoFacts } from "./kunoFacts";
 
 export type KunoAggregate = {

@@ -24,7 +24,7 @@ export default function StepIntro({ onStart }: { onStart: () => void }) {
                 : "Before any journey you check your resources: how you feel, whether you’re rested, whether you have everything you need. We’ll do the same here before you enter the initiation."
             }
           />
-          <p className="text-sm text-[#4A3A30] md:text-base">
+          <p className="text-sm md:text-base" style={{ color: "var(--text-main)" }}>
             {isRo
               ? "Hai să facem o mică trecere în revistă și să vedem cum arată resursele tale chiar acum."
               : "Let’s do a quick check-in and see how your resources look right now."}
@@ -36,7 +36,7 @@ export default function StepIntro({ onStart }: { onStart: () => void }) {
         <button
           data-testid="eo-start"
           onClick={onStart}
-          className="rounded-[999px] border border-[#2C2C2C] px-6 py-2 text-[13px] font-semibold tracking-[0.18em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+          className="theme-btn-solid rounded-[999px] px-6 py-2 text-[13px] font-semibold tracking-[0.18em]"
         >
           {isRo ? "Începe" : "Start"}
         </button>
