@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 export type RecommendationFilterKey = "all" | "new" | "active" | "done" | "today";
 
 const FILTERS: { key: RecommendationFilterKey; label: string }[] = [
@@ -20,13 +22,19 @@ interface RecommendationFiltersProps {
 }
 
 export function RecommendationFilters({ value, onChange, labels, counts }: RecommendationFiltersProps) {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setHydrated(true), 0);
+    return () => window.clearTimeout(id);
+  }, []);
+
   return (
     <div className="flex items-center gap-2">
       <div className="flex flex-wrap gap-2">
         {PRIMARY_KEYS.map((key) => {
           const base = FILTERS.find((f) => f.key === key)!;
           const label = labels?.[key] ?? base.label;
-          const count = typeof counts?.[key] === "number" ? ` (${counts![key]})` : "";
+          const count = hydrated && typeof counts?.[key] === "number" ? ` (${counts![key]})` : "";
           const active = value === key;
           return (
             <button
@@ -54,7 +62,7 @@ export function RecommendationFilters({ value, onChange, labels, counts }: Recom
             {(["new", "done"] as RecommendationFilterKey[]).map((key) => {
               const base = FILTERS.find((f) => f.key === key)!;
               const label = labels?.[key] ?? base.label;
-              const count = typeof counts?.[key] === "number" ? ` (${counts![key]})` : "";
+              const count = hydrated && typeof counts?.[key] === "number" ? ` (${counts![key]})` : "";
               const active = value === key;
               return (
                 <button

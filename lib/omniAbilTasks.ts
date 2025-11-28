@@ -1,8 +1,7 @@
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import type { Timestamp } from "firebase/firestore";
 import { getDb, ensureAuth } from "@/lib/firebase";
-import { OMNI_ARCS } from "@/config/omniArcs";
-import { recordOmniAbilTaskCompletion } from "./progressFacts/recorders";
+import { recordOmniAbilTaskCompletion } from "@/lib/progressFacts";
 
 export type OmniAbilTaskType = "daily" | "weekly";
 export type OmniAbilTaskStatus = "pending" | "done";
@@ -14,7 +13,7 @@ export type OmniAbilTask = {
   type: OmniAbilTaskType;
   title: string;
   description?: string;
-  date: string; // YYYY-MM-DD for daily / week start for weekly
+  date: string;
   status: OmniAbilTaskStatus;
   completedAt?: Timestamp | null;
   xpReward?: number;
@@ -32,27 +31,17 @@ const FALLBACK_TEMPLATES: Record<OmniAbilTaskType, TaskTemplate> = {
     title: "Respirație 2 minute",
     description: "Înainte de primul task important, inspiră 4 secunde și expiră 6 secunde timp de 2 minute.",
     xpReward: 10,
+    arcId: "claritate-energie",
   },
   weekly: {
     title: "Reset digital de seară",
     description: "Alege o seară fără ecrane cu 30 min înainte de somn și notează ce observi.",
     xpReward: 30,
+    arcId: "claritate-energie",
   },
 };
 
 function pickTemplate(type: OmniAbilTaskType): TaskTemplate {
-  const activeArc = OMNI_ARCS.find((arc) => arc.status === "active");
-  if (activeArc) {
-    const template = activeArc.abilTaskTemplates.find((tpl) => tpl.type === type);
-    if (template) {
-      return {
-        title: template.title,
-        description: template.description,
-        xpReward: template.suggestedXp,
-        arcId: activeArc.id,
-      };
-    }
-  }
   return FALLBACK_TEMPLATES[type];
 }
 
@@ -70,7 +59,7 @@ export function getTodayKey(baseDate: Date = new Date()): string {
 
 export function getWeekKey(baseDate: Date = new Date()): string {
   const utc = new Date(Date.UTC(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate()));
-  const day = utc.getUTCDay() || 7; // 1-7 with Monday as 1
+  const day = utc.getUTCDay() || 7;
   if (day > 1) {
     utc.setUTCDate(utc.getUTCDate() - (day - 1));
   }
@@ -84,13 +73,23 @@ function buildTaskId(userId: string, type: OmniAbilTaskType, dateKey: string): s
 type FirestoreTask = Omit<OmniAbilTask, "id"> & { id?: string };
 
 function deserializeTask(id: string, data: FirestoreTask): OmniAbilTask {
-  return {
-    ...data,
-    id,
-  };
+  return { ...data, id };
 }
 
-export async function ensureOmniAbilTask(userId: string, type: OmniAbilTaskType): Promise<OmniAbilTask | null> {
+async function writeTask(docId: string, payload: FirestoreTask) {
+  const ref = doc(getDb(), "userAbilTasks", docId);
+  await setDoc(
+    ref,
+    {
+      ...payload,
+      createdAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+  return ref;
+}
+
+export async function ensureOmniAbilTask(userId: string | null | undefined, type: OmniAbilTaskType): Promise<OmniAbilTask | null> {
   if (!userId) return null;
   const authUser = await ensureAuth();
   if (!authUser || authUser.uid !== userId) {
@@ -99,9 +98,9 @@ export async function ensureOmniAbilTask(userId: string, type: OmniAbilTaskType)
   const dateKey = type === "daily" ? getTodayKey() : getWeekKey();
   const docId = buildTaskId(userId, type, dateKey);
   const ref = doc(getDb(), "userAbilTasks", docId);
-  const snap = await getDoc(ref);
-  if (snap.exists()) {
-    return deserializeTask(snap.id, snap.data() as FirestoreTask);
+  const snapshot = await getDoc(ref);
+  if (snapshot.exists()) {
+    return deserializeTask(snapshot.id, snapshot.data() as FirestoreTask);
   }
   const template = pickTemplate(type);
   const payload: FirestoreTask = {
@@ -114,14 +113,11 @@ export async function ensureOmniAbilTask(userId: string, type: OmniAbilTaskType)
     status: "pending",
     xpReward: template.xpReward ?? (type === "daily" ? 10 : 30),
   };
-  await setDoc(ref, {
-    ...payload,
-    createdAt: serverTimestamp(),
-  });
+  await writeTask(docId, payload);
   return deserializeTask(docId, payload);
 }
 
-export async function markOmniAbilTaskDone(task: OmniAbilTask): Promise<void> {
+export async function markOmniAbilTaskDone(task: OmniAbilTask | null | undefined): Promise<void> {
   if (!task?.id) return;
   const authUser = await ensureAuth();
   if (!authUser || authUser.uid !== task.userId) {
@@ -131,7 +127,6 @@ export async function markOmniAbilTaskDone(task: OmniAbilTask): Promise<void> {
   await setDoc(
     ref,
     {
-      userId: task.userId,
       status: "done",
       completedAt: serverTimestamp(),
     },
@@ -141,5 +136,6 @@ export async function markOmniAbilTaskDone(task: OmniAbilTask): Promise<void> {
     type: task.type,
     dateKey: task.date,
     xpReward: task.xpReward,
+    ownerId: task.userId,
   });
 }

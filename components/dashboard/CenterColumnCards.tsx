@@ -13,6 +13,7 @@ import KunoMissionCard, { type KunoMissionCardData, type KunoNextModuleSuggestio
 import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 import { buildOmniAbilSnapshot } from "./omniAbilSnapshot";
 import { useEffect, useState } from "react";
+import { OmniAbilCard } from "./OmniAbilCard";
 
 export type FocusThemeInfo = {
   area?: string | null;
@@ -79,6 +80,7 @@ export default function CenterColumnCards({
           missionData={kunoMissionData}
           nextModuleSuggestion={kunoNextModuleSuggestion}
         />
+        <OmniAbilCard lang={lang} />
       </div>
     </div>
   );
