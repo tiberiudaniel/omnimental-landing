@@ -19,14 +19,14 @@ export type OmniAbilTask = {
   xpReward?: number;
 };
 
-type TaskTemplate = {
+export type OmniAbilTaskTemplate = {
   title: string;
   description?: string;
   xpReward?: number;
   arcId?: string;
 };
 
-const FALLBACK_TEMPLATES: Record<OmniAbilTaskType, TaskTemplate> = {
+const FALLBACK_TEMPLATES: Record<OmniAbilTaskType, OmniAbilTaskTemplate> = {
   daily: {
     title: "Respirație 2 minute",
     description: "Înainte de primul task important, inspiră 4 secunde și expiră 6 secunde timp de 2 minute.",
@@ -41,8 +41,12 @@ const FALLBACK_TEMPLATES: Record<OmniAbilTaskType, TaskTemplate> = {
   },
 };
 
-function pickTemplate(type: OmniAbilTaskType): TaskTemplate {
-  return FALLBACK_TEMPLATES[type];
+function cloneTemplate(template: OmniAbilTaskTemplate): OmniAbilTaskTemplate {
+  return { ...template };
+}
+
+function pickTemplate(type: OmniAbilTaskType): OmniAbilTaskTemplate {
+  return cloneTemplate(FALLBACK_TEMPLATES[type]);
 }
 
 function formatDateUTC(date: Date): string {
@@ -87,6 +91,10 @@ async function writeTask(docId: string, payload: FirestoreTask) {
     { merge: true },
   );
   return ref;
+}
+
+export function getFallbackOmniAbilTemplate(type: OmniAbilTaskType): OmniAbilTaskTemplate {
+  return pickTemplate(type);
 }
 
 export async function ensureOmniAbilTask(userId: string | null | undefined, type: OmniAbilTaskType): Promise<OmniAbilTask | null> {

@@ -93,6 +93,10 @@ export type OmniBlock = {
     dailyWeekKey?: string;
     weeklyMonthKey?: string;
   };
+  daily?: {
+    streakDays?: number;
+    lastCheckinDate?: string;
+  };
   intel: {
     unlocked: boolean;
     evaluationsCount: number;
@@ -118,6 +122,7 @@ export type OmniBlock = {
   };
   omniIntelScore: number; // 0-100
   omniPoints: number;
+  level?: number;
 };
 
 export function computeDirectionMotivationIndex(input: DirectionMotivationInputs): number {

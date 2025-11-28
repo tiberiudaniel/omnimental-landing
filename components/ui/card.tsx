@@ -2,7 +2,13 @@
 
 import React from "react";
 
-export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={className}>{children}</div>;
+type CardProps = React.HTMLAttributes<HTMLDivElement>;
+
+export function Card({ className, children, ...rest }: CardProps) {
+  return (
+    <div className={className} {...rest}>
+      {children}
+    </div>
+  );
 }
 

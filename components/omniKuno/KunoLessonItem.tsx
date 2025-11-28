@@ -43,6 +43,10 @@ export default function KunoLessonItem({ lesson, isActive, disabled, onSelect, h
             ? "shadow-[0_25px_50px_rgba(192,121,99,0.25)]"
             : "shadow-sm"
       }`}
+      data-state={isActive ? "open" : "closed"}
+      data-status={lesson.status}
+      data-completed={lesson.status === "done" ? "true" : "false"}
+      data-active={isActive ? "true" : "false"}
     >
       <button
         type="button"

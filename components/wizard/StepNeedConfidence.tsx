@@ -59,6 +59,7 @@ export default function StepNeedConfidence({ selectedOptions, onDone }: { select
                 aria-label={`${v}: ${full}`}
                 onClick={() => setScore(v)}
                 className={`rounded-[10px] border px-3 py-2 text-sm ${score===v?'border-[#1F7A53] bg-[#F0FFF6]':'border-[#E4DAD1] bg-white hover:border-[#2C2C2C]'}`}
+                data-testid={`need-confidence-option-${v}`}
               >
                 {short}
               </button>

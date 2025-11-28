@@ -12,13 +12,14 @@ import type { getDailyInsight } from "@/lib/insights";
 import type { extractSessions } from "@/lib/progressAnalytics";
 import { TodayGuidanceCard } from "./CenterColumnCards";
 import { buildOmniAbilSnapshot, type OmniAbilSnapshot } from "./omniAbilSnapshot";
+import { DailyResetCard } from "./DailyResetCard";
 
 type SidebarCardsProps = {
   debugGrid?: boolean;
   lang: string;
   t: ReturnType<typeof useI18n>["t"];
   facts: ProgressFact | null;
-  profile: { simulatedInsights?: string[] } | null;
+  profile: { id?: string; simulatedInsights?: string[] } | null;
   quest: { title: string; text: string };
   questPreview: string;
   questExpanded: boolean;
@@ -71,6 +72,9 @@ export default function SidebarCards({
           currentFocusTag={currentFocusTag}
           nowAnchor={nowAnchor}
         />
+      </motion.div>
+      <motion.div variants={fadeDelayed(0.23)} {...hoverScale}>
+        <DailyResetCard lang={lang} profileId={profile?.id ?? null} summary={facts?.omni?.daily} />
       </motion.div>
       <motion.div variants={fadeDelayed(0.26)} {...hoverScale}>
         <PracticeSnapshotCard prog={prog} />

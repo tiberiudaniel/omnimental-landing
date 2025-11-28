@@ -567,6 +567,27 @@ function parseDateKey(dateKey: string): Date | null {
   }
 }
 
+const XP_PER_LEVEL = 150;
+const MAX_ARC_LEVEL = 20;
+
+function computeArcLevelFromXp(totalXp: number): number {
+  if (!Number.isFinite(totalXp) || totalXp <= 0) return 1;
+  const rawLevel = Math.floor(totalXp / XP_PER_LEVEL) + 1;
+  return Math.max(1, Math.min(MAX_ARC_LEVEL, rawLevel));
+}
+
+async function readCurrentArcXp(userId: string): Promise<number> {
+  try {
+    const ref = doc(getDb(), "userProgressFacts", userId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return 0;
+    const data = snap.data() as { omni?: OmniBlock };
+    return Number(data.omni?.kuno?.global?.totalXp ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
 export async function recordOmniAbilTaskCompletion({
   type,
   dateKey,
@@ -584,9 +605,8 @@ export async function recordOmniAbilTaskCompletion({
     const db = getDb();
     const factsRef = doc(db, "userProgressFacts", user.uid);
     const snapshot = await getDoc(factsRef);
-    const current = snapshot.exists()
-      ? ((((snapshot.data() as { omni?: { abil?: Record<string, unknown> } }).omni?.abil) ?? {}) as Record<string, unknown>)
-      : {};
+    const omniBlock = snapshot.exists() ? ((snapshot.data() as { omni?: OmniBlock }).omni ?? undefined) : undefined;
+    const current = (omniBlock?.abil ?? {}) as Record<string, unknown>;
     const parsedDate = parseDateKey(dateKey) ?? new Date();
     const weekKey = getWeekKeyFromDate(parsedDate);
     const monthKey = getMonthKeyFromDate(parsedDate);
@@ -615,12 +635,17 @@ export async function recordOmniAbilTaskCompletion({
       },
     };
     const xp = Math.max(0, Math.floor(Number(xpReward) || 0));
+    const previousTotalXp = Number(omniBlock?.kuno?.global?.totalXp ?? 0);
+    const nextTotalXp = previousTotalXp + xp;
     if (xp > 0) {
       patch.kuno = {
         global: {
           totalXp: increment(xp) as unknown as number,
         },
       };
+    }
+    if (Number.isFinite(nextTotalXp)) {
+      patch.level = computeArcLevelFromXp(nextTotalXp);
     }
     await recordOmniPatch(patch, user.uid);
   } catch (error) {
@@ -650,6 +675,8 @@ export async function recordKunoLessonProgress({
   difficulty?: "easy" | "medium" | "hard";
 }) {
   try {
+    const targetOwnerId = ownerId ?? (await ensureAuth())?.uid ?? null;
+    if (!targetOwnerId) return;
     const modulePayload = {
       completedIds,
       lastUpdated: serverTimestamp() as unknown as Date,
@@ -684,12 +711,19 @@ export async function recordKunoLessonProgress({
     if (Object.keys(globalPatch).length > 0) {
       kunoPayload.global = globalPatch;
     }
-    await recordOmniPatch(
-      {
-        kuno: kunoPayload,
-      },
-      ownerId,
-    );
+    let nextLevel: number | null = null;
+    if (typeof xpDelta === "number" && Number.isFinite(xpDelta) && xpDelta !== 0) {
+      const previousXp = await readCurrentArcXp(targetOwnerId);
+      const computed = computeArcLevelFromXp(previousXp + Math.floor(xpDelta));
+      nextLevel = computed;
+    }
+    const patch: DeepPartial<OmniBlock> = {
+      kuno: kunoPayload,
+    };
+    if (nextLevel !== null) {
+      patch.level = nextLevel;
+    }
+    await recordOmniPatch(patch, targetOwnerId);
   } catch (e) {
     console.warn("recordKunoLessonProgress failed", e);
     throw e;

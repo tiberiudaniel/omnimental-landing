@@ -5,6 +5,7 @@ import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 import { getLessonXp, applyKunoXp } from "@/lib/omniKunoXp";
 import { recordKunoLessonProgress } from "@/lib/progressFacts";
 import { updatePerformanceSnapshot, type KunoPerformanceSnapshot } from "@/lib/omniKunoAdaptive";
+import { maybeUnlockCollectiblesForLesson, type UnlockedCollectible } from "@/lib/collectibles";
 import { useI18n } from "@/components/I18nProvider";
 import { asDifficulty, DIFFICULTY_STYLES } from "./difficulty";
 import {
@@ -22,7 +23,12 @@ export type LessonViewProps = {
   performanceSnapshot: KunoPerformanceSnapshot;
   onCompleted?: (
     lessonId: string,
-    meta?: { timeSpentSec: number; updatedPerformance: KunoPerformanceSnapshot; note?: string },
+    meta?: {
+      timeSpentSec: number;
+      updatedPerformance: KunoPerformanceSnapshot;
+      note?: string;
+      unlockedCollectibles?: UnlockedCollectible[];
+    },
   ) => void;
   onStepChange?: (current: number, total: number) => void;
   showHeader?: boolean;
@@ -146,7 +152,20 @@ export default function LessonView({
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(reflectionStorageKey);
       }
-      onCompleted?.(lesson.id, { timeSpentSec, updatedPerformance, note: reflection.trim() });
+      let unlocked: UnlockedCollectible[] = [];
+      if (ownerId) {
+        try {
+          unlocked = await maybeUnlockCollectiblesForLesson(ownerId, lesson.id);
+        } catch (error) {
+          console.warn("unlock collectibles failed", error);
+        }
+      }
+      onCompleted?.(lesson.id, {
+        timeSpentSec,
+        updatedPerformance,
+        note: reflection.trim(),
+        unlockedCollectibles: unlocked,
+      });
     } finally {
       setBusy(false);
     }

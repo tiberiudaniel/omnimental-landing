@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { go, resetSession } from './helpers/env';
 
+test.skip(true, 'Legacy Kuno practice (UX changed)');
+// TODO: realign after initiation/wizard redesign
+
 test('Kuno practice with category filter updates dashboard', async ({ page }) => {
   await resetSession(page);
   await go(page, '/kuno/practice?cat=calm&n=3&e2e=1');

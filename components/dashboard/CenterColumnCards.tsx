@@ -14,6 +14,7 @@ import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 import { buildOmniAbilSnapshot } from "./omniAbilSnapshot";
 import { useEffect, useState } from "react";
 import { OmniAbilCard } from "./OmniAbilCard";
+import { SeasonCard } from "./SeasonCard";
 
 export type FocusThemeInfo = {
   area?: string | null;
@@ -81,6 +82,7 @@ export default function CenterColumnCards({
           nextModuleSuggestion={kunoNextModuleSuggestion}
         />
         <OmniAbilCard lang={lang} />
+        <SeasonCard lang={lang} facts={facts} />
       </div>
     </div>
   );

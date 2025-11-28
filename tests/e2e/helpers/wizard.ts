@@ -91,7 +91,7 @@ export async function fillWizardForUserProfile(page: Page, prof: WizardProfile) 
   await expect(page.getByText(new RegExp(budgetWord))).toBeVisible();
 }
 
-async function maybeHandleNeedFlow(page: Page) {
+export async function maybeHandleNeedFlow(page: Page) {
   try {
     await expectVisibleShort(page, page.getByTestId(STEP_NEED_MAIN), STEP_NEED_MAIN, 15000);
   } catch {
@@ -107,7 +107,20 @@ async function maybeHandleNeedFlow(page: Page) {
   await expect(needContinue).toBeEnabled({ timeout: 10000 });
   await needContinue.click();
   await expectVisibleShort(page, page.getByTestId(STEP_NEED_CONFIDENCE), STEP_NEED_CONFIDENCE, 15000);
-  await page.getByTestId('need-confidence-continue').click();
+  const confidenceStep = page.getByTestId(STEP_NEED_CONFIDENCE);
+  const confidenceOptions = confidenceStep.locator('[data-testid^="need-confidence-option-"]');
+  const optionCount = await confidenceOptions.count();
+  if (optionCount > 0) {
+    await confidenceOptions.nth(Math.min(2, optionCount - 1)).click();
+  } else {
+    const fallbackOption = confidenceStep.locator('button').filter({ hasText: /Deloc|Puțin|Posibil|Probabil|Confident|Not at all|Likely/i }).first();
+    if (await fallbackOption.isVisible().catch(() => false)) {
+      await fallbackOption.click();
+    }
+  }
+  const confidenceContinue = page.getByTestId('need-confidence-continue');
+  await expect(confidenceContinue).toBeEnabled({ timeout: 15000 });
+  await confidenceContinue.click();
   await expectVisibleShort(page, page.getByTestId(STEP_MICRO_INFO), STEP_MICRO_INFO, 15000);
   const microBtn = page.getByTestId('wizard-microlesson-btn').first();
   if (await microBtn.isVisible().catch(() => false)) {

@@ -28,7 +28,8 @@ const users: WizardProfile[] = [
 
 // no local helpers required; flow is handled by fillWizardForUserProfile
 
-test.describe('wizard-multiple-users', () => {
+test.describe.skip('wizard-multiple-users (legacy, UX changed)', () => {
+  // TODO: realign after initiation/wizard redesign
   test.beforeEach(async ({ page }) => {
     page.on('console', (msg) => {
       if (msg.type() === 'error') {

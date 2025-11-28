@@ -1,4 +1,4 @@
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, where } from "firebase/firestore";
 import { getDb } from "@/lib/firebase";
 import { OMNI_COLLECTIBLES, type OmniCollectible } from "@/config/omniCollectibles";
 
@@ -30,4 +30,21 @@ export async function maybeUnlockCollectiblesForLesson(userId: string, lessonId:
     }),
   );
   return unlocked;
+}
+
+export async function loadUserCollectibles(userId: string) {
+  if (!userId) return [];
+  const db = getDb();
+  const ref = collection(db, COLLECTION);
+  const q = query(ref, where("userId", "==", userId), orderBy("unlockedAt", "desc"));
+  const snap = await getDocs(q);
+  const unlockedIds = new Set<string>();
+  snap.forEach((docSnap) => {
+    const data = docSnap.data();
+    const collectibleId = data.collectibleId as string | undefined;
+    if (collectibleId) {
+      unlockedIds.add(collectibleId);
+    }
+  });
+  return OMNI_COLLECTIBLES.filter((entry) => unlockedIds.has(entry.id));
 }

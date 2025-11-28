@@ -58,7 +58,11 @@ export default function LessonAccordionItem({
   const progressDots = Array.from({ length: Math.max(1, totalSteps) }, (_, idx) => idx < currentStep - 1);
 
   return (
-    <div id={containerId} className="rounded-3xl border border-transparent bg-transparent">
+    <div
+      id={containerId}
+      className="rounded-3xl border border-transparent bg-transparent"
+      data-testid="kuno-lesson-item"
+    >
       <motion.button
         type="button"
         disabled={!isClickable}

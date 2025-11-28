@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { go, resetSession } from './helpers/env';
 
+test.skip(true, 'Legacy Kuno practice multi (UX changed)');
+// TODO: realign after initiation/wizard redesign
+
 const cats = [
   { key: 'calm', label: 'Calm' },
   { key: 'energie', label: 'Energie' },

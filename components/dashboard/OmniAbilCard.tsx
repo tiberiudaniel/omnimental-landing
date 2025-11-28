@@ -58,7 +58,10 @@ export function OmniAbilCard({ lang }: { lang: string }) {
   };
 
   return (
-    <Card className="rounded-2xl border border-[#E4DAD1] bg-white p-3 shadow-sm sm:p-4">
+    <Card
+      className="rounded-2xl border border-[#E4DAD1] bg-white p-3 shadow-sm sm:p-4"
+      data-testid="omniabil-card"
+    >
       <div className="mb-2 flex items-center justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">OmniAbil</p>
@@ -77,7 +80,7 @@ export function OmniAbilCard({ lang }: { lang: string }) {
         </p>
       ) : (
         <div className="space-y-3">
-          <section>
+          <section data-testid="omniabil-daily">
             <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
               {lang === "ro" ? "Misiunea zilnică" : "Daily mission"}
             </p>

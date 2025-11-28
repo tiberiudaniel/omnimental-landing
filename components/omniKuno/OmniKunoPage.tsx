@@ -24,6 +24,7 @@ import { KunoContainer } from "./KunoContainer";
 import { ModuleOverviewDialog } from "./ModuleOverviewDialog";
 import LessonAccordionItem from "./LessonAccordionItem";
 import ActiveLessonInner from "./ActiveLessonInner";
+import type { UnlockedCollectible } from "@/lib/collectibles";
 
 type ModuleFinalTestContent = {
   testId: string;
@@ -32,6 +33,12 @@ type ModuleFinalTestContent = {
   description: string;
   buttonLabel: string;
   moduleName: string;
+};
+
+type LessonToastPayload = {
+  message: string;
+  actionLabel?: string;
+  actionHref?: string;
 };
 
 type SupportedFinalTestArea =
@@ -175,8 +182,11 @@ export default function OmniKunoPage() {
   const { t, lang } = useI18n();
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<LessonToastPayload | null>(null);
   const [overviewOpen, setOverviewOpen] = useState(false);
+  const handleToast = useCallback((payload: LessonToastPayload) => {
+    setToastMsg(payload);
+  }, []);
   const moduleEntries = useMemo(() => Object.entries(OMNIKUNO_MODULES) as Array<[OmniAreaKey, OmniKunoModuleConfig]>, []);
   const moduleParam = searchParams?.get("module");
   const areaParam = searchParams?.get("area");
@@ -491,7 +501,7 @@ const areaStats = useMemo(() => {
               initialLessonId={initialLessonIdForModule}
               lessonHasExplicitNone={lessonHasExplicitNone}
               onActiveLessonChange={handleActiveLessonChange}
-              onToast={setToastMsg}
+              onToast={handleToast}
               showFinalTest={showFinalTest}
               finalTestResult={finalTestResult}
               onToggleFinalTest={setShowFinalTest}
@@ -505,7 +515,21 @@ const areaStats = useMemo(() => {
         </div>
       </div>
       </main>
-      {toastMsg ? <Toast message={toastMsg} onClose={() => setToastMsg(null)} /> : null}
+      {toastMsg ? (
+        <Toast
+          message={toastMsg.message}
+          actionLabel={toastMsg.actionLabel}
+          onAction={
+            toastMsg.actionHref
+              ? () => {
+                  router.push(toastMsg.actionHref as string);
+                  setToastMsg(null);
+                }
+              : undefined
+          }
+          onClose={() => setToastMsg(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -520,11 +544,11 @@ type ExperienceProps = {
   lessonHasExplicitNone?: boolean;
   onLessonSelect?: (lessonId: string | null) => void;
   onActiveLessonChange?: (meta: { id: string; difficulty: LessonDifficulty } | null) => void;
-  onToast?: (message: string) => void;
+  onToast?: (payload: LessonToastPayload) => void;
   showFinalTest?: boolean;
   finalTestResult?: { correct: number; total: number } | null;
   onToggleFinalTest?: (value: boolean) => void;
-  onFinalTestComplete?: (result: { correct: number; total: number }) => void;
+  onFinalTestComplete?: (result: { correct: number; total: number } | null) => void;
   finalTestConfig?: ModuleFinalTestContent | null;
   overviewOpen: boolean;
   onCloseOverview: () => void;
@@ -557,10 +581,13 @@ function ModuleExperience({
   >({});
   const moduleLessonProgress = lessonProgressByModule[module.moduleId] ?? {};
   const [openLessonsByModule, setOpenLessonsByModule] = useState<Record<string, string | null>>({});
+  const [justActivatedLessonId, setJustActivatedLessonId] = useState<string | null>(null);
+  const highlightTimeoutRef = useRef<number | null>(null);
   const timeline = useMemo(
     () => computeLessonsStatus(module.lessons, localCompleted),
     [module.lessons, localCompleted],
   );
+  const orderedLessons = useMemo(() => module.lessons.slice().sort((a, b) => a.order - b.order), [module.lessons]);
   const flatTimeline = useMemo(() => timeline.slice().sort((a, b) => a.order - b.order), [timeline]);
   const timelineWithMeta = useMemo<TimelineItemWithMeta[]>(() => {
     return flatTimeline.map((item) => {
@@ -616,11 +643,33 @@ function ModuleExperience({
   const openLessonId = Object.prototype.hasOwnProperty.call(openLessonsByModule, module.moduleId)
     ? openLessonsByModule[module.moduleId] ?? null
     : defaultOpenLessonId;
+  useEffect(() => {
+    if (!moduleCompleted) {
+      if (showFinalTest) {
+        onToggleFinalTest?.(false);
+      }
+      if (finalTestResult) {
+        onFinalTestComplete?.(null);
+      }
+      return;
+    }
+    if (moduleCompleted && finalTestConfig && !showFinalTest && !finalTestResult) {
+      onToggleFinalTest?.(true);
+    }
+  }, [moduleCompleted, finalTestConfig, finalTestResult, onFinalTestComplete, onToggleFinalTest, showFinalTest]);
   const setOpenLessonForModule = useCallback(
     (nextLessonId: string | null) => {
       setOpenLessonsByModule((prev) => {
         const prevHas = Object.prototype.hasOwnProperty.call(prev, module.moduleId);
         const prevValue = prev[module.moduleId] ?? null;
+        if (nextLessonId === null) {
+          if (!prevHas) {
+            return prev;
+          }
+          const nextState = { ...prev };
+          delete nextState[module.moduleId];
+          return nextState;
+        }
         if (prevHas && prevValue === nextLessonId) {
           return prev;
         }
@@ -632,6 +681,25 @@ function ModuleExperience({
   useEffect(() => {
     onLessonSelect?.(openLessonId);
   }, [openLessonId, onLessonSelect]);
+  const triggerLessonHighlight = useCallback((lessonId: string) => {
+    setJustActivatedLessonId(lessonId);
+    if (typeof window !== "undefined") {
+      if (highlightTimeoutRef.current) {
+        window.clearTimeout(highlightTimeoutRef.current);
+      }
+      highlightTimeoutRef.current = window.setTimeout(() => {
+        setJustActivatedLessonId(null);
+        highlightTimeoutRef.current = null;
+      }, 1800) as unknown as number;
+    }
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && highlightTimeoutRef.current) {
+        window.clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -683,7 +751,12 @@ function ModuleExperience({
   const handleLessonCompleted = useCallback(
     (
       lessonId: string,
-      meta?: { updatedPerformance?: KunoPerformanceSnapshot; score?: number; timeSpentSec?: number },
+      meta?: {
+        updatedPerformance?: KunoPerformanceSnapshot;
+        score?: number;
+        timeSpentSec?: number;
+        unlockedCollectibles?: UnlockedCollectible[];
+      },
     ) => {
       setLocalCompleted((prev) => (prev.includes(lessonId) ? prev : [...prev, lessonId]));
       if (meta?.updatedPerformance) {
@@ -691,18 +764,42 @@ function ModuleExperience({
       }
       if (onToast) {
         if (meta?.score != null) {
-          onToast(
-            lang === "ro"
-              ? `Quiz finalizat cu ${meta.score}%. Continuă misiunile!`
-              : `Quiz completed with ${meta.score}%. Keep the missions rolling!`,
-          );
+          onToast({
+            message:
+              lang === "ro"
+                ? `Quiz finalizat cu ${meta.score}%. Continuă misiunile!`
+                : `Quiz completed with ${meta.score}%. Keep the missions rolling!`,
+          });
         } else {
-          onToast(lang === "ro" ? "Lecție finalizată și XP actualizat." : "Lesson completed and XP updated.");
+          onToast({
+            message: lang === "ro" ? "Lecție finalizată și XP actualizat." : "Lesson completed and XP updated.",
+          });
+        }
+        if (meta?.unlockedCollectibles?.length) {
+          const actionLabel = lang === "ro" ? "Vezi detalii" : "View details";
+          meta.unlockedCollectibles.forEach((collectible) => {
+            onToast({
+              message:
+                lang === "ro"
+                  ? `Ai deblocat noul protocol: ${collectible.title}`
+                  : `You unlocked a new protocol: ${collectible.title}`,
+              actionLabel,
+              actionHref: "/collectibles",
+            });
+          });
         }
       }
-      setOpenLessonForModule(null);
+      const currentIndex = orderedLessons.findIndex((lesson) => lesson.id === lessonId);
+      const nextLesson = currentIndex >= 0 ? orderedLessons.slice(currentIndex + 1).find((lesson) => lesson) : null;
+      if (nextLesson) {
+        setOpenLessonForModule(nextLesson.id);
+        scrollToLesson(nextLesson.id);
+        triggerLessonHighlight(nextLesson.id);
+      } else {
+        setOpenLessonForModule(null);
+      }
     },
-    [lang, onToast, setOpenLessonForModule],
+    [lang, onToast, orderedLessons, scrollToLesson, setOpenLessonForModule, triggerLessonHighlight],
   );
   const translate = useCallback(
     (key: string) => {
@@ -716,7 +813,8 @@ function ModuleExperience({
     if (!activeItem) return;
     setOpenLessonForModule(activeItem.id);
     scrollToLesson(activeItem.id);
-  }, [activeItem, scrollToLesson, setOpenLessonForModule]);
+    triggerLessonHighlight(activeItem.id);
+  }, [activeItem, scrollToLesson, setOpenLessonForModule, triggerLessonHighlight]);
   return (
     <div className="space-y-8">
       <KunoContainer align="left">
@@ -737,7 +835,7 @@ function ModuleExperience({
       </KunoContainer>
       <KunoContainer align="left">
         {visibleTimeline.length ? (
-          <div className="space-y-3 md:space-y-4">
+          <div className="space-y-3 md:space-y-4" data-testid="kuno-timeline">
             {visibleTimeline.map((item, idx) => {
               const lessonConfig = item.lesson ?? module.lessons.find((lesson) => lesson.id === item.id);
               const isOpen = item.status === "active" && item.id === openLessonId;
@@ -768,7 +866,7 @@ function ModuleExperience({
                     setOpenLessonForModule(next);
                   }}
                   lang={langKey}
-                  justActivated={item.id === (activeItem?.id ?? null)}
+                  justActivated={item.id === justActivatedLessonId}
                 >
                   {isOpen && lessonConfig ? (
                     <ActiveLessonInner
@@ -811,7 +909,9 @@ function ModuleExperience({
                 onCompleted={(result) => {
                   onFinalTestComplete?.(result);
                   if (onToast) {
-                    onToast(`${finalTestConfig.moduleName} · mini-test finalizat (${result.correct}/${result.total}).`);
+                    onToast({
+                      message: `${finalTestConfig.moduleName} · mini-test finalizat (${result.correct}/${result.total}).`,
+                    });
                   }
                 }}
               />

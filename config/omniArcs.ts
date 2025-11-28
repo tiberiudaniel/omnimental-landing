@@ -1,8 +1,3 @@
-/**
- * Static configuration for mental arcs (Season structure).
- * Each arc groups a set of OmniKuno lessons plus lightweight OmniAbil tasks
- * that can later be generated automatically based on the user's arc.
- */
 export type OmniArc = {
   id: string;
   title: string;
