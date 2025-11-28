@@ -1,6 +1,6 @@
 "use client";
 
-import { doc, runTransaction, serverTimestamp, setDoc, increment, arrayUnion } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp, setDoc, increment, arrayUnion, getDoc } from "firebase/firestore";
 import { ensureAuth, getDb, areWritesDisabled } from "../firebase";
 import type { OmniKnowledgeScores } from "../omniKnowledge";
 import type { QuestSuggestion } from "../quests";
@@ -531,6 +531,101 @@ export async function recordOmniPatch(patch: DeepPartial<OmniBlock>, ownerId?: s
   return mergeProgressFact({
     omni: patch,
   }, ownerId);
+}
+
+function formatDateKey(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = `${date.getUTCMonth() + 1}`.padStart(2, "0");
+  const d = `${date.getUTCDate()}`.padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getWeekKeyFromDate(date: Date): string {
+  const clone = new Date(date);
+  const weekday = clone.getUTCDay() || 7;
+  if (weekday > 1) {
+    clone.setUTCDate(clone.getUTCDate() - (weekday - 1));
+  }
+  return formatDateKey(clone);
+}
+
+function getMonthKeyFromDate(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = `${date.getUTCMonth() + 1}`.padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function parseDateKey(dateKey: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return null;
+  try {
+    const [year, month, day] = dateKey.split("-").map((segment) => Number(segment));
+    if ([year, month, day].some((unit) => Number.isNaN(unit))) return null;
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return Number.isNaN(date.getTime()) ? null : date;
+  } catch {
+    return null;
+  }
+}
+
+export async function recordOmniAbilTaskCompletion({
+  type,
+  dateKey,
+  xpReward,
+  ownerId,
+}: {
+  type: "daily" | "weekly";
+  dateKey: string;
+  xpReward?: number | null;
+  ownerId?: string | null;
+}) {
+  try {
+    const user = ownerId ? { uid: ownerId } : await ensureAuth();
+    if (!user) return;
+    const db = getDb();
+    const factsRef = doc(db, "userProgressFacts", user.uid);
+    const snapshot = await getDoc(factsRef);
+    const current = snapshot.exists()
+      ? ((((snapshot.data() as { omni?: { abil?: Record<string, unknown> } }).omni?.abil) ?? {}) as Record<string, unknown>)
+      : {};
+    const parsedDate = parseDateKey(dateKey) ?? new Date();
+    const weekKey = getWeekKeyFromDate(parsedDate);
+    const monthKey = getMonthKeyFromDate(parsedDate);
+    const prevWeekKey = typeof current.dailyWeekKey === "string" ? current.dailyWeekKey : null;
+    const prevMonthKey = typeof current.weeklyMonthKey === "string" ? current.weeklyMonthKey : null;
+    let dailyCount = Number(current.dailyCompletedThisWeek) || 0;
+    let weeklyCount = Number(current.weeklyCompletedThisMonth) || 0;
+    if (prevWeekKey !== weekKey) {
+      dailyCount = 0;
+    }
+    if (prevMonthKey !== monthKey) {
+      weeklyCount = 0;
+    }
+    if (type === "daily") {
+      dailyCount += 1;
+    } else if (type === "weekly") {
+      weeklyCount += 1;
+    }
+    const patch: DeepPartial<OmniBlock> = {
+      abil: {
+        dailyCompletedThisWeek: dailyCount,
+        weeklyCompletedThisMonth: weeklyCount,
+        lastCompletedDate: dateKey,
+        dailyWeekKey: weekKey,
+        weeklyMonthKey: monthKey,
+      },
+    };
+    const xp = Math.max(0, Math.floor(Number(xpReward) || 0));
+    if (xp > 0) {
+      patch.kuno = {
+        global: {
+          totalXp: increment(xp) as unknown as number,
+        },
+      };
+    }
+    await recordOmniPatch(patch, user.uid);
+  } catch (error) {
+    console.warn("recordOmniAbilTaskCompletion failed", error);
+  }
 }
 
 export async function recordKunoLessonProgress({

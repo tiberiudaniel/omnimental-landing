@@ -24,7 +24,8 @@ interface RecommendationFiltersProps {
 export function RecommendationFilters({ value, onChange, labels, counts }: RecommendationFiltersProps) {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    setHydrated(true);
+    const id = window.setTimeout(() => setHydrated(true), 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   return (

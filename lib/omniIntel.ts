@@ -87,6 +87,11 @@ export type OmniBlock = {
     skillsIndex: number; // 0-100 (latest)
     practiceIndex?: number; // 0-100 (blended)
     runsCount?: number;
+    dailyCompletedThisWeek?: number;
+    weeklyCompletedThisMonth?: number;
+    lastCompletedDate?: string;
+    dailyWeekKey?: string;
+    weeklyMonthKey?: string;
   };
   intel: {
     unlocked: boolean;
