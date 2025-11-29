@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthProvider";
@@ -74,6 +74,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
     if (!overlay || !container) return;
 
     function createWord() {
+      if (!overlay) return;
       const selectedFont = animatedFonts[Math.floor(Math.random() * animatedFonts.length)];
       const wordElem = document.createElement("div");
       wordElem.className = [
