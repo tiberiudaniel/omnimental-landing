@@ -353,3 +353,63 @@ correctIndex: 1
 [SCREEN reflection]
 title: Integrare
 prompt: „Un gest mental care îmi relaxează corpul când am o decizie grea este să ___.”
+
+
+## Greutate optimă – Body ↔ Mind
+
+# optimal_weight_management_l3_13_body_to_mind
+[SCREEN content]
+title: Ritmul corpului reglează apetitul
+body: Glicemia instabilă, somnul haotic sau deshidratarea amplifică pofta și reduc claritatea deciziilor alimentare. Corpul cere energie rapidă, chiar dacă mintea știe că nu e cea mai bună alegere.
+
+[SCREEN content]
+title: Micile gesturi stabilizează mintea
+body: Două mese reale, hidratarea și trei respirații lente înainte de masă reduc impulsul și cresc capacitatea de a alege conștient.
+
+[SCREEN checkpoint]
+title: Observă ritmul
+steps:
+- Gândește-te la o zi cu mese sărite sau gustări haotice.
+- Cum ți-au influențat energia și deciziile acele fluctuații?
+helper: Corpul dezechilibrat trimite semnale de foame chiar și când nu ai nevoie reală de calorii.
+
+[SCREEN quiz]
+title: Corp → minte
+question: Ce ajută cel mai mult să reduci pofta impulsivă?
+options:
+- Să ignori semnalele corpului.
+- Să stabilizezi ritmul alimentar și respirația înainte de masă.
+correctIndex: 1
+
+[SCREEN reflection]
+title: Conștientizare
+prompt: „Un gest mic prin care îmi stabilizez corpul înainte de masă este ___.”
+
+
+# optimal_weight_management_l3_14_mind_to_body
+[SCREEN content]
+title: Gândurile influențează corpul și apetitul
+body: Stresul, vinovăția sau critica față de propriul corp cresc cortizolul și declanșează mâncatul emoțional. Mintea tensionată determină corpul să caute confort rapid.
+
+[SCREEN content]
+title: Acceptarea reduce impulsul
+body: Când observi emoția și o numești cu blândețe, corpul revine mai ușor la ritmul normal și poți alege o variantă mai bună, nu perfectă.
+
+[SCREEN checkpoint]
+title: Observă dialogul interior
+steps:
+- Ce gânduri apar înainte de gustările neplanificate?
+- Cum se simte corpul după ce te judeci?
+helper: Emoțiile nerostite rămân în corp și cresc pofta.
+
+[SCREEN quiz]
+title: Minte → corp
+question: Ce reduce cel mai mult mâncatul emoțional?
+options:
+- Critica și restricțiile dure.
+- Recunoașterea emoției și un pas mic de reglare (respirație, pauză).
+correctIndex: 1
+
+[SCREEN reflection]
+title: Aplicare
+prompt: „Un gând sau un ritual scurt care îmi relaxează corpul înainte de a mânca este ___.”

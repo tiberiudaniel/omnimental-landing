@@ -5103,6 +5103,578 @@ export const OMNI_KUNO_MODULE_CONTENT: Record<string, OmniKunoModuleContent> = {
         ]
       }
     ]
+  },
+  "optimal_weight_management": {
+    "id": "optimal_weight_management",
+    "title": "Greutate optimă",
+    "arcIntros": {
+      "trezire": {
+        "id": "optimal_weight_management_arc_01_trezire",
+        "title": "Trezirea",
+        "body": "Greutatea optimă nu ține doar de alimentație. Ține de ritm, energie, obiceiuri mici și autoînțelegere. Trezirea începe când renunți la ideea de „dietă rapidă” și treci la „schimbare sustenabilă”."
+      },
+      "primele_ciocniri": {
+        "id": "optimal_weight_management_arc_02_primele_ciocniri",
+        "title": "Primele Ciocniri",
+        "body": "Primele dificultăți apar când corpul și mintea intră în conflict. Pofta, oboseala, stresul — toate influențează deciziile alimentare. Nu este eșec; este biologie."
+      },
+      "profunzime": {
+        "id": "optimal_weight_management_arc_03_profunzime",
+        "title": "Profunzime",
+        "body": "Greutatea optimă este un echilibru între ener­gie, somn, digestie, mișcare și gândire. Nu există un element magic. Există armonie între mai multe sisteme."
+      },
+      "maestrie": {
+        "id": "optimal_weight_management_arc_04_maestrie",
+        "title": "Maestrie",
+        "body": "Maestria apare când deciziile bune devin naturale: pași mici, acord fin cu corpul, și un stil de viață care susține energia pe termen lung."
+      }
+    },
+    "lessons": [
+      {
+        "lessonId": "ARC + Protocol + Lecțiile 1–4",
+        "screens": []
+      },
+      {
+        "lessonId": "optimal_weight_management_protocol",
+        "screens": [
+          {
+            "kind": "protocol",
+            "title": "Protocolul pentru greutate optimă",
+            "steps": [
+              "Un singur obiectiv alimentar pentru 7 zile.",
+              "Un pas mic măsurabil (ex: +1 pahar cu apă).",
+              "Un ritual de stabilizare înainte de masă (3 respirații lente).",
+              "Un „minim acceptabil” pentru zile grele (ex: o alegere mai bună, nu perfectă)."
+            ],
+            "id": "optimal_weight_management_protocol-screen-1"
+          }
+        ]
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_01_understanding",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Greutatea optimă ≠ dietă",
+            "body": "Greutatea stabilă vine din ritm, nu restricție. Corpul preferă mici ajustări, nu schimbări dramatice.",
+            "id": "optimal_weight_management_l1_01_understanding-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Radicalul nu funcționează",
+            "body": "Dietele stricte cresc stresul, scad energia și reduc șansele de continuitate.",
+            "id": "optimal_weight_management_l1_01_understanding-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Amintește-ți o schimbare alimentară prea drastică."
+            ],
+            "helper": "Drasticul nu e sustenabil.",
+            "id": "optimal_weight_management_l1_01_understanding-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Greutate optimă",
+            "question": "Ce susține mai bine transformarea?",
+            "options": [
+              "Restricții dure.",
+              "Ajustări mici și stabile."
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_01_understanding-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Clarificare",
+            "prompt": "„O mică ajustare realistă pentru mine ar putea fi ___.”",
+            "id": "optimal_weight_management_l1_01_understanding-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_02_energy_balance",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Energia modelează alegerile",
+            "body": "Deciziile alimentare sunt puternic influențate de somn, oboseală și nivel energetic.",
+            "id": "optimal_weight_management_l1_02_energy_balance-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Oboseala = alegeri impulsive",
+            "body": "Când energia este scăzută, corpul caută recompense rapide și dense caloric.",
+            "id": "optimal_weight_management_l1_02_energy_balance-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Cum se schimbă alegerile tale când esti obosit(ă)?"
+            ],
+            "helper": "Oboseala crește impulsivitatea alimentară.",
+            "id": "optimal_weight_management_l1_02_energy_balance-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Energie",
+            "question": "Ce se întâmplă când ești foarte obosit(ă)?",
+            "options": [
+              "Ai control maxim.",
+              "Crește pofta de alimente dense."
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_02_energy_balance-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Conștientizare",
+            "prompt": "„Un moment când oboseala mi-a influențat alegerile a fost ___.”",
+            "id": "optimal_weight_management_l1_02_energy_balance-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_03_satiation",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Sațietatea nu vine instant",
+            "body": "Semnalul de „m-am săturat” apare cu întârziere. Dacă mănânci repede, treci peste semnal.",
+            "id": "optimal_weight_management_l1_03_satiation-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Ritmul schimbă tot",
+            "body": "O masă lentă reduce consumul cu 10–20% fără niciun efort suplimentar.",
+            "id": "optimal_weight_management_l1_03_satiation-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Mănânci repede sau lent de obicei?"
+            ],
+            "helper": "Ritmul influențează cantitatea.",
+            "id": "optimal_weight_management_l1_03_satiation-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Sațietate",
+            "question": "Ce ajută la reglarea cantității mâncate?",
+            "options": [
+              "Mănânc mai repede.",
+              "Mănânc mai lent."
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_03_satiation-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Aplicare",
+            "prompt": "„Un mod prin care pot încetini puțin este ___.”",
+            "id": "optimal_weight_management_l1_03_satiation-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_04_triggers",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Declanșatori alimentari",
+            "body": "Foamea reală este în corp; foamea emoțională este în minte.",
+            "id": "optimal_weight_management_l1_04_triggers-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Recunoaște semnalul",
+            "body": "Întreabă-te: „E foame sau nevoie de confort?”",
+            "id": "optimal_weight_management_l1_04_triggers-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Notează un declanșator alimentar frecvent."
+            ],
+            "helper": "Conștientizarea aduce claritate.",
+            "id": "optimal_weight_management_l1_04_triggers-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Declanșator",
+            "question": "Care este o întrebare utilă înainte de a mânca?",
+            "options": [
+              "Merit să mă răsfăț.",
+              "E foame sau emoție?"
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_04_triggers-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Claritate",
+            "prompt": "„Un declanșator comun pentru mine este ___.”",
+            "id": "optimal_weight_management_l1_04_triggers-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "Lecțiile 5–8",
+        "screens": []
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_05_small_steps",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Pași mici, rezultate mari",
+            "body": "Greutatea optimă se construiește din gesturi mici, repetabile.",
+            "id": "optimal_weight_management_l1_05_small_steps-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Exemple",
+            "body": "+1 pahar cu apă; +2 minute de mers; o alegere mai bună, nu perfectă.",
+            "id": "optimal_weight_management_l1_05_small_steps-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Care pas minuscul ți se pare cel mai ușor?"
+            ],
+            "helper": "Mic ≠ nesemnificativ.",
+            "id": "optimal_weight_management_l1_05_small_steps-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Pași mici",
+            "question": "Care este cel mai sigur mod de progres?",
+            "options": [
+              "Schimbări mari.",
+              "Pași mici repetabili."
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_05_small_steps-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Aplicare",
+            "prompt": "„Pasul mic pentru azi este ___.”",
+            "id": "optimal_weight_management_l1_05_small_steps-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_06_habit_loop",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Obiceiurile rulează automat",
+            "body": "Obiceiurile alimentare sunt bucle: declanșator → acțiune → recompensă.",
+            "id": "optimal_weight_management_l1_06_habit_loop-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Schimbarea buclei",
+            "body": "Nu schimbi foamea, ci acțiunea dintre declanșator și recompensă.",
+            "id": "optimal_weight_management_l1_06_habit_loop-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Identifică un declanșator din bucla ta alimentară."
+            ],
+            "helper": "Identificarea precede schimbarea.",
+            "id": "optimal_weight_management_l1_06_habit_loop-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Obicei",
+            "question": "Ce este esențial pentru schimbare?",
+            "options": [
+              "Forța.",
+              "Înțelegerea buclei."
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_06_habit_loop-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Clarificare",
+            "prompt": "„O buclă pe care o pot ajusta este ___.”",
+            "id": "optimal_weight_management_l1_06_habit_loop-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_07_emotions",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Emoțiile influențează alimentația",
+            "body": "Stresul crește pofta de dulce; tristețea crește pofta de confort.",
+            "id": "optimal_weight_management_l1_07_emotions-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Recunoaștere blândă",
+            "body": "Recunoașterea emoției reduce automat impulsul alimentar.",
+            "id": "optimal_weight_management_l1_07_emotions-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Ce emoție îți influențează cel mai des alimentația?"
+            ],
+            "helper": "Emoția precede impulsul.",
+            "id": "optimal_weight_management_l1_07_emotions-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Emoții",
+            "question": "Ce ajută la reducerea impulsului alimentar?",
+            "options": [
+              "Ignor emoția.",
+              "O recunosc."
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_07_emotions-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Conștientizare",
+            "prompt": "„O emoție frecventă care îmi influențează alimentația este ___.”",
+            "id": "optimal_weight_management_l1_07_emotions-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_08_environment",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Mediul modelează realitatea",
+            "body": "Ce este vizibil devine tentant. Ce este ascuns devine uitat.",
+            "id": "optimal_weight_management_l1_08_environment-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Ajustări mici",
+            "body": "Un bol cu fructe vizibil schimbă frecvența alegerilor sănătoase.",
+            "id": "optimal_weight_management_l1_08_environment-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Ce element din mediu îți sabotează cel mai des alimentația?"
+            ],
+            "helper": "Micile ajustări produc mari efecte.",
+            "id": "optimal_weight_management_l1_08_environment-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Mediu",
+            "question": "Ce schimbare ajută automat?",
+            "options": [
+              "Elimin fricțiunile.",
+              "Mă bazez pe voință pură."
+            ],
+            "correctIndex": 0,
+            "id": "optimal_weight_management_l1_08_environment-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Ajustare",
+            "prompt": "„Un mic upgrade în mediul meu ar putea fi ___.”",
+            "id": "optimal_weight_management_l1_08_environment-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "Lecțiile 9–12 + Mini-Test",
+        "screens": []
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_09_mindbody",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Corpul decide înaintea minții",
+            "body": "Glicemia influențează claritatea mentală, impulsivitatea și pofta.",
+            "id": "optimal_weight_management_l1_09_mindbody-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Mintea influențează corpul",
+            "body": "Stresul crește cortizolul → poftă crescută → senzație de „pierdere a controlului”.",
+            "id": "optimal_weight_management_l1_09_mindbody-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Cum îți influențează somnul alimentația?"
+            ],
+            "helper": "Mintea și corpul sunt conectate.",
+            "id": "optimal_weight_management_l1_09_mindbody-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Minte–corp",
+            "question": "Ce influențează alegerile alimentare?",
+            "options": [
+              "Doar voința.",
+              "Energie, somn, stres."
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_09_mindbody-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Claritate",
+            "prompt": "„O conexiune minte–corp pe care o observ la mine este ___.”",
+            "id": "optimal_weight_management_l1_09_mindbody-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_10_activity",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Mișcarea blândă",
+            "body": "Nu ai nevoie de antrenamente intense. Mișcarea blândă reglează apetitul și energia.",
+            "id": "optimal_weight_management_l1_10_activity-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Mișcări mici, efect mare",
+            "body": "5–10 minute pe zi schimbă metabolismul de bază.",
+            "id": "optimal_weight_management_l1_10_activity-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Ce tip de mișcare blândă poți integra?"
+            ],
+            "helper": "Mișcarea creează energie.",
+            "id": "optimal_weight_management_l1_10_activity-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Activitate",
+            "question": "Ce mișcare este sustenabilă?",
+            "options": [
+              "Doar intensitatea.",
+              "Mers, întinderi, mișcare scurtă."
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_10_activity-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Aplicare",
+            "prompt": "„Mișcarea blândă de azi ar putea fi ___.”",
+            "id": "optimal_weight_management_l1_10_activity-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_11_minimum",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Minimumul salvator",
+            "body": "Zilele grele cer flexibilitate. Continuitatea se face cu un minim, nu cu perfecțiune.",
+            "id": "optimal_weight_management_l1_11_minimum-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Prag realist",
+            "body": "Poți păstra obiceiul cu o alegere puțin mai bună.",
+            "id": "optimal_weight_management_l1_11_minimum-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Care este minimul tău alimentar pentru zilele grele?"
+            ],
+            "helper": "Continuitatea bate intensitatea.",
+            "id": "optimal_weight_management_l1_11_minimum-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Minimum",
+            "question": "Ce păstrează progresul?",
+            "options": [
+              "Perfecțiunea.",
+              "Minimul realist."
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_11_minimum-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Prag",
+            "prompt": "„Minimul meu realist este ___.”",
+            "id": "optimal_weight_management_l1_11_minimum-screen-5"
+          }
+        ]
+      },
+      {
+        "lessonId": "optimal_weight_management_l1_12_identity",
+        "screens": [
+          {
+            "kind": "content",
+            "title": "Identitatea modelează alegerile",
+            "body": "Schimbarea stabilă vine când te vezi ca „o persoană care are grijă de energie”.",
+            "id": "optimal_weight_management_l1_12_identity-screen-1"
+          },
+          {
+            "kind": "content",
+            "title": "Micile dovezi",
+            "body": "Fiecare acțiune este o votare pentru identitatea dorită.",
+            "id": "optimal_weight_management_l1_12_identity-screen-2"
+          },
+          {
+            "kind": "checkpoint",
+            "title": "Observare",
+            "steps": [
+              "Ce comportament mic îți confirmă identitatea dorită?"
+            ],
+            "helper": "Identitatea produce consistență.",
+            "id": "optimal_weight_management_l1_12_identity-screen-3"
+          },
+          {
+            "kind": "quiz",
+            "title": "Identitate",
+            "question": "Ce susține cel mai mult greutatea optimă?",
+            "options": [
+              "Schimbări agresive.",
+              "Identitatea dorită consolidată prin pași mici."
+            ],
+            "correctIndex": 1,
+            "id": "optimal_weight_management_l1_12_identity-screen-4"
+          },
+          {
+            "kind": "reflection",
+            "title": "Cine devin?",
+            "prompt": "„Identitatea pe care vreau să o consolidez este ___.”",
+            "id": "optimal_weight_management_l1_12_identity-screen-5"
+          }
+        ]
+      }
+    ]
   }
 };
 
@@ -5259,6 +5831,28 @@ export const OMNI_KUNO_ARC_INTROS: OmniKunoArcIntroGroups = {
       "id": "willpower_perseverance_arc_04_maestrie",
       "title": "Maestrie",
       "body": "Maestria nu înseamnă intensitate. Înseamnă continuitate. Pași mici, repetați calm. Ritm, nu efort eroic. Claritate, nu încăpățânare."
+    }
+  },
+  "optimal_weight_management": {
+    "trezire": {
+      "id": "optimal_weight_management_arc_01_trezire",
+      "title": "Trezirea",
+      "body": "Greutatea optimă nu ține doar de alimentație. Ține de ritm, energie, obiceiuri mici și autoînțelegere. Trezirea începe când renunți la ideea de „dietă rapidă” și treci la „schimbare sustenabilă”."
+    },
+    "primele_ciocniri": {
+      "id": "optimal_weight_management_arc_02_primele_ciocniri",
+      "title": "Primele Ciocniri",
+      "body": "Primele dificultăți apar când corpul și mintea intră în conflict. Pofta, oboseala, stresul — toate influențează deciziile alimentare. Nu este eșec; este biologie."
+    },
+    "profunzime": {
+      "id": "optimal_weight_management_arc_03_profunzime",
+      "title": "Profunzime",
+      "body": "Greutatea optimă este un echilibru între ener­gie, somn, digestie, mișcare și gândire. Nu există un element magic. Există armonie între mai multe sisteme."
+    },
+    "maestrie": {
+      "id": "optimal_weight_management_arc_04_maestrie",
+      "title": "Maestrie",
+      "body": "Maestria apare când deciziile bune devin naturale: pași mici, acord fin cu corpul, și un stil de viață care susține energia pe termen lung."
     }
   }
 };
@@ -10100,6 +10694,550 @@ export const OMNI_KUNO_LESSON_CONTENT: Record<string, OmniKunoLessonContent> = {
         "title": "Ritualul meu",
         "prompt": "„Ritualul meu simplu ar putea fi: întâi ___, apoi ___.”",
         "id": "willpower_perseverance_l1_12_ritual-screen-5"
+      }
+    ]
+  },
+  "ARC + Protocol + Lecțiile 1–4": {
+    "lessonId": "ARC + Protocol + Lecțiile 1–4",
+    "screens": []
+  },
+  "optimal_weight_management_protocol": {
+    "lessonId": "optimal_weight_management_protocol",
+    "screens": [
+      {
+        "kind": "protocol",
+        "title": "Protocolul pentru greutate optimă",
+        "steps": [
+          "Un singur obiectiv alimentar pentru 7 zile.",
+          "Un pas mic măsurabil (ex: +1 pahar cu apă).",
+          "Un ritual de stabilizare înainte de masă (3 respirații lente).",
+          "Un „minim acceptabil” pentru zile grele (ex: o alegere mai bună, nu perfectă)."
+        ],
+        "id": "optimal_weight_management_protocol-screen-1"
+      }
+    ]
+  },
+  "optimal_weight_management_l1_01_understanding": {
+    "lessonId": "optimal_weight_management_l1_01_understanding",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Greutatea optimă ≠ dietă",
+        "body": "Greutatea stabilă vine din ritm, nu restricție. Corpul preferă mici ajustări, nu schimbări dramatice.",
+        "id": "optimal_weight_management_l1_01_understanding-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Radicalul nu funcționează",
+        "body": "Dietele stricte cresc stresul, scad energia și reduc șansele de continuitate.",
+        "id": "optimal_weight_management_l1_01_understanding-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Amintește-ți o schimbare alimentară prea drastică."
+        ],
+        "helper": "Drasticul nu e sustenabil.",
+        "id": "optimal_weight_management_l1_01_understanding-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Greutate optimă",
+        "question": "Ce susține mai bine transformarea?",
+        "options": [
+          "Restricții dure.",
+          "Ajustări mici și stabile."
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_01_understanding-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Clarificare",
+        "prompt": "„O mică ajustare realistă pentru mine ar putea fi ___.”",
+        "id": "optimal_weight_management_l1_01_understanding-screen-5"
+      }
+    ]
+  },
+  "optimal_weight_management_l1_02_energy_balance": {
+    "lessonId": "optimal_weight_management_l1_02_energy_balance",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Energia modelează alegerile",
+        "body": "Deciziile alimentare sunt puternic influențate de somn, oboseală și nivel energetic.",
+        "id": "optimal_weight_management_l1_02_energy_balance-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Oboseala = alegeri impulsive",
+        "body": "Când energia este scăzută, corpul caută recompense rapide și dense caloric.",
+        "id": "optimal_weight_management_l1_02_energy_balance-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Cum se schimbă alegerile tale când esti obosit(ă)?"
+        ],
+        "helper": "Oboseala crește impulsivitatea alimentară.",
+        "id": "optimal_weight_management_l1_02_energy_balance-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Energie",
+        "question": "Ce se întâmplă când ești foarte obosit(ă)?",
+        "options": [
+          "Ai control maxim.",
+          "Crește pofta de alimente dense."
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_02_energy_balance-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Conștientizare",
+        "prompt": "„Un moment când oboseala mi-a influențat alegerile a fost ___.”",
+        "id": "optimal_weight_management_l1_02_energy_balance-screen-5"
+      }
+    ]
+  },
+  "optimal_weight_management_l1_03_satiation": {
+    "lessonId": "optimal_weight_management_l1_03_satiation",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Sațietatea nu vine instant",
+        "body": "Semnalul de „m-am săturat” apare cu întârziere. Dacă mănânci repede, treci peste semnal.",
+        "id": "optimal_weight_management_l1_03_satiation-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Ritmul schimbă tot",
+        "body": "O masă lentă reduce consumul cu 10–20% fără niciun efort suplimentar.",
+        "id": "optimal_weight_management_l1_03_satiation-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Mănânci repede sau lent de obicei?"
+        ],
+        "helper": "Ritmul influențează cantitatea.",
+        "id": "optimal_weight_management_l1_03_satiation-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Sațietate",
+        "question": "Ce ajută la reglarea cantității mâncate?",
+        "options": [
+          "Mănânc mai repede.",
+          "Mănânc mai lent."
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_03_satiation-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Aplicare",
+        "prompt": "„Un mod prin care pot încetini puțin este ___.”",
+        "id": "optimal_weight_management_l1_03_satiation-screen-5"
+      }
+    ]
+  },
+  "optimal_weight_management_l1_04_triggers": {
+    "lessonId": "optimal_weight_management_l1_04_triggers",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Declanșatori alimentari",
+        "body": "Foamea reală este în corp; foamea emoțională este în minte.",
+        "id": "optimal_weight_management_l1_04_triggers-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Recunoaște semnalul",
+        "body": "Întreabă-te: „E foame sau nevoie de confort?”",
+        "id": "optimal_weight_management_l1_04_triggers-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Notează un declanșator alimentar frecvent."
+        ],
+        "helper": "Conștientizarea aduce claritate.",
+        "id": "optimal_weight_management_l1_04_triggers-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Declanșator",
+        "question": "Care este o întrebare utilă înainte de a mânca?",
+        "options": [
+          "Merit să mă răsfăț.",
+          "E foame sau emoție?"
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_04_triggers-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Claritate",
+        "prompt": "„Un declanșator comun pentru mine este ___.”",
+        "id": "optimal_weight_management_l1_04_triggers-screen-5"
+      }
+    ]
+  },
+  "Lecțiile 5–8": {
+    "lessonId": "Lecțiile 5–8",
+    "screens": []
+  },
+  "optimal_weight_management_l1_05_small_steps": {
+    "lessonId": "optimal_weight_management_l1_05_small_steps",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Pași mici, rezultate mari",
+        "body": "Greutatea optimă se construiește din gesturi mici, repetabile.",
+        "id": "optimal_weight_management_l1_05_small_steps-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Exemple",
+        "body": "+1 pahar cu apă; +2 minute de mers; o alegere mai bună, nu perfectă.",
+        "id": "optimal_weight_management_l1_05_small_steps-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Care pas minuscul ți se pare cel mai ușor?"
+        ],
+        "helper": "Mic ≠ nesemnificativ.",
+        "id": "optimal_weight_management_l1_05_small_steps-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Pași mici",
+        "question": "Care este cel mai sigur mod de progres?",
+        "options": [
+          "Schimbări mari.",
+          "Pași mici repetabili."
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_05_small_steps-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Aplicare",
+        "prompt": "„Pasul mic pentru azi este ___.”",
+        "id": "optimal_weight_management_l1_05_small_steps-screen-5"
+      }
+    ]
+  },
+  "optimal_weight_management_l1_06_habit_loop": {
+    "lessonId": "optimal_weight_management_l1_06_habit_loop",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Obiceiurile rulează automat",
+        "body": "Obiceiurile alimentare sunt bucle: declanșator → acțiune → recompensă.",
+        "id": "optimal_weight_management_l1_06_habit_loop-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Schimbarea buclei",
+        "body": "Nu schimbi foamea, ci acțiunea dintre declanșator și recompensă.",
+        "id": "optimal_weight_management_l1_06_habit_loop-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Identifică un declanșator din bucla ta alimentară."
+        ],
+        "helper": "Identificarea precede schimbarea.",
+        "id": "optimal_weight_management_l1_06_habit_loop-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Obicei",
+        "question": "Ce este esențial pentru schimbare?",
+        "options": [
+          "Forța.",
+          "Înțelegerea buclei."
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_06_habit_loop-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Clarificare",
+        "prompt": "„O buclă pe care o pot ajusta este ___.”",
+        "id": "optimal_weight_management_l1_06_habit_loop-screen-5"
+      }
+    ]
+  },
+  "optimal_weight_management_l1_07_emotions": {
+    "lessonId": "optimal_weight_management_l1_07_emotions",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Emoțiile influențează alimentația",
+        "body": "Stresul crește pofta de dulce; tristețea crește pofta de confort.",
+        "id": "optimal_weight_management_l1_07_emotions-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Recunoaștere blândă",
+        "body": "Recunoașterea emoției reduce automat impulsul alimentar.",
+        "id": "optimal_weight_management_l1_07_emotions-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Ce emoție îți influențează cel mai des alimentația?"
+        ],
+        "helper": "Emoția precede impulsul.",
+        "id": "optimal_weight_management_l1_07_emotions-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Emoții",
+        "question": "Ce ajută la reducerea impulsului alimentar?",
+        "options": [
+          "Ignor emoția.",
+          "O recunosc."
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_07_emotions-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Conștientizare",
+        "prompt": "„O emoție frecventă care îmi influențează alimentația este ___.”",
+        "id": "optimal_weight_management_l1_07_emotions-screen-5"
+      }
+    ]
+  },
+  "optimal_weight_management_l1_08_environment": {
+    "lessonId": "optimal_weight_management_l1_08_environment",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Mediul modelează realitatea",
+        "body": "Ce este vizibil devine tentant. Ce este ascuns devine uitat.",
+        "id": "optimal_weight_management_l1_08_environment-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Ajustări mici",
+        "body": "Un bol cu fructe vizibil schimbă frecvența alegerilor sănătoase.",
+        "id": "optimal_weight_management_l1_08_environment-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Ce element din mediu îți sabotează cel mai des alimentația?"
+        ],
+        "helper": "Micile ajustări produc mari efecte.",
+        "id": "optimal_weight_management_l1_08_environment-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Mediu",
+        "question": "Ce schimbare ajută automat?",
+        "options": [
+          "Elimin fricțiunile.",
+          "Mă bazez pe voință pură."
+        ],
+        "correctIndex": 0,
+        "id": "optimal_weight_management_l1_08_environment-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Ajustare",
+        "prompt": "„Un mic upgrade în mediul meu ar putea fi ___.”",
+        "id": "optimal_weight_management_l1_08_environment-screen-5"
+      }
+    ]
+  },
+  "Lecțiile 9–12 + Mini-Test": {
+    "lessonId": "Lecțiile 9–12 + Mini-Test",
+    "screens": []
+  },
+  "optimal_weight_management_l1_09_mindbody": {
+    "lessonId": "optimal_weight_management_l1_09_mindbody",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Corpul decide înaintea minții",
+        "body": "Glicemia influențează claritatea mentală, impulsivitatea și pofta.",
+        "id": "optimal_weight_management_l1_09_mindbody-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Mintea influențează corpul",
+        "body": "Stresul crește cortizolul → poftă crescută → senzație de „pierdere a controlului”.",
+        "id": "optimal_weight_management_l1_09_mindbody-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Cum îți influențează somnul alimentația?"
+        ],
+        "helper": "Mintea și corpul sunt conectate.",
+        "id": "optimal_weight_management_l1_09_mindbody-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Minte–corp",
+        "question": "Ce influențează alegerile alimentare?",
+        "options": [
+          "Doar voința.",
+          "Energie, somn, stres."
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_09_mindbody-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Claritate",
+        "prompt": "„O conexiune minte–corp pe care o observ la mine este ___.”",
+        "id": "optimal_weight_management_l1_09_mindbody-screen-5"
+      }
+    ]
+  },
+  "optimal_weight_management_l1_10_activity": {
+    "lessonId": "optimal_weight_management_l1_10_activity",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Mișcarea blândă",
+        "body": "Nu ai nevoie de antrenamente intense. Mișcarea blândă reglează apetitul și energia.",
+        "id": "optimal_weight_management_l1_10_activity-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Mișcări mici, efect mare",
+        "body": "5–10 minute pe zi schimbă metabolismul de bază.",
+        "id": "optimal_weight_management_l1_10_activity-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Ce tip de mișcare blândă poți integra?"
+        ],
+        "helper": "Mișcarea creează energie.",
+        "id": "optimal_weight_management_l1_10_activity-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Activitate",
+        "question": "Ce mișcare este sustenabilă?",
+        "options": [
+          "Doar intensitatea.",
+          "Mers, întinderi, mișcare scurtă."
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_10_activity-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Aplicare",
+        "prompt": "„Mișcarea blândă de azi ar putea fi ___.”",
+        "id": "optimal_weight_management_l1_10_activity-screen-5"
+      }
+    ]
+  },
+  "optimal_weight_management_l1_11_minimum": {
+    "lessonId": "optimal_weight_management_l1_11_minimum",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Minimumul salvator",
+        "body": "Zilele grele cer flexibilitate. Continuitatea se face cu un minim, nu cu perfecțiune.",
+        "id": "optimal_weight_management_l1_11_minimum-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Prag realist",
+        "body": "Poți păstra obiceiul cu o alegere puțin mai bună.",
+        "id": "optimal_weight_management_l1_11_minimum-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Care este minimul tău alimentar pentru zilele grele?"
+        ],
+        "helper": "Continuitatea bate intensitatea.",
+        "id": "optimal_weight_management_l1_11_minimum-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Minimum",
+        "question": "Ce păstrează progresul?",
+        "options": [
+          "Perfecțiunea.",
+          "Minimul realist."
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_11_minimum-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Prag",
+        "prompt": "„Minimul meu realist este ___.”",
+        "id": "optimal_weight_management_l1_11_minimum-screen-5"
+      }
+    ]
+  },
+  "optimal_weight_management_l1_12_identity": {
+    "lessonId": "optimal_weight_management_l1_12_identity",
+    "screens": [
+      {
+        "kind": "content",
+        "title": "Identitatea modelează alegerile",
+        "body": "Schimbarea stabilă vine când te vezi ca „o persoană care are grijă de energie”.",
+        "id": "optimal_weight_management_l1_12_identity-screen-1"
+      },
+      {
+        "kind": "content",
+        "title": "Micile dovezi",
+        "body": "Fiecare acțiune este o votare pentru identitatea dorită.",
+        "id": "optimal_weight_management_l1_12_identity-screen-2"
+      },
+      {
+        "kind": "checkpoint",
+        "title": "Observare",
+        "steps": [
+          "Ce comportament mic îți confirmă identitatea dorită?"
+        ],
+        "helper": "Identitatea produce consistență.",
+        "id": "optimal_weight_management_l1_12_identity-screen-3"
+      },
+      {
+        "kind": "quiz",
+        "title": "Identitate",
+        "question": "Ce susține cel mai mult greutatea optimă?",
+        "options": [
+          "Schimbări agresive.",
+          "Identitatea dorită consolidată prin pași mici."
+        ],
+        "correctIndex": 1,
+        "id": "optimal_weight_management_l1_12_identity-screen-4"
+      },
+      {
+        "kind": "reflection",
+        "title": "Cine devin?",
+        "prompt": "„Identitatea pe care vreau să o consolidez este ___.”",
+        "id": "optimal_weight_management_l1_12_identity-screen-5"
       }
     ]
   }

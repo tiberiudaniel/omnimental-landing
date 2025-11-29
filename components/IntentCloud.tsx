@@ -33,6 +33,7 @@ const FALLBACK_WORDS: IntentCloudWord[] = [
   { id: "focus_flow", label: "Focus în flux", category: "clarity" },
   { id: "habits", label: "Obiceiuri stabile", category: "balance" },
   { id: "willpower_anchor", label: "Voință și continuitate", category: "willpower_perseverance" },
+  { id: "optimal_weight_reset", label: "Greutate optimă", category: "optimal_weight_management" },
 ];
 
 type IntentCloudProps = {
@@ -324,5 +325,9 @@ const CATEGORY_TINTS: Record<
   willpower_perseverance: {
     idle: "border-[#F2D3A2] bg-[#FFF8EF] text-[#6B3F07] hover:border-[#E2B773] hover:text-[#A35A10]",
     active: "border-[#D08A2D] bg-[#FFEFD6] text-[#4A2802]",
+  },
+  optimal_weight_management: {
+    idle: "border-[#F5D8C5] bg-[#FFF7F0] text-[#6F3D22] hover:border-[#E9B693] hover:text-[#B45A33]",
+    active: "border-[#E3A072] bg-[#FFE8D8] text-[#4F2612]",
   },
 };

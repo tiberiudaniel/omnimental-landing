@@ -1,4 +1,4 @@
-export type CategoryKeyRO = "claritate" | "relatii" | "stres" | "incredere" | "echilibru" | "disciplina";
+export type CategoryKeyRO = "claritate" | "relatii" | "stres" | "incredere" | "echilibru" | "disciplina" | "greutate";
 
 export type CategoryLabels = {
   name: { ro: string; en: string };
@@ -53,6 +53,14 @@ export const CATEGORY_LABELS: Record<CategoryKeyRO, CategoryLabels> = {
     reflection: {
       ro: "Ce pas minim poți relua azi ca să îți întărești continuitatea pentru următoarele 7 zile?",
       en: "What is the smallest step you can restart today to rebuild consistency over the next 7 days?",
+    },
+  },
+  greutate: {
+    name: { ro: "Greutate optimă", en: "Optimal weight" },
+    short: { ro: "echilibru corp–minte", en: "body–mind balance" },
+    reflection: {
+      ro: "Care este un gest simplu (masă, pauză sau mișcare) care ți-ar stabiliza ritmul în următoarele 24h?",
+      en: "What simple gesture (meal, break or movement) would stabilise your rhythm in the next 24h?",
     },
   },
 };

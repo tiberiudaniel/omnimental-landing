@@ -82,6 +82,19 @@ const UNIVERSE_AREAS: UniverseArea[] = [
       en: "Activate calm discipline with 90-second steps and protect your energy when the pressure spikes.",
     },
   },
+  {
+    id: "optimal-weight",
+    moduleId: "optimal_weight_management",
+    icon: "🥗",
+    title: {
+      ro: "Greutate optimă",
+      en: "Optimal weight",
+    },
+    description: {
+      ro: "Îți reglezi alimentația, energia și relația cu mâncarea fără extreme sau diete imposibile.",
+      en: "Align nutrition, energy and your relationship with food without extremes or impossible diets.",
+    },
+  },
 ];
 
 export default function MentalUniversePage() {

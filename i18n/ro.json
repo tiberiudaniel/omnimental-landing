@@ -227,7 +227,17 @@
     { "key": "wp_7", "label": "Îmi este greu să îmi respect promisiunile față de mine.", "category": "willpower_perseverance" },
     { "key": "wp_8", "label": "Oscilez între perioade foarte disciplinate și perioade de haos.", "category": "willpower_perseverance" },
     { "key": "wp_9", "label": "Vreau să învăț să revin după pauze și eșecuri.", "category": "willpower_perseverance" },
-    { "key": "wp_10", "label": "Simt că voința mea se termină prea repede.", "category": "willpower_perseverance" }
+    { "key": "wp_10", "label": "Simt că voința mea se termină prea repede.", "category": "willpower_perseverance" },
+    { "key": "ow_1", "label": "Vreau să ajung la o greutate mai sănătoasă.", "category": "optimal_weight_management" },
+    { "key": "ow_2", "label": "Oscilez cu greutatea și nu reușesc să mă stabilizez.", "category": "optimal_weight_management" },
+    { "key": "ow_3", "label": "Mănânc haotic când sunt stresat(ă) sau obosit(ă).", "category": "optimal_weight_management" },
+    { "key": "ow_4", "label": "Mi-e greu să îmi controlez porțiile la masă.", "category": "optimal_weight_management" },
+    { "key": "ow_5", "label": "Mănânc repede și abia după îmi dau seama că am exagerat.", "category": "optimal_weight_management" },
+    { "key": "ow_6", "label": "Aș vrea să am o relație mai relaxată cu mâncarea.", "category": "optimal_weight_management" },
+    { "key": "ow_7", "label": "Îmi lipsesc energia și cheful de mișcare.", "category": "optimal_weight_management" },
+    { "key": "ow_8", "label": "Am încercat multe diete, dar nu reușesc să mențin rezultatele.", "category": "optimal_weight_management" },
+    { "key": "ow_9", "label": "Vreau să îmi creez obiceiuri alimentare mai stabile.", "category": "optimal_weight_management" },
+    { "key": "ow_10", "label": "Vreau să slăbesc fără să simt că sunt mereu la dietă.", "category": "optimal_weight_management" }
   ],
   "intentCloudSliderLabel": "Cât de intens simți asta acum?",
   "intentMotivationTitle": "„Claritatea senzațiilor e combustibilul clarității în decizii.”",
@@ -333,7 +343,8 @@
     "clarity": "claritate și direcție",
     "boundaries": "limite sănătoase",
     "selfTrust": "încredere și identitate",
-    "willpower_perseverance": "voință și perseverență"
+    "willpower_perseverance": "voință și perseverență",
+    "optimal_weight_management": "greutate optimă"
   },
   "reflectionTwoIntro": "Din ce ai ales, reiese că îți dorești {{categorySummary}}.",
   "reflectionTwoBody": "Îți propun două căi prin care poți începe să lucrezi la asta chiar acum. Alege-o pe cea care se simte potrivită acum.",

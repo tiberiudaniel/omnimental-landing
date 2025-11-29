@@ -12,7 +12,8 @@ export type IntentPrimaryCategory =
   | "stress"
   | "confidence"
   | "balance"
-  | "willpower_perseverance";
+  | "willpower_perseverance"
+  | "optimal_weight_management";
 
 export type IntentExpression = {
   id: string;
@@ -55,6 +56,10 @@ const CATEGORY_METADATA: Record<
   willpower_perseverance: {
     indicator: "willpower_perseverance",
     label: { ro: "Voință & Perseverență", en: "Willpower & Perseverance" },
+  },
+  optimal_weight_management: {
+    indicator: "optimal_weight_management",
+    label: { ro: "Greutate optimă", en: "Optimal weight" },
   },
 };
 
@@ -132,6 +137,54 @@ const BASE_EXPRESSIONS: Record<IntentPrimaryCategory, Array<{ id: string; ro: st
       { id: "willpower_comeback", ro: "Vreau să revin după pauze și eșecuri.", en: "I want to bounce back after breaks or failures." },
       { id: "willpower_runs_out", ro: "Simt că voința se termină prea repede.", en: "My willpower feels depleted too fast." },
     ],
+    optimal_weight_management: [
+      { id: "ow_1", ro: "Vreau să ajung la o greutate mai sănătoasă.", en: "I want to reach a healthier weight." },
+      {
+        id: "ow_2",
+        ro: "Oscilez cu greutatea și nu reușesc să mă stabilizez.",
+        en: "My weight swings and I can’t seem to stabilise it.",
+      },
+      {
+        id: "ow_3",
+        ro: "Mănânc haotic când sunt stresat(ă) sau obosit(ă).",
+        en: "I eat chaotically when I’m stressed or tired.",
+      },
+      {
+        id: "ow_4",
+        ro: "Mi-e greu să îmi controlez porțiile la masă.",
+        en: "It’s hard for me to control my portions at meals.",
+      },
+      {
+        id: "ow_5",
+        ro: "Mănânc repede și abia după îmi dau seama că am exagerat.",
+        en: "I eat fast and only notice I overdid it afterwards.",
+      },
+      {
+        id: "ow_6",
+        ro: "Aș vrea să am o relație mai relaxată cu mâncarea.",
+        en: "I want a more relaxed relationship with food.",
+      },
+      {
+        id: "ow_7",
+        ro: "Îmi lipsesc energia și cheful de mișcare.",
+        en: "I’m missing the energy and desire to move.",
+      },
+      {
+        id: "ow_8",
+        ro: "Am încercat multe diete, dar nu reușesc să mențin rezultatele.",
+        en: "I tried many diets but can’t maintain the results.",
+      },
+      {
+        id: "ow_9",
+        ro: "Vreau să îmi creez obiceiuri alimentare mai stabile.",
+        en: "I want more stable eating habits.",
+      },
+      {
+        id: "ow_10",
+        ro: "Vreau să slăbesc fără să simt că sunt mereu la dietă.",
+        en: "I want to lose weight without feeling permanently on a diet.",
+      },
+    ],
   };
 
 export const intentExpressions: IntentExpression[] = Object.entries(BASE_EXPRESSIONS).flatMap(
@@ -157,6 +210,9 @@ export function getIntentExpressions(locale: Locale = "ro"): LocalizedIntentExpr
       incredere: "confidence",
       echilibru: "balance",
       disciplina: "willpower_perseverance",
+      greutate: "optimal_weight_management",
+      greutate_optima: "optimal_weight_management",
+      alimentatie: "optimal_weight_management",
     };
     const records: LocalizedIntentExpression[] = [];
     for (const [cat, items] of Object.entries(roDb as Record<string, string[]>)) {
@@ -178,7 +234,15 @@ export function getIntentExpressions(locale: Locale = "ro"): LocalizedIntentExpr
   }
   if (locale === "en") {
     const records: LocalizedIntentExpression[] = [];
-    const allowed = ["clarity", "relationships", "stress", "confidence", "balance", "willpower_perseverance"] as const;
+    const allowed = [
+      "clarity",
+      "relationships",
+      "stress",
+      "confidence",
+      "balance",
+      "willpower_perseverance",
+      "optimal_weight_management",
+    ] as const;
     for (const [primary, items] of Object.entries(enDb as Record<string, string[]>)) {
       if (!allowed.includes(primary as typeof allowed[number])) continue;
       const cat = primary as IntentPrimaryCategory;
@@ -226,6 +290,7 @@ const CATEGORY_ORDER: IntentPrimaryCategory[] = [
   "confidence",
   "balance",
   "willpower_perseverance",
+  "optimal_weight_management",
 ];
 
 export const INTENT_PRIMARY_CATEGORIES: IntentPrimaryCategory[] = [...CATEGORY_ORDER];
@@ -277,6 +342,7 @@ export function generateAdaptiveIntentCloudWords({
       confidence: [],
       balance: [],
       willpower_perseverance: [],
+      optimal_weight_management: [],
     },
   );
 

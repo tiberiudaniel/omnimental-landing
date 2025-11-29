@@ -30,6 +30,7 @@ export default function OmniScopLitePage() {
         decision_discernment: read("decision_discernment", "performance") / 5,
         self_trust: read("self_trust", "health") / 5,
         willpower_perseverance: read("willpower_perseverance", "willpower") / 5,
+        optimal_weight_management: read("optimal_weight_management", "weight") / 5,
       } satisfies IndicatorChartValues;
     }
     return {
@@ -40,6 +41,7 @@ export default function OmniScopLitePage() {
       decision_discernment: 0.15,
       self_trust: 0.05,
       willpower_perseverance: 0.05,
+      optimal_weight_management: 0.05,
     } satisfies IndicatorChartValues;
   })();
   const indicators = shares;

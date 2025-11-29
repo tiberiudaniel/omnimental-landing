@@ -1,4 +1,12 @@
-export type OmniKunoLegacyModuleKey = "calm" | "focus" | "relations" | "energy" | "performance" | "sense" | "willpower";
+export type OmniKunoLegacyModuleKey =
+  | "calm"
+  | "focus"
+  | "relations"
+  | "energy"
+  | "performance"
+  | "sense"
+  | "willpower"
+  | "weight";
 
 type ModuleMeta = {
   id: string;
@@ -49,6 +57,21 @@ export const OMNIKUNO_MODULES = [
     label: { ro: "Voință & Perseverență", en: "Willpower & Perseverance" },
     legacyKey: "willpower",
     aliases: ["willpower", "perseverance", "discipline", "resilience"],
+  },
+  {
+    id: "optimal_weight_management",
+    label: { ro: "Greutate optimă", en: "Optimal Weight" },
+    legacyKey: "weight",
+    aliases: [
+      "optimalweight",
+      "weight",
+      "weightmanagement",
+      "greutate",
+      "greutateoptima",
+      "alimentatie",
+      "nutrition",
+      "optimal_weight_management",
+    ],
   },
 ] as const satisfies readonly ModuleMeta[];
 

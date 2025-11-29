@@ -298,7 +298,8 @@
     "clarity": "clarity and direction",
     "boundaries": "healthy boundaries",
     "selfTrust": "self-trust and identity",
-    "willpower_perseverance": "willpower and perseverance"
+    "willpower_perseverance": "willpower and perseverance",
+    "optimal_weight_management": "optimal weight"
   },
   "reflectionTwoIntro": "From your selections, it looks like you need {{categorySummary}}.",
   "reflectionTwoBody": "Here are two paths you can start with right now. Pick the one that feels right in this moment.",
@@ -371,7 +372,17 @@
     { "key": "wp_7", "label": "I struggle to keep promises to myself.", "category": "willpower_perseverance" },
     { "key": "wp_8", "label": "I swing between highly disciplined and chaotic stretches.", "category": "willpower_perseverance" },
     { "key": "wp_9", "label": "I want to learn to come back after breaks or failures.", "category": "willpower_perseverance" },
-    { "key": "wp_10", "label": "My willpower runs out too fast.", "category": "willpower_perseverance" }
+    { "key": "wp_10", "label": "My willpower runs out too fast.", "category": "willpower_perseverance" },
+    { "key": "ow_1", "label": "I want to reach a healthier weight.", "category": "optimal_weight_management" },
+    { "key": "ow_2", "label": "My weight swings and I can’t stabilise it.", "category": "optimal_weight_management" },
+    { "key": "ow_3", "label": "I eat chaotically when I’m stressed or tired.", "category": "optimal_weight_management" },
+    { "key": "ow_4", "label": "Controlling my portions is difficult.", "category": "optimal_weight_management" },
+    { "key": "ow_5", "label": "I eat fast and only later notice that I overdid it.", "category": "optimal_weight_management" },
+    { "key": "ow_6", "label": "I’d like a more relaxed relationship with food.", "category": "optimal_weight_management" },
+    { "key": "ow_7", "label": "I’m missing the energy or desire to move.", "category": "optimal_weight_management" },
+    { "key": "ow_8", "label": "I’ve tried many diets but can’t maintain the results.", "category": "optimal_weight_management" },
+    { "key": "ow_9", "label": "I want steadier eating habits.", "category": "optimal_weight_management" },
+    { "key": "ow_10", "label": "I want to lose weight without feeling permanently on a diet.", "category": "optimal_weight_management" }
   ],
   "chooseOption": "Choose the option that suits you",
   "individual": "Individual Sessions",

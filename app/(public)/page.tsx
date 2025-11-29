@@ -144,6 +144,7 @@ function WizardShell() {
       decision_discernment: 0,
       self_trust: 0,
       willpower_perseverance: 0,
+      optimal_weight_management: 0,
     }
   ));
   const [recommendedPath, setRecommendedPath] = useState<SessionType>(() => (cachedReco?.recommendation?.path as SessionType | undefined) ?? "group");
@@ -267,6 +268,12 @@ function WizardShell() {
       willpower: "willpower_perseverance",
       resilience: "willpower_perseverance",
       rezilienta: "willpower_perseverance",
+      greutate: "optimal_weight_management",
+      weight: "optimal_weight_management",
+      dieta: "optimal_weight_management",
+      diet: "optimal_weight_management",
+      alimentatie: "optimal_weight_management",
+      optimal_weight_management: "optimal_weight_management",
     };
     Object.entries(manualFallbacks).forEach(([alias, moduleId]) => {
       if (!base[alias]) {
@@ -284,6 +291,7 @@ function WizardShell() {
     ensure("incredere", "incredere");
     ensure("echilibru", "echilibru");
     ensure("disciplina", "disciplina");
+    ensure("greutate", "greutate");
     return base;
   }, [t, lang]);
   const recommendedBadgeValue = s("cardsRecommendedLabel", "");

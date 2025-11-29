@@ -451,6 +451,9 @@ export default function ProgressDashboard({
       balance: lang === "ro" ? "Echilibru emoțional" : "Emotional balance",
       willpower_perseverance: lang === "ro" ? "Voință & Perseverență" : "Willpower & Perseverance",
       discipline: lang === "ro" ? "Voință & Perseverență" : "Willpower & Perseverance",
+      greutate: lang === "ro" ? "Greutate optimă" : "Optimal weight",
+      optimal_weight_management: lang === "ro" ? "Greutate optimă" : "Optimal weight",
+      weight: lang === "ro" ? "Greutate optimă" : "Optimal weight",
     };
     const normalizedCategory = topCategory ? topCategory.toLowerCase() : undefined;
     const resolvedModuleId = resolveModuleId(normalizedCategory);
@@ -471,13 +474,24 @@ export default function ProgressDashboard({
       const mapEn: Record<string, string> = { days: "days", weeks: "weeks", months: "months" };
       return lang === "ro" ? mapRo[horizon] ?? null : mapEn[horizon] ?? null;
     })();
-    const desc =
+    let desc =
       ev?.summary ||
       ev?.mainObjective ||
       rec?.summary ||
       (lang === "ro"
         ? `Este direcția prioritară pe care lucrezi acum${horizonSuffix ? ` pentru următoarele ${horizonSuffix}` : ""}.`
         : `This is the main theme you’re working on${horizonSuffix ? ` for the next ${horizonSuffix}` : ""}.`);
+    if (
+      !ev?.summary &&
+      !ev?.mainObjective &&
+      !rec?.summary &&
+      resolvedModuleId === "optimal_weight_management"
+    ) {
+      desc =
+        lang === "ro"
+          ? "Stabilizează-ți greutatea prin pași mici, obiceiuri și echilibru minte–corp."
+          : "Stabilise your weight through small steps, habits, and mind–body balance.";
+    }
     return { area, desc, categoryKey: normalizedCategory, moduleId: resolvedModuleId };
   }, [facts, lang]);
   const questPreview = useMemo(() => {

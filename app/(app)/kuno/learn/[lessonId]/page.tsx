@@ -30,6 +30,11 @@ const CATEGORY_TO_MODULE: Record<string, OmniKunoModuleId> = {
   resilience: "willpower_perseverance",
   vointa: "willpower_perseverance",
   perseverenta: "willpower_perseverance",
+  greutate: "optimal_weight_management",
+  weight: "optimal_weight_management",
+  diet: "optimal_weight_management",
+  dieta: "optimal_weight_management",
+  alimentatie: "optimal_weight_management",
 };
 
 function LessonQuiz({ category }: { category: string }) {

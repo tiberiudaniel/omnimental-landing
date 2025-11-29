@@ -12,6 +12,8 @@ Acest document definește convențiile unice de denumire pentru toate ariile Omn
 | energy_body | Energie & Corp |
 | self_trust | Încredere în Sine |
 | decision_discernment | Discernământ & Decizii |
+| willpower_perseverance | Voință & Perseverență |
+| optimal_weight_management | Greutate optimă |
 
 ## Convenții generale
 

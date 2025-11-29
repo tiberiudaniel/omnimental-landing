@@ -33,6 +33,7 @@ const CATEGORY_ORDER: IntentPrimaryCategory[] = [
   "confidence",
   "balance",
   "willpower_perseverance",
+  "optimal_weight_management",
 ];
 
 // Utility kept minimal; placeholder uses static template
@@ -80,6 +81,8 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
       confidence: labels.confidence[locale] ?? labels.confidence.ro,
       balance: labels.balance[locale] ?? labels.balance.ro,
       willpower_perseverance: labels.willpower_perseverance[locale] ?? labels.willpower_perseverance.ro,
+      optimal_weight_management:
+        labels.optimal_weight_management[locale] ?? labels.optimal_weight_management.ro,
     };
   }, [locale]);
   const buildPrimaryOptions = useCallback(() => {

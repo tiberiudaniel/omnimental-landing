@@ -94,6 +94,10 @@ const KEYWORD_RULES: Array<{ pattern: RegExp; moduleId: OmniKunoModuleId }> = [
   { pattern: /perform|decis|discern|obiectiv|career|carier|money/i, moduleId: "decision_discernment" },
   { pattern: /incredere|trust|sense|meaning|purpose|valo|identitate|identity/i, moduleId: "self_trust" },
   { pattern: /voin|willpower|disciplin|persever|rezilien|consisten|ritual/i, moduleId: "willpower_perseverance" },
+  {
+    pattern: /greutat|weight|diet|aliment|nutrition|metabol|portion|ghid|mancare|food|slab/i,
+    moduleId: "optimal_weight_management",
+  },
 ];
 
 export function intentCategoryToIndicator(categoryRaw: string): IndicatorChartKey | null {

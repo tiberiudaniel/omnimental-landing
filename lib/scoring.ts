@@ -17,6 +17,7 @@ const CATEGORY_KEYWORDS: Array<{ pattern: RegExp; moduleId: OmniKunoModuleId }> 
   { pattern: /perform|career|money|decis|discern|impact|strategie/i, moduleId: "decision_discernment" },
   { pattern: /incredere|trust|identity|identitate|meaning|purpose|valo|sense/i, moduleId: "self_trust" },
   { pattern: /voin|willpower|disciplin|persever|resilien|consisten|ritual/i, moduleId: "willpower_perseverance" },
+  { pattern: /greutat|weight|diet|aliment|nutrition|metabol|mancare|food|slab|portion/i, moduleId: "optimal_weight_management" },
 ];
 
 function createZeroScores(): DimensionScores {

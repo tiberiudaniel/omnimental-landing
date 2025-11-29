@@ -25,6 +25,7 @@ const WEDGE_COLORS: Record<IndicatorChartKey, string> = {
   decision_discernment: "#2B6F88",
   self_trust: "#8F5DA2",
   willpower_perseverance: "#C17E2B",
+  optimal_weight_management: "#5E8C4A",
 };
 
 const clampValue = (value: number, max: number) => Math.max(0, Math.min(max, value));

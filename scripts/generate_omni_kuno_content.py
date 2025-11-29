@@ -53,6 +53,12 @@ MODULE_DEFINITIONS = [
     "title": "Voință & Perseverență",
     "md": ROOT / "DOCS" / "TEME" / "omniKuno-willpower-perseverance.md",
   },
+  {
+    "key": "optimal_weight_management",
+    "moduleId": "optimal_weight_management",
+    "title": "Greutate optimă",
+    "md": ROOT / "DOCS" / "TEME" / "omniKuno-optimal-weight-management.md",
+  },
 ]
 
 

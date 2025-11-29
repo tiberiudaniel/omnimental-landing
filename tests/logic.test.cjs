@@ -72,6 +72,7 @@ test("recommendSession applies rule hierarchy", () => {
     decision_discernment: 0,
     self_trust: 0,
     willpower_perseverance: 0,
+    optimal_weight_management: 0,
   };
 
   const urgent = recommendSession({
@@ -120,6 +121,7 @@ test("recommendSession defaults to group when no strong signals", () => {
     decision_discernment: 0,
     self_trust: 0,
     willpower_perseverance: 0,
+    optimal_weight_management: 0,
   };
   const rec = recommendSession({ urgency: 5, primaryCategory: undefined, dimensionScores: baseScores, hasProfile: false });
   assert.equal(rec.recommendedPath, "group");

@@ -226,6 +226,7 @@ export function useWizardIntentState(): IntentHookState {
     confidence: 0,
     balance: 0,
     willpower_perseverance: 0,
+    optimal_weight_management: 0,
   });
 
   const handleIntentComplete = useCallback((result: IntentCloudResult) => {
@@ -247,6 +248,7 @@ export function useWizardIntentState(): IntentHookState {
       confidence: 0,
       balance: 0,
       willpower_perseverance: 0,
+      optimal_weight_management: 0,
     };
     result.categories.forEach((entry) => {
       totals[entry.category] += entry.count;

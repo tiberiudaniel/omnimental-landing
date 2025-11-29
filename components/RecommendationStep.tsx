@@ -163,6 +163,7 @@ export function RecommendationStep(props: Props) {
       decision_discernment: "incredere",
       self_trust: "incredere",
       willpower_perseverance: "disciplina",
+      optimal_weight_management: "greutate",
     };
     const roKey = mapToRoKey[top];
     const item = roKey ? CATEGORY_LABELS[roKey] : undefined;

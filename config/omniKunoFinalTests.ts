@@ -519,4 +519,64 @@ export const OMNI_KUNO_FINAL_TESTS: Record<string, OmniKunoFinalTest> = {
     },
   },
 
+  optimal_weight_management_final_test: {
+    testId: "optimal_weight_management_final_test",
+    moduleId: "optimal_weight_management",
+    intro: {
+      title: "Mini-Test — Greutate optimă",
+      body:
+        "Acest test verifică înțelegerea ritmului, declanșatorilor, mediului și conexiunii minte–corp care susțin greutatea stabilă.",
+    },
+    questions: [
+      {
+        id: "optimal_weight_management_q1",
+        type: "singleChoice",
+        question: "Ce susține cel mai bine greutatea optimă?",
+        options: ["Pași mici, stabili.", "Restricții drastice."],
+        correctIndex: 0,
+      },
+      {
+        id: "optimal_weight_management_q2",
+        type: "scenario",
+        question: "Ești foarte obosit(ă) și ai poftă de dulce. Ce este aliniat cu modulul?",
+        options: [
+          "Cedezi automat.",
+          "Recunoști oboseala și alegi o variantă puțin mai bună.",
+          "Te învinovățești.",
+        ],
+        correctIndex: 1,
+      },
+      {
+        id: "optimal_weight_management_q3",
+        type: "singleChoice",
+        question: "Ce reduce cantitatea mâncată în mod natural?",
+        options: ["Mănânc mai repede.", "Mănânc mai lent."],
+        correctIndex: 1,
+      },
+      {
+        id: "optimal_weight_management_q4",
+        type: "fillBlank",
+        question: "Completează: „Declanșator → ___ → Recompensă.”",
+        answer: "acțiune",
+        variations: ["actiune"],
+      },
+      {
+        id: "optimal_weight_management_q5",
+        type: "reflectionShort",
+        question: "Scrie o propoziție scurtă:",
+        prompt: "„O alegere mică pe care o pot face începând de azi este ___.”",
+      },
+    ],
+    completion: {
+      title: "Ai finalizat modulul Greutate optimă.",
+      body:
+        "Aplică protocolul, ajustează mediul și verifică energia înainte de fiecare decizie alimentară pentru a păstra ritmul.",
+      suggestions: [
+        "Folosește protocolul de greutate optimă timp de 7 zile și notează insight-urile.",
+        "Fă câte o mică schimbare în mediul tău alimentar în fiecare săptămână și observă efectul asupra apetitului.",
+      ],
+      badge:
+        "Badge · Construiești echilibrul greutății prin ritm, nu prin extreme. Următorul pas: combină acest modul cu Energie & Corp.",
+    },
+  },
 };

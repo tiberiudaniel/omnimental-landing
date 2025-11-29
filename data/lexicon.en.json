@@ -19,6 +19,10 @@
     "performance": {
       "tokens": ["productivity", "goal", "goals", "target", "performance", "motivation", "courage", "efficacy", "progress"],
       "synonyms": ["result", "output"]
+    },
+    "optimal_weight_management": {
+      "tokens": ["weight", "diet", "food", "nutrition", "portion", "metabolism", "snack", "craving"],
+      "synonyms": ["eating", "movement"]
     }
   }
 }

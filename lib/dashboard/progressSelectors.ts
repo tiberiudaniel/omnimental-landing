@@ -37,6 +37,12 @@ const FOCUS_MAP: Record<string, OmniKunoModuleId> = {
   perseverenta: "willpower_perseverance",
   perseverance: "willpower_perseverance",
   disciplina: "willpower_perseverance",
+  greutate: "optimal_weight_management",
+  greutateoptima: "optimal_weight_management",
+  weight: "optimal_weight_management",
+  alimentatie: "optimal_weight_management",
+  dieta: "optimal_weight_management",
+  diet: "optimal_weight_management",
 };
 
 export function getCurrentFocusTag(facts: ProgressFact | null | undefined): OmniKunoModuleId | undefined {

@@ -19,6 +19,10 @@
     "performance": {
       "tokens": ["product", "obiectiv", "tinta", "perform", "motiva", "curaj", "eficac", "progres"],
       "synonyms": ["rezultat", "randament"]
+    },
+    "optimal_weight_management": {
+      "tokens": ["greutat", "diet", "aliment", "mancar", "slab", "portii", "somn", "miscare"],
+      "synonyms": ["nutritie", "metabolism"]
     }
   }
 }

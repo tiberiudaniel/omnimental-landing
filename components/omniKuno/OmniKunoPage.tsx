@@ -12,7 +12,7 @@ import { useNavigationLinks } from "@/components/useNavigationLinks";
 import Toast from "@/components/Toast";
 import TestView from "./TestView";
 import { computeLessonsStatus } from "./useKunoTimeline";
-import { asDifficulty, type LessonDifficulty } from "./difficulty";
+import { asDifficulty } from "./difficulty";
 import { normalizeKunoFacts, getKunoModuleSnapshot } from "@/lib/kunoFacts";
 import { getLessonObjective } from "./lessonUtils";
 import { resolveModuleId, type OmniAreaKey } from "@/config/omniKunoModules";
@@ -48,7 +48,8 @@ type SupportedFinalTestArea =
   | "energy_body"
   | "self_trust"
   | "decision_discernment"
-  | "willpower_perseverance";
+  | "willpower_perseverance"
+  | "optimal_weight_management";
 
 type TimelineItemWithMeta = ReturnType<typeof computeLessonsStatus>[number] & {
   lesson: OmniKunoLesson | null;
@@ -156,6 +157,20 @@ const FINAL_TEST_COPY: Record<
     buttonLabel: { ro: "Mini-test Voință & Perseverență", en: "Willpower & Perseverance mini-test" },
     moduleName: { ro: "Voință & Perseverență", en: "Willpower & Perseverance" },
   },
+  optimal_weight_management: {
+    testId: "optimal_weight_management_final_test",
+    heading: { ro: "Finalizare modul", en: "Module completion" },
+    title: {
+      ro: "Ai parcurs toate lecțiile Greutate optimă",
+      en: "You completed all Optimal Weight lessons",
+    },
+    description: {
+      ro: "Încheie modulul cu mini-testul Greutate optimă pentru a fixa pașii mici și ritualurile zilnice.",
+      en: "Close the module with the Optimal Weight mini-test to consolidate the small steps and daily rituals.",
+    },
+    buttonLabel: { ro: "Mini-test Greutate optimă", en: "Optimal Weight mini-test" },
+    moduleName: { ro: "Greutate optimă", en: "Optimal Weight" },
+  },
 };
 
 function getFinalTestConfig(areaKey: OmniAreaKey, lang: "ro" | "en"): ModuleFinalTestContent | null {
@@ -179,7 +194,7 @@ export default function OmniKunoPage() {
   const searchParams = useSearchParams();
   const { data: progress } = useProgressFacts(profile?.id);
   const kunoFacts = useMemo(() => normalizeKunoFacts(progress?.omni?.kuno), [progress?.omni?.kuno]);
-  const { t, lang } = useI18n();
+  const { lang } = useI18n();
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<LessonToastPayload | null>(null);
@@ -318,11 +333,6 @@ const areaStats = useMemo(() => {
     }),
   ) as Record<OmniAreaKey, { completed: number; total: number; percentage: number }>;
 }, [kunoFacts.modules, moduleEntries]);
-  const [adaptiveMessage, setAdaptiveMessage] = useState<string | null>(null);
-  const [adaptiveHistory, setAdaptiveHistory] = useState<Array<{ id: string; message: string }>>([]);
-  const [activeLessonMeta, setActiveLessonMeta] = useState<{ id: string; difficulty: LessonDifficulty } | null>(null);
-  const lastDifficultyRef = useRef<LessonDifficulty | null>(null);
-  const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const areaLabelMap = useMemo<Record<OmniAreaKey, string>>(() => {
     if (lang === "ro") {
       return {
@@ -333,6 +343,7 @@ const areaStats = useMemo(() => {
         decision_discernment: "Discernământ & Decizii",
         self_trust: "Încredere în Sine",
         willpower_perseverance: "Voință & Perseverență",
+        optimal_weight_management: "Greutate optimă",
       };
     }
     return {
@@ -343,6 +354,7 @@ const areaStats = useMemo(() => {
       decision_discernment: "Discernment & Decisions",
       self_trust: "Self-Trust",
       willpower_perseverance: "Willpower & Perseverance",
+      optimal_weight_management: "Optimal Weight",
     };
   }, [lang]);
   const finalTestConfig = useMemo(() => getFinalTestConfig(activeAreaKey, lang), [activeAreaKey, lang]);
@@ -352,38 +364,6 @@ const areaStats = useMemo(() => {
     },
     [activeAreaKey, activeModule.moduleId, updateUrl],
   );
-  const handleActiveLessonChange = useCallback((meta: { id: string; difficulty: LessonDifficulty } | null) => {
-    setActiveLessonMeta(meta);
-  }, []);
-  useEffect(() => {
-    return () => {
-      if (messageTimeoutRef.current) {
-        clearTimeout(messageTimeoutRef.current);
-      }
-    };
-  }, []);
-  useEffect(() => {
-    const current = activeLessonMeta?.difficulty ?? null;
-    if (!current) return;
-    const prev = lastDifficultyRef.current;
-    if (prev == null) {
-      lastDifficultyRef.current = current;
-      return;
-    }
-    if (prev === current) return;
-    const message = buildAdaptiveMessage(prev, current, t);
-    lastDifficultyRef.current = current;
-    if (message) {
-      setAdaptiveMessage(message);
-      setAdaptiveHistory((prev) => [{ id: `${Date.now()}`, message }, ...prev].slice(0, 3));
-      if (messageTimeoutRef.current) {
-        clearTimeout(messageTimeoutRef.current);
-      }
-      messageTimeoutRef.current = setTimeout(() => {
-        setAdaptiveMessage(null);
-      }, 6000);
-    }
-  }, [activeLessonMeta, t]);
   const focusLabel = areaLabelMap[activeAreaKey];
   const moduleStateKey = `${activeModule.moduleId}:${completedIdsFromFacts.slice().sort().join("|")}:${normalizedPerformance.difficultyBias}`;
   const completedLessonsCount = completedIdsFromFacts.length;
@@ -423,23 +403,9 @@ const areaStats = useMemo(() => {
                 moduleLevelLabel={moduleLevelLabel}
                 progressSummary={headerProgressSummary}
                 xpSummary={headerXpSummary}
-                adaptiveMessage={adaptiveMessage}
-                onDismissAdaptive={() => setAdaptiveMessage(null)}
                 overviewLabel={lang === "ro" ? "Vezi toate lecțiile" : "View all lessons"}
                 onOpenOverview={() => setOverviewOpen(true)}
               />
-              {adaptiveHistory.length ? (
-                <div className="rounded-xl border border-dashed border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7B6B60]">
-                    {lang === "ro" ? "Ajustări recente de dificultate" : "Recent difficulty changes"}
-                  </p>
-                  <ul className="mt-2 space-y-1 text-[12px] text-[#5A4B43]">
-                    {adaptiveHistory.map((entry) => (
-                      <li key={entry.id}>{entry.message}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
             </div>
           </KunoContainer>
         <div className="flex flex-col gap-6 px-2 sm:px-3 lg:flex-row">
@@ -500,7 +466,6 @@ const areaStats = useMemo(() => {
               initialPerformance={normalizedPerformance}
               initialLessonId={initialLessonIdForModule}
               lessonHasExplicitNone={lessonHasExplicitNone}
-              onActiveLessonChange={handleActiveLessonChange}
               onToast={handleToast}
               showFinalTest={showFinalTest}
               finalTestResult={finalTestResult}
@@ -543,7 +508,6 @@ type ExperienceProps = {
   initialLessonId?: string | null;
   lessonHasExplicitNone?: boolean;
   onLessonSelect?: (lessonId: string | null) => void;
-  onActiveLessonChange?: (meta: { id: string; difficulty: LessonDifficulty } | null) => void;
   onToast?: (payload: LessonToastPayload) => void;
   showFinalTest?: boolean;
   finalTestResult?: { correct: number; total: number } | null;
@@ -563,7 +527,6 @@ function ModuleExperience({
   initialLessonId = null,
   lessonHasExplicitNone = false,
   onLessonSelect,
-  onActiveLessonChange,
   onToast,
   showFinalTest = false,
   finalTestResult = null,
@@ -716,14 +679,6 @@ function ModuleExperience({
       // ignore write errors (private / quota)
     }
   }, [areaKey, module.moduleId, openLessonId]);
-  useEffect(() => {
-    if (!onActiveLessonChange) return;
-    if (activeItem?.lesson) {
-      onActiveLessonChange({ id: activeItem.lesson.id, difficulty: asDifficulty(activeItem.lesson.difficulty) });
-    } else {
-      onActiveLessonChange(null);
-    }
-  }, [activeItem, onActiveLessonChange]);
   const langKey: "ro" | "en" = lang === "ro" ? "ro" : "en";
   const scrollToLesson = useCallback((lessonId: string) => {
     if (typeof window === "undefined") return;
@@ -934,21 +889,4 @@ function ModuleExperience({
       />
     </div>
   );
-}
-
-function buildAdaptiveMessage(
-  previous: LessonDifficulty,
-  next: LessonDifficulty,
-  t: ReturnType<typeof useI18n>["t"],
-): string | null {
-  if (next === "easy" && previous !== "easy") {
-    return String(previous === "hard" ? t("omnikuno.adaptive.easierMessage") : t("omnikuno.adaptive.easierMessageAlt"));
-  }
-  if (next === "hard" && previous !== "hard") {
-    return String(previous === "easy" ? t("omnikuno.adaptive.harderMessage") : t("omnikuno.adaptive.harderMessageAlt"));
-  }
-  if (next === "medium" && previous !== "medium") {
-    return String(t("omnikuno.adaptive.mediumMessage"));
-  }
-  return null;
 }
