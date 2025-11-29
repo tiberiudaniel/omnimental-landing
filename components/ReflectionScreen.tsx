@@ -38,7 +38,7 @@ export default function ReflectionScreen({
 }: ReflectionScreenProps) {
   const { t, lang } = useI18n();
   const isRO = lang !== "en";
-  const buttonLabel = getString(t, "wizard.continue", isRO ? "Continuă" : "Continue");
+  const buttonLabel = getString(t, "wizard.continue", isRO ? "Continua" : "Continue");
   const guardRef = useRef<{ busy: boolean; ts: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const primaryLine = useMemo(() => {

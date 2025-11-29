@@ -504,7 +504,7 @@ function WizardShell() {
   // Legacy stepContent rendering removed; WizardRouter handles routing.
 
   return (
-    <div className="bg-bgLight min-h-screen">
+    <div className="min-h-screen bg-[#FAF9F7] text-[#111827]">
       <SiteHeader
         showMenu
         onMenuToggle={() => setMenuOpen(true)}
@@ -545,9 +545,7 @@ function WizardShell() {
           return !(s === 'preIntro' || s === 'intro' || s === 'firstInput' || s === 'reflectionPrompt');
         })()}
       />
-      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-
-      <main className="px-4 py-8 sm:px-6">
+      <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-3xl flex-col px-4 pb-10 pt-4 sm:px-6">
         {searchParams?.get("reset") === "1" ? (
           <Toast
             message={s("toastResetMessage", lang === "ro" ? "Parcursul a fost resetat." : "Your journey was reset.")}
@@ -666,6 +664,7 @@ function WizardShell() {
           returnLabel={lang === "ro" ? "Înapoi la progres" : "Back to progress"}
         />
       </main>
+      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
     </div>
   );
 }

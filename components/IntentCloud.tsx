@@ -71,7 +71,7 @@ export default function IntentCloud({
       : lang === "ro"
       ? "Alege între 5 și 7 afirmații care descriu cel mai bine starea ta actuală."
       : "Pick 5 to 7 statements that best describe what you feel right now.";
-  const buttonLabel = typeof buttonValue === "string" ? buttonValue : (lang === 'ro' ? 'Continuă' : 'Continue');
+  const buttonLabel = typeof buttonValue === "string" ? buttonValue : (lang === 'ro' ? 'Continua' : 'Continue');
   const progress = Math.min(selected.length / maxSelection, 1);
 
   const words = useMemo<IntentWord[]>(() => {
@@ -250,7 +250,10 @@ export default function IntentCloud({
             const tint = CATEGORY_TINTS[category] ?? CATEGORY_TINTS.clarity;
             const baseClasses =
               "min-h-[34px] rounded-full border px-3 py-2 text-sm md:text-base font-medium shadow-[0_6px_14px_rgba(31,41,55,0.08)] transition focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E60012]";
-            const stateClasses = isActive ? tint.active + " shadow-[0_10px_24px_rgba(31,41,55,0.15)]" : tint.idle;
+            const activeEmphasis = "ring-2 ring-offset-1 ring-[#2F261E]/30";
+            const stateClasses = isActive
+              ? `${tint.active} ${activeEmphasis} shadow-[0_10px_24px_rgba(31,41,55,0.15)]`
+              : tint.idle;
             return (
               <motion.button
                 key={key}

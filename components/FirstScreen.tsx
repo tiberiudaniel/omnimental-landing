@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MultiTypewriter from "./MultiTypewriter";
 import { useI18n } from "../components/I18nProvider";
+import { getString } from "@/lib/i18nGetString";
 import {
   detectCategoryFromRawInput,
   getIntentExpressions,
@@ -68,11 +69,7 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
   const inputRef = useRef<HTMLInputElement | null>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const locale = lang === "en" ? "en" : "ro";
-  const continueLabel = ((): string => {
-    const v = t('wizard.continue');
-    if (typeof v === 'string') return v as string;
-    return lang === 'ro' ? 'Continuă' : 'Continue';
-  })();
+  const continueLabel = getString(t, "wizard.continue", lang === "ro" ? "Continua" : "Continue");
   const expressionLibrary = useMemo(() => getIntentExpressions(locale), [locale]);
   const categoryLabels = useMemo(() => {
     const labels = intentCategoryLabels;

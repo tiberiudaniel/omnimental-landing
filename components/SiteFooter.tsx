@@ -28,7 +28,7 @@ export default function SiteFooter() {
         ]
   );
   return (
-    <footer className="mt-12 border-t border-[#EDE6DE] bg-white/90 py-5">
+    <footer className="site-footer mt-12 border-t border-[#EDE6DE] bg-white/90 py-5">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center gap-3 text-center text-[12px] text-[#5C4F45] sm:flex-row sm:justify-between sm:text-left">
           <p className="opacity-70">© {new Date().getFullYear()} OmniMental</p>

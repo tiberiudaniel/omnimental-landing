@@ -206,7 +206,7 @@ export default function SiteHeader({
       <div className={`${bottomMarginTop} grid grid-cols-[auto_1fr_auto] items-center gap-3`}>
         {wizardMode ? (
           <Link href="/intro" className="flex items-center gap-3 shrink-0" aria-label="OmniMental">
-            <Image src="/assets/logo.jpg" alt="OmniMental logo" width={compact ? 60 : 70} height={28} priority style={{ height: "auto" }} />
+            <Image src="/assets/logo.jpg" alt="OmniMental logo" width={compact ? 60 : 70} height={28} priority style={{ height: "auto", width: "auto" }} />
             <span className="flex flex-col leading-tight text-neutral-dark">
               <span className={`${titleSize} font-semibold tracking-wide`}>OmniMental</span>
               <span className="text-[10px] font-medium uppercase tracking-[0.35em] text-[#B08A78]">
@@ -216,7 +216,7 @@ export default function SiteHeader({
           </Link>
         ) : (
           <Link href="/intro" className="flex items-center gap-3 shrink-0">
-            <Image src="/assets/logo.jpg" alt="OmniMental logo" width={compact ? 60 : 70} height={28} priority style={{ height: "auto" }} />
+            <Image src="/assets/logo.jpg" alt="OmniMental logo" width={compact ? 60 : 70} height={28} priority style={{ height: "auto", width: "auto" }} />
             <span className="flex flex-col leading-tight text-neutral-dark">
               <span className={`${titleSize} font-semibold tracking-wide`}>OmniMental</span>
               <span className="text-[10px] font-medium uppercase tracking-[0.35em] text-[#B08A78]">

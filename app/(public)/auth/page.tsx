@@ -331,6 +331,7 @@ function AuthContent() {
                 onChange={(e) => setPwdEmail(e.target.value)}
                 placeholder="email@exemplu.com"
                 className="w-full rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
+                autoComplete="email"
               />
               <input
                 type="password"
@@ -338,6 +339,7 @@ function AuthContent() {
                 onChange={(e) => setPwdPassword(e.target.value)}
                 placeholder={isRo ? "Parolă" : "Password"}
                 className="w-full rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
+                autoComplete="current-password"
               />
               <button
                 type="submit"
