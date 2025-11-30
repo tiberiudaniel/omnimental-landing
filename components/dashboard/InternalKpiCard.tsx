@@ -67,7 +67,7 @@ export default function InternalKpiCard({
 
   return (
     <motion.div variants={fadeDelayed(0.05)} {...hoverScale}>
-      <Card className="flex items-center gap-2 rounded-xl border border-[#E4DAD1] bg-white p-1.5 shadow-sm sm:gap-3 sm:p-2.5">
+      <Card className="flex items-center gap-2 rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-1.5 shadow-sm sm:gap-3 sm:p-2.5">
         <div className="flex-1">
           <div className="mb-1 flex items-center justify-between">
             <h3 className="text-[13px] font-semibold tracking-[0.02em] text-[#6E5F55] sm:text-[14px]">
@@ -82,17 +82,17 @@ export default function InternalKpiCard({
 
 
           <div className="mt-2 flex flex-col gap-2">
-            <div className="rounded-xl border border-[#F0E3D8] bg-[#FFFBF7] px-3 py-2 text-[11px] text-[#5A4334]">
+            <div className="rounded-xl border border-[#F0E3D8] bg-[var(--omni-bg-paper)] px-3 py-2 text-[11px] text-[var(--omni-muted)]">
               {summaryText}
             </div>
-            <div className="rounded-xl border border-[#E4DAD1] bg-[#FFFBF7] p-1.5">
+            <div className="rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex rounded-md border border-[#E4DAD1] bg-white/70 p-0.5 text-[9px] sm:text-[10px]">
+                <div className="inline-flex rounded-md border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/70 p-0.5 text-[9px] sm:text-[10px]">
                   <button
                     type="button"
                     onClick={() => setTimeframe("week")}
                     className={`rounded px-1.5 py-0.5 transition ${
-                      timeframe === "week" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"
+                      timeframe === "week" ? "bg-[var(--omni-surface-card)] border border-[var(--omni-border-soft)] text-[var(--omni-ink)] font-semibold" : "text-[var(--omni-ink-soft)]"
                     }`}
                     aria-label="Toggle KPI to week"
                     data-testid="kpi-toggle-week"
@@ -103,7 +103,7 @@ export default function InternalKpiCard({
                     type="button"
                     onClick={() => setTimeframe("month")}
                     className={`rounded px-1.5 py-0.5 transition ${
-                      timeframe === "month" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"
+                      timeframe === "month" ? "bg-[var(--omni-surface-card)] border border-[var(--omni-border-soft)] text-[var(--omni-ink)] font-semibold" : "text-[var(--omni-ink-soft)]"
                     }`}
                     aria-label="Toggle KPI to month"
                     data-testid="kpi-toggle-month"
@@ -113,7 +113,7 @@ export default function InternalKpiCard({
                 </div>
                 <Link
                   href="/progress?open=journal&tab=NOTE_LIBERE&source=daily_axes"
-                  className="inline-flex items-center gap-1 rounded-full border border-[#E4DAD1] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4D3F36] transition hover:border-[#C07963] hover:text-[#C07963]"
+                  className="inline-flex items-center gap-1 rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4D3F36] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
                 >
                   {lang === "ro" ? "Notițe rapide" : "Quick journal"}
                 </Link>
@@ -125,9 +125,9 @@ export default function InternalKpiCard({
             {axisStats.map((axis, idx) => (
               <div
                 key={axis.key}
-                className="rounded-lg border border-[#E7DED3] bg-[#FFFBF7] px-3 py-2 text-center text-[10px]"
+                className="rounded-lg border border-[#E7DED3] bg-[var(--omni-bg-paper)] px-3 py-2 text-center text-[10px]"
               >
-                <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-[#7B6B60]">
+                <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-[var(--omni-muted)]">
                   <span
                     className="inline-block h-2.5 w-2.5 rounded-full"
                     style={{ backgroundColor: idx === 0 ? "#2563EB" : idx === 1 ? "#DC2626" : "#059669" }}
@@ -135,7 +135,7 @@ export default function InternalKpiCard({
                   />
                   {axis.label}
                 </div>
-                <p className="text-[15px] font-bold text-[#2C2C2C]">{axis.value.toFixed(1)}</p>
+                <p className="text-[15px] font-bold text-[var(--omni-ink)]">{axis.value.toFixed(1)}</p>
                 <p className={`text-[10px] ${axis.delta >= 0 ? "text-[#1F7A43]" : "text-[#B82B4F]"}`}>
                   {axis.delta >= 0 ? "+" : ""}
                   {axis.delta.toFixed(1)} {lang === "ro" ? "vs. medie" : "vs. baseline"}
@@ -169,7 +169,7 @@ function renderHistory({
     .sort(([a], [b]) => (a > b ? 1 : -1));
   if (!entries.length) {
     return (
-      <div className="mt-2 border-t border-[#F0E8E0] pt-2 text-[11px] text-[#7B6B60]">
+      <div className="mt-2 border-t border-[#F0E8E0] pt-2 text-[11px] text-[var(--omni-muted)]">
         <p>
           {lang === "ro"
             ? "Nu avem încă istoric pentru aceste axe. Completează ritualul zilnic ca să pornim graficul."
@@ -241,7 +241,7 @@ function renderHistory({
           </svg>
         </div>
         <div className="mt-1 h-px bg-[#E4DAD1]" />
-        <div className="mt-1 flex justify-between text-[9px] uppercase tracking-[0.08em] text-[#A08F82] px-1 sm:px-2">
+        <div className="mt-1 flex justify-between text-[9px] uppercase tracking-[0.08em] text-[var(--omni-muted)] px-1 sm:px-2">
           {recent.map((point, idx) => {
             const date = new Date(point.ts);
             const label = Number.isNaN(date.getTime())
@@ -267,7 +267,7 @@ function ChipSummary({ lang, snapshot }: { lang: string; snapshot: OmniDailySnap
   if (!snapshot) {
     return (
       <div className="mt-1.5 flex flex-wrap gap-1 text-[10px] text-[#6E5F55]">
-        <span className="inline-flex items-center gap-1 rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-0.5">
+        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-2 py-0.5">
           {lang === "ro" ? "Completează ritualul pentru actualizare." : "Complete the ritual to update."}
         </span>
       </div>
@@ -292,7 +292,7 @@ function ChipSummary({ lang, snapshot }: { lang: string; snapshot: OmniDailySnap
       {chips.map((chip) => (
         <span
           key={chip.label}
-          className="inline-flex items-center gap-1 rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-0.5 text-[10px] text-[#6E5F55]"
+          className="inline-flex items-center gap-1 rounded-full border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-2 py-0.5 text-[10px] text-[#6E5F55]"
         >
           <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: chip.color }} aria-hidden />
           {chip.label}

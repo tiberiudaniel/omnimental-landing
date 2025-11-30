@@ -50,24 +50,24 @@ export default function SenseiPanel({ userId }: { userId: string }) {
     : (lang === "ro" ? "În versiunea următoare: 2–3 întrebări rapide pentru personalizare fină." : "Coming next: 2–3 quick questions for fine-tuning.");
 
   return (
-    <section className="rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
+    <section className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
       <header className="mb-3">
-        <h2 className="text-lg font-semibold text-[#1F1F1F]">{title}</h2>
-        <p className="text-sm text-[#4A3A30]">{subtitle}</p>
+        <h2 className="text-lg font-semibold text-[var(--omni-ink)]">{title}</h2>
+        <p className="text-sm text-[var(--omni-ink-soft)]">{subtitle}</p>
       </header>
       <button
         type="button"
         disabled={loading}
         onClick={() => void handleGenerate()}
-        className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:opacity-60"
+        className="rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:opacity-60"
       >
         {btnLabel}
       </button>
-      {error ? <p className="mt-3 text-xs text-[#8C2B2F]">{error}</p> : null}
+      {error ? <p className="mt-3 text-xs text-[var(--omni-danger)]">{error}</p> : null}
       {result ? (
-        <pre className="mt-3 max-h-64 overflow-auto rounded bg-[#FFFBF7] p-3 text-xs text-[#2C2C2C]">{result}</pre>
+        <pre className="mt-3 max-h-64 overflow-auto rounded bg-[var(--omni-bg-paper)] p-3 text-xs text-[var(--omni-ink)]">{result}</pre>
       ) : null}
-      <div className="mt-4 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] p-3 text-xs text-[#2C2C2C]">
+      <div className="mt-4 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-3 text-xs text-[var(--omni-ink)]">
         <p className="mb-1 font-semibold">{miniTitle}</p>
         <p>{miniBody}</p>
       </div>

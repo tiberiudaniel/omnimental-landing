@@ -8,6 +8,7 @@ import { normalizePerformance, type KunoPerformanceSnapshot } from "@/lib/omniKu
 import { useI18n } from "@/components/I18nProvider";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
+import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import Toast from "@/components/Toast";
 import TestView from "./TestView";
@@ -381,15 +382,16 @@ const areaStats = useMemo(() => {
 
   const goToAuth = useCallback(() => router.push("/auth"), [router]);
 
+  const header = (
+    <SiteHeader
+      onAuthRequest={!profile?.id ? goToAuth : undefined}
+      onMenuToggle={() => setMenuOpen(true)}
+    />
+  );
+
   return (
-    <div className="min-h-screen bg-[#FAF7F2]">
-      <SiteHeader
-        compact
-        onAuthRequest={!profile?.id ? goToAuth : undefined}
-        onMenuToggle={() => setMenuOpen(true)}
-      />
-      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 text-[#2C2C2C]">
+    <AppShell header={header}>
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 text-[var(--omni-ink)]">
         <div className="space-y-6">
           <KunoContainer>
             <div className="space-y-4" data-testid="omni-kuno-header">
@@ -408,10 +410,10 @@ const areaStats = useMemo(() => {
               />
             </div>
           </KunoContainer>
-        <div className="flex flex-col gap-6 px-2 sm:px-3 lg:flex-row">
-          <aside className="order-2 rounded-2xl border border-[#E4DAD1] bg-white p-4 shadow-sm lg:order-1 lg:w-60 lg:flex-shrink-0">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#7B6B60]">Teme OmniKuno</p>
-            <ul className="space-y-2 text-sm text-[#2C2C2C]">
+          <div className="flex flex-col gap-6 px-2 sm:px-3 lg:flex-row">
+            <aside className="order-2 rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-4 shadow-sm lg:order-1 lg:w-60 lg:flex-shrink-0">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">Teme OmniKuno</p>
+            <ul className="space-y-2 text-sm text-[var(--omni-ink)]">
               {moduleEntries.map(([key, module]) => {
                 const isActive = key === activeAreaKey;
                 const stat = areaStats[key];
@@ -423,21 +425,28 @@ const areaStats = useMemo(() => {
                       type="button"
                       onClick={() => handleAreaSelect(key)}
                       className={`w-full rounded-2xl border px-3.5 py-3 text-left transition ${
-                        isActive ? "border-[#C07963] bg-[#FFF4EE] shadow-[0_10px_25px_rgba(192,121,99,0.08)]" : "border-[#F0E8E0] hover:border-[#E3D3C7]"
+                        isActive ? "border-[var(--omni-energy)] bg-[var(--omni-bg-paper)] shadow-[0_10px_25px_rgba(192,121,99,0.08)]" : "border-[#F0E8E0] hover:border-[#E3D3C7]"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold">{areaLabelMap[key]}</span>
                         <div className="flex items-center gap-2">
                           {isRecommended ? (
-                            <span className="rounded-full bg-[#FCEFE8] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C07963]">
+                            <span
+                              className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]"
+                              style={{
+                                backgroundColor: "var(--omni-energy-tint)",
+                                color: "var(--omni-energy)",
+                                border: `1px solid var(--omni-border-soft)`,
+                              }}
+                            >
                               {lang === "ro" ? "Recomandat" : "Recommended"}
                             </span>
                           ) : null}
-                          <span className={`text-xs font-semibold ${isActive ? "text-[#C07963]" : "text-[#A08F82]"}`}>{levelBadge}</span>
+                          <span className={`text-xs font-semibold ${isActive ? "text-[var(--omni-energy)]" : "text-[var(--omni-muted)]"}`}>{levelBadge}</span>
                         </div>
                       </div>
-                      <div className="mt-1 flex items-center justify-between text-[11px] text-[#7B6B60]">
+                      <div className="mt-1 flex items-center justify-between text-[11px] text-[var(--omni-muted)]">
                         <span>
                           {stat?.completed ?? 0}/{stat?.total ?? module.lessons.length} {lang === "ro" ? "misiuni" : "missions"}
                         </span>
@@ -445,7 +454,7 @@ const areaStats = useMemo(() => {
                       </div>
                       <div className="mt-1 h-1.5 rounded-full bg-[#F2E7DD]">
                         <div
-                          className="h-1.5 rounded-full bg-[#C07963]"
+                          className="h-1.5 rounded-full bg-[var(--omni-energy)]"
                           style={{ width: `${Math.min(100, stat?.percentage ?? 0)}%` }}
                         />
                       </div>
@@ -456,30 +465,31 @@ const areaStats = useMemo(() => {
             </ul>
           </aside>
 
-          <section className="order-1 flex-1 space-y-6 lg:order-2 lg:basis-[65%] lg:max-w-[65%]">
-            <ModuleExperience
-              key={moduleStateKey}
-              areaKey={activeAreaKey}
-              module={activeModule}
-              profileId={profile?.id}
-              completedIdsFromFacts={completedIdsFromFacts}
-              initialPerformance={normalizedPerformance}
-              initialLessonId={initialLessonIdForModule}
-              lessonHasExplicitNone={lessonHasExplicitNone}
-              onToast={handleToast}
-              showFinalTest={showFinalTest}
-              finalTestResult={finalTestResult}
-              onToggleFinalTest={setShowFinalTest}
-              onFinalTestComplete={(result) => setFinalTestResult(result)}
-              finalTestConfig={finalTestConfig}
-              onLessonSelect={handleLessonSelect}
-              overviewOpen={overviewOpen}
-              onCloseOverview={() => setOverviewOpen(false)}
-            />
-          </section>
+            <section className="order-1 flex-1 space-y-6 lg:order-2 lg:basis-[65%] lg:max-w-[65%]">
+              <ModuleExperience
+                key={moduleStateKey}
+                areaKey={activeAreaKey}
+                module={activeModule}
+                profileId={profile?.id}
+                completedIdsFromFacts={completedIdsFromFacts}
+                initialPerformance={normalizedPerformance}
+                initialLessonId={initialLessonIdForModule}
+                lessonHasExplicitNone={lessonHasExplicitNone}
+                onToast={handleToast}
+                showFinalTest={showFinalTest}
+                finalTestResult={finalTestResult}
+                onToggleFinalTest={setShowFinalTest}
+                onFinalTestComplete={(result) => setFinalTestResult(result)}
+                finalTestConfig={finalTestConfig}
+                onLessonSelect={handleLessonSelect}
+                overviewOpen={overviewOpen}
+                onCloseOverview={() => setOverviewOpen(false)}
+              />
+            </section>
+          </div>
         </div>
       </div>
-      </main>
+      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       {toastMsg ? (
         <Toast
           message={toastMsg.message}
@@ -495,7 +505,7 @@ const areaStats = useMemo(() => {
           onClose={() => setToastMsg(null)}
         />
       ) : null}
-    </div>
+    </AppShell>
   );
 }
 
@@ -785,7 +795,7 @@ function ModuleExperience({
           disabled={!activeItem}
         >
           <div className="h-2 rounded-full bg-[#F4EDE4]">
-            <div className="h-2 rounded-full bg-[#C07963]" style={{ width: `${Math.min(100, completionPct)}%` }} />
+            <div className="h-2 rounded-full bg-[var(--omni-energy)]" style={{ width: `${Math.min(100, completionPct)}%` }} />
           </div>
         </KunoActivePanel>
       </KunoContainer>
@@ -833,7 +843,7 @@ function ModuleExperience({
                       ownerId={profileId}
                       performanceSnapshot={localPerformance}
                       onLessonCompleted={(lessonId, meta) => handleLessonCompleted(lessonId, meta)}
-                      onProgressChange={(lessonId, current, total) => handleLessonProgress(lessonId, current, total)}
+                      onProgressChange={handleLessonProgress}
                     />
                   ) : null}
                 </LessonAccordionItem>
@@ -841,7 +851,7 @@ function ModuleExperience({
             })}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-[#E4DAD1] bg-white/70 px-4 py-6 text-center text-sm text-[#7B6B60]">
+          <div className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/70 px-4 py-6 text-center text-sm text-[var(--omni-muted)]">
             {lang === "ro"
               ? "Acest modul nu are încă misiuni configurate."
               : "This module does not have missions configured yet."}

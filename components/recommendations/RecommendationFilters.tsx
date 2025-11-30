@@ -43,8 +43,8 @@ export function RecommendationFilters({ value, onChange, labels, counts }: Recom
               onClick={() => onChange(key)}
               className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
                 active
-                  ? "border border-[#2C2C2C] text-[#2C2C2C]"
-                  : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
+                  ? "border border-[var(--omni-border-soft)] text-[var(--omni-ink)]"
+                  : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]"
               }`}
             >
               {label}
@@ -57,8 +57,8 @@ export function RecommendationFilters({ value, onChange, labels, counts }: Recom
       {/* Dropdown pentru filtre secundare */}
       <div className="relative">
         <details className="group">
-          <summary className="list-none cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition border border-transparent text-[#4A3A30] hover:text-[#E60012]">⋯</summary>
-          <div className="absolute right-0 z-10 mt-1 w-40 rounded-[10px] border border-[#E4D8CE] bg-white p-2 shadow-lg">
+          <summary className="list-none cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]">⋯</summary>
+          <div className="absolute right-0 z-10 mt-1 w-40 rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2 shadow-lg">
             {(["new", "done"] as RecommendationFilterKey[]).map((key) => {
               const base = FILTERS.find((f) => f.key === key)!;
               const label = labels?.[key] ?? base.label;
@@ -70,7 +70,7 @@ export function RecommendationFilters({ value, onChange, labels, counts }: Recom
                   type="button"
                   onClick={() => onChange(key)}
                   className={`block w-full rounded-[8px] px-2 py-1 text-left text-xs ${
-                    active ? "bg-[#F6F2EE] text-[#2C2C2C]" : "text-[#7B6B60] hover:bg-[#F6F2EE]"
+                    active ? "bg-[var(--omni-bg-paper)] text-[var(--omni-ink)]" : "text-[var(--omni-muted)] hover:bg-[var(--omni-bg-paper)]"
                   }`}
                 >
                   {label}

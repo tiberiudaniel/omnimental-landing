@@ -18,8 +18,8 @@ export default function AuthButton({ onSignIn, variant = "ghost" }: Props) {
 
   const classes =
     variant === "primary"
-      ? "rounded-full border border-[#2C2C2C] bg-[#2C2C2C] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white hover:opacity-80"
-      : "rounded-full border border-[#2C2C2C] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] hover:bg-[#2C2C2C]/10";
+      ? "rounded-full border border-[var(--omni-border-soft)] bg-[var(--omni-ink)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white hover:opacity-80"
+      : "rounded-full border border-[var(--omni-border-soft)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink)] hover:bg-[color-mix(in_oklab,var(--omni-energy)_15%,transparent)]";
 
   return (
     <button

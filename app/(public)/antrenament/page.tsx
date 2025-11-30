@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 // I18nProvider is now in RootLayout; no page-level wrapper needed
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
+import { AppShell } from "@/components/AppShell";
 import { EvaluationTrend } from "@/components/EvaluationTrend";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useProfile } from "@/components/ProfileProvider";
@@ -78,7 +79,7 @@ function AntrenamentContent() {
     switch (activeTab) {
       case "os":
         return isMember ? (
-          <div className="rounded-[16px] border border-[#D8C6B6] bg-white/95 px-4 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)] lg:px-6 lg:py-6">
+          <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 px-4 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)] lg:px-6 lg:py-6">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
               <div>
                 <OmniIntentForm
@@ -136,7 +137,7 @@ function AntrenamentContent() {
                     <div className="flex justify-end">
                       <button
                         type="button"
-                        className="rounded-[10px] border border-[#E4D8C6] px-3 py-1 text-[11px] text-[#2C2C2C] hover:border-[#C9B8A8]"
+                        className="rounded-[10px] border border-[#E4D8C6] px-3 py-1 text-[11px] text-[var(--omni-ink)] hover:border-[#C9B8A8]"
                         onClick={() => setShowJournalPanel(true)}
                       >
                         {lang === "ro" ? "Arată jurnalul" : "Show journal"}
@@ -162,20 +163,20 @@ function AntrenamentContent() {
         );
       case "oc":
         return (
-          <div className="rounded-[18px] border border-[#D8C6B6] bg-white/95 px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)] lg:px-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#B08A78]">OmniKuno</p>
-            <h2 className="mt-1 text-2xl font-bold text-[#2C2C2C]">{String(t("antrenament.oc.cardTitle"))}</h2>
+          <div className="rounded-[18px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)] lg:px-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--omni-muted)]">OmniKuno</p>
+            <h2 className="mt-1 text-2xl font-bold text-[var(--omni-ink)]">{String(t("antrenament.oc.cardTitle"))}</h2>
             <p className="mt-2 text-sm text-[#5A4B43]">{String(t("antrenament.oc.cardDescription"))}</p>
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href="/omni-kuno"
-                className="inline-flex items-center rounded-full bg-[linear-gradient(135deg,#4F2C1F,#A55B3C)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#FFF8F0] shadow-[0_12px_28px_rgba(79,44,31,0.22)] transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C07963]"
+                className="inline-flex items-center rounded-full bg-[linear-gradient(135deg,#4F2C1F,#A55B3C)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#FFF8F0] shadow-[0_12px_28px_rgba(79,44,31,0.22)] transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--omni-energy)]"
               >
                 {String(t("antrenament.oc.missionCta"))}
               </Link>
               <Link
                 href="/knowledge-exam"
-                className="inline-flex items-center rounded-full border border-[#C07963] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#C07963] transition hover:bg-[#FFF2EB]"
+                className="inline-flex items-center rounded-full border border-[var(--omni-energy)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--omni-energy)] transition hover:bg-[#FFF2EB]"
               >
                 {String(t("antrenament.oc.quizCta"))}
               </Link>
@@ -197,7 +198,7 @@ function AntrenamentContent() {
         const questItems = (progress?.quests?.items ?? []) as QuestItem[];
         return (
           <>
-            <div className="rounded-[16px] border border-[#D8C6B6] bg-white/95 px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
+            <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
               <WizardSondajCBT userId={profile?.id ?? null} onContinue={() => { /* stay on tab */ }} />
             </div>
             <QuestsList
@@ -210,7 +211,7 @@ function AntrenamentContent() {
       }
       case "oa":
         return isMember ? (
-          <div className="rounded-[16px] border border-[#D8C6B6] bg-white/95 px-8 py-8 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 px-8 py-8 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
             <OmniAbilitiesForm lang={normalizedLang} />
           </div>
         ) : (
@@ -222,7 +223,7 @@ function AntrenamentContent() {
       case "oi":
         return (
           <>
-            <div className="rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px]">
+            <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-8 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px]">
               <EvaluationWizard />
             </div>
             <EvaluationTrend />
@@ -233,15 +234,16 @@ function AntrenamentContent() {
     }
   };
 
-  return (
-    <div className="bg-[#FDFCF9] min-h-screen pb-24">
-      <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />
-      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+  const header = <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />;
 
-      <div className="mx-auto max-w-5xl px-6 pt-12">
+  return (
+    <>
+      <AppShell header={header}>
+        <div className="pb-24">
+          <div className="mx-auto max-w-5xl px-6 pt-12">
         {/* OmniPathRow hidden per request */}
         <div
-          className="mt-2 flex flex-wrap gap-3 rounded-[12px] border border-[#E4D8CE] bg-white/90 px-4 py-3 shadow-[0_10px_28px_rgba(0,0,0,0.05)]"
+          className="mt-2 flex flex-wrap gap-3 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/90 px-4 py-3 shadow-[0_10px_28px_rgba(0,0,0,0.05)]"
           role="tablist"
           aria-label={lang === "ro" ? "Module antrenament" : "Training modules"}
         >
@@ -265,12 +267,12 @@ function AntrenamentContent() {
                   router.replace(qs ? `/antrenament?${qs}` : "/antrenament");
                   void recordEvaluationTabChange(tab.key);
                 }}
-                className={`flex flex-col rounded-[10px] border px-4 py-3 text-left transition duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E60012] ${
+                className={`flex flex-col rounded-[10px] border px-4 py-3 text-left transition duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--omni-energy)] ${
                   isComingSoon
-                    ? "cursor-default border-dashed border-[#F2E7DA] bg-white/70 text-[#A08F82] opacity-10 hover:opacity-45"
+                    ? "cursor-default border-dashed border-[#F2E7DA] bg-[var(--omni-surface-card)]/70 text-[var(--omni-muted)] opacity-10 hover:opacity-45"
                     : isActive
                     ? "border-transparent bg-[linear-gradient(135deg,#4F2C1F,#A55B3C)] text-[#FFF8F0] shadow-[0_10px_30px_rgba(79,44,31,0.25)]"
-                    : "border border-[#E4D8CE] bg-[#FCF7F1] text-[#5C4F45] hover:border-[#D8C6B6] hover:bg-white"
+                    : "border border-[var(--omni-border-soft)] bg-[#FCF7F1] text-[var(--omni-ink-soft)] hover:border-[var(--omni-border-soft)] hover:bg-[var(--omni-surface-card)]"
                 }`}
               >
                 <span className={`inline-flex items-center gap-1 text-sm font-semibold uppercase ${isActive ? "tracking-[0.2em]" : "tracking-[0.27em]"}`}>
@@ -288,7 +290,7 @@ function AntrenamentContent() {
           })}
         </div>
         {/* Active tab helper: what you do here and why it matters */}
-        <div className="mt-3 rounded-[10px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-xs text-[#5C4F45]">
+        <div className="mt-3 rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3 text-xs text-[var(--omni-ink-soft)]">
           <div className="flex items-start gap-2">
             <span>
               {s(`antrenamentTabHelp.${activeTab}`,
@@ -308,17 +310,20 @@ function AntrenamentContent() {
         </div>
 
         <div className="mt-6 space-y-8">{renderTabContent()}</div>
-      </div>
-    </div>
+          </div>
+        </div>
+      </AppShell>
+      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+    </>
   );
 }
 
 function LockedModuleCard({ title, description }: { title: string; description: string }) {
   return (
-    <div className="rounded-[16px] border border-dashed border-[#E4D8CE] bg-white/90 px-6 py-8 text-center text-sm text-[#4A3A30] shadow-[0_12px_32px_rgba(0,0,0,0.04)]">
-      <h2 className="text-xl font-semibold text-[#2C2C2C]">{title}</h2>
+    <div className="rounded-[16px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/90 px-6 py-8 text-center text-sm text-[var(--omni-ink-soft)] shadow-[0_12px_32px_rgba(0,0,0,0.04)]">
+      <h2 className="text-xl font-semibold text-[var(--omni-ink)]">{title}</h2>
       <p className="mt-2">{description}</p>
-      <p className="mt-4 text-xs uppercase tracking-[0.35em] text-[#C07963]">Disponibil doar membrilor programului</p>
+      <p className="mt-4 text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">Disponibil doar membrilor programului</p>
     </div>
   );
 }

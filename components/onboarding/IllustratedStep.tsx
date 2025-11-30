@@ -37,7 +37,7 @@ export default function IllustratedStep({
 
   const wrapperClass =
     imageWrapperClassName ??
-    "relative mx-auto aspect-[3/4] w-full max-w-[360px] overflow-hidden rounded-[30px] border border-[#E4DAD1] shadow-[0_20px_45px_rgba(0,0,0,0.12)]";
+    "relative mx-auto aspect-[3/4] w-full max-w-[360px] overflow-hidden rounded-[30px] border border-[var(--omni-border-soft)] shadow-[0_20px_45px_rgba(0,0,0,0.12)]";
 
   const ImageBlock = (
     <div className={wrapperClass}>
@@ -58,22 +58,22 @@ export default function IllustratedStep({
 
   return (
     <section className="px-0 py-0">
-      <GuideCard className="rounded-[28px] border-[#E4DAD1] bg-white px-4 py-4 md:px-7 md:py-7">
+      <GuideCard className="rounded-[28px] border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-4 md:px-7 md:py-7">
         <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1.2fr)]">
           {imageFirst ? ImageBlock : null}
           <div className="space-y-4 text-[#3D1C10]">
             {label ? (
-              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#B08A78]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
                 {label}
               </p>
             ) : null}
             {title ? (
-              <h2 className="text-xl font-bold leading-snug text-[#2C2C2C] md:text-2xl">
+              <h2 className="text-xl font-bold leading-snug text-[var(--omni-ink)] md:text-2xl">
                 {title}
               </h2>
             ) : null}
             {body ? (
-              <div className="text-sm leading-relaxed text-[#4A3A30] md:text-base">{body}</div>
+              <div className="text-sm leading-relaxed text-[var(--omni-ink-soft)] md:text-base">{body}</div>
             ) : null}
             {children ? <div className="space-y-4">{children}</div> : null}
           </div>

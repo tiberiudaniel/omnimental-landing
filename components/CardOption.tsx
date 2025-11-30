@@ -55,8 +55,8 @@ export default function CardOption({
       data-testid={`card-${type}`}
       className={`relative mx-auto w-full basis-[320px] max-w-[380px] rounded-[12px] border p-7 text-left transition ${
         activeState
-          ? "border-[#E60012] bg-[#F6F2EE]/95 shadow-[0_16px_40px_rgba(0,0,0,0.08)]"
-          : "border-[#D8C6B6] bg-white shadow-[0_12px_32px_rgba(0,0,0,0.05)]"
+          ? "border-[var(--omni-energy)] bg-[var(--omni-bg-paper)]/95 shadow-[0_16px_40px_rgba(0,0,0,0.08)]"
+          : "border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] shadow-[0_12px_32px_rgba(0,0,0,0.05)]"
       } ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"} ${className ?? ""}`}
       onClick={handleActivate}
       onMouseEnter={() => !disabled && setHovered(true)}
@@ -75,9 +75,9 @@ export default function CardOption({
       aria-pressed={isSelected}
       aria-disabled={disabled}
     >
-      <h3 className="mt-1.5 text-lg sm:text-xl font-semibold text-[#1F1F1F]">{heading}</h3>
+      <h3 className="mt-1.5 text-lg sm:text-xl font-semibold text-[var(--omni-ink)]">{heading}</h3>
       <div className="mt-2.5 h-px w-12 bg-[#D8C6B6]" />
-      <p className="mt-3 text-[13px] leading-6 text-[#2C2C2C]">
+      <p className="mt-3 text-[13px] leading-6 text-[var(--omni-ink)]">
         {description}
       </p>
       {isRecommended && (
@@ -86,12 +86,12 @@ export default function CardOption({
         </div>
       )}
       {isSelected && (
-        <div className="absolute left-4 top-4 flex items-center gap-1 rounded-full border border-[#E60012]/40 bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#E60012]">
+        <div className="absolute left-4 top-4 flex items-center gap-1 rounded-full border border-[var(--omni-energy)]/40 bg-[var(--omni-surface-card)]/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-energy)]">
           ✓
         </div>
       )}
       {isLoading ? (
-        <div className="absolute inset-0 flex items-center justify-center rounded-[12px] bg-white/80 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C]">
+        <div className="absolute inset-0 flex items-center justify-center rounded-[12px] bg-[var(--omni-surface-card)]/80 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)]">
           {loadingLabel ?? "Se salvează..."}
         </div>
       ) : null}

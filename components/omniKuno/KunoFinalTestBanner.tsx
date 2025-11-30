@@ -32,29 +32,29 @@ export function KunoFinalTestBanner({
   const arcSet = OMNI_KUNO_ARC_INTROS[areaKey];
   const arc = arcSet?.maestrie;
   return (
-    <div className="space-y-3 rounded-2xl border border-[#E4DAD1] bg-[#FFFBF7] p-4">
+    <div className="space-y-3 rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-4">
       {arc ? (
-        <div className="rounded-2xl border border-[#E7DED3] bg-white/80 px-4 py-3 text-sm text-[#2C2C2C] shadow-sm">
-          <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">Zona 4 · {arc.title}</p>
+        <div className="rounded-2xl border border-[#E7DED3] bg-[var(--omni-surface-card)]/80 px-4 py-3 text-sm text-[var(--omni-ink)] shadow-sm">
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Zona 4 · {arc.title}</p>
           <p className="mt-1 text-sm text-[#4D3F36]">{arc.body}</p>
         </div>
       ) : null}
       <div>
-        <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{finalTestConfig.heading}</p>
-        <h3 className="text-lg font-semibold text-[#2C2C2C]">{finalTestConfig.title}</h3>
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{finalTestConfig.heading}</p>
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">{finalTestConfig.title}</h3>
         <p className="text-sm text-[#4D3F36]">{finalTestConfig.description}</p>
       </div>
       {!showFinalTest ? (
         <button
           type="button"
           onClick={() => onToggleFinalTest(true)}
-          className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white"
+          className="inline-flex items-center rounded-full border border-[var(--omni-energy)] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--omni-energy)] transition hover:bg-[var(--omni-energy)] hover:text-white"
         >
           {finalTestConfig.buttonLabel}
         </button>
       ) : null}
       {finalTestResult ? (
-        <div className="space-y-3 rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-3 text-sm text-[#1F3C2F]">
+        <div className="space-y-3 rounded-xl border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]">
           <p>
             {lang === "ro"
               ? `Felicitări! Ai închis modulul ${finalTestConfig.moduleName} cu ${finalTestResult.correct} răspunsuri corecte din ${finalTestResult.total}. Continuă practica.`
@@ -63,13 +63,13 @@ export function KunoFinalTestBanner({
           <div className="flex flex-wrap gap-2">
             <Link
               href="/progress"
-              className="inline-flex items-center rounded-full border border-[#1F3C2F] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#1F3C2F] transition hover:bg-[#1F3C2F] hover:text-white"
+              className="inline-flex items-center rounded-full border border-[var(--omni-ink-soft)] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink-soft)] transition hover:bg-[var(--omni-ink-soft)] hover:text-white"
             >
               {lang === "ro" ? "Vezi progresul" : "View progress"}
             </Link>
             <Link
               href={`/omni-kuno?area=${areaKey}&module=${areaKey}`}
-              className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white"
+              className="inline-flex items-center rounded-full border border-[var(--omni-energy)] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-energy)] transition hover:bg-[var(--omni-energy)] hover:text-white"
             >
               {lang === "ro" ? "Alege alt modul" : "Pick another module"}
             </Link>

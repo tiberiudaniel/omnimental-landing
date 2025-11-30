@@ -198,7 +198,7 @@ export function RecommendationStep(props: Props) {
       const adj = isPlural ? 'potrivite' : 'potrivit';
       return (
         <>
-          Se pare că prioritatea ta acum este <strong className="font-semibold text-[#2C2C2C]">{mainAreaLabel}</strong>.{' '}
+          Se pare că prioritatea ta acum este <strong className="font-semibold text-[var(--omni-ink)]">{mainAreaLabel}</strong>.{' '}
           Simți o urgență de {numberToWordsRO(Math.max(1, Math.min(10, Math.round(intentUrgency))))} din zece să te ocupi de ea.{' '}
           Țintești rezultate în {pacePhrase}, cu un buget {budgetPhrase}.{' '}
           {themesForText.length ? (
@@ -206,14 +206,14 @@ export function RecommendationStep(props: Props) {
               Direcția e susținută de {themesForText.join(' și ')}.{' '}
             </>
           ) : null}
-          Potrivit ritmului și preferințelor tale, <strong className="font-semibold text-[#2C2C2C]">{pathLong}</strong> {verb} mai {adj} decât {otherPath}.
+          Potrivit ritmului și preferințelor tale, <strong className="font-semibold text-[var(--omni-ink)]">{pathLong}</strong> {verb} mai {adj} decât {otherPath}.
         </>
       );
     }
     // EN fallback
     return (
       <>
-        Your priority now is <strong className="font-semibold text-[#2C2C2C]">{mainAreaLabel}</strong>.{' '}
+        Your priority now is <strong className="font-semibold text-[var(--omni-ink)]">{mainAreaLabel}</strong>.{' '}
         You feel a {Math.round(intentUrgency)}/10 urgency to address it.{' '}
         You aim for progress in {pacePhrase}, with a {budgetPhrase} budget.{' '}
         {themesForText.length ? (
@@ -221,7 +221,7 @@ export function RecommendationStep(props: Props) {
             This direction is supported by {themesForText.join(' & ')}.{' '}
           </>
         ) : null}
-        Given your pace and preferences, <strong className="font-semibold text-[#2C2C2C]">{pathLong}</strong> fits better than {otherPath}.
+        Given your pace and preferences, <strong className="font-semibold text-[var(--omni-ink)]">{pathLong}</strong> fits better than {otherPath}.
       </>
     );
   })();
@@ -320,20 +320,20 @@ export function RecommendationStep(props: Props) {
   };
 
   return (
-    <section className="bg-[#FDFCF9] px-4 py-8" data-testid="recommendation-step">
-      <div className="mx-auto max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
+    <section className="bg-[var(--omni-bg-main)] px-4 py-8" data-testid="recommendation-step">
+      <div className="mx-auto max-w-5xl rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
           <div className="mx-auto flex max-w-4xl flex-col gap-5 text-center">
           {showAccountPrompt ? (
-            <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-5 py-4 text-left text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-              <p className="text-base font-semibold text-[#1F1F1F]">
+            <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-4 text-left text-sm text-[var(--omni-ink)] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+              <p className="text-base font-semibold text-[var(--omni-ink)]">
                 {lang === "ro" ? "Salvează-ți progresul" : "Save your progress"}
               </p>
-              <p className="mt-2 text-sm text-[#2C2C2C]/90">
+              <p className="mt-2 text-sm text-[var(--omni-ink)]/90">
                 {lang === "ro"
                   ? "Ca să păstrăm testele și recomandările tale, ai nevoie de un cont OmniMental. Poți continua în trei moduri:"
                   : "To keep your tests and recommendations, you need an OmniMental account. You can continue in three ways:"}
               </p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[#2C2C2C]">
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--omni-ink)]">
                 {lang === "ro" ? (
                   <>
                     <li>Conectare rapidă cu Google.</li>
@@ -351,7 +351,7 @@ export function RecommendationStep(props: Props) {
               <button
                 type="button"
                 onClick={handleAccountRequestClick}
-                className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
               >
                 {lang === "ro" ? "Mergi la autentificare" : "Go to sign-in"}
               </button>
@@ -371,7 +371,7 @@ export function RecommendationStep(props: Props) {
             const fromFacts = (progressFacts?.intent as unknown as { firstExpression?: string | null } | undefined)?.firstExpression ?? null;
             const visibleInitial = (initialStatement && initialStatement.trim()) || (fromFacts && String(fromFacts).trim()) || '';
             return visibleInitial ? (
-            <p className="text-sm text-[#4A3A30]/80">
+            <p className="text-sm text-[var(--omni-ink-soft)]/80">
               {lang === "ro"
                 ? `Ai început spunând: „${visibleInitial}”.`
                 : `You opened by sharing: “${visibleInitial}.”`}
@@ -392,18 +392,18 @@ export function RecommendationStep(props: Props) {
                 showValues={false}
               />
             </div>
-            <div className="w-full max-w-[56ch] rounded-[10px] border border-[#F5E7DA] bg-[#FFFBF7] px-4 py-3 text-left text-[14px] sm:text-[15px] leading-relaxed text-[#4A3A30]">
+            <div className="w-full max-w-[56ch] rounded-[10px] border border-[#F5E7DA] bg-[var(--omni-bg-paper)] px-4 py-3 text-left text-[14px] sm:text-[15px] leading-relaxed text-[var(--omni-ink-soft)]">
               {summaryMessage}
             </div>
           </div>
 
           {/* Optional quick clarity note (non-blocking) */}
-          <p className="mx-auto w-full max-w-[60ch] text-[12px] text-[#7B6B60] mb-1">
+          <p className="mx-auto w-full max-w-[60ch] text-[12px] text-[var(--omni-muted)] mb-1">
             {lang === "ro"
               ? "Eu îți sugerez direcția; tu alegi pasul următor."
               : "I suggest the direction; you choose the next step."}
           </p>
-          <div className="mx-auto mt-2 w-full max-w-[56ch] rounded-[12px] border border-[#E4D8CE] bg-white px-3 py-2 text-left">
+          <div className="mx-auto mt-2 w-full max-w-[56ch] rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-3 py-2 text-left">
             <textarea
               data-testid="quick-clarity-note"
               value={quickNote}
@@ -434,10 +434,10 @@ export function RecommendationStep(props: Props) {
               }}
               rows={2}
               placeholder={placeholderNote}
-              className="w-full resize-none rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm text-[#2C2C2C] placeholder:text-[#9F8E84] focus:border-[#C07963] focus:outline-none"
+              className="w-full resize-none rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-ink)] placeholder:text-[var(--omni-muted)] focus:border-[var(--omni-energy)] focus:outline-none"
               maxLength={200}
             />
-            <div className="mt-1 flex items-center justify-between text-[11px] text-[#7B6B60]">
+            <div className="mt-1 flex items-center justify-between text-[11px] text-[var(--omni-muted)]">
               <span>{quickNote.length}/200</span>
               <span>
                 {noteServerSaved
@@ -461,24 +461,24 @@ export function RecommendationStep(props: Props) {
               type="button"
               onClick={() => { void onCardSelect(effectiveRecommendedPath); }}
               disabled={isSavingChoice}
-              className="inline-flex items-center justify-center rounded-[12px] border border-[#2C2C2C] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-[12px] border border-[var(--omni-border-soft)] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] disabled:opacity-60"
               data-testid="wizard-save-path"
             >
               {lang === "ro" ? "Salvează traseul și începe" : "Save this path and start"}
             </button>
           </div>
           {isSavingChoice ? (
-            <p className="text-xs text-[#2C2C2C]">{savingLabel}</p>
+            <p className="text-xs text-[var(--omni-ink)]">{savingLabel}</p>
           ) : null}
           {errorMessage ? (
-            <p className="text-xs text-[#B8000E]">{errorMessage}</p>
+            <p className="text-xs text-[var(--omni-danger)]">{errorMessage}</p>
           ) : null}
 
           {/* CTA către hub-ul de recomandări */}
           <div className="mt-2 flex justify-center">
             <Link
               href="/recommendation"
-              className="text-[11px] text-[#7B6B60] underline hover:text-[#2C2C2C]"
+              className="text-[11px] text-[var(--omni-muted)] underline hover:text-[var(--omni-ink)]"
               data-testid="wizard-to-recommendation-cta"
             >
               {lang === 'ro' ? 'Vezi hub‑ul tău de recomandări' : 'Open your recommendations hub'}
@@ -486,15 +486,15 @@ export function RecommendationStep(props: Props) {
           </div>
 
           {topReflection ? (
-            <div className="mx-auto mt-2 max-w-4xl rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-2.5 text-left text-[13px] text-[#2C2C2C]">
+            <div className="mx-auto mt-2 max-w-4xl rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-2.5 text-left text-[13px] text-[var(--omni-ink)]">
               {topReflection}
             </div>
           ) : null}
-          <div className="mt-8 rounded-[18px] border border-[#E4D8CE] bg-[#FFFBF7] px-5 py-4.5 text-left shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
+          <div className="mt-8 rounded-[18px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-4.5 text-left shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-base font-semibold text-[#2C2C2C]">{followUpTitle}</p>
-                <p className="mt-1 text-sm text-[#4A3A30]/80">{followUpBody}</p>
+                <p className="text-base font-semibold text-[var(--omni-ink)]">{followUpTitle}</p>
+                <p className="mt-1 text-sm text-[var(--omni-ink-soft)]/80">{followUpBody}</p>
               </div>
               <CTAButton
                 text={followUpButton}
@@ -504,7 +504,7 @@ export function RecommendationStep(props: Props) {
                 submitLabel={followUpSubmit}
               />
             </div>
-            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
               {followUpHint}
             </p>
           </div>

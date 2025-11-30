@@ -29,17 +29,17 @@ export default function Stepper({
         type="button"
         onClick={prev}
         data-testid={testIdPrefix ? `${testIdPrefix}-minus` : undefined}
-        className="h-8 w-8 rounded-[8px] border border-[#D8C6B6] text-[#2C2C2C] hover:bg-[#F6F2EE]"
+        className="h-8 w-8 rounded-[8px] border border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:bg-[var(--omni-bg-paper)]"
         aria-label="decrease"
       >
         −
       </button>
-      <span className="min-w-[2ch] text-center text-sm font-semibold text-[#2C2C2C]">{value}</span>
+      <span className="min-w-[2ch] text-center text-sm font-semibold text-[var(--omni-ink)]">{value}</span>
       <button
         type="button"
         onClick={next}
         data-testid={testIdPrefix ? `${testIdPrefix}-plus` : undefined}
-        className="h-8 w-8 rounded-[8px] border border-[#2C2C2C] text-[#2C2C2C] hover:bg-[#2C2C2C]/10"
+        className="h-8 w-8 rounded-[8px] border border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:bg-[color-mix(in_oklab,var(--omni-energy)_15%,transparent)]"
         aria-label="increase"
       >
         +

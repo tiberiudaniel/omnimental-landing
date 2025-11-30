@@ -45,10 +45,10 @@ export default function Typewriter({
       if (timerRef.current) window.clearTimeout(timerRef.current);
     };
   }, [shown, chars.length, speed, prefersReducedMotion]);
-  const baseClass = ["cursor-text whitespace-pre-wrap", className ?? "text-[#2C2C2C]"].join(" ");
+  const baseClass = ["cursor-text whitespace-pre-wrap", className ?? "text-[var(--omni-ink)]"].join(" ");
   const placeholderClass = [
     "invisible whitespace-pre-wrap col-start-1 row-start-1",
-    className ?? "text-[#2C2C2C]",
+    className ?? "text-[var(--omni-ink)]",
   ].join(" ");
   const content = chars.slice(0, shown).join("");
   const completed = shown >= chars.length;
@@ -65,7 +65,7 @@ export default function Typewriter({
       >
         {content}
         {!completed ? (
-          <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-[#C07963] align-baseline" />
+          <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-[var(--omni-energy)] align-baseline" />
         ) : null}
       </p>
       {completed ? (

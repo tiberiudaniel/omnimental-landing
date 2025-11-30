@@ -97,11 +97,11 @@ export default function ReflectionScreen({
     ? "Selectează câteva opțiuni pentru a vedea analiza."
     : "Pick a few themes to reveal this view.";
   const sectionClasses = compact
-    ? "flex w-full items-start justify-start bg-[#FDFCF9] px-5 pt-4 pb-8"
-    : "flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-5 py-12";
+    ? "flex w-full items-start justify-start bg-[var(--omni-bg-main)] px-5 pt-4 pb-8"
+    : "flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[var(--omni-bg-main)] px-5 py-12";
   return (
     <section data-testid={testId ?? getWizardStepTestId("reflectionPrompt")} className={sectionClasses}>
-      <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right w-full max-w-5xl rounded-[20px] border border-[#E4D8CE] bg-white/92 px-7 py-10 text-center shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[2px]" data-testid={cardTestId}>
+      <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right w-full max-w-5xl rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/92 px-7 py-10 text-center shadow-[0_20px_45px_rgba(0,0,0,0.08)] backdrop-blur-[2px]" data-testid={cardTestId}>
         <div className="w-full flex justify-center">
           <div className="max-w-xl w-full text-left">
             {hasMultipleLines ? (
@@ -114,10 +114,10 @@ export default function ReflectionScreen({
 
         {showIndicators ? (
           <div className="mt-6 text-left">
-            <p className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+            <p className="text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
               {getString(t, "wizard.keyIndicators", isRO ? "Indicatori principali" : "Key indicators")}
             </p>
-            <h3 className="mt-2 text-xl font-semibold text-[#1F1F1F]">
+            <h3 className="mt-2 text-xl font-semibold text-[var(--omni-ink)]">
               {getString(t, "wizard.selectionProfile", isRO ? "Profilul selecțiilor tale" : "Your selection profile")}
             </h3>
             <div className="mt-6 grid gap-4 sm:gap-5 md:grid-cols-[minmax(240px,320px)_minmax(0,1fr)] md:items-start md:gap-8 md:justify-center">
@@ -125,12 +125,12 @@ export default function ReflectionScreen({
                 <RadarIndicators data={indicatorEntries} maxValue={1} size="lg" />
               </div>
               <div className="min-w-0 w-full space-y-4 text-left md:justify-self-start">
-                <div className="rounded-[12px] border border-[#F5E7DA] bg-[#FFFBF7] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+                <div className="rounded-[12px] border border-[#F5E7DA] bg-[var(--omni-bg-paper)] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                     {getString(t, "wizard.highlightedThemes", isRO ? "Teme evidențiate" : "Highlighted themes")}
                   </p>
                   {highlightedThemes.length > 0 ? (
-                    <ul className="mt-2 space-y-1 text-sm text-[#2C2C2C]">
+                    <ul className="mt-2 space-y-1 text-sm text-[var(--omni-ink)]">
                       {highlightedThemes.map((entry) => {
                         const label = safeLabels[entry.category] ?? entry.category;
                         return (
@@ -139,7 +139,7 @@ export default function ReflectionScreen({
                             className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"
                           >
                             <span className="break-words">{label}</span>
-                            <span className="text-[11px] uppercase tracking-[0.2em] text-[#A08F82]">
+                            <span className="text-[11px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">
                               {entry.count}/{displayTotal}
                             </span>
                           </li>
@@ -147,10 +147,10 @@ export default function ReflectionScreen({
                       })}
                     </ul>
                   ) : (
-                    <p className="mt-2 text-sm text-[#2C2C2C]/70">{getString(t, "wizard.selectFew", emptyIndicatorsText)}</p>
+                    <p className="mt-2 text-sm text-[var(--omni-ink)]/70">{getString(t, "wizard.selectFew", emptyIndicatorsText)}</p>
                   )}
                   {topReflection ? (
-                    <div className="mt-3 rounded-[10px] border border-[#F0E6DA] bg-white px-3 py-2 text-[13px] text-[#2C2C2C]">
+                    <div className="mt-3 rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-3 py-2 text-[13px] text-[var(--omni-ink)]">
                       {topReflection}
                     </div>
                   ) : null}
@@ -174,7 +174,7 @@ export default function ReflectionScreen({
             onContinue();
           }}
           disabled={busy}
-          className="mt-10 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+          className="mt-10 inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
           data-testid="wizard-reflection-continue"
         >
           {busy ? (isRO ? "Se procesează…" : "Processing…") : buttonLabel}

@@ -91,24 +91,24 @@ function AboutContent() {
   const navLinks = useNavigationLinks();
 
   return (
-    <div className="bg-[#FDFCF9] min-h-screen pb-24">
+    <div className="bg-[var(--omni-bg-main)] min-h-screen pb-24">
       <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
 
       <div className="mx-auto max-w-5xl px-6 pt-12">
-        <header className="panel-canvas panel-canvas--hero panel-canvas--brain-left grid gap-8 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-12 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px] md:grid-cols-[3fr_2fr]">
+        <header className="panel-canvas panel-canvas--hero panel-canvas--brain-left grid gap-8 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-12 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px] md:grid-cols-[3fr_2fr]">
           <div>
-            <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">{copy.badge}</div>
-            <h1 className="mt-4 text-3xl font-semibold text-[#1F1F1F]">
+            <div className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{copy.badge}</div>
+            <h1 className="mt-4 text-3xl font-semibold text-[var(--omni-ink)]">
               {copy.heading}
             </h1>
             {copy.paragraphs.map((paragraph) => (
-              <p key={paragraph} className="mt-4 text-sm leading-relaxed text-[#2C2C2C]">
+              <p key={paragraph} className="mt-4 text-sm leading-relaxed text-[var(--omni-ink)]">
                 {paragraph}
               </p>
             ))}
           </div>
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95">
             <Image
               src="https://static.wixstatic.com/media/139de8_ab63b1409ab845eba55ed224056ded17~mv2.jpg/v1/fill/w_1200,h_1200,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Vegus-Nerve-dreamstime_xxl_215358845.jpg"
               alt={copy.imageAlt}
@@ -123,18 +123,18 @@ function AboutContent() {
           {copy.values.map((value) => (
             <div
               key={value.title}
-              className="rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-6 text-[#2C2C2C] shadow-[0_12px_32px_rgba(0,0,0,0.06)]"
+              className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-6 py-6 text-[var(--omni-ink)] shadow-[0_12px_32px_rgba(0,0,0,0.06)]"
             >
-              <h2 className="text-lg font-semibold text-[#1F1F1F]">{value.title}</h2>
+              <h2 className="text-lg font-semibold text-[var(--omni-ink)]">{value.title}</h2>
               <p className="mt-3 text-sm leading-relaxed">{value.text}</p>
             </div>
           ))}
         </section>
 
         <section className="mt-10 grid gap-8 md:grid-cols-2">
-          <div className="rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
-            <h2 className="text-2xl font-semibold text-[#1F1F1F]">{copy.toolsTitle}</h2>
-            <ul className="mt-4 space-y-2 pl-5 text-sm text-[#2C2C2C]">
+          <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
+            <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">{copy.toolsTitle}</h2>
+            <ul className="mt-4 space-y-2 pl-5 text-sm text-[var(--omni-ink)]">
               {copy.tools.map((tool) => (
                 <li key={tool} className="list-disc">
                   {tool}
@@ -142,9 +142,9 @@ function AboutContent() {
               ))}
             </ul>
           </div>
-          <div className="rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
-            <h2 className="text-2xl font-semibold text-[#1F1F1F]">{copy.principlesTitle}</h2>
-            <ul className="mt-4 space-y-2 pl-5 text-sm text-[#2C2C2C]">
+          <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
+            <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">{copy.principlesTitle}</h2>
+            <ul className="mt-4 space-y-2 pl-5 text-sm text-[var(--omni-ink)]">
               {copy.principles.map((principle) => (
                 <li key={principle} className="list-disc">
                   {principle}

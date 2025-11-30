@@ -26,25 +26,25 @@ export default function MotivationResourcesCard({
     { label: lang === "ro" ? "Preferință format" : "Format preference", value: m.formatPreference ?? "-" },
   ];
   return (
-    <div className="h-full rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-2 shadow-[0_8px_18px_rgba(0,0,0,0.05)]">
+    <div className="h-full rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-2 shadow-[0_8px_18px_rgba(0,0,0,0.05)]">
       <header className="mb-1">
-        <p className="text-sm font-semibold text-[#1F1F1F]">
+        <p className="text-sm font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "Motivație & Resurse" : "Motivation & Resources"}
         </p>
       </header>
       <div className="space-y-1.5">
         {rows.map((r) => (
-          <div key={r.label} className="flex items-center justify-between rounded-[10px] border border-[#F0E6DA] bg-[#FFFBF7] px-2.5 py-1.5 text-[11px] text-[#2C2C2C]">
-            <span className="text-[#7A6455]">{r.label}</span>
-            <span className="font-semibold text-[#1F1F1F]">{r.value}</span>
+          <div key={r.label} className="flex items-center justify-between rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-2.5 py-1.5 text-[11px] text-[var(--omni-ink)]">
+            <span className="text-[var(--omni-muted)]">{r.label}</span>
+            <span className="font-semibold text-[var(--omni-ink)]">{r.value}</span>
           </div>
         ))}
       </div>
-      <div className="mt-2 flex justify-end border-t border-[#F0E6DA] pt-2">
+      <div className="mt-2 flex justify-end border-t border-[var(--omni-border-soft)] pt-2">
         <button
           type="button"
           onClick={onEdit}
-          className="rounded-[10px] border border-[#2C2C2C] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+          className="rounded-[10px] border border-[var(--omni-border-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)]"
         >
           {lang === "ro" ? "Actualizează" : "Update"}
         </button>

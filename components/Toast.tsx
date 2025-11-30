@@ -32,7 +32,7 @@ export default function Toast({
   if (!open) return null;
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
-      <div className="pointer-events-auto flex max-w-md items-center gap-4 rounded-[12px] border border-[#E4D8CE] bg-white/95 px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_28px_rgba(0,0,0,0.12)]">
+      <div className="pointer-events-auto flex max-w-md items-center gap-4 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 px-4 py-3 text-sm text-[var(--omni-ink)] shadow-[0_10px_28px_rgba(0,0,0,0.12)]">
         <span className="flex-1">{message}</span>
         {actionLabel && onAction ? (
           <button
@@ -50,7 +50,7 @@ export default function Toast({
         <button
           type="button"
           aria-label="Close"
-          className="rounded px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] transition hover:text-[#E60012]"
+          className="rounded px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)] transition hover:text-[var(--omni-energy)]"
           onClick={() => {
             setOpen(false);
             onClose?.();

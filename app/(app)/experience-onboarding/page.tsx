@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
+import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useProfile } from "@/components/ProfileProvider";
 import { useI18n } from "@/components/I18nProvider";
@@ -156,11 +157,12 @@ function ExperienceOnboardingContent() {
     return null;
   }
 
+  const header = <SiteHeader />;
+
   return (
-    <div className="min-h-screen bg-[#FAF7F2]">
-      <SiteHeader compact />
-      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-      <main className="mx-auto max-w-4xl px-4 py-8 md:px-8">
+    <>
+      <AppShell header={header}>
+        <div className="mx-auto max-w-4xl px-4 py-8 md:px-8">
         {/* Breadcrumb for Initiation flow */}
         {flow === 'initiation' ? (
           (() => {
@@ -168,7 +170,7 @@ function ExperienceOnboardingContent() {
             const foundIndex = INITIATION_ORDER.indexOf(step as InitiationStepId);
             const idx = foundIndex >= 0 ? foundIndex + 1 : 1;
             return (
-              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">
+              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
                 {lang === 'ro' ? `Pas ${idx}/${total}` : `Step ${idx}/${total}`}
               </div>
             );
@@ -256,8 +258,10 @@ function ExperienceOnboardingContent() {
             )}
           </>
         )}
-      </main>
-    </div>
+      </div>
+      </AppShell>
+      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+    </>
   );
 }
 

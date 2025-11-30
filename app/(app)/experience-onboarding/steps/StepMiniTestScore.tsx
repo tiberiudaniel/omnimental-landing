@@ -154,7 +154,7 @@ export default function StepMiniTestScore({ answers, score, userId, topicKey, qu
   return (
     <section className="space-y-4">
       <div
-        className="rounded-[16px] border px-6 py-6 shadow-sm"
+        className="omni-card px-6 py-6"
         style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
       >
         <div

@@ -130,7 +130,7 @@ export function InitiationLesson({ themeLabel, onContinue }: InitiationLessonPro
         {points.map((text, idx) => (
           <li
             key={`point-${idx}`}
-            className="rounded-[14px] border border-[#F0E8E0] bg-[#FFFBF7] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.05)]"
+            className="rounded-[14px] border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.05)]"
           >
             {text}
           </li>

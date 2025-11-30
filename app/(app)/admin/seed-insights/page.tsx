@@ -41,14 +41,14 @@ export default function SeedInsightsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2]">
+    <div className="min-h-screen" style={{ backgroundColor: "var(--omni-bg-main)", color: "var(--omni-ink)" }}>
       <main className="mx-auto max-w-2xl px-4 py-12">
-        <h1 className="mb-2 text-2xl font-semibold text-[#1F1F1F]">Seed Insights</h1>
-        <p className="mb-6 text-sm text-[#4A3A30]">
+        <h1 className="mb-2 text-2xl font-semibold text-[var(--omni-ink)]">Seed Insights</h1>
+        <p className="mb-6 text-sm text-[var(--omni-ink-soft)]">
           Populate Firestore collection <code>insights</code> with items for each theme.
         </p>
         {!enabled ? (
-          <p className="text-sm text-[#7A6455]">
+          <p className="text-sm text-[var(--omni-muted)]">
             Seeding is disabled. Set <code>NEXT_PUBLIC_ENABLE_SEED=1</code> in <code>.env.local</code> to enable this page.
           </p>
         ) : (
@@ -56,12 +56,12 @@ export default function SeedInsightsPage() {
             type="button"
             disabled={busy}
             onClick={handleSeed}
-            className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:opacity-60"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:opacity-60"
           >
             {busy ? "Seeding…" : "Seed now"}
           </button>
         )}
-        {status ? <p className="mt-4 text-sm text-[#2C2C2C]">{status}</p> : null}
+        {status ? <p className="mt-4 text-sm text-[var(--omni-ink)]">{status}</p> : null}
       </main>
     </div>
   );

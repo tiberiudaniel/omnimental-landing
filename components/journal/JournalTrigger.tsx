@@ -17,7 +17,7 @@ export function JournalTrigger({ userId, context, label, onRequireAuth }: Props)
     <>
       <button
         type="button"
-        className="inline-flex items-center rounded-full bg-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:bg-[#F6F2EE]"
+        className="inline-flex items-center rounded-full bg-[var(--omni-surface-card)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink)] transition hover:bg-[var(--omni-bg-paper)]"
         onClick={() => {
           if (!userId) {
             if (onRequireAuth) onRequireAuth();

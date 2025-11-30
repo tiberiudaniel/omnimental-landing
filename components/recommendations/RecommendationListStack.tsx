@@ -59,8 +59,8 @@ export function RecommendationListStack({ items, activeId, onActiveChange, onAct
             ref={(el: HTMLButtonElement | null) => { itemRefs.current[item.id] = el; }}
             className={`mb-2 w-full cursor-pointer rounded-[12px] border text-left transition-[box-shadow,transform,opacity] duration-150 ${
               isActive
-                ? "border-[#E4D8CE] bg-white shadow-md"
-                : "border-[#F0E6DA] bg-[#FFFBF7] opacity-30 hover:opacity-100"
+                ? "border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] shadow-md"
+                : "border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] opacity-30 hover:opacity-100"
             } ${isActive ? expanded : collapsed}`}
             whileHover={
               !enableFancyHover
@@ -72,14 +72,14 @@ export function RecommendationListStack({ items, activeId, onActiveChange, onAct
             whileTap={{ scale: 0.99 }}
           >
             {/* header comun */}
-            <div className="flex items-center gap-2 rounded-t-[12px] bg-[#F6F2EE] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7B6B60]">
-              <span className="rounded-full bg-[#2C2C2C] px-2 py-0.5 text-white">
+            <div className="flex items-center gap-2 rounded-t-[12px] bg-[var(--omni-bg-paper)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+              <span className="rounded-full bg-[var(--omni-ink)] px-2 py-0.5 text-white">
                 {displayIndex}
               </span>
               <span className="truncate flex-1">
                 {item.shortLabel || item.title}
               </span>
-              <span className="rounded-full border border-[#E4D8CE] px-2 py-0.5 text-[10px] lowercase text-[#7B6B60]">
+              <span className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] lowercase text-[var(--omni-muted)]">
                 {item.type}
               </span>
             </div>
@@ -87,13 +87,13 @@ export function RecommendationListStack({ items, activeId, onActiveChange, onAct
             {/* conținut: full doar pentru activ */}
             {isActive ? (
               <div className="px-4 py-3">
-                <h3 className="text-sm font-semibold text-[#2C2C2C]">{item.title}</h3>
+                <h3 className="text-sm font-semibold text-[var(--omni-ink)]">{item.title}</h3>
                 {item.tags?.length ? (
                   <div className="mt-1 flex flex-wrap gap-1">
                     {item.tags.map((t) => (
                       <span
                         key={t}
-                        className="rounded-full border border-[#E4D8CE] px-2 py-0.5 text-[10px] lowercase text-[#7B6B60]"
+                        className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] lowercase text-[var(--omni-muted)]"
                       >
                         {t}
                       </span>
@@ -102,7 +102,7 @@ export function RecommendationListStack({ items, activeId, onActiveChange, onAct
                 ) : null}
               </div>
             ) : (
-              <div className="px-4 py-2 text-xs text-[#7B6B60]">
+              <div className="px-4 py-2 text-xs text-[var(--omni-muted)]">
                 <p className="truncate">{item.title}</p>
               </div>
             )}

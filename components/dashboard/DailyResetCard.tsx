@@ -74,11 +74,11 @@ function ValuePicker({ dimension, value, onChange, disabled, lang, optional }: V
   const maxLabel = lang === "ro" ? copy.maxRo : copy.maxEn;
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between text-[11px] font-semibold text-[#2D2017]">
+      <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--omni-ink)]">
         <span>
           {title}
           {optional ? (
-            <span className="ml-1 text-[10px] font-normal uppercase tracking-[0.2em] text-[#A08F82]">
+            <span className="ml-1 text-[10px] font-normal uppercase tracking-[0.2em] text-[var(--omni-muted)]">
               {lang === "ro" ? "opțional" : "optional"}
             </span>
           ) : null}
@@ -93,9 +93,9 @@ function ValuePicker({ dimension, value, onChange, disabled, lang, optional }: V
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
         disabled={disabled}
-        className="w-full accent-[#C07963]"
+        className="w-full accent-[var(--omni-energy)]"
       />
-      <div className="flex items-center justify-between text-[10px] text-[#7B6B60]">
+      <div className="flex items-center justify-between text-[10px] text-[var(--omni-muted)]">
         <span>{minLabel}</span>
         <span>{maxLabel}</span>
       </div>
@@ -181,7 +181,7 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   const [sleep, setSleep] = useState(6);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(false);
-  const [localCache, setLocalCache] = useState<LocalResetState | null>(null);
+  const [, setLocalCache] = useState<LocalResetState | null>(null);
   const baseSummary = facts?.omni?.daily ?? null;
   const [completedToday, setCompletedToday] = useState(() =>
     baseSummary?.lastCheckinDate === todayKey,
@@ -265,19 +265,19 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   const shouldHideCard = allowInteractions && completedToday;
   if (shouldHideCard) {
     return (
-      <Card className="rounded-2xl border border-[#E4DAD1] bg-[#FFFBF7] p-3 text-sm text-[#5A4334] shadow-sm">
+      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-3 text-sm text-[var(--omni-muted)] shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#D9C9B8] bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5A4334]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#D9C9B8] bg-[var(--omni-surface-card)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
             <span>Daily reset completat</span>
             <span aria-hidden="true">✅</span>
           </div>
           {typeof localStreak === "number" ? (
-            <span className="text-[11px] font-semibold text-[#7B6B60]">
+            <span className="text-[11px] font-semibold text-[var(--omni-muted)]">
               {lang === "ro" ? `Zile în serie: ${localStreak}` : `Streak: ${localStreak} days`}
             </span>
           ) : null}
         </div>
-        <p className="mt-2 text-[12px] text-[#7B6B60]">
+        <p className="mt-2 text-[12px] text-[var(--omni-muted)]">
           {lang === "ro"
             ? "Revină mâine pentru a nota energia, emoția și claritatea."
             : "Come back tomorrow to capture energy, emotion, and clarity again."}
@@ -370,7 +370,7 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
         type="button"
         onClick={handleSave}
         disabled={loading || initializing}
-        className="w-full rounded-full border border-[#C5B29E] bg-[#F7EEE3] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2D2017] transition hover:border-[#B08A78] disabled:opacity-60"
+        className="w-full rounded-full border border-[#C5B29E] bg-[#F7EEE3] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[#B08A78] disabled:opacity-60"
       >
         {loading
           ? lang === "ro"
@@ -384,31 +384,31 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   );
 
   return (
-    <Card className="rounded-2xl border border-[#E4DAD1] bg-white p-3 shadow-sm sm:p-4">
+    <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 shadow-sm sm:p-4">
       <div className="mb-2 flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
             {lang === "ro" ? "Ritual zilnic" : "Daily ritual"}
           </p>
-          <h3 className="text-base font-semibold text-[#2C2C2C]">
+          <h3 className="text-base font-semibold text-[var(--omni-ink)]">
             {lang === "ro" ? "Daily Reset în 3 pași" : "Daily Reset in 3 steps"}
           </h3>
         </div>
         {streakLabel ? (
-          <span className="text-[11px] font-semibold text-[#7B6B60]">{streakLabel}</span>
+          <span className="text-[11px] font-semibold text-[var(--omni-muted)]">{streakLabel}</span>
         ) : null}
       </div>
       {allowInteractions ? (
         renderForm()
       ) : (
-        <p className="text-sm text-[#7B6B60]">
+        <p className="text-sm text-[var(--omni-muted)]">
           {lang === "ro"
             ? "Autentifică-te pentru a nota rapid energia, stresul și claritatea de azi."
             : "Sign in to capture today’s energy, stress, and clarity."}
         </p>
       )}
       {fallbackMode ? (
-        <p className="mt-2 text-[11px] text-[#7B6B60]">
+        <p className="mt-2 text-[11px] text-[var(--omni-muted)]">
           {lang === "ro"
             ? "Demo: datele sunt stocate local pe acest dispozitiv."
             : "Demo mode: data is stored locally on this device."}

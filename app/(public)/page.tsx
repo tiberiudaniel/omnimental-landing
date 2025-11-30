@@ -512,7 +512,7 @@ function WizardShell() {
   // Legacy stepContent rendering removed; WizardRouter handles routing.
 
   return (
-    <div className="min-h-screen bg-[#FAF9F7] text-[#111827]">
+    <div className="min-h-screen bg-[#FAF9F7] text-[var(--omni-ink)]">
       <SiteHeader
         showMenu
         onMenuToggle={() => setMenuOpen(true)}
@@ -681,8 +681,8 @@ function PageContent() {
   const { authReady } = useAuth();
   if (!authReady) {
     return (
-      <div className="bg-[#FAF7F2] min-h-screen flex items-center justify-center">
-        <p className="text-sm text-[#4A3A30]">Se pregătește spațiul tău...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--omni-bg-main)", color: "var(--omni-ink)" }}>
+        <p className="text-sm text-[var(--omni-ink-soft)]">Se pregătește spațiul tău...</p>
       </div>
     );
   }

@@ -518,55 +518,55 @@ export default function EvaluationForm({
 
   return (
     <div className="space-y-8">
-      <header className="space-y-2 border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
-        <h1 className="text-2xl font-semibold text-[#1F1F1F]">Evaluare Mental Coaching</h1>
-        <p className="text-sm text-[#2C2C2C]">
+      <header className="space-y-2 border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+        <h1 className="text-2xl font-semibold text-[var(--omni-ink)]">Evaluare Mental Coaching</h1>
+        <p className="text-sm text-[var(--omni-ink)]">
           Completează evaluarea la începutul programului și la fiecare 3 săptămâni. Durează aproximativ 10 minute.
         </p>
-        <div className="flex flex-wrap items-center gap-4 text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+        <div className="flex flex-wrap items-center gap-4 text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
           <span>{completedCount}/{totalRequired} itemi completați</span>
-          {formState.submitted && <span className="text-[#2C2C2C]">Evaluare salvată ✓</span>}
+          {formState.submitted && <span className="text-[var(--omni-ink)]">Evaluare salvată ✓</span>}
         </div>
       </header>
 
       {pendingCount > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border border-[#FFF2D9] bg-[#FFF9ED] px-4 py-3 text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border border-[#FFF2D9] bg-[#FFF9ED] px-4 py-3 text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
           <span>{pendingCount} evaluări nesincronizate</span>
           <button
             type="button"
             onClick={retryPendingEvaluations}
             disabled={retrying}
-            className="rounded-[6px] border border-[#2C2C2C] px-4 py-2 text-[10px] font-semibold text-[#2C2C2C] transition hover:bg-[#2C2C2C]/10 focus:outline-none focus:ring-1 focus:ring-[#2C2C2C] disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-[6px] border border-[var(--omni-border-soft)] px-4 py-2 text-[10px] font-semibold text-[var(--omni-ink)] transition hover:bg-[color-mix(in_oklab,var(--omni-energy)_15%,transparent)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {retrying ? "Se retrimite..." : "Retrimite acum"}
           </button>
         </div>
       )}
       {retryMessage && (
-        <div className="border border-[#D8C6B6] bg-white px-4 py-3 text-sm text-[#2C2C2C]">
+        <div className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-3 text-sm text-[var(--omni-ink)]">
           {retryMessage}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+          <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
             <span>
               Pas {currentStep + 1}/{STEP_CONFIG.length}
             </span>
             <span>{currentStepConfig?.label}</span>
           </div>
-          <div className="h-2 w-full rounded-full bg-[#F6F2EE]">
+          <div className="h-2 w-full rounded-full bg-[var(--omni-bg-paper)]">
             <div
-              className="h-full rounded-full bg-[#E60012] transition-all"
+              className="h-full rounded-full bg-[var(--omni-energy)] transition-all"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
         </div>
 
         {currentStepConfig?.key === "info" ? (
-          <section className="grid gap-4 border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] md:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
+          <section className="grid gap-4 border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] md:grid-cols-2">
+            <label className="flex flex-col gap-2 text-sm text-[var(--omni-ink)]">
               Nume participant
               <input
                 type="text"
@@ -574,11 +574,11 @@ export default function EvaluationForm({
                 onChange={(event) =>
                   setFormState((prev) => ({ ...prev, name: event.target.value }))
                 }
-                className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
+                className="rounded-[6px] border border-[var(--omni-border-soft)] px-4 py-2 focus:border-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
                 required
               />
             </label>
-            <label className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
+            <label className="flex flex-col gap-2 text-sm text-[var(--omni-ink)]">
               Email (opțional)
               <input
                 type="email"
@@ -586,10 +586,10 @@ export default function EvaluationForm({
                 onChange={(event) =>
                   setFormState((prev) => ({ ...prev, email: event.target.value }))
                 }
-                className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
+                className="rounded-[6px] border border-[var(--omni-border-soft)] px-4 py-2 focus:border-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
               />
             </label>
-            <div className="flex flex-col gap-2 text-sm text-[#2C2C2C] md:col-span-2">
+            <div className="flex flex-col gap-2 text-sm text-[var(--omni-ink)] md:col-span-2">
               <span>Etapă program</span>
               <StageSelector
                 value={formState.stage}
@@ -597,7 +597,7 @@ export default function EvaluationForm({
                 stages={STAGES}
               />
             </div>
-            <label className="flex flex-col gap-2 text-sm text-[#2C2C2C] md:col-span-2">
+            <label className="flex flex-col gap-2 text-sm text-[var(--omni-ink)] md:col-span-2">
               Notițe despre starea actuală (opțional)
               <textarea
                 value={formState.journal}
@@ -605,7 +605,7 @@ export default function EvaluationForm({
                   setFormState((prev) => ({ ...prev, journal: event.target.value }))
                 }
                 rows={4}
-                className="rounded-[6px] border border-[#D8C6B6] px-4 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
+                className="rounded-[6px] border border-[var(--omni-border-soft)] px-4 py-2 focus:border-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
                 placeholder="Ce observi acum față de începutul programului?"
               />
             </label>
@@ -614,19 +614,19 @@ export default function EvaluationForm({
           sectionsForCurrentStep.map((section) => (
             <section
               key={section.key}
-              className="space-y-4 border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
+              className="space-y-4 border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
             >
               <header className="space-y-1">
-                <h2 className="text-lg font-semibold text-[#1F1F1F]">{section.title}</h2>
-                <p className="text-sm text-[#2C2C2C]/80">{section.description}</p>
+                <h2 className="text-lg font-semibold text-[var(--omni-ink)]">{section.title}</h2>
+                <p className="text-sm text-[var(--omni-ink)]/80">{section.description}</p>
               </header>
               <div className="space-y-4">
                 {section.items.map((item) => (
-                  <div key={item.id} className="space-y-2 text-sm text-[#2C2C2C]">
+                  <div key={item.id} className="space-y-2 text-sm text-[var(--omni-ink)]">
                     <div className="flex items-center gap-2">
                       <span>{item.prompt}</span>
                       {item.reverse && (
-                        <span className="rounded-full bg-[#F6F2EE] px-2 py-[2px] text-[10px] uppercase tracking-[0.2em] text-[#A08F82]">
+                        <span className="rounded-full bg-[var(--omni-bg-paper)] px-2 py-[2px] text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">
                           inversat
                         </span>
                       )}
@@ -640,8 +640,8 @@ export default function EvaluationForm({
                             key={id}
                             className={`flex cursor-pointer flex-col items-center gap-1 rounded-[6px] border px-3 py-2 text-xs uppercase tracking-[0.2em] transition ${
                               answers[item.id] === value
-                                ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                                : "border-[#D8C6B6] text-[#2C2C2C] hover:border-[#2C2C2C]"
+                                ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                                : "border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]"
                             }`}
                           >
                             <input
@@ -668,13 +668,13 @@ export default function EvaluationForm({
         )}
 
         {mode === "full" ? (
-        <section className="space-y-6 border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+        <section className="space-y-6 border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
           <header className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">Omni-Cunoaștere</p>
-            <h2 className="text-lg font-semibold text-[#1F1F1F]">Ce știi despre instrumente și practici</h2>
-            <p className="text-sm text-[#2C2C2C]/80">
+            <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">Omni-Cunoaștere</p>
+            <h2 className="text-lg font-semibold text-[var(--omni-ink)]">Ce știi despre instrumente și practici</h2>
+            <p className="text-sm text-[var(--omni-ink)]/80">
               Răspunde la întrebările din fiecare modul pentru a primi scorul de cunoaștere (OC). Scor curent:{" "}
-              <span className="font-semibold text-[#2C2C2C]">
+              <span className="font-semibold text-[var(--omni-ink)]">
                 {knowledgeCompleted ? `${knowledgeScore.percent}%` : "în curs"}
               </span>
               .
@@ -686,11 +686,11 @@ export default function EvaluationForm({
               return (
                 <div
                   key={module.key}
-                  className="space-y-4 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-4"
+                  className="space-y-4 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4"
                 >
                   <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-                    <h3 className="text-base font-semibold text-[#2C2C2C]">{module.title}</h3>
-                    <span className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+                    <h3 className="text-base font-semibold text-[var(--omni-ink)]">{module.title}</h3>
+                    <span className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
                       {moduleScore ? `${moduleScore.percent}% complet` : "0% complet"}
                     </span>
                   </div>
@@ -701,7 +701,7 @@ export default function EvaluationForm({
                         typeof selected === "number" && selected === question.correctIndex;
                       const showFeedback = typeof selected === "number";
                       return (
-                        <div key={question.id} className="space-y-2 rounded-[8px] border border-[#F6EDE2] bg-white px-3 py-3 text-sm text-[#2C2C2C]">
+                        <div key={question.id} className="space-y-2 rounded-[8px] border border-[#F6EDE2] bg-[var(--omni-surface-card)] px-3 py-3 text-sm text-[var(--omni-ink)]">
                           <p className="font-medium">{question.question}</p>
                           <div className="flex flex-col gap-2">
                             {question.options.map((option, index) => (
@@ -709,8 +709,8 @@ export default function EvaluationForm({
                                 key={`${question.id}-${index}`}
                                 className={`flex cursor-pointer items-center gap-2 rounded-[6px] border px-3 py-2 text-xs uppercase tracking-[0.2em] transition ${
                                   selected === index
-                                    ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                                    : "border-[#D8C6B6] text-[#2C2C2C] hover:border-[#2C2C2C]"
+                                    ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                                    : "border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]"
                                 }`}
                               >
                                 <input
@@ -728,7 +728,7 @@ export default function EvaluationForm({
                           {showFeedback && (
                             <p
                               className={`text-xs ${
-                                isCorrect ? "text-[#0F6D45]" : "text-[#B8000E]"
+                                isCorrect ? "text-[#0F6D45]" : "text-[var(--omni-danger)]"
                               }`}
                             >
                               {isCorrect ? "Corect" : "Răspuns corect: " + question.options[question.correctIndex]}
@@ -748,7 +748,7 @@ export default function EvaluationForm({
         ) : null}
 
         {formState.errors.length > 0 && (
-          <div className="space-y-2 border border-[#E60012] bg-[#FBE9EB] px-4 py-3 text-sm text-[#2C2C2C]">
+          <div className="space-y-2 border border-[var(--omni-energy)] bg-[#FBE9EB] px-4 py-3 text-sm text-[var(--omni-ink)]">
             {formState.errors.map((error) => (
               <p key={error}>{error}</p>
             ))}
@@ -761,7 +761,7 @@ export default function EvaluationForm({
               <button
                 type="button"
                 onClick={handlePreviousStep}
-                className="inline-flex items-center gap-2 rounded-[6px] border border-[#D8C6B6] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#F6F2EE] focus:outline-none focus:ring-1 focus:ring-[#D8C6B6]"
+                className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:bg-[var(--omni-bg-paper)] focus:outline-none focus:ring-1 focus:ring-[#D8C6B6]"
               >
                 Înapoi
               </button>
@@ -771,7 +771,7 @@ export default function EvaluationForm({
                 type="button"
                 onClick={handleNextStep}
                 disabled={!isCurrentStepComplete()}
-                className="inline-flex items-center gap-2 rounded-[6px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#2C2C2C]/10 focus:outline-none focus:ring-1 focus:ring-[#2C2C2C] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:bg-[color-mix(in_oklab,var(--omni-energy)_15%,transparent)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Continuă
               </button>
@@ -779,7 +779,7 @@ export default function EvaluationForm({
               <button
                 type="submit"
                 disabled={formState.submitting || !isCurrentStepComplete() || !knowledgeCompleted}
-                className="inline-flex items-center gap-2 rounded-[6px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:bg-[#2C2C2C]/10 focus:outline-none focus:ring-1 focus:ring-[#2C2C2C] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:bg-[color-mix(in_oklab,var(--omni-energy)_15%,transparent)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {formState.submitting ? "Se salvează..." : "Trimite evaluarea"}
               </button>
@@ -787,12 +787,12 @@ export default function EvaluationForm({
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center gap-2 rounded-[6px] border border-[#D8C6B6] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] transition hover:bg-[#F6F2EE] focus:outline-none focus:ring-1 focus:ring-[#D8C6B6]"
+              className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)] transition hover:bg-[var(--omni-bg-paper)] focus:outline-none focus:ring-1 focus:ring-[#D8C6B6]"
             >
               Reset formular
             </button>
           </div>
-          <p className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+          <p className="text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
             <span>Progres XP: {Math.round((completedCount / totalRequired) * 100)}%</span>
           </p>
         </div>
@@ -804,8 +804,8 @@ export default function EvaluationForm({
       </form>
 
       {scores && (
-        <section className="space-y-4 border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
-          <h2 className="text-lg font-semibold text-[#1F1F1F]">
+        <section className="space-y-4 border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+          <h2 className="text-lg font-semibold text-[var(--omni-ink)]">
             Rezultate și interpretare
           </h2>
           <SubmissionSummaryCard
@@ -816,7 +816,7 @@ export default function EvaluationForm({
             stages={STAGES}
           />
           {formState.savedLocally && (
-            <div className="border border-[#E6C200] bg-[#FFF9DB] px-4 py-3 text-sm text-[#2C2C2C]">
+            <div className="border border-[#E6C200] bg-[#FFF9DB] px-4 py-3 text-sm text-[var(--omni-ink)]">
               Evaluarea a fost salvată local (conexiune instabilă). O vom reîncerca automat data viitoare sau poți reface trimiterea manual.
             </div>
           )}
@@ -872,7 +872,7 @@ export default function EvaluationForm({
               />
             ) : null}
           </div>
-          <div className="flex flex-col gap-3 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-4 text-sm text-[#4A3A30] md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4 text-sm text-[var(--omni-ink-soft)] md:flex-row md:items-center md:justify-between">
             <p>
               Urmărește graficele și baseline-ul complet în secțiunea „Progres”. Fiecare evaluare nouă
               actualizează automat trendul.
@@ -880,7 +880,7 @@ export default function EvaluationForm({
             <button
               type="button"
               onClick={scrollToTrend}
-              className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+              className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
             >
               Vezi progresul
             </button>
@@ -911,18 +911,18 @@ type ScoreCardProps = {
 
 function ScoreCard({ label, value, max, helper, invert }: ScoreCardProps) {
   const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-  const barColor = invert ? "bg-[#E60012]" : "bg-[#2C2C2C]";
+  const barColor = invert ? "bg-[var(--omni-energy)]" : "bg-[var(--omni-ink)]";
 
   return (
-    <div className="space-y-2 border border-[#F6F2EE] px-4 py-4">
-      <div className="flex items-center justify-between text-sm text-[#2C2C2C]">
+    <div className="space-y-2 border border-[var(--omni-bg-paper)] px-4 py-4">
+      <div className="flex items-center justify-between text-sm text-[var(--omni-ink)]">
         <span className="font-semibold">{label}</span>
         <span>{value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)}</span>
       </div>
-      <div className="h-2 w-full bg-[#F6F2EE]">
+      <div className="h-2 w-full bg-[var(--omni-bg-paper)]">
         <div className={`h-full ${barColor}`} style={{ width: `${percentage}%` }} />
       </div>
-      {helper && <p className="text-xs text-[#2C2C2C]/70">{helper}</p>}
+      {helper && <p className="text-xs text-[var(--omni-ink)]/70">{helper}</p>}
     </div>
   );
 }
@@ -951,10 +951,10 @@ function StageSelector({ value, onChange, stages }: StageSelectorProps) {
             type="button"
             onClick={() => onChange(stage.value)}
             aria-pressed={active}
-            className={`rounded-[10px] border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#2C2C2C] ${
+            className={`rounded-[10px] border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[var(--omni-energy)] ${
               active
-                ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                : "border-[#E4D8CE] bg-white text-[#2C2C2C] hover:border-[#2C2C2C]"
+                ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                : "border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]"
             }`}
           >
             <p className="text-[10px] uppercase tracking-[0.35em] text-current">{stage.helper}</p>
@@ -987,20 +987,20 @@ function SubmissionSummaryCard({
     : "Se va completa automat după trimitere.";
 
   return (
-    <div className="rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-4 text-sm text-[#4A3A30]">
+    <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4 text-sm text-[var(--omni-ink-soft)]">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[#C07963]">Etapă evaluare</p>
-          <p className="text-lg font-semibold text-[#1F1F1F]">{stageMeta.label}</p>
-          <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">{stageMeta.helper}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-energy)]">Etapă evaluare</p>
+          <p className="text-lg font-semibold text-[var(--omni-ink)]">{stageMeta.label}</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">{stageMeta.helper}</p>
         </div>
-        <div className="space-y-1 text-xs uppercase tracking-[0.2em] text-[#5C4F45]">
-          <p className="font-semibold text-[#1F1F1F]">Ultima trimitere</p>
+        <div className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--omni-ink-soft)]">
+          <p className="font-semibold text-[var(--omni-ink)]">Ultima trimitere</p>
           <p>{submittedText}</p>
         </div>
         {mode === "full" ? (
-          <div className="space-y-1 text-xs uppercase tracking-[0.2em] text-[#5C4F45]">
-            <p className="font-semibold text-[#1F1F1F]">Omni-Cuno</p>
+          <div className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--omni-ink-soft)]">
+            <p className="font-semibold text-[var(--omni-ink)]">Omni-Cuno</p>
             <p>{typeof knowledgePercent === "number" ? `${knowledgePercent}%` : "în curs"}</p>
           </div>
         ) : null}
@@ -1019,15 +1019,15 @@ type QuestSuggestionListProps = {
 function QuestSuggestionList({ quests, completions, onToggle, lang }: QuestSuggestionListProps) {
   if (!quests.length) return null;
   return (
-    <section className="space-y-4 rounded-[14px] border border-[#E4D8CE] bg-white px-4 py-5">
+    <section className="space-y-4 rounded-[14px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-5">
       <header className="space-y-1">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
           {lang === "ro" ? "Quest recomandat" : "Recommended quest"}
         </p>
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "Aplică rezultatele" : "Apply your results"}
         </h3>
-        <p className="text-sm text-[#5C4F45]">
+        <p className="text-sm text-[var(--omni-ink-soft)]">
           {lang === "ro"
             ? "Bifează când finalizezi și treci la următorul."
             : "Check each quest off once you complete it."}
@@ -1040,24 +1040,24 @@ function QuestSuggestionList({ quests, completions, onToggle, lang }: QuestSugge
             <div
               key={quest.id}
               className={`space-y-2 rounded-[12px] border px-4 py-3 text-sm transition ${
-                done ? "border-[#CBE8D7] bg-[#F3FFF8]" : "border-[#F0E6DA] bg-[#FFFBF7]"
+                done ? "border-[var(--omni-success)] bg-[var(--omni-success-soft)]" : "border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]"
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="text-base font-semibold text-[#1F1F1F]">{quest.title}</h4>
-                <span className="rounded-full border border-[#D8C6B6] px-2 py-[2px] text-[10px] uppercase tracking-[0.3em] text-[#5C4F45]">
+                <h4 className="text-base font-semibold text-[var(--omni-ink)]">{quest.title}</h4>
+                <span className="rounded-full border border-[var(--omni-border-soft)] px-2 py-[2px] text-[10px] uppercase tracking-[0.3em] text-[var(--omni-ink-soft)]">
                   {quest.type}
                 </span>
               </div>
-              <p className="text-[#4A3A30]">{quest.body}</p>
+              <p className="text-[var(--omni-ink-soft)]">{quest.body}</p>
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={() => onToggle(quest.id)}
                   className={`rounded-[10px] border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] transition ${
                     done
-                      ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                      : "border-[#2C2C2C] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+                      ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                      : "border-[var(--omni-ink)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
                   }`}
                 >
                   {done
@@ -1066,7 +1066,7 @@ function QuestSuggestionList({ quests, completions, onToggle, lang }: QuestSugge
                       : "Marked done"
                     : quest.ctaLabel}
                 </button>
-                <p className="text-xs text-[#A08F82]">{quest.contextSummary}</p>
+                <p className="text-xs text-[var(--omni-muted)]">{quest.contextSummary}</p>
               </div>
             </div>
           );

@@ -61,7 +61,7 @@ export default function CenterColumnCards({
   return (
     <div
       className={`order-1 flex h-full flex-col gap-2 md:col-span-1 md:order-2 md:gap-3 lg:gap-4 ${
-        debugGrid ? "outline outline-1 outline-[#C24B17]/40" : ""
+        debugGrid ? "outline outline-1 outline-[var(--omni-energy-soft)]/40" : ""
       }`}
     >
       <div className="grid grid-cols-1 items-stretch gap-2 md:grid-cols-2 md:gap-3 lg:grid-cols-2 lg:gap-3">
@@ -90,13 +90,13 @@ export default function CenterColumnCards({
 function WelcomeCard({ lang, t, facts }: { lang: string; t: ReturnType<typeof useI18n>["t"]; facts: ProgressFact | null }) {
   return (
     <motion.div variants={fadeDelayed(0.08)} {...hoverScale} className="h-full">
-      <Card className="flex h-full flex-col rounded-xl border border-[#E4DAD1] bg-white p-2 shadow-sm sm:p-3">
+      <Card className="flex h-full flex-col rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2 shadow-sm sm:p-3">
         <motion.h2
           key="welcome-text"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0, transition: { duration: 0.35 } }}
           exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
-          className="mb-0.5 text-xs font-semibold text-[#7B6B60] sm:mb-1 sm:text-sm"
+          className="mb-0.5 text-xs font-semibold text-[var(--omni-muted)] sm:mb-1 sm:text-sm"
         >
           {getString(
             t,
@@ -118,8 +118,8 @@ function WelcomeCard({ lang, t, facts }: { lang: string; t: ReturnType<typeof us
 function OmniIntelCard({ lang, t, omniIntelScore, omniIntelDelta }: { lang: string; t: ReturnType<typeof useI18n>["t"]; omniIntelScore: number; omniIntelDelta: number | null }) {
   return (
     <motion.div variants={fadeDelayed(0.1)} {...hoverScale} className="h-full">
-      <Card className="flex h-full flex-col items-center justify-center rounded-xl border border-[#E4DAD1] bg-white p-2 shadow-sm sm:p-3">
-        <p className="mb-0.5 flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.16em] text-[#7B6B60] sm:mb-1 sm:text-[10px]">
+      <Card className="flex h-full flex-col items-center justify-center rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2 shadow-sm sm:p-3">
+        <p className="mb-0.5 flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--omni-muted)] sm:mb-1 sm:text-[10px]">
           {getString(
             t,
             "dashboard.omniIntel.small",
@@ -135,10 +135,10 @@ function OmniIntelCard({ lang, t, omniIntelScore, omniIntelDelta }: { lang: stri
           />
         </p>
         <div className="flex items-baseline gap-2">
-          <p className="text-xl font-bold text-[#C24B17] sm:text-2xl">{omniIntelScore}</p>
+          <p className="text-xl font-bold text-[var(--omni-energy-soft)] sm:text-2xl">{omniIntelScore}</p>
           {omniIntelDelta != null && Number.isFinite(omniIntelDelta) ? (
             <span
-              className={`text-[10px] font-semibold ${omniIntelDelta >= 0 ? "text-[#1F7A43]" : "text-[#B8000E]"}`}
+              className={`text-[10px] font-semibold ${omniIntelDelta >= 0 ? "text-[#1F7A43]" : "text-[var(--omni-danger)]"}`}
               title={getString(
                 t,
                 "dashboard.delta.vsLast",
@@ -150,7 +150,7 @@ function OmniIntelCard({ lang, t, omniIntelScore, omniIntelDelta }: { lang: stri
             </span>
           ) : null}
         </div>
-        <p className="mt-0.5 text-center text-[10px] text-[#7B6B60] sm:mt-1 sm:text-[11px]">
+        <p className="mt-0.5 text-center text-[10px] text-[var(--omni-muted)] sm:mt-1 sm:text-[11px]">
           {getString(
             t,
             "dashboard.omniIntel.level",
@@ -165,16 +165,16 @@ function OmniIntelCard({ lang, t, omniIntelScore, omniIntelDelta }: { lang: stri
 function FocusThemeCard({ lang, focusTheme }: { lang: string; focusTheme: FocusThemeInfo }) {
   return (
     <motion.div variants={fadeDelayed(0.11)} {...hoverScale} className="h-full md:col-span-2">
-      <Card className="flex h-full flex-col gap-3 rounded-2xl border border-[#F0E8E0] bg-white/85 p-3 shadow-sm sm:p-4">
-        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">
-          <span className="rounded-full bg-[#FFF3EC] px-2 py-0.5 text-[#C07963]">
+      <Card className="flex h-full flex-col gap-3 rounded-2xl border border-[#F0E8E0] bg-[var(--omni-surface-card)]/85 p-3 shadow-sm sm:p-4">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+          <span className="rounded-full bg-[var(--omni-energy-tint)] px-2 py-0.5 text-[var(--omni-energy)]">
             {lang === "ro" ? "Tematica" : "Theme"}
           </span>
           <span>{lang === "ro" ? "în focus" : "in focus"}</span>
         </div>
         <div>
-          <p className="text-[14px] font-semibold text-[#2C2C2C] sm:text-base">{focusTheme.area || (lang === "ro" ? "Nespecificat" : "Not set")}</p>
-          <p className="mt-1 text-[11px] text-[#7B6B60] sm:text-[13px]">{focusTheme.desc || (lang === "ro" ? "Alege o direcție prioritară pentru recomandări." : "Choose a priority focus to tailor recommendations.")}</p>
+          <p className="text-[14px] font-semibold text-[var(--omni-ink)] sm:text-base">{focusTheme.area || (lang === "ro" ? "Nespecificat" : "Not set")}</p>
+          <p className="mt-1 text-[11px] text-[var(--omni-muted)] sm:text-[13px]">{focusTheme.desc || (lang === "ro" ? "Alege o direcție prioritară pentru recomandări." : "Choose a priority focus to tailor recommendations.")}</p>
         </div>
       </Card>
     </motion.div>
@@ -213,23 +213,23 @@ export function TodayGuidanceCard({
   ];
   return (
     <motion.div variants={fadeDelayed(0.2)} {...hoverScale}>
-      <Card className="rounded-2xl border border-[#E4DAD1] bg-white p-3 shadow-sm sm:p-4">
+      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 shadow-sm sm:p-4">
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
             <span className={`rounded-full px-2 py-0.5 ${badge.cls}`}>{lang === "ro" ? badge.ro : badge.en}</span>
             <span>{lang === "ro" ? "ghidaj de azi" : "today guidance"}</span>
           </div>
-          <div className="space-y-2 rounded-2xl border border-[#E7DED3] bg-white/70 px-3 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B08A78] sm:text-xs">
+          <div className="space-y-2 rounded-2xl border border-[#E7DED3] bg-[var(--omni-surface-card)]/70 px-3 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)] sm:text-xs">
               {lang === "ro" ? "Recomandarea ta" : "Your recommendation"}
             </div>
             <div>
-              <p className="text-[14px] font-bold leading-tight text-[#2C2C2C] sm:text-base">{guidance.title}</p>
-              <p className="mt-1 text-[11px] text-[#7B6B60] sm:text-[12px]">{guidance.description}</p>
+              <p className="text-[14px] font-bold leading-tight text-[var(--omni-ink)] sm:text-base">{guidance.title}</p>
+              <p className="mt-1 text-[11px] text-[var(--omni-muted)] sm:text-[12px]">{guidance.description}</p>
             </div>
             <Link
               href={guidance.ctaHref}
-              className="group flex items-center justify-between rounded-full bg-[#C07963] px-5 py-2.5 text-white shadow-sm transition hover:bg-[#A45E4F]"
+              className="group flex items-center justify-between rounded-full bg-[var(--omni-energy)] px-5 py-2.5 text-white shadow-sm transition hover:bg-[var(--omni-energy-soft)]"
             >
               <span className="text-[11px] font-semibold uppercase tracking-[0.2em] sm:text-[12px]">
                 {guidance.ctaLabel}
@@ -237,17 +237,17 @@ export function TodayGuidanceCard({
               <span className="text-[10px] opacity-80">↗</span>
             </Link>
           </div>
-          <div className="rounded-2xl border border-dashed border-[#E4DAD1] bg-white/80 px-3 py-2">
-            <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.2em] text-[#A08F82]">
+          <div className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/80 px-3 py-2">
+            <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
               <span>{lang === "ro" ? "Variante rapide" : "Quick options"}</span>
               <span>~5 min</span>
             </div>
-            <div className="space-y-1 text-[11px] text-[#2C2C2C] sm:text-xs">
+            <div className="space-y-1 text-[11px] text-[var(--omni-ink)] sm:text-xs">
               {altLinks.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
-                  className="block rounded-[10px] border border-transparent px-2 py-1 transition hover:border-[#E4DAD1] hover:bg-[#FFFBF7]"
+                  className="block rounded-[10px] border border-transparent px-2 py-1 transition hover:border-[var(--omni-border-soft)] hover:bg-[var(--omni-bg-paper)]"
                 >
                   • {link.label}
                 </Link>

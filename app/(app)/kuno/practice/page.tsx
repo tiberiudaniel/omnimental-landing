@@ -4,6 +4,7 @@ import { Suspense, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
+import { AppShell } from '@/components/AppShell';
 import Toast from '@/components/Toast';
 import { useProfile } from '@/components/ProfileProvider';
 import { CUNO_QUESTIONS } from '@/lib/cunoQuestions';
@@ -121,20 +122,20 @@ function PracticeInner() {
     const moduleId = CATEGORY_TO_MODULE[cat ?? ""] ?? "emotional_balance";
     const omniHref = `/omni-kuno?area=${moduleId}&module=${moduleId}`;
     return (
-      <div className="mx-auto max-w-xl rounded-[14px] border border-[#E4D8CE] bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-[#2C2C2C]">Rezultat</h2>
-        <p className="mt-2 text-3xl font-bold text-[#C07963]">{s.percent}%</p>
-        <p className="mt-2 text-sm text-[#4A3A30]">
+      <div className="mx-auto max-w-xl rounded-[14px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-6 shadow-sm">
+        <h2 className="text-xl font-semibold text-[var(--omni-ink)]">Rezultat</h2>
+        <p className="mt-2 text-3xl font-bold text-[var(--omni-energy)]">{s.percent}%</p>
+        <p className="mt-2 text-sm text-[var(--omni-ink-soft)]">
           {cat ? 'Recomandare: continuă cu o lecție scurtă în aceeași categorie.' : 'Recomandare: încearcă o lecție scurtă pe o categorie utilă.'}
         </p>
         <Link
-          className="mt-2 inline-block rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+          className="mt-2 inline-block rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
           href={`/kuno/learn${cat ? `?cat=${encodeURIComponent(cat)}` : ''}`}
         >
           Mergi la lecții
         </Link>
         <button
-          className="mt-4 rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+          className="mt-4 rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
           onClick={async () => {
             await saveKunoAttempts(profile?.id, attempts, s.percent);
             try {
@@ -151,7 +152,7 @@ function PracticeInner() {
           Salvează și mergi la progress
         </button>
         <Link
-          className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[#C07963] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white"
+          className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-energy)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-energy)] transition hover:bg-[var(--omni-energy)] hover:text-white"
           href={omniHref}
         >
           Continuă în OmniKuno
@@ -167,14 +168,14 @@ function PracticeInner() {
 
   const q = current;
   return (
-    <div className="mx-auto max-w-xl rounded-[14px] border border-[#E4D8CE] bg-white p-6 shadow-sm">
-      <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">Întrebarea {Math.min(count + 1, n)}/{n}</p>
-      <h2 className="mt-2 text-xl sm:text-2xl font-semibold leading-snug text-[#1F1F1F]">{q?.question}</h2>
+    <div className="mx-auto max-w-xl rounded-[14px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-6 shadow-sm">
+      <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">Întrebarea {Math.min(count + 1, n)}/{n}</p>
+      <h2 className="mt-2 text-xl sm:text-2xl font-semibold leading-snug text-[var(--omni-ink)]">{q?.question}</h2>
       <div className="mt-3 grid gap-2">
         {(q?.options ?? []).map((opt, i) => (
           <button
             key={i}
-            className="rounded-[10px] border border-[#D8C6B6] px-3 py-2 text-left text-[13px] sm:text-sm text-[#2C2C2C] hover:border-[#2C2C2C]"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-2 text-left text-[13px] sm:text-sm text-[var(--omni-ink)] hover:border-[var(--omni-energy)]"
             onClick={() => onAnswer(i)}
             data-testid="practice-option"
           >
@@ -183,16 +184,16 @@ function PracticeInner() {
         ))}
       </div>
       {showFb ? (
-        <div className="mt-3 rounded-[10px] border border-[#E4DAD1] bg-[#FFFBF7] px-3 py-2">
+        <div className="mt-3 rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2">
           <p className={`text-sm ${wasCorrect ? 'text-[#1C5E3D]' : 'text-[#8A1F11]'}`}>
             {wasCorrect ? 'Corect' : 'Greșit'}
           </p>
           {lastExplanation ? (
-            <p className="mt-1 text-[13px] sm:text-sm leading-relaxed text-[#4A3A30]">{lastExplanation}</p>
+            <p className="mt-1 text-[13px] sm:text-sm leading-relaxed text-[var(--omni-ink-soft)]">{lastExplanation}</p>
           ) : null}
           <div className="mt-2">
             <button
-              className="rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+              className="rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
               onClick={() => {
                 setShowFb(false);
                 advanceNext();
@@ -210,13 +211,9 @@ function PracticeInner() {
 export default function PracticePage() {
   return (
     <Suspense fallback={null}>
-      <div className="min-h-screen bg-[#FDFCF9]">
-        {/* Render main content before header so first button is a quiz option (E2E stability) */}
-        <main className="px-4 py-8">
-          <PracticeInner />
-        </main>
-        <HeaderWithAuth />
-      </div>
+      <AppShell header={<HeaderWithAuth />} mainClassName="px-4 py-8">
+        <PracticeInner />
+      </AppShell>
     </Suspense>
   );
 }
@@ -226,5 +223,5 @@ function HeaderWithAuth() {
   const router = useRouter();
   const e2e = (search?.get('e2e') === '1') || (search?.get('demo') === '1');
   const goToAuth = () => router.push('/auth');
-  return <SiteHeader compact onAuthRequest={e2e ? undefined : goToAuth} />;
+  return <SiteHeader onAuthRequest={e2e ? undefined : goToAuth} />;
 }

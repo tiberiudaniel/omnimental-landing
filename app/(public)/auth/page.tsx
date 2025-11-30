@@ -15,6 +15,7 @@ import {
 import { getFirebaseAuth } from "@/lib/firebase";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
+import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import Toast from "@/components/Toast";
 
@@ -234,31 +235,30 @@ function AuthContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2]">
-      <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => {}} />
-      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-      <main className="mx-auto max-w-md px-4 py-12">
-        <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.06)]">
-          <h1 className="text-xl font-semibold text-[#1F1F1F]">
+    <>
+      <AppShell header={<SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => {}} />}>
+        <div className="mx-auto max-w-md px-4 py-12">
+        <section className="space-y-4 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 text-center shadow-[0_12px_28px_rgba(0,0,0,0.06)]">
+          <h1 className="text-xl font-semibold text-[var(--omni-ink)]">
             {isRo ? "Autentificare" : "Sign in"}
           </h1>
-          <p className="text-sm text-[#4A3A30]">
+          <p className="text-sm text-[var(--omni-ink-soft)]">
             {isRo
               ? "Alege metoda preferată pentru a intra în contul tău OmniMental."
               : "Choose how you want to access your OmniMental account."}
           </p>
-          {errorMessage ? <p className="text-sm text-[#8C2B2F]">{errorMessage}</p> : null}
+          {errorMessage ? <p className="text-sm text-[var(--omni-danger)]">{errorMessage}</p> : null}
 
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="w-full rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+            className="w-full rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
           >
             {isRo ? "Continuă cu Google" : "Continue with Google"}
           </button>
 
           <div className="space-y-2 border-t border-[#F0E4D9] pt-4 text-left">
-            <p className="text-xs text-[#4A3A30]">
+            <p className="text-xs text-[var(--omni-ink-soft)]">
               {isRo ? "Email + cod (15 minute)" : "Email + code (15 minutes)"}
             </p>
             <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-2">
@@ -267,7 +267,7 @@ function AuthContent() {
                 value={otpEmail}
                 onChange={(e) => setOtpEmail(e.target.value)}
                 placeholder="email@exemplu.com"
-                className="w-full rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
+                className="w-full rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
                 required
               />
               {otpSent ? (
@@ -276,14 +276,14 @@ function AuthContent() {
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value)}
                   placeholder={isRo ? "Codul primit" : "Your code"}
-                  className="w-full rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
+                  className="w-full rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
                   required
                 />
               ) : null}
               <button
                 type="submit"
                 disabled={otpSending || otpVerifying}
-                className="w-full rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
+                className="w-full rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] disabled:opacity-60"
               >
                 {otpSending
                   ? isRo
@@ -306,13 +306,13 @@ function AuthContent() {
 
           <div className="space-y-2 border-t border-[#F0E4D9] pt-4 text-left">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-[#4A3A30]">
+              <p className="text-xs text-[var(--omni-ink-soft)]">
                 {isRo ? "Preferi o parolă clasică?" : "Prefer a classic password?"}
               </p>
               <button
                 type="button"
                 onClick={() => setPwdMode((mode) => (mode === "login" ? "register" : "login"))}
-                className="text-[11px] font-semibold text-[#2C2C2C] underline"
+                className="text-[11px] font-semibold text-[var(--omni-ink)] underline"
               >
                 {pwdMode === "login"
                   ? isRo
@@ -330,7 +330,7 @@ function AuthContent() {
                 value={pwdEmail}
                 onChange={(e) => setPwdEmail(e.target.value)}
                 placeholder="email@exemplu.com"
-                className="w-full rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
+                className="w-full rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
                 autoComplete="email"
               />
               <input
@@ -338,13 +338,13 @@ function AuthContent() {
                 value={pwdPassword}
                 onChange={(e) => setPwdPassword(e.target.value)}
                 placeholder={isRo ? "Parolă" : "Password"}
-                className="w-full rounded-[10px] border border-[#E4D8CE] px-3 py-2 text-sm"
+                className="w-full rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
                 autoComplete="current-password"
               />
               <button
                 type="submit"
                 disabled={pwdLoading}
-                className="w-full rounded-[10px] border border-[#A08C7A] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7A6455] hover:bg-[#A08C7A] hover:text-white disabled:opacity-60"
+                className="w-full rounded-[10px] border border-[#A08C7A] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)] hover:bg-[#A08C7A] hover:text-white disabled:opacity-60"
               >
                 {pwdLoading
                   ? isRo
@@ -361,7 +361,7 @@ function AuthContent() {
             </form>
           </div>
 
-          <p className="text-[10px] text-[#7A6455]">
+          <p className="text-[10px] text-[var(--omni-muted)]">
             <Link href="/" className="underline">
               {isRo ? "Înapoi la pagina principală" : "Back to home"}
             </Link>
@@ -373,8 +373,10 @@ function AuthContent() {
             <Toast message={toastMessage} okLabel="OK" onClose={() => setToastMessage(null)} />
           </div>
         ) : null}
-      </main>
-    </div>
+        </div>
+      </AppShell>
+      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+    </>
   );
 }
 

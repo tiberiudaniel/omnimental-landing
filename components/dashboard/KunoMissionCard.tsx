@@ -97,6 +97,17 @@ export default function KunoMissionCard({
   const activeAccent =
     activeLesson?.type === "quiz" ? "var(--accent-main)" : "var(--accent-strong)";
   const activeBg = `color-mix(in srgb, ${activeAccent ?? "var(--accent-main)"} 12%, var(--bg-card))`;
+  const durationCopy = (() => {
+    if (!activeLesson) return null;
+    if (typeof activeLesson.durationMin === "number" && activeLesson.durationMin > 0) {
+      const rounded = Math.max(1, Math.round(activeLesson.durationMin));
+      return lang === "ro" ? `~${rounded} min` : `~${rounded} min`;
+    }
+    if (activeLesson.type === "quiz") {
+      return lang === "ro" ? "~3 min · mini-test" : "~3 min · mini-quiz";
+    }
+    return lang === "ro" ? "~6 min · lecție" : "~6 min · lesson";
+  })();
 
   return (
     <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
@@ -124,19 +135,19 @@ export default function KunoMissionCard({
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A8578]">
                     {lang === "ro" ? "Progres" : "Progress"}
                   </p>
-                  <p className="text-[13px] font-semibold text-[#2C2C2C]">
+                  <p className="text-[13px] font-semibold text-[var(--omni-ink)]">
                     {completedCount}/{totalLessons || 0}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A8578]">XP</p>
-                  <p className="text-[13px] font-semibold text-[#2C2C2C]">{xp}</p>
+                  <p className="text-[13px] font-semibold text-[var(--omni-ink)]">{xp}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A8578]">
                     {lang === "ro" ? "Scor" : "Score"}
                   </p>
-                  <p className="text-[13px] font-semibold text-[#2C2C2C]">
+                  <p className="text-[13px] font-semibold text-[var(--omni-ink)]">
                     {omniCunoScore}
                     {scoreDelta ? (
                       <span className={`ml-1 text-[11px] ${kunoDelta !== null && kunoDelta >= 0 ? "text-[#1F7A43]" : "text-[#B82B4F]"}`}>
@@ -159,18 +170,31 @@ export default function KunoMissionCard({
             >
               {ctaLabel}
             </button>
+            {moduleCompleted ? (
+              <p className="mt-2 text-[11px] text-[var(--omni-muted)]">
+                {lang === "ro"
+                  ? "Păstrează ritmul: completarea unui nou modul îți aduce un bonus suplimentar de XP."
+                  : "Keep the cadence going—finishing another module unlocks a fresh XP bonus."}
+              </p>
+            ) : (
+              <p className="mt-2 text-[11px] text-[var(--omni-muted)]">
+                {lang === "ro"
+                  ? `+${xp} XP estimate · ${durationCopy ?? "~5 min"}`
+                  : `+${xp} XP estimated · ${durationCopy ?? "~5 min"}`}
+              </p>
+            )}
           </div>
         }
       >
         <div data-testid="dashboard-kuno-card">
           <div
-            className="mt-2 space-y-1 rounded-2xl border bg-white px-3 py-2 shadow-sm"
+            className="mt-2 space-y-1 rounded-2xl border bg-[var(--omni-surface-card)] px-3 py-2 shadow-sm"
             style={{ borderColor: "var(--border-subtle)" }}
           >
             <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#9A8578]">
               {lang === "ro" ? "Acumulează cunoaștere pe" : "Build knowledge on"}
             </p>
-            <p className="text-[15px] font-semibold leading-tight text-[#2C2C2C] sm:text-[16px]">
+            <p className="text-[15px] font-semibold leading-tight text-[var(--omni-ink)] sm:text-[16px]">
               {focusLabel}
             </p>
           </div>
@@ -233,7 +257,7 @@ export default function KunoMissionCard({
                 ▶
               </span>
               <div>
-                <span className="text-xs uppercase tracking-[0.18em] text-[#A08F82]">
+                <span className="text-xs uppercase tracking-[0.18em] text-[var(--omni-muted)]">
                   {lang === "ro"
                     ? activeLessonOrder
                       ? `${activeLessonOrder}. Lecție`

@@ -12,7 +12,7 @@ function IndividualSessionsContent() {
   const navLinks = useNavigationLinks();
 
   return (
-    <div className="bg-[#FDFCF9] min-h-screen pb-24">
+    <div className="bg-[var(--omni-bg-main)] min-h-screen pb-24">
       <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
 

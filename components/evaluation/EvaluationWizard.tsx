@@ -148,12 +148,12 @@ export default function EvaluationWizard() {
 
   const header = (
     <header className="mb-4 flex items-center justify-between">
-      <div className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
+      <div className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
         {s("evalWizardTitle", lang === "ro" ? "Mini‑evaluare" : "Mini evaluation")}
       </div>
-      <div className="flex items-center gap-2 text-xs text-[#5C4F45]">
+      <div className="flex items-center gap-2 text-xs text-[var(--omni-ink-soft)]">
         <div className="flex h-2 w-40 overflow-hidden rounded-full bg-[#F0E6DA]">
-          <div className="bg-[#2C2C2C]" style={{ width: `${((step + 1) / 4) * 100}%` }} />
+          <div className="bg-[var(--omni-ink)]" style={{ width: `${((step + 1) / 4) * 100}%` }} />
         </div>
         <span>
           {step + 1} / 4
@@ -168,7 +168,7 @@ export default function EvaluationWizard() {
         type="button"
         onClick={back}
         disabled={step === 0}
-        className="rounded-[10px] border border-[#E4D8CE] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60"
+        className="rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] disabled:opacity-60"
       >
         {lang === "ro" ? "Înapoi" : "Back"}
       </button>
@@ -177,7 +177,7 @@ export default function EvaluationWizard() {
           type="button"
           onClick={next}
           disabled={!isStepValid(step)}
-          className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
+          className="rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] disabled:opacity-60"
         >
           {lang === "ro" ? "Continuă" : "Next"}
         </button>
@@ -186,7 +186,7 @@ export default function EvaluationWizard() {
           type="button"
           onClick={() => void doSubmit()}
           disabled={!isStepValid(step)}
-          className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012] disabled:opacity-60"
+          className="rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] disabled:opacity-60"
         >
           {lang === "ro" ? "Finalizează" : "Submit"}
         </button>
@@ -239,7 +239,7 @@ export default function EvaluationWizard() {
   const normSvs = useMemo(() => ensureLen(svs, svsItems.length || 5), [svs, svsItems.length]);
 
   return (
-    <section className="space-y-3 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+    <section className="space-y-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
       {header}
       {step === 0 ? (
         <Step1 answers={answers} setAnswers={setAnswers} lang={lang} />
@@ -272,7 +272,7 @@ export default function EvaluationWizard() {
           svsItems={svsItems}
         />
       )}
-      <div className="mt-1 text-[10px] text-[#7A6455]">
+      <div className="mt-1 text-[10px] text-[var(--omni-muted)]">
         {saving
           ? lang === "ro" ? "Se salvează…" : "Saving…"
           : lang === "ro" ? "Salvat" : "Saved"}
@@ -283,7 +283,7 @@ export default function EvaluationWizard() {
 }
 
 function Row({ children }: { children: React.ReactNode }) {
-  return <div className="flex items-center justify-between gap-3 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-3">{children}</div>;
+  return <div className="flex items-center justify-between gap-3 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3">{children}</div>;
 }
 
 type StepProps = {
@@ -296,25 +296,25 @@ function Step1({ answers, setAnswers, lang }: StepProps) {
   return (
     <div className="space-y-3">
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">
           {lang === "ro" ? "Cât de urgent simți să lucrezi acum?" : "How urgent does it feel to work on this now?"}
         </div>
         <div className="w-1/3 text-right">
           <input type="range" min={1} max={10} value={answers.urgency}
             onChange={(e) => setAnswers((a) => ({ ...a, urgency: Number(e.target.value) }))}
-            className="w-full accent-[#2C2C2C]" />
-          <div className="text-xs text-[#7A6455]">{answers.urgency} / 10</div>
+            className="w-full accent-[var(--omni-ink)]" />
+          <div className="text-xs text-[var(--omni-muted)]">{answers.urgency} / 10</div>
         </div>
       </Row>
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">
           {lang === "ro" ? "În cât timp vrei rezultate vizibile?" : "How fast do you want visible results?"}
         </div>
         <div className="w-1/3 text-right">
           <select
             value={answers.timeHorizon}
             onChange={(e) => setAnswers((a) => ({ ...a, timeHorizon: e.target.value as ResolutionSpeed }))}
-            className="w-full rounded-[8px] border border-[#E4D8CE] px-2 py-1 text-sm"
+            className="w-full rounded-[8px] border border-[var(--omni-border-soft)] px-2 py-1 text-sm"
           >
             <option value="days">{lang === "ro" ? "Zile" : "Days"}</option>
             <option value="weeks">{lang === "ro" ? "Săptămâni" : "Weeks"}</option>
@@ -323,14 +323,14 @@ function Step1({ answers, setAnswers, lang }: StepProps) {
         </div>
       </Row>
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">
           {lang === "ro" ? "Cât de hotărât(ă) ești să faci schimbări reale?" : "How determined are you to make real changes?"}
         </div>
         <div className="w-1/3 text-right">
           <input type="range" min={1} max={5} value={answers.determination}
             onChange={(e) => setAnswers((a) => ({ ...a, determination: Number(e.target.value) }))}
-            className="w-full accent-[#2C2C2C]" />
-          <div className="text-xs text-[#7A6455]">{answers.determination} / 5</div>
+            className="w-full accent-[var(--omni-ink)]" />
+          <div className="text-xs text-[var(--omni-muted)]">{answers.determination} / 5</div>
         </div>
       </Row>
     </div>
@@ -341,23 +341,23 @@ function Step2({ answers, setAnswers, lang }: StepProps) {
   return (
     <div className="space-y-3">
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">
           {lang === "ro" ? "Timp pe săptămână (ore)" : "Hours per week"}
         </div>
         <div className="w-1/3 text-right">
           <input type="range" min={0} max={8} value={answers.hoursPerWeek}
             onChange={(e) => setAnswers((a) => ({ ...a, hoursPerWeek: Number(e.target.value) }))}
-            className="w-full accent-[#2C2C2C]" />
-          <div className="text-xs text-[#7A6455]">{answers.hoursPerWeek}h</div>
+            className="w-full accent-[var(--omni-ink)]" />
+          <div className="text-xs text-[var(--omni-muted)]">{answers.hoursPerWeek}h</div>
         </div>
       </Row>
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">{lang === "ro" ? "Buget realist" : "Realistic budget"}</div>
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">{lang === "ro" ? "Buget realist" : "Realistic budget"}</div>
         <div className="w-1/3 text-right">
           <select
             value={answers.budgetLevel}
             onChange={(e) => setAnswers((a) => ({ ...a, budgetLevel: e.target.value as BudgetLevel }))}
-            className="w-full rounded-[8px] border border-[#E4D8CE] px-2 py-1 text-sm"
+            className="w-full rounded-[8px] border border-[var(--omni-border-soft)] px-2 py-1 text-sm"
           >
             <option value="low">{lang === "ro" ? "Minim" : "Low"}</option>
             <option value="medium">{lang === "ro" ? "Mediu" : "Medium"}</option>
@@ -366,12 +366,12 @@ function Step2({ answers, setAnswers, lang }: StepProps) {
         </div>
       </Row>
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">{lang === "ro" ? "Cum ai descrie ce vrei să lucrezi?" : "How would you describe your focus?"}</div>
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">{lang === "ro" ? "Cum ai descrie ce vrei să lucrezi?" : "How would you describe your focus?"}</div>
         <div className="w-1/3 text-right">
           <select
             value={answers.goalType}
             onChange={(e) => setAnswers((a) => ({ ...a, goalType: e.target.value as GoalType }))}
-            className="w-full rounded-[8px] border border-[#E4D8CE] px-2 py-1 text-sm"
+            className="w-full rounded-[8px] border border-[var(--omni-border-soft)] px-2 py-1 text-sm"
           >
             <option value="single">{lang === "ro" ? "Temă punctuală" : "Single"}</option>
             <option value="few">{lang === "ro" ? "2–3 zone" : "2–3 areas"}</option>
@@ -387,12 +387,12 @@ function Step3({ answers, setAnswers, lang }: StepProps) {
   return (
     <div className="space-y-3">
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">{lang === "ro" ? "Stare emoțională (ultimele 2 săptămâni)" : "Emotional state (last 2 weeks)"}</div>
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">{lang === "ro" ? "Stare emoțională (ultimele 2 săptămâni)" : "Emotional state (last 2 weeks)"}</div>
         <div className="w-1/3 text-right">
           <select
             value={answers.emotionalState}
             onChange={(e) => setAnswers((a) => ({ ...a, emotionalState: e.target.value as EmotionalState }))}
-            className="w-full rounded-[8px] border border-[#E4D8CE] px-2 py-1 text-sm"
+            className="w-full rounded-[8px] border border-[var(--omni-border-soft)] px-2 py-1 text-sm"
           >
             <option value="stable">{lang === "ro" ? "Stabilă" : "Stable"}</option>
             <option value="fluctuating">{lang === "ro" ? "Fluctuantă" : "Fluctuating"}</option>
@@ -401,23 +401,23 @@ function Step3({ answers, setAnswers, lang }: StepProps) {
         </div>
       </Row>
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">{lang === "ro" ? "Confort în grup" : "Group comfort"}</div>
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">{lang === "ro" ? "Confort în grup" : "Group comfort"}</div>
         <div className="w-1/3 text-right">
           <input type="range" min={1} max={10} value={answers.groupComfort}
             data-testid="groupComfort-slider"
             onChange={(e) => setAnswers((a) => ({ ...a, groupComfort: Number(e.target.value) }))}
-            className="w-full accent-[#2C2C2C]" />
-          <div className="text-xs text-[#7A6455]">{answers.groupComfort} / 10</div>
+            className="w-full accent-[var(--omni-ink)]" />
+          <div className="text-xs text-[var(--omni-muted)]">{answers.groupComfort} / 10</div>
         </div>
       </Row>
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">{lang === "ro" ? "Te ajută experiențele altora?" : "Do others' experiences help you?"}</div>
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">{lang === "ro" ? "Te ajută experiențele altora?" : "Do others' experiences help you?"}</div>
         <div className="w-1/3 text-right">
           <input type="range" min={1} max={10} value={answers.learnFromOthers}
             data-testid="learnFromOthers-slider"
             onChange={(e) => setAnswers((a) => ({ ...a, learnFromOthers: Number(e.target.value) }))}
-            className="w-full accent-[#2C2C2C]" />
-          <div className="text-xs text-[#7A6455]">{answers.learnFromOthers} / 10</div>
+            className="w-full accent-[var(--omni-ink)]" />
+          <div className="text-xs text-[var(--omni-muted)]">{answers.learnFromOthers} / 10</div>
         </div>
       </Row>
     </div>
@@ -469,22 +469,22 @@ function Step4({
   return (
     <div className="space-y-3">
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">{lang === "ro" ? "Potrivit cu program fix (12 săpt.)" : "Fit for fixed schedule (12 weeks)"}</div>
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">{lang === "ro" ? "Potrivit cu program fix (12 săpt.)" : "Fit for fixed schedule (12 weeks)"}</div>
         <div className="w-1/3 text-right">
           <input type="range" min={1} max={10} value={answers.scheduleFit}
             data-testid="scheduleFit-slider"
             onChange={(e) => setAnswers((a) => ({ ...a, scheduleFit: Number(e.target.value) }))}
-            className="w-full accent-[#2C2C2C]" />
-          <div className="text-xs text-[#7A6455]">{answers.scheduleFit} / 10</div>
+            className="w-full accent-[var(--omni-ink)]" />
+          <div className="text-xs text-[var(--omni-muted)]">{answers.scheduleFit} / 10</div>
         </div>
       </Row>
       <Row>
-        <div className="w-2/3 text-sm text-[#2C2C2C]">{lang === "ro" ? "Preferință declarată de format" : "Declared format preference"}</div>
+        <div className="w-2/3 text-sm text-[var(--omni-ink)]">{lang === "ro" ? "Preferință declarată de format" : "Declared format preference"}</div>
         <div className="w-1/3 text-right">
           <select
             value={answers.formatPreference}
             onChange={(e) => setAnswers((a) => ({ ...a, formatPreference: e.target.value as FormatPreference }))}
-            className="w-full rounded-[8px] border border-[#E4D8CE] px-2 py-1 text-sm"
+            className="w-full rounded-[8px] border border-[var(--omni-border-soft)] px-2 py-1 text-sm"
           >
             <option value="unsure">{lang === "ro" ? "Am nevoie de recomandare" : "Need recommendation"}</option>
             <option value="individual">{lang === "ro" ? "Sesiuni individuale" : "Individual sessions"}</option>
@@ -507,13 +507,13 @@ function Step4({
 
 function ScaleGroup({ title, values, setValues, items }: { title: string; values: number[]; setValues: (next: number[]) => void; items: string[] }) {
   return (
-    <div className="rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-3">
-      <p className="mb-2 text-sm font-semibold text-[#2C2C2C]">{title}</p>
+    <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-3">
+      <p className="mb-2 text-sm font-semibold text-[var(--omni-ink)]">{title}</p>
       <div className="space-y-2">
         {values.map((v, i) => (
           <div key={i} className="flex items-center gap-2">
-            <span className="w-6 text-xs text-[#7A6455]">{i + 1}.</span>
-            <span className="flex-1 truncate text-xs text-[#5C4F45]">{items[i] || (title + " " + (i + 1))}</span>
+            <span className="w-6 text-xs text-[var(--omni-muted)]">{i + 1}.</span>
+            <span className="flex-1 truncate text-xs text-[var(--omni-ink-soft)]">{items[i] || (title + " " + (i + 1))}</span>
             <input
               type="range"
               min={1}
@@ -524,9 +524,9 @@ function ScaleGroup({ title, values, setValues, items }: { title: string; values
                 next[i] = Number(e.target.value);
                 setValues(next);
               }}
-              className="w-full accent-[#2C2C2C]"
+              className="w-full accent-[var(--omni-ink)]"
             />
-            <span className="w-10 text-right text-xs text-[#7A6455]">{v}/5</span>
+            <span className="w-10 text-right text-xs text-[var(--omni-muted)]">{v}/5</span>
           </div>
         ))}
       </div>

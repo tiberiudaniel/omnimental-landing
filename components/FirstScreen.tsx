@@ -176,13 +176,13 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
   };
 
   return (
-    <section className="hero-canvas flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[#FDFCF9] px-6 py-16">
-      <div className="relative z-10 w-full max-w-3xl rounded-[12px] border border-[#E4D8CE] bg-white px-8 py-10 shadow-[0_8px_24px_rgba(31,41,55,0.08)]">
-        <div className="flex items-center gap-2 pb-6 text-xs font-semibold uppercase tracking-[0.35em] text-[#2C2C2C]">
-          <span className="h-[1px] w-10 bg-[#E60012]" />
+    <section className="hero-canvas flex min-h-[calc(100vh-96px)] w-full items-center justify-center bg-[var(--omni-bg-main)] px-6 py-16">
+      <div className="relative z-10 w-full max-w-3xl rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-8 py-10 shadow-[0_8px_24px_rgba(31,41,55,0.08)]">
+        <div className="flex items-center gap-2 pb-6 text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-ink)]">
+          <span className="h-[1px] w-10 bg-[var(--omni-energy)]" />
           OmniMental Coaching
         </div>
-        <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FDFCF9] px-6 py-6">
+        <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-6 py-6">
           <div className="w-full flex justify-center">
             <div className="max-w-xl w-full text-left">
               <MultiTypewriter
@@ -200,7 +200,7 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
 
           <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <div className="flex-1 rounded-[8px] border border-[#D8C6B6] bg-white transition hover:border-[#2C2C2C] focus-within:border-[#2C2C2C] focus-within:shadow-[0_0_0_1px_rgba(44,44,44,0.05)]">
+              <div className="flex-1 rounded-[8px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] transition hover:border-[var(--omni-energy)] focus-within:border-[var(--omni-ink)] focus-within:shadow-[0_0_0_1px_rgba(44,44,44,0.05)]">
                 <input
                   ref={inputRef}
                   type="text"
@@ -217,25 +217,25 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
                       void handleSubmit();
                     }
                   }}
-                  className="w-full rounded-[8px] bg-transparent px-4 py-3 text-base text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:outline-none"
+                  className="w-full rounded-[8px] bg-transparent px-4 py-3 text-base text-[var(--omni-ink)] placeholder:text-[var(--omni-muted)] transition focus:outline-none"
                 />
               </div>
               <button
                 onClick={() => handleSubmit()}
                 disabled={isSubmitting || !input.trim()}
-                className="inline-flex items-center justify-center rounded-[8px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012] disabled:cursor-not-allowed disabled:border-[#2C2C2C]/30 disabled:text-[#2C2C2C]/30"
+                className="inline-flex items-center justify-center rounded-[8px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] disabled:cursor-not-allowed disabled:border-[var(--omni-ink)]/30 disabled:text-[var(--omni-ink)]/30"
               >
                 {typeof continueLabel === "string" ? continueLabel : ""}
               </button>
             </div>
             {errorMessage ? (
               <div className="flex items-center gap-3">
-                <p className="text-xs text-[#B8000E]">{errorMessage}</p>
+                <p className="text-xs text-[var(--omni-danger)]">{errorMessage}</p>
                 {onAuthRequest && /conect|sign in/i.test(errorMessage) ? (
                   <button
                     type="button"
                     onClick={onAuthRequest}
-                    className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+                    className="rounded-[8px] border border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
                   >
                     {lang === "ro" ? "Autentifică-te" : "Sign in"}
                   </button>
@@ -247,18 +247,18 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
       </div>
 
         {showIdeas ? (
-          <div className="mt-6 rounded-[12px] border border-[#E4D8CE] bg-white px-5 py-5">
-            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+          <div className="mt-6 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-5">
+            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
               <span>{lang === "ro" ? "Teme principale" : "Primary themes"}</span>
               <button
                 type="button"
                 onClick={handlePrimaryRefresh}
-                className="text-[11px] uppercase tracking-[0.25em] text-[#C07963] transition hover:text-[#E60012]"
+                className="text-[11px] uppercase tracking-[0.25em] text-[var(--omni-energy)] transition hover:text-[var(--omni-energy)]"
               >
                 {lang === "ro" ? "Reîncarcă" : "Refresh"}
               </button>
             </div>
-            <p className="mt-2 text-xs text-[#7B6B60]">
+            <p className="mt-2 text-xs text-[var(--omni-muted)]">
               {lang === 'ro'
                 ? 'Alege una care rezonează cu tine, sau reîncarcă cu alte exemple.'
                 : 'Pick one that resonates with you, or refresh for other examples.'}
@@ -269,12 +269,12 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
                   type="button"
                   key={option.id}
                   onClick={() => handlePrimaryOptionSelect(option)}
-                  className="flex flex-col gap-1 rounded-[10px] border border-[#E9DED3] bg-white px-4 py-3 text-left transition hover:border-[#C9B8A8]"
+                  className="flex flex-col gap-1 rounded-[10px] border border-[#E9DED3] bg-[var(--omni-surface-card)] px-4 py-3 text-left transition hover:border-[#C9B8A8]"
                 >
-                  <span className="text-[10px] uppercase tracking-[0.12em] text-[#B9AFA7]">
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--omni-muted)]">
                     {categoryLabels[option.category]}
                   </span>
-                  <span className="text-sm text-[#2C2C2C]">{option.label}</span>
+                  <span className="text-sm text-[var(--omni-ink)]">{option.label}</span>
                 </button>
               ))}
             </div>
@@ -284,7 +284,7 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
         <div className="mt-6">
           <button
             onClick={() => setShowIdeas((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-[4px] border border-[#E4D8CE] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7B6B60] transition hover:border-[#C9B8A8] hover:text-[#C07963] focus:outline-none focus:ring-1 focus:ring-[#E4D8CE]"
+            className="inline-flex items-center gap-2 rounded-[4px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)] transition hover:border-[#C9B8A8] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[#E4D8CE]"
           >
             {showIdeas
               ? (lang === 'ro' ? 'Ascunde exemplele' : 'Hide examples')

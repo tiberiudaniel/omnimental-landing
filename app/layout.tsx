@@ -88,7 +88,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#0F172A",
+  themeColor: "var(--omni-ink)",
 };
 
 // Single RootLayout export
@@ -103,7 +103,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} ${cormorant.variable} ${courierPrime.variable}`}
       data-scroll-behavior="smooth"
     >
-      <body className="antialiased">
+      <body
+        className="antialiased min-h-screen"
+        style={{
+          backgroundColor: "var(--omni-bg-main)",
+          color: "var(--omni-ink)",
+        }}
+      >
         <AuthProvider>
           <ProfileProvider>
             <I18nProvider>

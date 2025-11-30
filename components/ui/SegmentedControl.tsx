@@ -34,8 +34,8 @@ export default function SegmentedControl<T extends string | number>({
             onClick={() => onChange(it.value)}
             className={`rounded-[10px] border px-3 py-1.5 text-sm transition ${
               active
-                ? "border-[#D8C6B6] bg-[#F2EAE0] text-[#2C2C2C]"
-                : "border-[#E8DCCE] bg-white text-[#2C2C2C] hover:border-[#D8C6B6]"
+                ? "border-[var(--omni-border-soft)] bg-[#F2EAE0] text-[var(--omni-ink)]"
+                : "border-[#E8DCCE] bg-[var(--omni-surface-card)] text-[var(--omni-ink)] hover:border-[var(--omni-border-soft)]"
             }`}
           >
             {it.label ?? String(it.value)}

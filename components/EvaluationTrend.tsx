@@ -24,7 +24,7 @@ const METRICS = [
   {
     key: "pssTotal",
     label: "Stres perceput (PSS)",
-    color: "#E60012",
+    color: "var(--omni-energy)",
     max: 40,
     invert: true,
     helper: "Mai mic = mai puțin stres",
@@ -144,7 +144,7 @@ function TrendLines({ rows, enabledMetrics }: { rows: ChartRow[]; enabledMetrics
   const xLabels = rows.map((row, idx) => (
     <div
       key={`${row.label}-${idx}`}
-      className="flex-1 text-center text-[11px] uppercase tracking-[0.2em] text-[#5C4F45]"
+      className="flex-1 text-center text-[11px] uppercase tracking-[0.2em] text-[var(--omni-ink-soft)]"
     >
       {row.label}
     </div>
@@ -172,7 +172,7 @@ function TrendLines({ rows, enabledMetrics }: { rows: ChartRow[]; enabledMetrics
         </svg>
       </div>
       <div className="flex justify-between gap-2">{xLabels}</div>
-      <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.25em] text-[#5C4F45]">
+      <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.25em] text-[var(--omni-ink-soft)]">
         {activeMetrics.map((metric) => (
           <div key={metric.key} className="flex items-center gap-2" title={metric.helper}>
             <span
@@ -198,9 +198,9 @@ function BaselineGrid({ rows }: { rows: ChartRow[] }) {
         return (
           <div
             key={metric.key}
-            className="space-y-2 rounded-[12px] border border-[#F0E6DA] bg-white px-4 py-4 shadow-[0_4px_12px_rgba(0,0,0,0.04)]"
+            className="space-y-2 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-4 shadow-[0_4px_12px_rgba(0,0,0,0.04)]"
           >
-            <div className="flex items-center justify-between text-sm font-semibold text-[#2C2C2C]" title={metric.helper}>
+            <div className="flex items-center justify-between text-sm font-semibold text-[var(--omni-ink)]" title={metric.helper}>
               <span>{metric.label}</span>
               <span>{value.toFixed(1)}</span>
             </div>
@@ -246,7 +246,7 @@ export function EvaluationTrend() {
 
   if (loading) {
     return (
-      <section className="rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 text-sm text-[#5C4F45] shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+      <section className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 text-sm text-[var(--omni-ink-soft)] shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
         Se încarcă istoricul evaluărilor…
       </section>
     );
@@ -254,7 +254,7 @@ export function EvaluationTrend() {
 
   if (error) {
     return (
-      <section className="rounded-[16px] border border-[#F4C7C3] bg-[#FFF5F4] px-6 py-6 text-sm text-[#8C2B2F] shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
+      <section className="rounded-[16px] border border-[var(--omni-danger)] bg-[var(--omni-danger-soft)] px-6 py-6 text-sm text-[var(--omni-danger)] shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
         Nu am putut încărca evoluția evaluărilor. {error.message}
       </section>
     );
@@ -262,7 +262,7 @@ export function EvaluationTrend() {
 
   if (!rows.length) {
     return (
-      <section className="rounded-[16px] border border-dashed border-[#D8C6B6] bg-white px-6 py-6 text-sm text-[#5C4F45] shadow-[0_8px_24px_rgba(0,0,0,0.03)]">
+      <section className="rounded-[16px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 text-sm text-[var(--omni-ink-soft)] shadow-[0_8px_24px_rgba(0,0,0,0.03)]">
         Graficele vor apărea automat după prima evaluare completă.
       </section>
     );
@@ -276,17 +276,17 @@ export function EvaluationTrend() {
   return (
     <section
       id="evaluation-progress"
-      className="rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.08)]"
+      className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.08)]"
     >
       <header className="space-y-2 text-center md:text-left">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">Evoluție evaluări</p>
-        <h2 className="text-2xl font-semibold text-[#1F1F1F]">Progresul tău în program</h2>
-        <p className="text-sm text-[#5C4F45]">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Evoluție evaluări</p>
+        <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">Progresul tău în program</h2>
+        <p className="text-sm text-[var(--omni-ink-soft)]">
           Monitorizăm stresul, autoeficacitatea, prezența și energia la fiecare 3 săptămâni.
         </p>
       </header>
       <div className="mt-6 space-y-4">
-        <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.25em] text-[#5C4F45]">
+        <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.25em] text-[var(--omni-ink-soft)]">
           {STAGE_FILTERS.map((stage) => {
             const active = stageFilter === stage.value;
             return (
@@ -295,7 +295,7 @@ export function EvaluationTrend() {
                 type="button"
                 onClick={() => setStageFilter(stage.value)}
                 className={`rounded-full border px-3 py-1 transition ${
-                  active ? "border-[#2C2C2C] bg-[#2C2C2C] text-white" : "border-[#D8C6B6] text-[#5C4F45]"
+                  active ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]" : "border-[var(--omni-border-soft)] text-[var(--omni-ink-soft)]"
                 }`}
               >
                 {stage.label}
@@ -304,7 +304,7 @@ export function EvaluationTrend() {
           })}
         </div>
         {filteredRows.length > 1 && (
-          <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.3em] text-[#5C4F45]">
+          <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.3em] text-[var(--omni-ink-soft)]">
             {METRICS.map((metric) => (
               <button
                 key={metric.key}
@@ -312,8 +312,8 @@ export function EvaluationTrend() {
                 onClick={() => toggleMetric(metric.key)}
                 className={`rounded-full border px-3 py-1 transition ${
                   enabledMetrics[metric.key]
-                    ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                    : "border-[#D8C6B6] text-[#5C4F45]"
+                    ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                    : "border-[var(--omni-border-soft)] text-[var(--omni-ink-soft)]"
                 }`}
               >
                 {metric.label}
@@ -322,7 +322,7 @@ export function EvaluationTrend() {
           </div>
         )}
         {!hasRowsForStage ? (
-          <div className="rounded-[12px] border border-dashed border-[#F0E6DA] bg-[#FFFBF7] px-4 py-4 text-sm text-[#5C4F45]">
+          <div className="rounded-[12px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4 text-sm text-[var(--omni-ink-soft)]">
             Nu avem încă date pentru etapa selectată. Alege altă etapă din filtru.
           </div>
         ) : filteredRows.length === 1 ? (
@@ -339,7 +339,7 @@ export function EvaluationTrend() {
 function MetricSummaryGrid({ latest, previous }: { latest: ChartRow | null; previous: ChartRow | null }) {
   if (!latest) return null;
   return (
-    <div className="grid gap-3 rounded-[16px] border border-[#F5EBE0] bg-[#FFFBF7] px-4 py-4 md:grid-cols-2">
+    <div className="grid gap-3 rounded-[16px] border border-[#F5EBE0] bg-[var(--omni-bg-paper)] px-4 py-4 md:grid-cols-2">
       {METRICS.map((metric) => {
         const current = latest.values[metric.key];
         if (typeof current !== "number") {
@@ -356,20 +356,20 @@ function MetricSummaryGrid({ latest, previous }: { latest: ChartRow | null; prev
             ? delta < 0
             : delta > 0;
         return (
-          <div key={metric.key} className="flex flex-col gap-1 rounded-[12px] border border-[#F0E6DA] bg-white px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_4px_14px_rgba(0,0,0,0.04)]">
-            <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+          <div key={metric.key} className="flex flex-col gap-1 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-3 text-sm text-[var(--omni-ink)] shadow-[0_4px_14px_rgba(0,0,0,0.04)]">
+            <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
               <span>{metric.label}</span>
-              <span className="text-[#5C4F45]">{latest.label}</span>
+              <span className="text-[var(--omni-ink-soft)]">{latest.label}</span>
             </div>
             <div className="flex items-end gap-3">
-              <p className="text-2xl font-semibold text-[#1F1F1F]">{current.toFixed(1)}</p>
+              <p className="text-2xl font-semibold text-[var(--omni-ink)]">{current.toFixed(1)}</p>
               <span
                 className={`text-xs font-semibold uppercase tracking-[0.3em] ${
                   improved === null
-                    ? "text-[#A08F82]"
+                    ? "text-[var(--omni-muted)]"
                     : improved
                     ? "text-[#0F6D45]"
-                    : "text-[#E60012]"
+                    : "text-[var(--omni-energy)]"
                 }`}
                 title={
                   improved === null
@@ -382,7 +382,7 @@ function MetricSummaryGrid({ latest, previous }: { latest: ChartRow | null; prev
                 {deltaText}
               </span>
             </div>
-            <p className="text-xs text-[#5C4F45]">{metric.helper}</p>
+            <p className="text-xs text-[var(--omni-ink-soft)]">{metric.helper}</p>
           </div>
         );
       })}

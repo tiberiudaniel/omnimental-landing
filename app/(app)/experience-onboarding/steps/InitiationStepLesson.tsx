@@ -322,7 +322,7 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
     return (
       <section className="space-y-4">
         <div
-          className="rounded-[16px] border px-6 py-6 shadow-sm"
+          className="omni-card px-6 py-6"
           style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
         >
           <Typewriter text={lang === 'ro' ? 'Inițiere completă! Felicitări.' : 'Initiation complete! Well done.'} />

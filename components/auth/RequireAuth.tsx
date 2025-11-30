@@ -40,7 +40,7 @@ export default function RequireAuth({ children, redirectTo, loadingLabel }: Requ
     const message =
       typeof navigator !== "undefined" && navigator.language?.startsWith("ro") ? ro : en;
     return (
-      <div className="flex min-h-[50vh] w-full items-center justify-center px-4 text-sm text-[#4A3A30]">
+      <div className="flex min-h-[50vh] w-full items-center justify-center px-4 text-sm text-[var(--omni-ink-soft)]">
         {message}
       </div>
     );

@@ -18,7 +18,7 @@ export default function StepProgressRedirect({ onRedirect }: { onRedirect: () =>
   }, [e2e, onRedirect]);
   return (
     <section
-      className="rounded-[16px] border px-6 py-8 text-center shadow-sm"
+      className="omni-card px-6 py-8 text-center"
       style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
     >
       <div

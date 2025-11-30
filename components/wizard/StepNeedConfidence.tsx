@@ -44,7 +44,7 @@ export default function StepNeedConfidence({ selectedOptions, onDone }: { select
   };
   return (
     <section className="space-y-4" data-testid={getWizardStepTestId("needConfidence")}>
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
+      <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-sm">
         <TypewriterText text={lang === 'ro' ? q.label.ro : q.label.en} />
       </div>
       <GuideCard title={lang === 'ro' ? 'Alege varianta care te descrie' : 'Choose the option that fits you'}>
@@ -58,7 +58,7 @@ export default function StepNeedConfidence({ selectedOptions, onDone }: { select
                 type="button"
                 aria-label={`${v}: ${full}`}
                 onClick={() => setScore(v)}
-                className={`rounded-[10px] border px-3 py-2 text-sm ${score===v?'border-[#1F7A53] bg-[#F0FFF6]':'border-[#E4DAD1] bg-white hover:border-[#2C2C2C]'}`}
+                className={`rounded-[10px] border px-3 py-2 text-sm ${score===v?'border-[#1F7A53] bg-[#F0FFF6]':'border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] hover:border-[var(--omni-energy)]'}`}
                 data-testid={`need-confidence-option-${v}`}
               >
                 {short}
@@ -66,12 +66,12 @@ export default function StepNeedConfidence({ selectedOptions, onDone }: { select
             );
           })}
         </div>
-        <div className="mt-4 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A08F82]">{lang === 'ro' ? 'Rezultatul tău acum' : 'Your result now'}</p>
+        <div className="mt-4 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">{lang === 'ro' ? 'Rezultatul tău acum' : 'Your result now'}</p>
           {fb ? (
             <div className="mt-1">
-              <p className="text-sm font-semibold text-[#2C2C2C]">{lang === 'ro' ? fb.title.ro : fb.title.en}</p>
-              <p className="mt-1 text-[13px] text-[#4A3A30]">{lang === 'ro' ? fb.text.ro : fb.text.en}</p>
+              <p className="text-sm font-semibold text-[var(--omni-ink)]">{lang === 'ro' ? fb.title.ro : fb.title.en}</p>
+              <p className="mt-1 text-[13px] text-[var(--omni-ink-soft)]">{lang === 'ro' ? fb.text.ro : fb.text.en}</p>
             </div>
           ) : null}
         </div>
@@ -80,7 +80,7 @@ export default function StepNeedConfidence({ selectedOptions, onDone }: { select
             type="button"
             disabled={saving || score === null}
             onClick={save}
-            className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] disabled:opacity-60 hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
             data-testid="need-confidence-continue"
           >
             {lang === 'ro' ? 'Continuă' : 'Continue'}

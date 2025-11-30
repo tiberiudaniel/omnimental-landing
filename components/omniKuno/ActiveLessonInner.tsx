@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import LessonView from "./LessonView";
 import QuizView from "./QuizView";
 import type { OmniKunoModuleConfig, OmniKunoLesson } from "@/config/omniKunoLessons";
@@ -30,6 +31,16 @@ export default function ActiveLessonInner({
   onLessonCompleted,
   onProgressChange,
 }: ActiveLessonInnerProps) {
+  const lessonId = lesson?.id ?? "";
+
+  const handleStepChange = useCallback(
+    (current: number, total: number) => {
+      if (!onProgressChange || !lessonId) return;
+      onProgressChange(lessonId, current, total);
+    },
+    [lessonId, onProgressChange],
+  );
+
   if (!lesson) return null;
 
   if (lesson.type === "quiz") {
@@ -42,7 +53,7 @@ export default function ActiveLessonInner({
         ownerId={ownerId}
         performanceSnapshot={performanceSnapshot}
         showHeader={false}
-        onStepChange={(current, total) => onProgressChange?.(lesson.id, current, total)}
+        onStepChange={handleStepChange}
         onCompleted={(lessonId, meta) => onLessonCompleted(lessonId, meta)}
       />
     );
@@ -57,7 +68,7 @@ export default function ActiveLessonInner({
       ownerId={ownerId}
       performanceSnapshot={performanceSnapshot}
       onCompleted={(lessonId, meta) => onLessonCompleted(lessonId, meta)}
-      onStepChange={(current, total) => onProgressChange?.(lesson.id, current, total)}
+      onStepChange={handleStepChange}
       showHeader={false}
     />
   );

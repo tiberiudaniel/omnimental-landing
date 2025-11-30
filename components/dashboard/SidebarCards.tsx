@@ -59,7 +59,7 @@ export default function SidebarCards({
   return (
     <div
       className={`mt-2 flex flex-col gap-2 md:mt-3 md:gap-3 lg:mt-0 lg:w-[320px] lg:flex-none lg:gap-4 ${
-        debugGrid ? "outline outline-1 outline-[#C24B17]/40" : ""
+        debugGrid ? "outline outline-1 outline-[var(--omni-energy-soft)]/40" : ""
       }`}
     >
       <motion.div variants={fadeDelayed(0.16)} {...hoverScale}>
@@ -103,7 +103,7 @@ function DailyInsightCard({ lang, t, insight }: { lang: string; t: ReturnType<ty
         <h3 className="sr-only">
           {getString(t, "dashboard.insightTitle", lang === "ro" ? "Revelația zilei" : "Insight of the Day")}
         </h3>
-        <div className="relative rounded-2xl border border-transparent bg-white/60 px-3 py-4 text-[#3E2F27] shadow-none">
+        <div className="relative rounded-2xl border border-transparent bg-[var(--omni-surface-card)]/60 px-3 py-4 text-[#3E2F27] shadow-none">
           <span className="absolute -top-1 left-2 text-xl text-[#E3D3C6]">“</span>
           <p
             id="daily-insight-text"
@@ -133,8 +133,8 @@ function DailyInsightCard({ lang, t, insight }: { lang: string; t: ReturnType<ty
 
 function PracticeSnapshotCard({ prog }: { prog: ReturnType<typeof adaptProgressFacts> }) {
   return (
-    <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
-      <h4 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">Practice snapshot</h4>
+    <Card className="flex flex-col justify-between rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2.5 shadow-sm sm:p-3">
+      <h4 className="mb-1 text-xs font-semibold text-[var(--omni-muted)] sm:mb-2 sm:text-sm">Practice snapshot</h4>
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <Metric label="Reflections" value={prog.reflectionCount} testId="metric-reflections" />
         <Metric label="Breathing min" value={prog.breathingCount} />
@@ -162,42 +162,42 @@ function TodaysQuestCard({ lang, t, quest, questPreview, questExpanded, setQuest
     </div>
   );
   return (
-    <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-white px-3 py-2 shadow-sm sm:px-4 sm:py-3 h-auto">
-      <h3 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">{getString(t, "dashboard.todayQuest", lang === "ro" ? "Provocarea de azi" : "Today’s quest")}</h3>
+    <Card className="flex flex-col justify-between rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-3 py-2 shadow-sm sm:px-4 sm:py-3 h-auto">
+      <h3 className="mb-1 text-xs font-semibold text-[var(--omni-muted)] sm:mb-2 sm:text-sm">{getString(t, "dashboard.todayQuest", lang === "ro" ? "Provocarea de azi" : "Today’s quest")}</h3>
       <div className="relative">
-        <p className="text-[11px] leading-relaxed text-[#2C2C2C] sm:text-xs">{questExpanded ? quest.text : questPreview}</p>
+        <p className="text-[11px] leading-relaxed text-[var(--omni-ink)] sm:text-xs">{questExpanded ? quest.text : questPreview}</p>
       </div>
       <div className="mt-1 flex items-center justify-between sm:mt-2">
-        <p className="text-[9px] uppercase tracking-[0.16em] text-[#A08F82] sm:text-[10px]">{lang === "ro" ? "Aplică azi, în viața reală." : "Apply today, in real life."}</p>
+        <p className="text-[9px] uppercase tracking-[0.16em] text-[var(--omni-muted)] sm:text-[10px]">{lang === "ro" ? "Aplică azi, în viața reală." : "Apply today, in real life."}</p>
         {(quest?.text || "").length > (questPreview?.length || 0) ? (
-          <button type="button" onClick={() => setQuestExpanded((v) => !v)} className="text-[11px] font-semibold text-[#7B6B60] underline hover:text-[#2C2C2C]">
+          <button type="button" onClick={() => setQuestExpanded((v) => !v)} className="text-[11px] font-semibold text-[var(--omni-muted)] underline hover:text-[var(--omni-ink)]">
             {questExpanded ? (lang === "ro" ? "Mai puțin" : "Less") : lang === "ro" ? "Vezi tot" : "More"}
           </button>
         ) : (
           <span className="text-[11px] text-transparent">—</span>
         )}
       </div>
-      <div className="mt-3 space-y-2 rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] px-3 py-2">
-        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#B08A78]">
+      <div className="mt-3 space-y-2 rounded-2xl border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
           <span className={`rounded-full border px-2 py-0.5 ${snapshot.badge.cls}`}>{snapshot.badge.text}</span>
           <span>{lang === "ro" ? "Starea ta acum" : "Your current state"}</span>
         </div>
-        <div className="space-y-1.5 text-[10px] text-[#7B6B60] sm:text-[11px]">
+        <div className="space-y-1.5 text-[10px] text-[var(--omni-muted)] sm:text-[11px]">
           <div>
-            <p className="font-semibold text-[#2C2C2C]">{lang === "ro" ? "Energia" : "Energy"}</p>
+            <p className="font-semibold text-[var(--omni-ink)]">{lang === "ro" ? "Energia" : "Energy"}</p>
             {makeBar(snapshot.energy / 10, "#F7B267")}
           </div>
           <div>
-            <p className="font-semibold text-[#2C2C2C]">{lang === "ro" ? "Echilibrul emoțional" : "Emotional balance"}</p>
+            <p className="font-semibold text-[var(--omni-ink)]">{lang === "ro" ? "Echilibrul emoțional" : "Emotional balance"}</p>
             {makeBar((10 - snapshot.stress) / 10, "#C27BA0")}
           </div>
           <div>
-            <p className="font-semibold text-[#2C2C2C]">{lang === "ro" ? "Claritatea" : "Clarity"}</p>
+            <p className="font-semibold text-[var(--omni-ink)]">{lang === "ro" ? "Claritatea" : "Clarity"}</p>
             {makeBar(snapshot.clarity / 10, "#6A9FB5")}
           </div>
         </div>
-        <div className="rounded-2xl border border-[#EADFD4] bg-white px-3 py-2 text-[11px] text-[#4D3F36] sm:text-xs">
-          <p className="text-[11px] font-semibold text-[#2C2C2C] sm:text-xs">{lang === "ro" ? "De ce această recomandare" : "Why this recommendation"}</p>
+        <div className="rounded-2xl border border-[#EADFD4] bg-[var(--omni-surface-card)] px-3 py-2 text-[11px] text-[#4D3F36] sm:text-xs">
+          <p className="text-[11px] font-semibold text-[var(--omni-ink)] sm:text-xs">{lang === "ro" ? "De ce această recomandare" : "Why this recommendation"}</p>
           <p>{snapshot.why}</p>
         </div>
       </div>
@@ -207,11 +207,11 @@ function TodaysQuestCard({ lang, t, quest, questPreview, questExpanded, setQuest
 
 function AchievementBanner({ lang, setAchvDismissed }: { lang: string; setAchvDismissed: Dispatch<SetStateAction<boolean>> }) {
   return (
-    <div className="mt-1 rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] p-2 text-sm text-[#1F3C2F] sm:mt-2 sm:p-3">
+    <div className="mt-1 rounded-xl border border-[var(--omni-success)] bg-[var(--omni-success-soft)] p-2 text-sm text-[var(--omni-ink-soft)] sm:mt-2 sm:p-3">
       <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2">
         <p className="text-[13px] font-medium sm:text-sm">{lang === "ro" ? "Prima treaptă atinsă: Claritate mentală" : "First milestone reached: Clarity"}</p>
         <div className="flex items-center gap-1 sm:gap-2">
-          <Link href="/antrenament" className="rounded border border-[#1F3C2F] px-1.5 py-0.5 text-[10px] hover:bg-[#1F3C2F] hover:text-white sm:px-2 sm:text-[11px]" aria-label="Go to Training">
+          <Link href="/antrenament" className="rounded border border-[var(--omni-ink-soft)] px-1.5 py-0.5 text-[10px] hover:bg-[var(--omni-ink-soft)] hover:text-white sm:px-2 sm:text-[11px]" aria-label="Go to Training">
             {lang === "ro" ? "Începe antrenamentul" : "Go to Training"}
           </Link>
           <button
@@ -220,14 +220,14 @@ function AchievementBanner({ lang, setAchvDismissed }: { lang: string; setAchvDi
               if (typeof window !== "undefined") window.localStorage.setItem("omni_onboarding_achv_dismissed", "1");
               setAchvDismissed(true);
             }}
-            className="rounded border border-[#1F3C2F] px-1.5 py-0.5 text-[10px] sm:px-2 sm:text-[11px]"
+            className="rounded border border-[var(--omni-ink-soft)] px-1.5 py-0.5 text-[10px] sm:px-2 sm:text-[11px]"
             aria-label="Dismiss achievement"
           >
             {lang === "ro" ? "OK" : "OK"}
           </button>
         </div>
       </div>
-      <p className="mt-0.5 text-[12px] text-[#1F3C2F] sm:mt-1 sm:text-[12px]">
+      <p className="mt-0.5 text-[12px] text-[var(--omni-ink-soft)] sm:mt-1 sm:text-[12px]">
         {lang === "ro" ? "Ai trecut prin primele două etape. Continuă cu exercițiile scurte pentru a stabiliza progresul." : "You’ve completed the first two steps. Continue with short exercises to stabilize progress."}
       </p>
     </div>
@@ -236,11 +236,11 @@ function AchievementBanner({ lang, setAchvDismissed }: { lang: string; setAchvDi
 
 function SimulatedInsightsCard({ lang, t, insights }: { lang: string; t: ReturnType<typeof useI18n>["t"]; insights: string[] }) {
   return (
-    <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2 shadow-sm sm:p-3">
-      <h3 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">{getString(t, "dashboard.initialInsights", lang === "ro" ? "Insight-uri inițiale" : "Initial insights")}</h3>
+    <Card className="rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2 shadow-sm sm:p-3">
+      <h3 className="mb-1 text-xs font-semibold text-[var(--omni-muted)] sm:mb-2 sm:text-sm">{getString(t, "dashboard.initialInsights", lang === "ro" ? "Insight-uri inițiale" : "Initial insights")}</h3>
       <div className="flex flex-wrap gap-1 sm:gap-2">
         {insights.map((tag, i) => (
-          <span key={`${tag}-${i}`} className="rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-0.5 text-[10px] text-[#2C2C2C] sm:px-2.5 sm:text-[11px]">
+          <span key={`${tag}-${i}`} className="rounded-full border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-2 py-0.5 text-[10px] text-[var(--omni-ink)] sm:px-2.5 sm:text-[11px]">
             {tag}
           </span>
         ))}

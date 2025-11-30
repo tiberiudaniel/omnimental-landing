@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
+import { AppShell } from "@/components/AppShell";
+import { OmniCard } from "@/components/OmniCard";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useI18n } from "@/components/I18nProvider";
 import { useProfile } from "@/components/ProfileProvider";
@@ -105,17 +107,19 @@ export default function CollectiblesPage() {
       : "Unlock these cards after key Arc 1 lessons. Each one represents a practical protocol you can reactivate anytime.";
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#2C2C2C]">
-      <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />
-      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-      <main className="mx-auto max-w-5xl px-4 py-10">
-        <section className="rounded-3xl border border-[#E4DAD1] bg-white/95 p-6 shadow-sm sm:p-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#B08A78]">
+    <>
+      <AppShell
+        header={<SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />}
+        mainClassName="text-[var(--omni-ink)]"
+      >
+        <div className="mx-auto max-w-5xl px-4 py-10">
+        <OmniCard className="p-6 shadow-sm sm:p-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {lang === "ro" ? "Colecții mentale" : "Mental collectibles"}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold text-[#2C2C2C] sm:text-4xl">{headerTitle}</h1>
-          <p className="mt-3 text-sm leading-relaxed text-[#5A4334] sm:text-base">{headerCopy}</p>
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-[12px] text-[#7B6B60]">
+          <h1 className="mt-2 text-3xl font-semibold text-[var(--omni-ink)] sm:text-4xl">{headerTitle}</h1>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--omni-muted)] sm:text-base">{headerCopy}</p>
+          <div className="mt-4 flex flex-wrap items-center gap-3 text-[12px] text-[var(--omni-muted)]">
             <div className="rounded-2xl border border-[#DECFC0] bg-[#FFF8F0] px-3 py-1.5">
               {lang === "ro" ? "Deblocate" : "Unlocked"}: {unlockedCount}/{totalCollectibles}
             </div>
@@ -128,26 +132,26 @@ export default function CollectiblesPage() {
             <div className="ml-auto flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.2em]">
               <Link
                 href="/omni-kuno"
-                className="rounded-full border border-[#C5B29E] px-3 py-1 text-[#5A3E2B] hover:border-[#8B5A3A]"
+                className="rounded-full border border-[#C5B29E] px-3 py-1 text-[var(--omni-ink-soft)] hover:border-[#8B5A3A]"
               >
                 {lang === "ro" ? "Continuă OmniKuno" : "Continue OmniKuno"}
               </Link>
               <Link
                 href="/mental-universe"
-                className="rounded-full border border-transparent bg-[#F5EAE0] px-3 py-1 text-[#5A3E2B] hover:border-[#C5B29E]"
+                className="rounded-full border border-transparent bg-[#F5EAE0] px-3 py-1 text-[var(--omni-ink-soft)] hover:border-[#C5B29E]"
               >
                 {lang === "ro" ? "Vezi harta" : "View map"}
               </Link>
             </div>
           </div>
-        </section>
+        </OmniCard>
 
         <section className="mt-8 space-y-4">
           <div>
-            <h2 className="text-xl font-semibold text-[#2D2017]">
+            <h2 className="text-xl font-semibold text-[var(--omni-ink)]">
               {lang === "ro" ? "Protocoale deblocate" : "Unlocked protocols"}
             </h2>
-            <p className="text-sm text-[#7B6B60]">
+            <p className="text-sm text-[var(--omni-muted)]">
               {lang === "ro"
                 ? unlockedList.length
                   ? "Notează-le în jurnal și revino la ele înainte de sesiunile grele."
@@ -170,7 +174,7 @@ export default function CollectiblesPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-[#E6DAD0] bg-white/70 px-4 py-6 text-sm text-[#7B6B60]">
+            <div className="rounded-3xl border border-dashed border-[#E6DAD0] bg-[var(--omni-surface-card)]/70 px-4 py-6 text-sm text-[var(--omni-muted)]">
               {lang === "ro"
                 ? "Continuă lecțiile Arc 1 pentru a dezvălui protocoale exclusive."
                 : "Continue Arc 1 lessons to reveal exclusive protocols."}
@@ -179,12 +183,12 @@ export default function CollectiblesPage() {
         </section>
 
         {lockedList.length ? (
-          <section className="mt-10 space-y-4">
+          <OmniCard className="mt-10 space-y-4 p-6">
             <div>
-              <h2 className="text-xl font-semibold text-[#2D2017]">
+              <h2 className="text-xl font-semibold text-[var(--omni-ink)]">
                 {lang === "ro" ? "În pregătire" : "In progress"}
               </h2>
-              <p className="text-sm text-[#7B6B60]">
+              <p className="text-sm text-[var(--omni-muted)]">
                 {lang === "ro"
                   ? "Aceste carduri se vor activa pe măsură ce finalizezi lecțiile Arc 1."
                   : "These cards activate as you finish Arc 1 lessons."}
@@ -201,18 +205,20 @@ export default function CollectiblesPage() {
                 />
               ))}
             </div>
-          </section>
+          </OmniCard>
         ) : null}
-      </main>
-      {selectedCollectible ? (
+        {selectedCollectible ? (
         <CollectibleDetailDialog
           collectible={selectedCollectible}
           lang={lang}
           unlocked={selectedUnlocked}
           onClose={() => setSelectedCollectibleId(null)}
         />
-      ) : null}
-    </div>
+        ) : null}
+        </div>
+      </AppShell>
+      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+    </>
   );
 }
 
@@ -231,23 +237,23 @@ function CollectibleCard({
   return (
     <div
       className={`rounded-3xl border px-4 py-5 ${
-        unlocked ? "border-[#E6DAD0] bg-white shadow-sm" : "border-dashed border-[#E6DAD0] bg-[#F7F0E7]"
+        unlocked ? "border-[#E6DAD0] bg-[var(--omni-surface-card)] shadow-sm" : "border-dashed border-[#E6DAD0] bg-[#F7F0E7]"
       }`}
     >
       <div className="flex items-center justify-between">
         <span className="text-3xl">{icon}</span>
         <span
           className={`text-[11px] font-semibold uppercase tracking-[0.3em] ${
-            unlocked ? "text-[#1F7A43]" : "text-[#B08A78]"
+            unlocked ? "text-[#1F7A43]" : "text-[var(--omni-muted)]"
           }`}
         >
           {unlocked ? (lang === "ro" ? "Deblocat" : "Unlocked") : lang === "ro" ? "În curând" : "Locked"}
         </span>
       </div>
-      <h3 className="mt-3 text-lg font-semibold text-[#2D2017]">{collectible.title}</h3>
-      <p className="mt-1 text-sm text-[#5A4334]">{collectible.shortDescription}</p>
+      <h3 className="mt-3 text-lg font-semibold text-[var(--omni-ink)]">{collectible.title}</h3>
+      <p className="mt-1 text-sm text-[var(--omni-muted)]">{collectible.shortDescription}</p>
       {collectible.unlockAfterLessonIds?.length ? (
-        <p className="mt-3 text-[11px] uppercase tracking-[0.2em] text-[#A08F82]">
+        <p className="mt-3 text-[11px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">
           {lang === "ro"
             ? `Se activează după ${collectible.unlockAfterLessonIds.length} lecții`
             : `Unlocks after ${collectible.unlockAfterLessonIds.length} lessons`}
@@ -278,11 +284,11 @@ function CollectibleDetailDialog({
   const lessons = collectible.unlockAfterLessonIds ?? [];
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4 py-6">
-      <div className="relative w-full max-w-2xl rounded-3xl bg-white px-6 py-6 shadow-2xl">
+      <div className="relative w-full max-w-2xl rounded-3xl bg-[var(--omni-surface-card)] px-6 py-6 shadow-2xl">
         <button
           type="button"
           aria-label={lang === "ro" ? "Închide" : "Close"}
-          className="absolute right-4 top-4 rounded-full border border-transparent bg-[#F5EAE0] px-3 py-1 text-sm font-semibold uppercase tracking-[0.2em] text-[#5A3E2B] transition hover:border-[#E5D2C3]"
+          className="absolute right-4 top-4 rounded-full border border-transparent bg-[#F5EAE0] px-3 py-1 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink-soft)] transition hover:border-[#E5D2C3]"
           onClick={onClose}
         >
           {lang === "ro" ? "Închide" : "Close"}
@@ -298,17 +304,17 @@ function CollectibleDetailDialog({
           />
         </div>
         <div className="space-y-3">
-          <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#B08A78]">
-            <span className="rounded-full bg-[#FFF3EC] px-3 py-1 text-[#C07963]">
+          <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+            <span className="rounded-full bg-[var(--omni-energy-tint)] px-3 py-1 text-[var(--omni-energy)]">
               {unlocked ? (lang === "ro" ? "Deblocat" : "Unlocked") : lang === "ro" ? "Blocată" : "Locked"}
             </span>
             <span>{lang === "ro" ? "Arc 1 — Claritate & Energie" : "Arc 1 — Clarity & Energy"}</span>
           </div>
-          <h3 className="text-2xl font-semibold text-[#2D2017]">{collectible.title}</h3>
-          <p className="text-sm leading-relaxed text-[#5A4334]">{collectible.longDescription}</p>
+          <h3 className="text-2xl font-semibold text-[var(--omni-ink)]">{collectible.title}</h3>
+          <p className="text-sm leading-relaxed text-[var(--omni-muted)]">{collectible.longDescription}</p>
           {lessons.length ? (
-            <div className="rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] px-4 py-3 text-sm text-[#5A4334]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+            <div className="rounded-2xl border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-muted)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                 {lang === "ro" ? "Se deblochează după" : "Unlocks after"}
               </p>
               <ul className="mt-2 space-y-1 text-[13px]">

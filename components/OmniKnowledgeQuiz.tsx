@@ -191,18 +191,18 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <header className="space-y-2 text-center md:text-left">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">Omni-Cunoaștere</p>
-        <h2 className="text-2xl font-semibold text-[#1F1F1F]">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">Omni-Cunoaștere</p>
+        <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">
           {lang === "ro"
             ? "Verifică ce știi despre instrumentele OmniMental"
             : "Check your knowledge of OmniMental tools"}
         </h2>
-        <p className="text-sm text-[#4A3A30]">
+        <p className="text-sm text-[var(--omni-ink-soft)]">
           {lang === "ro"
             ? "6 module × 8 întrebări (aprox. 6–7 minute). Primești feedback imediat și scor pe module."
             : "6 modules × 8 questions (about 6–7 minutes). Get instant feedback and module scores."}
         </p>
-        <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+        <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
           <span>
             {answeredCount}/{TOTAL_QUESTIONS}{" "}
             {lang === "ro" ? "întrebări completate" : "questions answered"}
@@ -224,15 +224,15 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
       </header>
 
       {error && (
-        <div className="border border-[#E60012] bg-[#FBE9EB] px-4 py-3 text-sm text-[#2C2C2C]">{error}</div>
+        <div className="border border-[var(--omni-energy)] bg-[#FBE9EB] px-4 py-3 text-sm text-[var(--omni-ink)]">{error}</div>
       )}
       {message && (
-        <div className="space-y-3 border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-3 text-sm text-[#1F3C2F]">
+        <div className="space-y-3 border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]">
           <p>{message}</p>
           {recommendedArea ? (
             <Link
               href="/omni-kuno"
-              className="inline-flex items-center rounded-full border border-[#1F3C2F] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#1F3C2F] transition hover:bg-[#1F3C2F] hover:text-white"
+              className="inline-flex items-center rounded-full border border-[var(--omni-ink-soft)] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink-soft)] transition hover:bg-[var(--omni-ink-soft)] hover:text-white"
             >
               {lang === "ro" ? "Deschide OmniKuno" : "Open OmniKuno"}
             </Link>
@@ -240,22 +240,22 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
         </div>
       )}
 
-      <div className="space-y-6 rounded-[16px] border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+      <div className="space-y-6 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "Întrebări pe module" : "Module questions"}
         </h3>
         <div className="space-y-6">
           {omniKnowledgeModules.map((module) => (
             <article
               key={module.key}
-              className="space-y-4 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-4"
+              className="space-y-4 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4"
             >
               <header className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">Modul</p>
-                  <h4 className="text-base font-semibold text-[#2C2C2C]">{module.title}</h4>
+                  <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Modul</p>
+                  <h4 className="text-base font-semibold text-[var(--omni-ink)]">{module.title}</h4>
                 </div>
-                <span className="text-xs uppercase tracking-[0.35em] text-[#5C4F45]">
+                <span className="text-xs uppercase tracking-[0.35em] text-[var(--omni-ink-soft)]">
                   {module.questions.length} itemi
                 </span>
               </header>
@@ -267,7 +267,7 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
                   return (
                     <div
                       key={question.id}
-                      className="space-y-2 rounded-[8px] border border-[#F6EDE2] bg-white px-3 py-3 text-sm text-[#2C2C2C]"
+                      className="space-y-2 rounded-[8px] border border-[#F6EDE2] bg-[var(--omni-surface-card)] px-3 py-3 text-sm text-[var(--omni-ink)]"
                     >
                       <p className="font-medium">{question.question}</p>
                       <div className="grid gap-2 md:grid-cols-2">
@@ -276,14 +276,14 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
                           const correctOption = index === question.correctIndex;
                           const showState = showFeedback && (active || correctOption);
                           const baseClass =
-                            "rounded-[8px] border px-3 py-2 text-left text-sm transition focus:outline-none focus:ring-2 focus:ring-[#2C2C2C]";
-                          let stateClass = "border-[#E5D3C4] text-[#2C2C2C] hover:border-[#2C2C2C]";
+                            "rounded-[8px] border px-3 py-2 text-left text-sm transition focus:outline-none focus:ring-2 focus:ring-[var(--omni-energy)]";
+                          let stateClass = "border-[#E5D3C4] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]";
                           if (showState) {
                             stateClass = correctOption
                               ? "border-[#0F6D45] bg-[#EEF8F2] text-[#0F3B27]"
-                              : "border-[#E60012] bg-[#FBE9EB] text-[#5C0A0A]";
+                              : "border-[var(--omni-energy)] bg-[#FBE9EB] text-[#5C0A0A]";
                           } else if (active) {
-                            stateClass = "border-[#2C2C2C] text-[#2C2C2C]";
+                            stateClass = "border-[var(--omni-ink)] text-[var(--omni-ink)]";
                           }
                           return (
                             <button
@@ -299,7 +299,7 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
                         })}
                       </div>
                       {showFeedback && (
-                        <p className="text-xs text-[#5C4F45]">
+                        <p className="text-xs text-[var(--omni-ink-soft)]">
                           {isCorrect
                             ? lang === "ro"
                               ? "Corect ✓"
@@ -325,7 +325,7 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving
               ? lang === "ro"
@@ -338,7 +338,7 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
           <button
             type="button"
             onClick={resetQuiz}
-            className="inline-flex items-center justify-center rounded-[10px] border border-[#D8C6B6] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A08F82] transition hover:bg-[#F6F2EE]"
+            className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)] transition hover:bg-[var(--omni-bg-paper)]"
           >
             {lang === "ro" ? "Resetează răspunsurile" : "Reset answers"}
           </button>
@@ -348,12 +348,12 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
               summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
               void recordKnowledgeViewSummary();
             }}
-            className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+            className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
           >
             {lang === "ro" ? "Vezi punctajul general" : "View overall score"}
           </button>
         </div>
-        <p className="text-xs text-[#5C4F45]">
+        <p className="text-xs text-[var(--omni-ink-soft)]">
           {lang === "ro"
             ? "Scorul minim recomandat pentru progres rapid: 70%+"
             : "Recommended mastery threshold: 70%+"}
@@ -367,21 +367,21 @@ export default function OmniKnowledgeQuiz({ lang }: Props) {
 
 function KnowledgeSummaryCard({ score, lang }: { score: OmniKnowledgeScores; lang: "ro" | "en" }) {
   return (
-    <div className="rounded-[16px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-4 text-sm text-[#4A3A30]">
+    <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4 text-sm text-[var(--omni-ink-soft)]">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {lang === "ro" ? "Punctaj total" : "Total score"}
           </p>
-          <p className="text-3xl font-semibold text-[#1F1F1F]">
+          <p className="text-3xl font-semibold text-[var(--omni-ink)]">
             {score.percent}
-            <span className="text-base text-[#5C4F45]">% </span>
-            <span className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+            <span className="text-base text-[var(--omni-ink-soft)]">% </span>
+            <span className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
               ({score.raw}/{score.max})
             </span>
           </p>
         </div>
-        <div className="space-y-1 text-xs text-[#5C4F45]">
+        <div className="space-y-1 text-xs text-[var(--omni-ink-soft)]">
           <p>
             {score.percent >= 70
               ? lang === "ro"
@@ -399,8 +399,8 @@ function KnowledgeSummaryCard({ score, lang }: { score: OmniKnowledgeScores; lan
 
 function ModuleBreakdown({ score }: { score: OmniKnowledgeScores }) {
   return (
-    <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-      <h3 className="text-lg font-semibold text-[#1F1F1F]">Breakdown pe module</h3>
+    <section className="space-y-4 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+      <h3 className="text-lg font-semibold text-[var(--omni-ink)]">Breakdown pe module</h3>
       <div className="grid gap-4 md:grid-cols-2">
         {omniKnowledgeModules.map((module) => {
           const moduleScore = score.breakdown[module.key];
@@ -408,17 +408,17 @@ function ModuleBreakdown({ score }: { score: OmniKnowledgeScores }) {
           return (
             <div
               key={module.key}
-              className="space-y-2 rounded-[10px] border border-[#F5EBE0] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C]"
+              className="space-y-2 rounded-[10px] border border-[#F5EBE0] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink)]"
             >
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-[#2C2C2C]">{module.title}</p>
-                <span className="text-xs uppercase tracking-[0.3em] text-[#5C4F45]">
+                <p className="font-semibold text-[var(--omni-ink)]">{module.title}</p>
+                <span className="text-xs uppercase tracking-[0.3em] text-[var(--omni-ink-soft)]">
                   {moduleScore ? `${moduleScore.raw}/${moduleScore.max}` : "0"}
                 </span>
               </div>
-              <div className="h-2 w-full rounded-full bg-[#F6F2EE]">
+              <div className="h-2 w-full rounded-full bg-[var(--omni-bg-paper)]">
                 <div
-                  className="h-full rounded-full bg-[#2C2C2C]"
+                  className="h-full rounded-full bg-[var(--omni-ink)]"
                   style={{ width: `${percent}%` }}
                 />
               </div>
@@ -482,8 +482,8 @@ function DurationBadge({
   const tone = suspicious
     ? {
         border: "#F9C6C1",
-        bg: "#FFF5F4",
-        text: "#8C2B2F",
+        bg: "var(--omni-danger-soft)",
+        text: "var(--omni-danger)",
         icon: "⚠️",
         label: lang === "ro" ? "Completare foarte rapidă" : "Completion too fast",
         helper:
@@ -492,9 +492,9 @@ function DurationBadge({
             : "Double-check the answers; data might be unreliable.",
       }
     : {
-        border: "#CBE8D7",
-        bg: "#F3FFF8",
-        text: "#1F3C2F",
+        border: "var(--omni-success)",
+        bg: "var(--omni-success-soft)",
+        text: "var(--omni-ink-soft)",
         icon: "⏱️",
         label: lang === "ro" ? "Durata completării" : "Completion time",
         helper:
@@ -511,7 +511,7 @@ function DurationBadge({
         <span>{tone.icon}</span>
         <span>{tone.label}</span>
       </div>
-      <p className="text-lg font-semibold text-[#1F1F1F]">{formatted} min</p>
+      <p className="text-lg font-semibold text-[var(--omni-ink)]">{formatted} min</p>
       <p className="text-xs">{tone.helper}</p>
     </div>
   );

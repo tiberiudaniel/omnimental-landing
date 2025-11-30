@@ -74,9 +74,9 @@ export function FirstAction({ userId, themeLabel, onComplete }: FirstActionProps
       }
       orientation="imageRight"
     >
-      <div className="space-y-4 text-sm text-[#4A3A30]">
+      <div className="space-y-4 text-sm text-[var(--omni-ink-soft)]">
         <div>
-          <p className="font-semibold uppercase tracking-[0.25em] text-[#A08F82]">
+          <p className="font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
             {normalizedLang === "ro" ? "Respirație (opțional, 3 cicluri)" : "Breathing (optional, 3 cycles)"}
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -86,7 +86,7 @@ export function FirstAction({ userId, themeLabel, onComplete }: FirstActionProps
           </ul>
         </div>
         <div>
-          <label htmlFor="first-action-plan" className="text-[13px] font-semibold text-[#7B6B60]">
+          <label htmlFor="first-action-plan" className="text-[13px] font-semibold text-[var(--omni-muted)]">
             {normalizedLang === "ro" ? "Ce acțiune concretă vrei să faci în următoarele 24 de ore?" : "What concrete action will you take in the next 24 hours?"}
           </label>
           <textarea
@@ -100,7 +100,7 @@ export function FirstAction({ userId, themeLabel, onComplete }: FirstActionProps
               }
             }}
             rows={3}
-            className="mt-2 w-full rounded-[12px] border border-[#E4DAD1] bg-white px-4 py-2 text-sm text-[#2C2C2C] outline-none transition focus:border-[#C07963] focus:ring-1 focus:ring-[#C07963]"
+            className="mt-2 w-full rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-2 text-sm text-[var(--omni-ink)] outline-none transition focus:border-[var(--omni-energy)] focus:ring-1 focus:ring-[var(--omni-energy)]"
             placeholder={normalizedLang === "ro" ? "Ex.: Trimit mesajul de clarificare către colegul X." : "Ex: Send the clarification note to my teammate."}
           />
           {error ? <p className="mt-2 text-xs text-[#B3261E]">{error}</p> : null}
@@ -111,7 +111,7 @@ export function FirstAction({ userId, themeLabel, onComplete }: FirstActionProps
             data-testid="first-action-submit"
             onClick={handleSubmit}
             disabled={saving || !isActionValid}
-            className="inline-flex items-center justify-center rounded-[999px] border border-[#2C2C2C] px-6 py-2 text-[13px] font-semibold tracking-[0.18em] text-[#2C2C2C] transition hover:bg-[#2C2C2C] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-[999px] border border-[var(--omni-border-soft)] px-6 py-2 text-[13px] font-semibold tracking-[0.18em] text-[var(--omni-ink)] transition hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {normalizedLang === "ro" ? "Salvează acțiunea" : "Save action"}
           </button>

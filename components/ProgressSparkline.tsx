@@ -15,8 +15,8 @@ export default function ProgressSparkline({
   values,
   width = 160,
   height = 48,
-  strokeColor = "#E60012",
-  fillColor = "#E60012",
+  strokeColor = "var(--omni-energy)",
+  fillColor = "var(--omni-energy)",
   fillOpacityStart = 0.6,
 }: ProgressSparklineProps) {
   // Hooks must appear before any early returns

@@ -25,9 +25,9 @@ export default function LatestEntries({ lang, quests = [], evaluationsCount = 0,
     const text = items.length ? items[0].text : (lang === "ro" ? "Nu există încă înregistrări." : "No entries yet.");
     return (
       <section className="mx-auto mb-4 max-w-5xl">
-        <div className="rounded-[12px] border border-[#E4D8CE] bg-white px-4 py-3 shadow-[0_6px_14px_rgba(0,0,0,0.04)]">
+        <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-3 shadow-[0_6px_14px_rgba(0,0,0,0.04)]">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-[#1F1F1F]">{lang === "ro" ? "Ultimele înregistrări" : "Latest entries"}</p>
+            <p className="text-xs font-semibold text-[var(--omni-ink)]">{lang === "ro" ? "Ultimele înregistrări" : "Latest entries"}</p>
             <button
               type="button"
               onClick={async () => {
@@ -38,12 +38,12 @@ export default function LatestEntries({ lang, quests = [], evaluationsCount = 0,
                   setMsg(lang === "ro" ? "Nu am putut marca exercițiul." : "Could not log practice.");
                 }
               }}
-              className="rounded-[10px] border border-[#2C2C2C] px-2 py-[2px] text-[9px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+              className="rounded-[10px] border border-[var(--omni-border-soft)] px-2 py-[2px] text-[9px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
             >
               {lang === "ro" ? "Log rapid" : "Quick log"}
             </button>
           </div>
-          <div className="mt-2 rounded-[10px] border border-[#F0E6DA] bg-[#FFFBF7] px-3 py-2 text-xs text-[#2C2C2C]">
+          <div className="mt-2 rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-xs text-[var(--omni-ink)]">
             {msg ?? text}
           </div>
         </div>
@@ -53,8 +53,8 @@ export default function LatestEntries({ lang, quests = [], evaluationsCount = 0,
 
   return (
     <section className="mx-auto mb-6 max-w-5xl">
-      <div className="rounded-[12px] border border-[#E4D8CE] bg-white px-5 py-4 shadow-[0_8px_18px_rgba(0,0,0,0.05)]">
-        <p className="mb-3 text-sm font-semibold text-[#1F1F1F]">
+      <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-4 shadow-[0_8px_18px_rgba(0,0,0,0.05)]">
+        <p className="mb-3 text-sm font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "Ultimele înregistrări" : "Latest entries"}
         </p>
         <div className="mb-3 flex items-center gap-2">
@@ -68,20 +68,20 @@ export default function LatestEntries({ lang, quests = [], evaluationsCount = 0,
                 setMsg(lang === "ro" ? "Nu am putut marca exercițiul." : "Could not log practice.");
               }
             }}
-            className="rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
           >
             {lang === "ro" ? "Log rapid" : "Quick log"}
           </button>
-          {msg ? <span className="text-xs text-[#7A6455]">{msg}</span> : null}
+          {msg ? <span className="text-xs text-[var(--omni-muted)]">{msg}</span> : null}
         </div>
         {items.length === 0 ? (
-          <p className="text-xs text-[#7A6455]">
+          <p className="text-xs text-[var(--omni-muted)]">
             {lang === "ro" ? "Nu există încă înregistrări." : "No entries yet."}
           </p>
         ) : (
           <ul className="max-h-40 space-y-2 overflow-auto">
             {items.map((e, i) => (
-              <li key={`entry-${i}`} className="rounded-[10px] border border-[#F0E6DA] bg-[#FFFBF7] px-3 py-2 text-sm text-[#2C2C2C]">
+              <li key={`entry-${i}`} className="rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-sm text-[var(--omni-ink)]">
                 {e.text}
               </li>
             ))}

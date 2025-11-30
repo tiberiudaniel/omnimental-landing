@@ -686,12 +686,8 @@ export default function ProgressDashboard({
     };
   }, []);
   return (
-    <motion.section
-      initial="hidden"
-      animate="show"
-      className="w-full bg-[#FDFCF9] px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-5"
-    >
-      <Card className="mx-auto max-w-6xl rounded-2xl border border-[#E4DAD1] bg-white/90 px-3 py-4 shadow-[0_4px_18px_rgba(0,0,0,0.04)] sm:px-4 sm:py-5">
+    <motion.section initial="hidden" animate="show" className="w-full px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-5">
+      <Card className="mx-auto max-w-6xl rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/90 px-3 py-4 shadow-[0_4px_18px_rgba(0,0,0,0.04)] sm:px-4 sm:py-5">
         {debugJson ? (
           <pre data-testid="debug-progress-facts" style={{ display: 'none' }}>{debugJson}</pre>
         ) : null}
@@ -716,7 +712,7 @@ export default function ProgressDashboard({
             {/* LEFT COLUMN – pie + weekly */}
             <div
               className={`order-2 mt-2 sm:mt-3 lg:mt-4 flex h-full min-w-0 flex-col gap-2 md:col-span-1 md:order-1 md:gap-3 lg:gap-4 ${
-                debugGrid ? "outline outline-1 outline-[#C24B17]/40" : ""
+                debugGrid ? "outline outline-1 outline-[var(--omni-energy-soft)]/40" : ""
               }`}
             >
               <DailyResetCard

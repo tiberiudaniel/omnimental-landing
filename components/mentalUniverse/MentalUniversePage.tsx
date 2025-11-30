@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
+import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useI18n } from "@/components/I18nProvider";
 import type { OmniKunoModuleId } from "@/config/omniKunoModules";
@@ -109,17 +110,19 @@ export default function MentalUniversePage() {
       : "Each area blends OmniKuno lessons with OmniAbil missions into a clear mental arc. Pick the area that matches today’s challenge and jump straight into the right lessons.";
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#2C2C2C]">
-      <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />
-      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-      <main className="mx-auto max-w-5xl px-4 py-10">
-        <section className="rounded-3xl border border-[#E4DAD1] bg-white/95 p-6 shadow-sm sm:p-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#B08A78]">
+    <>
+      <AppShell
+        header={<SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />}
+        mainClassName="text-[var(--omni-ink)]"
+      >
+        <div className="mx-auto max-w-5xl px-4 py-10">
+        <section className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 p-6 shadow-sm sm:p-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {lang === "ro" ? "Harta sezonului mental" : "Your mental season map"}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold text-[#2C2C2C] sm:text-4xl">{introTitle}</h1>
-          <p className="mt-3 text-sm leading-relaxed text-[#5A4334] sm:text-base">{introLead}</p>
-          <div className="mt-4 flex flex-wrap gap-3 text-[12px] text-[#7B6B60]">
+          <h1 className="mt-2 text-3xl font-semibold text-[var(--omni-ink)] sm:text-4xl">{introTitle}</h1>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--omni-muted)] sm:text-base">{introLead}</p>
+          <div className="mt-4 flex flex-wrap gap-3 text-[12px] text-[var(--omni-muted)]">
             <div className="rounded-full border border-[#DECFC0] bg-[#FFF5EB] px-3 py-1">
               {lang === "ro" ? "Season 1 — Claritate & Energie" : "Season 1 — Clarity & Energy"}
             </div>
@@ -132,22 +135,22 @@ export default function MentalUniversePage() {
           {UNIVERSE_AREAS.map((area) => (
             <article
               key={area.id}
-              className="flex h-full flex-col justify-between rounded-3xl border border-[#E6DAD0] bg-white/90 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="flex h-full flex-col justify-between rounded-3xl border border-[#E6DAD0] bg-[var(--omni-surface-card)]/90 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               <div>
                 <div className="text-3xl">{area.icon}</div>
-                <h2 className="mt-3 text-xl font-semibold text-[#2D2017]">
+                <h2 className="mt-3 text-xl font-semibold text-[var(--omni-ink)]">
                   {area.title[lang as "ro" | "en"] ?? area.title.ro}
                 </h2>
-                <p className="mt-2 text-sm text-[#5A4334]">
+                <p className="mt-2 text-sm text-[var(--omni-muted)]">
                   {area.description[lang as "ro" | "en"] ?? area.description.ro}
                 </p>
               </div>
-              <div className="mt-4 flex items-center justify-between text-[12px] text-[#7B6B60]">
+              <div className="mt-4 flex items-center justify-between text-[12px] text-[var(--omni-muted)]">
                 <span>{lang === "ro" ? "Arc recomandat" : "Suggested arc"}</span>
                 <Link
                   href={`/omni-kuno?area=${area.moduleId}`}
-                  className="inline-flex items-center rounded-full border border-[#C5B29E] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5A3E2B] transition hover:border-[#8B5A3A]"
+                  className="inline-flex items-center rounded-full border border-[#C5B29E] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink-soft)] transition hover:border-[#8B5A3A]"
                 >
                   {lang === "ro" ? "Vezi lecțiile" : "View lessons"}
                 </Link>
@@ -155,7 +158,9 @@ export default function MentalUniversePage() {
             </article>
           ))}
         </section>
-      </main>
-    </div>
+        </div>
+      </AppShell>
+      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+    </>
   );
 }

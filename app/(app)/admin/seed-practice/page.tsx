@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { recordPracticeSession } from "@/lib/progressFacts";
 import SiteHeader from "@/components/SiteHeader";
+import { AppShell } from "@/components/AppShell";
 
 function addDays(ms: number, days: number) {
   const d = new Date(ms);
@@ -46,25 +47,23 @@ export default function SeedPracticePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2]">
-      <SiteHeader compact />
-      <main className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="mb-2 text-2xl font-semibold text-[#1F1F1F]">Seed Practice</h1>
+    <AppShell header={<SiteHeader />}>
+      <div className="mx-auto max-w-2xl px-4 py-10">
+        <h1 className="mb-2 text-2xl font-semibold text-[var(--omni-ink)]">Seed Practice</h1>
         {!enabled ? (
-          <p className="text-sm text-[#7A6455]">Set NEXT_PUBLIC_ENABLE_SEED=1 to enable this tool.</p>
+          <p className="text-sm text-[var(--omni-muted)]">Set NEXT_PUBLIC_ENABLE_SEED=1 to enable this tool.</p>
         ) : (
           <button
             type="button"
             disabled={busy}
             onClick={seed}
-            className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:opacity-60"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:opacity-60"
           >
             {busy ? "Seeding…" : "Seed last 7 days"}
           </button>
         )}
-        {status ? <p className="mt-3 text-sm text-[#2C2C2C]">{status}</p> : null}
-      </main>
-    </div>
+        {status ? <p className="mt-3 text-sm text-[var(--omni-ink)]">{status}</p> : null}
+      </div>
+    </AppShell>
   );
 }
-

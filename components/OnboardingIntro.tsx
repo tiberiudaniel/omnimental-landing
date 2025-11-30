@@ -70,10 +70,10 @@ export default function OnboardingIntro({ profileId, onDone }: { profileId: stri
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4" data-testid="onboarding-intro">
-      <Card className="rounded-2xl border border-[#E4DAD1] bg-white p-5 shadow-sm">
+      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 shadow-sm">
         <header className="mb-3">
-          <h2 className="text-xl font-semibold text-[#1F1F1F]">{getString(t, "onboarding.intro.title", lang === "ro" ? "În diverse perioade, viața ne provoacă la adaptare." : "At times, life asks us to adapt.")}</h2>
-          <p className="mt-1 text-sm text-[#4A3A30]">
+          <h2 className="text-xl font-semibold text-[var(--omni-ink)]">{getString(t, "onboarding.intro.title", lang === "ro" ? "În diverse perioade, viața ne provoacă la adaptare." : "At times, life asks us to adapt.")}</h2>
+          <p className="mt-1 text-sm text-[var(--omni-ink-soft)]">
             {getString(t, "onboarding.intro.body", lang === "ro" ? "Aici începe antrenamentul tău pentru perioade ca aceasta — când ai nevoie de claritate, energie și sens." : "This is your training space for moments like these — when you need clarity, energy and direction.")}
           </p>
         </header>
@@ -84,7 +84,7 @@ export default function OnboardingIntro({ profileId, onDone }: { profileId: stri
               type="button"
               onClick={() => setSelected(c.key)}
               className={`w-full rounded-[12px] border px-4 py-3 text-left text-sm ${
-                selected === c.key ? "border-[#2C2C2C] bg-[#2C2C2C] text-white" : "border-[#E4DAD1] bg-[#FFFBF7] text-[#2C2C2C] hover:border-[#2C2C2C]"
+                selected === c.key ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]" : "border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]"
               }`}
               data-testid={`onboarding-choice-${c.key}`}
             >
@@ -97,7 +97,7 @@ export default function OnboardingIntro({ profileId, onDone }: { profileId: stri
             type="button"
             onClick={handleContinue}
             disabled={(!selected && !allowAutoContinue) || saving}
-            className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:cursor-not-allowed disabled:opacity-60"
             data-testid="onboarding-continue"
           >
             {getString(t, "onboarding.intro.continue", lang === "ro" ? "Continuă" : "Continue")}

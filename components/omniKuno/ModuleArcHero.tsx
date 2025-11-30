@@ -40,15 +40,15 @@ export default function ModuleArcHero({ areaKey, areaLabel }: Props) {
   if (hidden) {
     return (
       <KunoContainer align="left">
-        <section className="mb-3 flex items-center justify-between rounded-2xl border border-[#E7DED3] bg-white/70 px-4 py-3 text-sm text-[#4D3F36] shadow-sm">
+        <section className="mb-3 flex items-center justify-between rounded-2xl border border-[#E7DED3] bg-[var(--omni-surface-card)]/70 px-4 py-3 text-sm text-[#4D3F36] shadow-sm">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">Arc · {areaLabel}</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Arc · {areaLabel}</p>
             <p className="text-sm text-[#4D3F36]">Revizuiește intro-ul modulului oricând ai nevoie.</p>
           </div>
           <button
             type="button"
             onClick={() => setHidden(false)}
-            className="rounded-full border border-[#C07963] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white"
+            className="rounded-full border border-[var(--omni-energy)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-energy)] transition hover:bg-[var(--omni-energy)] hover:text-white"
           >
             Afișează
           </button>
@@ -59,15 +59,15 @@ export default function ModuleArcHero({ areaKey, areaLabel }: Props) {
 
   return (
       <KunoContainer align="left">
-      <section className="space-y-6 rounded-3xl border border-[#E7DED3] bg-white/80 px-6 py-6 text-[#2C2C2C] shadow-sm">
+      <section className="space-y-6 rounded-3xl border border-[#E7DED3] bg-[var(--omni-surface-card)]/80 px-6 py-6 text-[var(--omni-ink)] shadow-sm">
         <header className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">Arc · {areaLabel}</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Arc · {areaLabel}</p>
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-2xl font-semibold text-[#2C2C2C]">Trezire → Primele Ciocniri → Profunzime → Maestrie</h2>
+            <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">Trezire → Primele Ciocniri → Profunzime → Maestrie</h2>
             <button
               type="button"
               onClick={() => setHidden(true)}
-              className="rounded-full border border-transparent px-2 py-1 text-xs uppercase tracking-[0.3em] text-[#B08A78] transition hover:border-[#B08A78]"
+              className="rounded-full border border-transparent px-2 py-1 text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)] transition hover:border-[#B08A78]"
             >
               Ascunde
             </button>
@@ -79,7 +79,7 @@ export default function ModuleArcHero({ areaKey, areaLabel }: Props) {
             if (!arc) return null;
             return (
               <div key={arc.id}>
-                <h3 className="text-base font-semibold text-[#2C2C2C]">{arc.title}</h3>
+                <h3 className="text-base font-semibold text-[var(--omni-ink)]">{arc.title}</h3>
                 <p>{arc.body}</p>
               </div>
             );

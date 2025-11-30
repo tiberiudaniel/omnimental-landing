@@ -188,8 +188,8 @@ export default function IntentSummary({
               style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
             />
             {/* 1) Speed first */}
-            <div className={`panel-ghost px-4 py-4 ${nudge && !budgetTouched ? 'border border-[#E60012] animate-pulse' : ''}`}>
-              <p className="text-sm font-medium text-[#2C2C2C]">
+            <div className={`panel-ghost px-4 py-4 ${nudge && !budgetTouched ? 'border border-[var(--omni-energy)] animate-pulse' : ''}`}>
+              <p className="text-sm font-medium text-[var(--omni-ink)]">
                 {(() => {
                   const tpl = getTextMulti(
                     ["intentMotivationSpeedQuestion", "intentSummarySpeedQuestion"],
@@ -200,7 +200,7 @@ export default function IntentSummary({
                 return tpl.includes('{{area}}') ? tpl.replace('{{area}}', areaLabel) : tpl;
               })()}
               </p>
-              <p className="text-xs text-[#7B6B60]">
+              <p className="text-xs text-[var(--omni-muted)]">
                 {lang === 'ro'
                   ? 'Alege intervalul în care vrei să vezi schimbări vizibile.'
                   : 'Pick the timeframe in which you expect visible progress.'}
@@ -214,16 +214,16 @@ export default function IntentSummary({
                   suppressActive={!speedTouched}
                 />
                 {!speedTouched ? (
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[#A08F82]">
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                     {lang === "ro" ? "Selectează o opțiune" : "Select an option"}
                   </p>
                 ) : null}
               </div>
             </div>
             {/* 2) Urgency second */}
-            <div className={`panel-ghost px-4 py-4 ${nudge && !goalTouched ? 'border border-[#E60012] animate-pulse' : ''}`}>
-              <p className="text-sm font-medium text-[#2C2C2C]">{urgencyQuestion}</p>
-              <p className="text-xs text-[#7B6B60]">
+            <div className={`panel-ghost px-4 py-4 ${nudge && !goalTouched ? 'border border-[var(--omni-energy)] animate-pulse' : ''}`}>
+              <p className="text-sm font-medium text-[var(--omni-ink)]">{urgencyQuestion}</p>
+              <p className="text-xs text-[var(--omni-muted)]">
                 {lang === 'ro'
                   ? 'Mută sliderul spre dreapta dacă simți presiune să acționezi imediat.'
                   : 'Slide right if you feel pressure to act immediately.'}
@@ -249,15 +249,15 @@ export default function IntentSummary({
                   />
                 </div>
               </div>
-              <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+              <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                 <span>{urgencyLow}</span>
-                <span className="text-[#7A6455]">{urgency}/10</span>
+                <span className="text-[var(--omni-muted)]">{urgency}/10</span>
                 <span>{urgencyHigh}</span>
               </div>
             </div>
             {/* 3) Determination last */}
-            <div className={`panel-ghost px-4 py-4 ${nudge && !emotionalTouched ? 'border border-[#E60012] animate-pulse' : ''}`}>
-              <p className="text-sm font-medium text-[#2C2C2C]">
+            <div className={`panel-ghost px-4 py-4 ${nudge && !emotionalTouched ? 'border border-[var(--omni-energy)] animate-pulse' : ''}`}>
+              <p className="text-sm font-medium text-[var(--omni-ink)]">
                 {getString(
                   tFirst(["intentMotivationMotivationQuestion", "intentSummaryMotivationQuestion"]),
                   lang === "ro"
@@ -265,7 +265,7 @@ export default function IntentSummary({
                     : "How determined are you to actually make changes?",
                 )}
               </p>
-              <p className="text-xs text-[#7B6B60]">
+              <p className="text-xs text-[var(--omni-muted)]">
                 {lang === 'ro'
                   ? 'Indicatorul acesta vorbește despre disciplina ta personală.'
                   : 'This gauge reflects your personal discipline right now.'}
@@ -292,13 +292,13 @@ export default function IntentSummary({
                   </div>
                 </div>
               </div>
-              <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+              <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                 <span>{lang === "ro" ? "Mai puțin" : "Less"}</span>
-                <span className="text-[#7A6455]">{determination}/5</span>
+                <span className="text-[var(--omni-muted)]">{determination}/5</span>
                 <span>{lang === "ro" ? "Foarte hotărât(ă)" : "Very determined"}</span>
               </div>
               {!determinationTouched ? (
-                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[#A08F82]">
+                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                   {lang === "ro" ? "Selectează o opțiune" : "Select an option"}
                 </p>
               ) : null}
@@ -309,7 +309,7 @@ export default function IntentSummary({
         return (
           <div className="space-y-4">
             <div className="panel-ghost px-4 py-4">
-              <p className="text-sm font-medium text-[#2C2C2C]">
+              <p className="text-sm font-medium text-[var(--omni-ink)]">
                 {getTextMulti(
                   ["intentMotivationTimeQuestion", "intentSummaryTimeQuestion"],
                   lang === "ro"
@@ -317,7 +317,7 @@ export default function IntentSummary({
                     : "How much weekly time can you realistically invest?",
                 )}
               </p>
-              <p className="text-xs text-[#7B6B60]">
+              <p className="text-xs text-[var(--omni-muted)]">
                 {lang === 'ro'
                   ? 'Chiar și sesiuni scurte, recurente, pot conta — bifează ce știi că poți susține.'
                   : 'Even short, recurring sessions matter—select what you can actually sustain.'}
@@ -344,12 +344,12 @@ export default function IntentSummary({
                   </div>
                 </div>
               </div>
-              <div className="mt-2 text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+              <div className="mt-2 text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                 {timeCommitmentHours} {timeSuffix}
               </div>
             </div>
             <div className="panel-ghost px-4 py-4">
-              <p className="text-sm font-medium text-[#2C2C2C]">
+              <p className="text-sm font-medium text-[var(--omni-ink)]">
                 {getTextMulti(
                   ["intentMotivationBudgetQuestion", "intentSummaryBudgetQuestion"],
                   lang === "ro"
@@ -357,7 +357,7 @@ export default function IntentSummary({
                     : "What budget feels realistic for this goal?",
                 )}
               </p>
-              <p className="text-xs text-[#7B6B60]">
+              <p className="text-xs text-[var(--omni-muted)]">
                 {lang === 'ro'
                   ? 'Gândește-te la cât ai investi într-un program de 6–12 săptămâni.'
                   : 'Think of what you’d invest in a 6–12 week program.'}
@@ -373,8 +373,8 @@ export default function IntentSummary({
                     }}
                     className={`rounded-[10px] border px-3 py-2 text-sm ${
                       (budgetTouched && budgetPreference === option.value)
-                        ? "border-[#D8C6B6] bg-[#F2EAE0] text-[#2C2C2C]"
-                        : "border-[#E8DCCE] bg-white text-[#2C2C2C] hover:border-[#D8C6B6]"
+                        ? "border-[var(--omni-border-soft)] bg-[#F2EAE0] text-[var(--omni-ink)]"
+                        : "border-[#E8DCCE] bg-[var(--omni-surface-card)] text-[var(--omni-ink)] hover:border-[var(--omni-border-soft)]"
                     }`}
                     data-testid={`budget-${option.value}`}
                   >
@@ -382,19 +382,19 @@ export default function IntentSummary({
                   </button>
                 ))}
               {!budgetTouched ? (
-                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[#A08F82]">
+                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                   {lang === "ro" ? "Selectează o opțiune" : "Select an option"}
                 </p>
               ) : null}
               </div>
             </div>
             <div className="panel-ghost px-4 py-4">
-              <p className="text-sm font-medium text-[#2C2C2C]">
+              <p className="text-sm font-medium text-[var(--omni-ink)]">
                 {lang === "ro"
                   ? "Cum ai descrie cel mai bine ce vrei să lucrezi acum?"
                   : "How would you best describe what you want to work on now?"}
               </p>
-              <p className="text-xs text-[#7B6B60]">
+              <p className="text-xs text-[var(--omni-muted)]">
                 {lang === 'ro'
                   ? 'Bifează varianta care se potrivește cel mai bine felului în care ai selectat temele.'
                   : 'Pick the option that best mirrors how you grouped your themes.'}
@@ -410,8 +410,8 @@ export default function IntentSummary({
                     }}
                     className={`w-full rounded-[10px] border px-4 py-3 text-left text-sm ${
                       (goalTouched && goalType === option)
-                        ? "border-[#D8C6B6] bg-[#F2EAE0] text-[#2C2C2C]"
-                        : "border-[#E8DCCE] bg-white text-[#2C2C2C] hover:border-[#D8C6B6]"
+                        ? "border-[var(--omni-border-soft)] bg-[#F2EAE0] text-[var(--omni-ink)]"
+                        : "border-[#E8DCCE] bg-[var(--omni-surface-card)] text-[var(--omni-ink)] hover:border-[var(--omni-border-soft)]"
                     }`}
                     data-testid={`goal-${option}`}
                   >
@@ -419,7 +419,7 @@ export default function IntentSummary({
                   </button>
                 ))}
               {!goalTouched ? (
-                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[#A08F82]">
+                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                   {lang === "ro" ? "Selectează o opțiune" : "Select an option"}
                 </p>
               ) : null}
@@ -432,12 +432,12 @@ export default function IntentSummary({
           <div className="space-y-4">
             {/* 1) Schedule fit */}
             <div className="panel-ghost px-4 py-4">
-              <p className="text-sm font-medium text-[#2C2C2C]">
+              <p className="text-sm font-medium text-[var(--omni-ink)]">
                 {lang === "ro"
                   ? "Cât de ușor îți este să respecți același interval orar în fiecare săptămână?"
                   : "How easy is it for you to stick to the same weekly time slot?"}
               </p>
-              <p className="text-xs text-[#7B6B60]">
+              <p className="text-xs text-[var(--omni-muted)]">
                 {lang === 'ro'
                   ? 'Răspunsul ne ajută să alegem între programe cu ritm fix sau flexibil.'
                   : 'This helps us pick between fixed-pace or flexible programs.'}
@@ -462,21 +462,21 @@ export default function IntentSummary({
                   />
                 </div>
               </div>
-              <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+              <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                 <span>{lang === "ro" ? "Greu de tot" : "Very difficult"}</span>
-                <span className="text-[#7A6455]">{scheduleFit}/10</span>
+                <span className="text-[var(--omni-muted)]">{scheduleFit}/10</span>
                 <span>{lang === "ro" ? "Ușor" : "Very easy"}</span>
               </div>
             </div>
 
             {/* 2) Learn from others */}
             <div className="panel-ghost px-4 py-4">
-              <p className="text-sm font-medium text-[#2C2C2C]">
+              <p className="text-sm font-medium text-[var(--omni-ink)]">
                 {lang === "ro"
                   ? "Cât de mult te ajută să auzi întrebările și greșelile altor persoane?"
                   : "How much does it help you to hear others’ questions and mistakes?"}
               </p>
-              <p className="text-xs text-[#7B6B60]">
+              <p className="text-xs text-[var(--omni-muted)]">
                 {lang === 'ro'
                   ? 'După scorul tău decidem cât de multă interacțiune de grup includem.'
                   : 'We’ll use this score to decide how much group interaction to include.'}
@@ -501,21 +501,21 @@ export default function IntentSummary({
                   />
                 </div>
               </div>
-              <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+              <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                 <span>{lang === "ro" ? "Mai deloc" : "Not much"}</span>
-                <span className="text-[#7A6455]">{learnFromOthers}/10</span>
+                <span className="text-[var(--omni-muted)]">{learnFromOthers}/10</span>
                 <span>{lang === "ro" ? "Foarte mult" : "A lot"}</span>
               </div>
             </div>
 
             {/* 3) Emotional state */}
-            <div className={`panel-ghost px-4 py-4 ${nudge && !emotionalTouched ? 'border border-[#E60012] animate-pulse' : ''}`}>
-              <p className="text-sm font-medium text-[#2C2C2C]">
+            <div className={`panel-ghost px-4 py-4 ${nudge && !emotionalTouched ? 'border border-[var(--omni-energy)] animate-pulse' : ''}`}>
+              <p className="text-sm font-medium text-[var(--omni-ink)]">
                 {lang === "ro"
                   ? "Cum ai descrie starea ta emoțională din ultimele două săptămâni?"
                   : "How would you describe your emotional state during the past two weeks?"}
               </p>
-              <p className="text-xs text-[#7B6B60]">
+              <p className="text-xs text-[var(--omni-muted)]">
                 {lang === 'ro'
                   ? 'Alege varianta sinceră — ne ghidează în privința nivelului de suport.'
                   : 'Be candid; this guides the level of support we recommend.'}
@@ -531,8 +531,8 @@ export default function IntentSummary({
                     }}
                     className={`w-full rounded-[10px] border px-4 py-3 text-left text-sm ${
                       (emotionalTouched && emotionalState === option)
-                        ? "border-[#D8C6B6] bg-[#F2EAE0] text-[#2C2C2C]"
-                        : "border-[#E8DCCE] bg-white text-[#2C2C2C] hover:border-[#D8C6B6]"
+                        ? "border-[var(--omni-border-soft)] bg-[#F2EAE0] text-[var(--omni-ink)]"
+                        : "border-[#E8DCCE] bg-[var(--omni-surface-card)] text-[var(--omni-ink)] hover:border-[var(--omni-border-soft)]"
                     }`}
                     data-testid={`emo-${option}`}
                   >
@@ -540,7 +540,7 @@ export default function IntentSummary({
                   </button>
                 ))}
               {!emotionalTouched ? (
-                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[#A08F82]">
+                <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                   {lang === "ro" ? "Selectează o opțiune" : "Select an option"}
                 </p>
               ) : null}
@@ -549,12 +549,12 @@ export default function IntentSummary({
 
             {/* 4) Group comfort */}
             <div className="panel-ghost px-4 py-4">
-              <p className="text-sm font-medium text-[#2C2C2C]">
+              <p className="text-sm font-medium text-[var(--omni-ink)]">
                 {lang === "ro"
                   ? "Cât de confortabil te simți cu ideea de a discuta aceste teme într-un grup mic online?"
                   : "How comfortable are you with discussing these topics in a small group online?"}
               </p>
-              <p className="text-xs text-[#7B6B60]">
+              <p className="text-xs text-[var(--omni-muted)]">
                 {lang === 'ro'
                   ? 'Dacă scorul e mic, vom recomanda mai mult input individual.'
                   : 'Lower scores steer us toward more individual input.'}
@@ -579,9 +579,9 @@ export default function IntentSummary({
                     />
                   </div>
                 </div>
-              <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+              <div className="mt-2 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                 <span>{lang === "ro" ? "Deloc confortabil(ă)" : "Not comfortable"}</span>
-                <span className="text-[#7A6455]">{groupComfort}/10</span>
+                <span className="text-[var(--omni-muted)]">{groupComfort}/10</span>
                 <span>{lang === "ro" ? "Foarte confortabil(ă)" : "Very comfortable"}</span>
               </div>
             </div>
@@ -718,13 +718,13 @@ export default function IntentSummary({
   }, [nudge]);
 
   return (
-    <section data-testid={getWizardStepTestId("intentMotivation")} className="bg-[#FDFCF9] px-4 md:px-6 py-10">
+    <section data-testid={getWizardStepTestId("intentMotivation")} className="bg-[var(--omni-bg-main)] px-4 md:px-6 py-10">
       <div className="page-wrap w-full flex flex-col items-center gap-6 md:gap-8">
         {step === 0 ? (
           <div className="panel-ghost px-8 py-8 text-left space-y-3">
             <TypewriterText key={title} text={title} speed={90} enableSound />
-            {description ? <p className="text-sm text-[#2C2C2C]/80">{description}</p> : null}
-            <p className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">{instructions}</p>
+            {description ? <p className="text-sm text-[var(--omni-ink)]/80">{description}</p> : null}
+            <p className="text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">{instructions}</p>
           </div>
         ) : null}
 
@@ -733,7 +733,7 @@ export default function IntentSummary({
             <div className="mx-auto w-full max-w-4xl">
             {/* Presets removed by request */}
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-[#2C2C2C]">{stepHeadings[step]}</h3>
+              <h3 className="text-lg font-semibold text-[var(--omni-ink)]">{stepHeadings[step]}</h3>
             </div>
 
             {/* Sub‑pași numerici eliminați la cerere; păstrăm doar titlul secțiunii */}
@@ -745,7 +745,7 @@ export default function IntentSummary({
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:text-[#2C2C2C]"
+                  className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:text-[var(--omni-ink)]"
                 >
                   {lang === "ro" ? "Înapoi" : "Back"}
                 </button>
@@ -756,7 +756,7 @@ export default function IntentSummary({
                 type="button"
                 onClick={handleNext}
                 disabled={!canProceed || nextBusy}
-                className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:cursor-not-allowed disabled:opacity-60"
                 data-testid="wizard-next"
               >
                 {nextLabel}
@@ -765,19 +765,19 @@ export default function IntentSummary({
                 <span data-testid="wizard-ready" className="sr-only">ready</span>
               ) : null}
               {!canProceed ? (
-                <span className="ml-3 text-[11px] text-[#7B6B60]">
+                <span className="ml-3 text-[11px] text-[var(--omni-muted)]">
                   {lang === 'ro' ? 'Completează selecțiile marcate.' : 'Complete the marked selections.'}
                 </span>
               ) : null}
             </div>
             {errorMessage ? (
               <div className="mt-3 flex items-center gap-3">
-                <p className="text-xs text-[#B8000E]">{errorMessage}</p>
+                <p className="text-xs text-[var(--omni-danger)]">{errorMessage}</p>
                 {onAuthRequest && /conect|sign in/i.test(errorMessage) ? (
                   <button
                     type="button"
                     onClick={onAuthRequest}
-                    className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+                    className="rounded-[8px] border border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)]"
                   >
                     {lang === "ro" ? "Autentifică-te" : "Sign in"}
                   </button>

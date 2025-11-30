@@ -126,7 +126,7 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
         </>
       ) : (
         <section
-          className="rounded-[16px] border px-6 py-6 shadow-sm"
+          className="omni-card px-6 py-6"
           style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
         >
           <h3

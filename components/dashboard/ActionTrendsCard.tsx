@@ -161,7 +161,7 @@ export default function ActionTrendsCard({
       const pct = (x: number) => Math.round((x / tot) * 100);
       return (
         <div className="mt-2">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-[#7B6B60]">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-[var(--omni-muted)]">
             <span>
               {lang === "ro"
                 ? `Pondere (ultimele 7 zile): ${pct(wP)}% practică, ${pct(wK)}% cunoștințe, ${pct(wR)}% reflecție.`
@@ -170,7 +170,7 @@ export default function ActionTrendsCard({
             {hasGaps ? (
               <button
                 type="button"
-                className="text-[#2C2C2C] underline hover:text-[#C07963]"
+                className="text-[var(--omni-ink)] underline hover:text-[var(--omni-energy)]"
                 onClick={() => {
                   setQaOpen(!qaOpen);
                   if (!qaSelectedDays.length) setQaSelectedDays([gaps[0]!]);
@@ -182,9 +182,9 @@ export default function ActionTrendsCard({
             ) : null}
           </div>
           {qaOpen && hasGaps ? (
-            <div className="mt-2 rounded-[8px] border border-[#E4DAD1] bg-[#FFFBF7] p-2">
+            <div className="mt-2 rounded-[8px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-2">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2 text-[10px] text-[#7B6B60]">
+                <div className="flex items-center gap-2 text-[10px] text-[var(--omni-muted)]">
                   <span>{lang === "ro" ? "Zile fără acțiuni:" : "Gap days:"}</span>
                   {gaps.map((g) => {
                     const d = new Date(g);
@@ -204,15 +204,15 @@ export default function ActionTrendsCard({
                     );
                   })}
                 </div>
-                <label className="text-[10px] text-[#7B6B60]">
+                <label className="text-[10px] text-[var(--omni-muted)]">
                   {lang === "ro" ? "Categorie" : "Category"}
-                  <select value={qaCategory} onChange={(e) => setQaCategory(e.target.value as "practice" | "reflection" | "knowledge")} className="ml-1 rounded border border-[#E4DAD1] bg-white px-1 py-0.5 text-[10px]">
+                  <select value={qaCategory} onChange={(e) => setQaCategory(e.target.value as "practice" | "reflection" | "knowledge")} className="ml-1 rounded border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-1 py-0.5 text-[10px]">
                     <option value="practice">{lang === "ro" ? "Practică" : "Practice"}</option>
                     <option value="knowledge">{lang === "ro" ? "Cunoaștere" : "Knowledge"}</option>
                     <option value="reflection">{lang === "ro" ? "Reflecție" : "Reflection"}</option>
                   </select>
                 </label>
-                <label className="text-[10px] text-[#7B6B60]">
+                <label className="text-[10px] text-[var(--omni-muted)]">
                   {lang === "ro" ? "Minute" : "Minutes"}
                   <input
                     type="number"
@@ -220,7 +220,7 @@ export default function ActionTrendsCard({
                     max={180}
                     value={qaMinutes}
                     onChange={(e) => setQaMinutes(Number(e.target.value) || 0)}
-                    className="ml-1 w-16 rounded border border-[#E4DAD1] bg-white px-1 py-0.5 text-[10px]"
+                    className="ml-1 w-16 rounded border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-1 py-0.5 text-[10px]"
                   />
                 </label>
                 <button
@@ -252,7 +252,7 @@ export default function ActionTrendsCard({
                       setQaBusy(false);
                     }
                   }}
-                  className="rounded border border-[#2C2C2C] px-2 py-0.5 text-[10px] font-semibold text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+                  className="rounded border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
                 >
                   {qaBusy ? (lang === "ro" ? "Se salvează…" : "Saving…") : lang === "ro" ? "Salvează" : "Save"}
                 </button>
@@ -280,8 +280,8 @@ export default function ActionTrendsCard({
   return (
     <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
       <div id="actions-trend">
-        <Card className="h-[200px] overflow-hidden rounded-xl border border-[#E4DAD1] bg-white p-3 shadow-sm sm:h-[240px] sm:p-4 lg:h-[280px]">
-          <h3 className="mb-1 flex items-center gap-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
+        <Card className="h-[200px] overflow-hidden rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 shadow-sm sm:h-[240px] sm:p-4 lg:h-[280px]">
+          <h3 className="mb-1 flex items-center gap-1 text-xs font-semibold text-[var(--omni-muted)] sm:mb-2 sm:text-sm">
             <span>{trendTitle}</span>
             <InfoTooltip
               label={lang === "ro" ? "Despre trend" : "About trends"}
@@ -313,11 +313,11 @@ export default function ActionTrendsCard({
                 : "Activities evolution"}
             </p>
             <div className="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2">
-              <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[10px] sm:text-[11px]">
+              <div className="inline-flex rounded-md border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-0.5 text-[10px] sm:text-[11px]">
                 <button
                   type="button"
                   onClick={() => setTimeframe("week")}
-                  className={`rounded px-1.5 py-0.5 transition ${timeframe === "week" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                  className={`rounded px-1.5 py-0.5 transition ${timeframe === "week" ? "bg-[var(--omni-surface-card)] border border-[var(--omni-border-soft)] text-[var(--omni-ink)] font-semibold" : "text-[var(--omni-ink-soft)]"}`}
                   aria-label="Toggle to week view"
                   data-testid="trend-toggle-week"
                 >
@@ -326,18 +326,18 @@ export default function ActionTrendsCard({
                 <button
                   type="button"
                   onClick={() => setTimeframe("month")}
-                  className={`rounded px-1.5 py-0.5 transition ${timeframe === "month" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                  className={`rounded px-1.5 py-0.5 transition ${timeframe === "month" ? "bg-[var(--omni-surface-card)] border border-[var(--omni-border-soft)] text-[var(--omni-ink)] font-semibold" : "text-[var(--omni-ink-soft)]"}`}
                   aria-label="Toggle to month view"
                   data-testid="trend-toggle-month"
                 >
                   {getString(t, "dashboard.trendsToggle.month", lang === "ro" ? "Lună" : "Month")}
                 </button>
               </div>
-              <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[10px] sm:text-[11px]">
+              <div className="inline-flex rounded-md border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-0.5 text-[10px] sm:text-[11px]">
                 <button
                   type="button"
                   onClick={() => setMetric("min")}
-                  className={`rounded px-1.5 py-0.5 transition ${metric === "min" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                  className={`rounded px-1.5 py-0.5 transition ${metric === "min" ? "bg-[var(--omni-surface-card)] border border-[var(--omni-border-soft)] text-[var(--omni-ink)] font-semibold" : "text-[var(--omni-ink-soft)]"}`}
                   aria-label="Toggle to minutes"
                   data-testid="trend-toggle-minutes"
                 >
@@ -346,7 +346,7 @@ export default function ActionTrendsCard({
                 <button
                   type="button"
                   onClick={() => setMetric("count")}
-                  className={`rounded px-1.5 py-0.5 transition ${metric === "count" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                  className={`rounded px-1.5 py-0.5 transition ${metric === "count" ? "bg-[var(--omni-surface-card)] border border-[var(--omni-border-soft)] text-[var(--omni-ink)] font-semibold" : "text-[var(--omni-ink-soft)]"}`}
                   aria-label="Toggle to sessions"
                   data-testid="trend-toggle-sessions"
                 >
@@ -355,7 +355,7 @@ export default function ActionTrendsCard({
                 <button
                   type="button"
                   onClick={() => setMetric("score")}
-                  className={`rounded px-1.5 py-0.5 transition ${metric === "score" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"}`}
+                  className={`rounded px-1.5 py-0.5 transition ${metric === "score" ? "bg-[var(--omni-surface-card)] border border-[var(--omni-border-soft)] text-[var(--omni-ink)] font-semibold" : "text-[var(--omni-ink-soft)]"}`}
                   aria-label="Toggle to activity score"
                   data-testid="trend-toggle-score"
                 >
@@ -398,7 +398,7 @@ export default function ActionTrendsCard({
             />
           </div>
           {metric !== "min" ? (
-            <p className="mt-1 text-[9px] text-[#7B6B60] sm:text-[10px]">
+            <p className="mt-1 text-[9px] text-[var(--omni-muted)] sm:text-[10px]">
               {getString(t, metric === "count" ? "dashboard.trendsToggle.sessions" : "dashboard.trendsToggle.score", metric === "count" ? (lang === "ro" ? "Sesiuni" : "Sessions") : lang === "ro" ? "Scor" : "Score")}
             </p>
           ) : null}

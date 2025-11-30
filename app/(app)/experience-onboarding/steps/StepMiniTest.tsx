@@ -10,6 +10,8 @@ import { getCorrectIndexFor } from "@/lib/omniKunoAnswers";
 import type { OmniKunoTopicKey } from "@/lib/omniKunoTypes";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useI18n } from "@/components/I18nProvider";
+import { OmniCard } from "@/components/OmniCard";
+import { PrimaryButton } from "@/components/PrimaryButton";
 
 type MiniMeta = {
   topicKey?: string;
@@ -140,18 +142,15 @@ export default function StepMiniTest({
   }, [autoSubmitAfterMin, canSubmit, handleSubmit]);
   return (
     <section className="space-y-4">
-      <div
-        className="rounded-[16px] border px-6 py-6 shadow-sm"
-        style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
-      >
+      <OmniCard className="rounded-[16px] px-6 py-6">
         <div
           className="mb-1 text-xs uppercase tracking-[0.3em]"
-          style={{ color: "var(--text-soft)" }}
+          style={{ color: "var(--omni-muted)" }}
         >
           {lang === 'ro' ? 'Pas 2/7' : 'Step 2/7'}
         </div>
         <Typewriter text={lang === 'ro' ? `Mini‑Cuno: ${questions.length} întrebări rapide. Vei vedea explicația corectă la fiecare răspuns.` : `Mini‑Cuno: ${questions.length} quick questions. You’ll see the explanation for the correct answer.`} />
-      </div>
+      </OmniCard>
       {/* Legend removed here to keep the quiz simple and self‑evident (pure knowledge) */}
       {questions.map((q, idx) => {
         const style = 'knowledge' as const;
@@ -176,14 +175,14 @@ export default function StepMiniTest({
         <p className="text-sm" style={{ color: "var(--text-main)" }}>
           {lang === 'ro' ? 'Scor curent' : 'Current score'}: {raw}/{max}
         </p>
-        <button
+        <PrimaryButton
           disabled={!canSubmit}
           onClick={handleSubmit}
           data-testid="eo-submit"
-          className="theme-btn-outline rounded-[10px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
+          className="px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {lang === 'ro' ? 'Vezi scorul' : 'See score'}
-        </button>
+        </PrimaryButton>
       </div>
     </section>
   );

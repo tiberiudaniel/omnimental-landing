@@ -204,7 +204,6 @@ export default function WizardRouter(props: Props) {
           lines={lines}
           onContinue={() => navigateToStep("intent")}
           cardTestId={`${getWizardStepTestId("reflectionPrompt")}-card`}
-          compact
         />
       );
     }
@@ -228,8 +227,7 @@ export default function WizardRouter(props: Props) {
       return (
         <section
           data-testid={intentTestId}
-          className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center px-6 py-8"
-          style={{ backgroundColor: "var(--bg-page)", color: "var(--text-main)" }}
+          className="flex min-h-[calc(100vh-96px)] w-full flex-col items-center bg-[var(--omni-surface-card)] px-6 py-8 text-[var(--omni-ink)]"
         >
           <div
             className="w-full max-w-5xl rounded-[12px] border px-6 py-5 shadow-[0_8px_24px_rgba(27,20,16,0.12)]"

@@ -39,10 +39,10 @@ export default function ProfileIndicesCard({
     <motion.div
       variants={fadeDelayed(0.22)}
       {...hoverScale}
-      className={`order-3 md:order-3 md:col-span-2 ${debugGrid ? "outline outline-1 outline-[#C24B17]/40" : ""}`}
+      className={`order-3 md:order-3 md:col-span-2 ${debugGrid ? "outline outline-1 outline-[var(--omni-energy-soft)]/40" : ""}`}
     >
-      <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3">
-        <h3 className="mb-1 text-xs font-semibold text-[#7B6B60] sm:mb-2 sm:text-sm">
+      <Card className="rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2.5 shadow-sm sm:p-3">
+        <h3 className="mb-1 text-xs font-semibold text-[var(--omni-muted)] sm:mb-2 sm:text-sm">
           {lang === "ro" ? "Profile indices" : "Profile indices"}
         </h3>
         <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4 md:gap-3">
@@ -142,12 +142,12 @@ function renderMasterySegments(lang: string, omni: OmniBlock | undefined) {
     <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3">
       {masterySegments.map(({ key, value }) => (
         <div key={key} className="space-y-1">
-          <div className="flex items-center justify-between text-[10px] text-[#7B6B60]">
+          <div className="flex items-center justify-between text-[10px] text-[var(--omni-muted)]">
             <span>{labelMap[key] ?? key}</span>
             <span>{Math.round(value)}%</span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded bg-[#EFE5DA]">
-            <div className="h-full bg-[#C07963]" style={{ width: `${Math.max(0, Math.min(100, Math.round(value)))}%` }} />
+            <div className="h-full bg-[var(--omni-energy)]" style={{ width: `${Math.max(0, Math.min(100, Math.round(value)))}%` }} />
           </div>
         </div>
       ))}

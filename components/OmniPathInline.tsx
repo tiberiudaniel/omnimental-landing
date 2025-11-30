@@ -21,8 +21,8 @@ function PathBtn({ lang, title, unlocked, onClick, hint }: PathBtnProps) {
       onClick={onClick}
       className={`relative rounded-[8px] border px-2 py-1 sm:px-2.5 sm:py-1.5 text-left text-[11px] font-semibold ${
         unlocked
-          ? "border-[#D8C6B6] bg-[#F6F2EE] text-[#2C2C2C] hover:border-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white transition"
-          : "border-dashed border-[#E4D8CE] bg-[#FFF9F3] text-[#A08F82] cursor-not-allowed"
+          ? "border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] transition"
+          : "border-dashed border-[var(--omni-border-soft)] bg-[#FFF9F3] text-[var(--omni-muted)] cursor-not-allowed"
       }`}
       aria-disabled={!unlocked}
       title={title}

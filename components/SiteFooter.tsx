@@ -28,21 +28,21 @@ export default function SiteFooter() {
         ]
   );
   return (
-    <footer className="site-footer mt-12 border-t border-[#EDE6DE] bg-white/90 py-5">
+    <footer className="site-footer mt-12 border-t border-[#EDE6DE] bg-[var(--omni-surface-card)]/90 py-5">
       <div className="mx-auto max-w-6xl px-4">
-        <div className="flex flex-col items-center gap-3 text-center text-[12px] text-[#5C4F45] sm:flex-row sm:justify-between sm:text-left">
+        <div className="flex flex-col items-center gap-3 text-center text-[12px] text-[var(--omni-ink-soft)] sm:flex-row sm:justify-between sm:text-left">
           <p className="opacity-70">© {new Date().getFullYear()} OmniMental</p>
-          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[#7A6455] sm:justify-end">
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[var(--omni-muted)] sm:justify-end">
             {links.map((l, idx) => (
               <span key={l.href} className="inline-flex items-center">
                 <Link
                   href={l.href}
-                  className="rounded-[6px] px-1.5 py-0.5 text-[12px] leading-6 text-[#7A6455]/85 underline-offset-4 transition hover:text-[#2C2C2C] hover:underline"
+                  className="rounded-[6px] px-1.5 py-0.5 text-[12px] leading-6 text-[var(--omni-muted)]/85 underline-offset-4 transition hover:text-[var(--omni-ink)] hover:underline"
                 >
                   {l.label}
                 </Link>
                 {idx < links.length - 1 ? (
-                  <span className="hidden text-[#A08F82]/60 sm:inline">·</span>
+                  <span className="hidden text-[var(--omni-muted)]/60 sm:inline">·</span>
                 ) : null}
               </span>
             ))}

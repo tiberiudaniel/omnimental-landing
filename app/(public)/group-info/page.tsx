@@ -205,19 +205,19 @@ function GroupInfoContent() {
   const router = useRouter();
 
   return (
-    <div className="bg-[#FDFCF9] min-h-screen pb-20">
+    <div className="bg-[var(--omni-bg-main)] min-h-screen pb-20">
       <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
 
       <div className="mx-auto max-w-4xl px-6 pt-12">
-        <section className="panel-canvas panel-canvas--hero panel-canvas--brain-center rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-12 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px]">
-          <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+        <section className="panel-canvas panel-canvas--hero panel-canvas--brain-center rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-12 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px]">
+          <div className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {copy.hero.badge}
           </div>
-          <h1 className="mt-3 text-3xl font-semibold text-[#1F1F1F] sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-semibold text-[var(--omni-ink)] sm:text-4xl">
             {copy.hero.title}
           </h1>
-          <p className="mt-5 text-base leading-relaxed text-[#2C2C2C]">
+          <p className="mt-5 text-base leading-relaxed text-[var(--omni-ink)]">
             {copy.hero.body}
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -228,10 +228,10 @@ function GroupInfoContent() {
                 void recordRecommendationProgressFact({ badgeLabel: "auth_redirect" }).catch(() => undefined);
                 router.push("/auth");
               }}
-              className="group inline-flex items-center gap-3 rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+              className="group inline-flex items-center gap-3 rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
             >
               {isRo ? 'Acces Invitat Special' : 'Enter as Special Guest'}
-              <span className="translate-y-[1px] text-sm text-[#E60012] transition group-hover:translate-x-1 group-hover:text-[#B8000E]">→</span>
+              <span className="translate-y-[1px] text-sm text-[var(--omni-energy)] transition group-hover:translate-x-1 group-hover:text-[var(--omni-danger)]">→</span>
             </button>
           </div>
         </section>
@@ -240,25 +240,25 @@ function GroupInfoContent() {
           {copy.highlights.map((card) => (
             <div
               key={card.title}
-              className="rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-6 text-[#2C2C2C] shadow-[0_12px_32px_rgba(0,0,0,0.06)]"
+              className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-6 py-6 text-[var(--omni-ink)] shadow-[0_12px_32px_rgba(0,0,0,0.06)]"
             >
-              <h2 className="text-lg font-semibold text-[#1F1F1F]">{card.title}</h2>
+              <h2 className="text-lg font-semibold text-[var(--omni-ink)]">{card.title}</h2>
               <p className="mt-3 text-sm leading-relaxed">{card.copy}</p>
             </div>
           ))}
         </section>
 
         <section className="mt-10 grid gap-8 md:grid-cols-[2fr_1fr]">
-          <div className="rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
-            <h2 className="text-2xl font-semibold text-[#1F1F1F]">
+          <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
+            <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">
               {isRo ? "Ce rezolvi concret" : "What you solve concretely"}
             </h2>
-            <p className="mt-4 text-[#2C2C2C]">
+            <p className="mt-4 text-[var(--omni-ink)]">
               {isRo
                 ? "Sistemul nervos poate fi recalibrat. Lucrăm cu corpul, mintea și respirația ca să-ți recapeți siguranța, energia și capacitatea de a decide limpede."
                 : "Your nervous system can be recalibrated. We work with body, mind, and breath so you regain safety, energy, and clear decision-making."}
             </p>
-            <ul className="mt-4 space-y-2 pl-5 text-sm text-[#2C2C2C]">
+            <ul className="mt-4 space-y-2 pl-5 text-sm text-[var(--omni-ink)]">
               {copy.resetBenefits.map((item) => (
                 <li key={item} className="list-disc">
                   {item}
@@ -266,22 +266,22 @@ function GroupInfoContent() {
               ))}
             </ul>
           </div>
-          <div className="rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]">
+          <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-6 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
               {copy.testimonial.title}
             </h3>
-            <p className="mt-3 text-sm italic text-[#2C2C2C] leading-relaxed">
+            <p className="mt-3 text-sm italic text-[var(--omni-ink)] leading-relaxed">
               {copy.testimonial.quote}
             </p>
           </div>
         </section>
 
-        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
-          <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+        <section className="mt-10 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
+          <div className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {isRo ? "Rezultate" : "Results"}
           </div>
-          <h2 className="mt-3 text-2xl font-semibold text-[#1F1F1F]">{copy.results.title}</h2>
-          <ul className="mt-4 space-y-2 pl-5 text-sm text-[#2C2C2C]">
+          <h2 className="mt-3 text-2xl font-semibold text-[var(--omni-ink)]">{copy.results.title}</h2>
+          <ul className="mt-4 space-y-2 pl-5 text-sm text-[var(--omni-ink)]">
             {copy.results.list.map((item) => (
               <li key={item} className="list-disc">
                 {item}
@@ -294,30 +294,30 @@ function GroupInfoContent() {
         </section>
 
         <section className="mt-10 grid gap-8 md:grid-cols-2">
-          <div className="rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
-          <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+          <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
+          <div className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {isRo ? "Structură" : "Structure"}
           </div>
-            <h2 className="mt-3 text-2xl font-semibold text-[#1F1F1F]">
+            <h2 className="mt-3 text-2xl font-semibold text-[var(--omni-ink)]">
               {copy.levels.title}
             </h2>
-            <ol className="mt-4 space-y-3 text-sm text-[#2C2C2C]">
+            <ol className="mt-4 space-y-3 text-sm text-[var(--omni-ink)]">
               {copy.levels.list.map((item, index) => (
                 <li key={item} className="flex gap-3">
-                  <span className="text-[#A08F82]">{index + 1 < 10 ? `0${index + 1}` : index + 1}</span>
+                  <span className="text-[var(--omni-muted)]">{index + 1 < 10 ? `0${index + 1}` : index + 1}</span>
                   <span>{item}</span>
                 </li>
               ))}
             </ol>
           </div>
-          <div className="rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
-          <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+          <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
+          <div className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {isRo ? "Metode" : "Methods"}
           </div>
-            <h2 className="mt-3 text-2xl font-semibold text-[#1F1F1F]">
+            <h2 className="mt-3 text-2xl font-semibold text-[var(--omni-ink)]">
               {copy.methods.title}
             </h2>
-            <ul className="mt-4 space-y-2 pl-5 text-sm text-[#2C2C2C]">
+            <ul className="mt-4 space-y-2 pl-5 text-sm text-[var(--omni-ink)]">
               {copy.methods.list.map((item) => (
                 <li key={item} className="list-disc">
                   {item}
@@ -327,14 +327,14 @@ function GroupInfoContent() {
           </div>
         </section>
 
-        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
-          <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+        <section className="mt-10 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
+          <div className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {isRo ? "Pentru cine" : "Who it's for"}
           </div>
-          <h2 className="mt-3 text-2xl font-semibold text-[#1F1F1F]">
+          <h2 className="mt-3 text-2xl font-semibold text-[var(--omni-ink)]">
             {copy.audience.title}
           </h2>
-          <ul className="mt-4 space-y-2 pl-5 text-sm text-[#2C2C2C]">
+          <ul className="mt-4 space-y-2 pl-5 text-sm text-[var(--omni-ink)]">
             {copy.audience.list.map((item) => (
               <li key={item} className="list-disc">
                 {item}
@@ -343,14 +343,14 @@ function GroupInfoContent() {
           </ul>
         </section>
 
-        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
-          <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+        <section className="mt-10 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
+          <div className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {isRo ? "Transformare" : "Transformation"}
           </div>
-          <h2 className="mt-3 text-2xl font-semibold text-[#1F1F1F]">
+          <h2 className="mt-3 text-2xl font-semibold text-[var(--omni-ink)]">
             {copy.transformation.title}
           </h2>
-          <ul className="mt-4 space-y-2 pl-5 text-sm text-[#2C2C2C]">
+          <ul className="mt-4 space-y-2 pl-5 text-sm text-[var(--omni-ink)]">
             {copy.transformation.list.map((item) => (
               <li key={item} className="list-disc">
                 {item}
@@ -359,11 +359,11 @@ function GroupInfoContent() {
           </ul>
         </section>
 
-        <section className="mt-12 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-10 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
-          <p className="text-[#2C2C2C]">
+        <section className="mt-12 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-10 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
+          <p className="text-[var(--omni-ink)]">
             {copy.closing.text}
           </p>
-          <p className="mt-3 font-semibold text-[#1F1F1F]">
+          <p className="mt-3 font-semibold text-[var(--omni-ink)]">
             {copy.closing.bold}
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -376,10 +376,10 @@ function GroupInfoContent() {
                   window.location.assign('/recommendation?demo=1');
                 }
               }}
-              className="group inline-flex items-center gap-3 rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+              className="group inline-flex items-center gap-3 rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
             >
               {isRo ? 'Acces Invitat Special' : 'Enter as Special Guest'}
-              <span className="translate-y-[1px] text-sm text-[#E60012] transition group-hover:translate-x-1 group-hover:text-[#B8000E]">→</span>
+              <span className="translate-y-[1px] text-sm text-[var(--omni-energy)] transition group-hover:translate-x-1 group-hover:text-[var(--omni-danger)]">→</span>
             </button>
           </div>
         </section>

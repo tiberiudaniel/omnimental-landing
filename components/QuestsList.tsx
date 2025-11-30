@@ -60,20 +60,20 @@ export default function QuestsList({ lang, categories, items = [] }: Props) {
   };
 
   return (
-    <div className="rounded-[16px] border border-[#D8C6B6] bg-white/95 px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
+    <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.05)]">
       <header className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#1F1F1F]">{lang === "ro" ? "Quest‑uri active" : "Active quests"}</h3>
+        <h3 className="text-sm font-semibold text-[var(--omni-ink)]">{lang === "ro" ? "Quest‑uri active" : "Active quests"}</h3>
         <button
           type="button"
           disabled={busy}
           onClick={() => void generate()}
-          className="rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:opacity-60"
+          className="rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:opacity-60"
         >
           {lang === "ro" ? "Generează" : "Generate"}
         </button>
       </header>
       {items.length === 0 ? (
-        <p className="text-xs text-[#7A6455]">{lang === "ro" ? "Vor apărea aici după generare." : "They will appear after generation."}</p>
+        <p className="text-xs text-[var(--omni-muted)]">{lang === "ro" ? "Vor apărea aici după generare." : "They will appear after generation."}</p>
       ) : (
         <ul className="space-y-2">
           {items.map((q) => {
@@ -82,10 +82,10 @@ export default function QuestsList({ lang, categories, items = [] }: Props) {
               ? (lang === 'ro' ? 'Finalizat' : 'Completed')
               : (isReflect ? (lang === 'ro' ? 'Deschide jurnalul' : 'Open journal') : (lang === 'ro' ? 'Completează' : 'Complete'));
             return (
-            <li key={q.id} className="flex items-center justify-between rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-3 py-2 text-sm text-[#2C2C2C]">
+            <li key={q.id} className="flex items-center justify-between rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-sm text-[var(--omni-ink)]">
               <div>
                 <p className="font-semibold">{q.title}</p>
-                {q.body ? <p className="text-xs text-[#7A6455]">{q.body}</p> : null}
+                {q.body ? <p className="text-xs text-[var(--omni-muted)]">{q.body}</p> : null}
               </div>
               <button
                 type="button"
@@ -110,7 +110,7 @@ export default function QuestsList({ lang, categories, items = [] }: Props) {
                     setBusy(false);
                   }
                 }}
-                className="rounded-[10px] border border-[#2C2C2C] px-2 py-[2px] text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:opacity-60"
+                className="rounded-[10px] border border-[var(--omni-border-soft)] px-2 py-[2px] text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:opacity-60"
               >
                 {ctaText}
               </button>

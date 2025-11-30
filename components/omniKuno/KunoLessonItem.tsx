@@ -36,7 +36,7 @@ export default function KunoLessonItem({ lesson, isActive, disabled, onSelect, h
   return (
     <div
       ref={ref}
-      className={`rounded-2xl border border-[#E4DAD1] bg-white transition shadow-sm ${
+      className={`rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] transition shadow-sm ${
         locked
           ? "opacity-60"
           : isActive
@@ -59,7 +59,7 @@ export default function KunoLessonItem({ lesson, isActive, disabled, onSelect, h
         }}
         data-testid="kuno-lesson-trigger"
         className={`flex w-full items-center justify-between px-3 py-2 text-left transition ${
-          locked ? "cursor-not-allowed" : "hover:bg-[#FFFBF7]"
+          locked ? "cursor-not-allowed" : "hover:bg-[var(--omni-bg-paper)]"
         }`}
       >
         {header}

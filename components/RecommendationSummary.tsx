@@ -67,8 +67,8 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
   const loadLabel = LOAD_LABELS[loadLevel][isRO ? "ro" : "en"];
   const containerBaseClass =
     variant === "card"
-      ? "w-full max-w-3xl rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)] space-y-5 text-[#2C2C2C]"
-      : "w-full space-y-5 text-[#2C2C2C]";
+      ? "w-full max-w-3xl rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)] space-y-5 text-[var(--omni-ink)]"
+      : "w-full space-y-5 text-[var(--omni-ink)]";
   const containerClass = [containerBaseClass, className].filter(Boolean).join(" ");
   const inferredMax = (() => {
     const vals = INDICATOR_CHART_KEYS.map((k) => Number(indicators[k] ?? 0));
@@ -105,13 +105,13 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
   return (
     <section className={containerClass}>
       {messageParagraphs.length > 0 ? (
-        <div className="space-y-2 t-body text-[#2C2C2C]">
+        <div className="space-y-2 t-body text-[var(--omni-ink)]">
           {messageParagraphs.map((paragraph, index) => (
             <p key={`${paragraph}-${index.toString()}`}>{paragraph}</p>
           ))}
         </div>
       ) : (
-        <p className="t-body text-[#2C2C2C]">
+        <p className="t-body text-[var(--omni-ink)]">
           {isRO
             ? `Aria principală este ${mainArea}, iar nivelul tău de încărcare este ${loadLabel}.`
             : `Your primary focus is ${mainArea}, and your overall load is ${loadLabel}.`}
@@ -119,7 +119,7 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
       )}
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-[#1F1F1F]">
+        <h3 className="text-sm font-semibold text-[var(--omni-ink)]">
           {isRO ? "Indicatori principali" : "Key indicators"}
         </h3>
         <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:gap-10">
@@ -138,13 +138,13 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
             {topTwoIndicators.map(({ key, label, value }) => (
               <li
                 key={key}
-                className="flex items-center justify-between rounded-[12px] border border-[#F0E2D4] bg-white px-3 py-2"
+                className="flex items-center justify-between rounded-[12px] border border-[#F0E2D4] bg-[var(--omni-surface-card)] px-3 py-2"
               >
-                <span className="text-[#5C4F45]">{label}</span>
+                <span className="text-[var(--omni-ink-soft)]">{label}</span>
                 {hasCounts ? (
-                  <span className="font-semibold text-[#1F1F1F]">{countFor(key) ?? 0}/{selectionTotal}</span>
+                  <span className="font-semibold text-[var(--omni-ink)]">{countFor(key) ?? 0}/{selectionTotal}</span>
                 ) : (
-                  <span className="font-semibold text-[#1F1F1F]">{toDisplayOnFive(value)}/5</span>
+                  <span className="font-semibold text-[var(--omni-ink)]">{toDisplayOnFive(value)}/5</span>
                 )}
               </li>
             ))}
@@ -156,13 +156,13 @@ export function RecommendationSummary(props: RecommendationSummaryProps) {
         <button
           type="button"
           onClick={onBookCall}
-          className="inline-flex w-full items-center justify-center rounded-[10px] bg-[#2C2C2C] px-6 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-[#E60012]"
+          className="inline-flex w-full items-center justify-center rounded-[10px] bg-[var(--omni-ink)] px-6 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-[var(--omni-energy)]"
         >
           {isRO ? "Programează un call de 20 min" : "Book a 20-min call"}
         </button>
       </div>
 
-      <p className="text-[11px] text-[#A08F82]">
+      <p className="text-[11px] text-[var(--omni-muted)]">
         {isRO
           ? "OmniMental este coaching de performanță și claritate mentală. Nu înlocuiește evaluarea sau tratamentul medical/psihiatric."
           : "OmniMental offers performance & clarity coaching. It is not a medical or psychiatric service."}

@@ -12,11 +12,11 @@ export default function CookiesPage() {
   const navLinks = useNavigationLinks();
   const isRo = lang === "ro";
   return (
-    <div className="bg-[#FDFCF9] min-h-screen pb-24">
+    <div className="bg-[var(--omni-bg-main)] min-h-screen pb-24">
       <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-      <main className="mx-auto max-w-4xl px-6 pt-12 text-sm leading-relaxed text-[#2C2C2C]">
-        <h1 className="mb-3 text-2xl font-semibold text-[#1F1F1F]">
+      <main className="mx-auto max-w-4xl px-6 pt-12 text-sm leading-relaxed text-[var(--omni-ink)]">
+        <h1 className="mb-3 text-2xl font-semibold text-[var(--omni-ink)]">
           {isRo ? "Politica cookies" : "Cookie Policy"}
         </h1>
         <p className="mb-2">

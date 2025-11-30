@@ -19,11 +19,11 @@ export default function BreathAnimation({ seconds = 120 }: { seconds?: number })
           style={{ transform: `scale(${0.7 + 0.3 * Math.sin((t % 8) * (Math.PI / 4))})`, transition: "transform 0.8s ease-in-out" }}
         />
       </div>
-      <p className="text-sm text-[#4A3A30]">{label}</p>
+      <p className="text-sm text-[var(--omni-ink-soft)]">{label}</p>
       <div className="mt-3 h-2 w-64 rounded bg-[#F0E6DA]">
-        <div className="h-full rounded bg-[#C07963]" style={{ width: `${progress * 100}%` }} />
+        <div className="h-full rounded bg-[var(--omni-energy)]" style={{ width: `${progress * 100}%` }} />
       </div>
-      <p className="mt-1 text-xs text-[#7B6B60]">{t}s / {seconds}s</p>
+      <p className="mt-1 text-xs text-[var(--omni-muted)]">{t}s / {seconds}s</p>
     </div>
   );
 }

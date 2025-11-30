@@ -37,21 +37,25 @@ export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) 
   const isWizard = (() => {
     try { return typeof window !== 'undefined' && window.location.pathname.startsWith('/wizard'); } catch { return false; }
   })();
-  const overlayClass = isWizard ? 'bg-[#FDFCF9]/90' : 'bg-black/40';
+  const overlayStyle = isWizard
+    ? { backgroundColor: "rgba(242, 242, 240, 0.9)" }
+    : { backgroundColor: "rgba(0,0,0,0.4)" };
   return (
-    <div className={`fixed inset-0 z-50 ${overlayClass} backdrop-blur-sm`} onClick={onClose}>
+    <div className="fixed inset-0 z-50 backdrop-blur-sm" style={overlayStyle} onClick={onClose}>
       <div
-        className="absolute right-6 top-6 w-[320px] max-w-[90%] border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.2)]"
+        className="absolute right-6 top-6 w-[320px] max-w-[90%] border px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.2)]"
+        style={{ backgroundColor: "var(--omni-surface-card)", borderColor: "var(--omni-border-soft)", color: "var(--omni-ink)" }}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <div className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+          <div className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {navigationLabel}
           </div>
           <button
             onClick={onClose}
             aria-label={closeLabel}
-            className="text-sm font-semibold text-[#2C2C2C] transition hover:text-[#E60012]"
+            className="text-sm font-semibold transition"
+            style={{ color: "var(--omni-ink)" }}
           >
             {closeLabel}
           </button>
@@ -62,24 +66,30 @@ export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) 
               <Link
                 href={link.href}
                 onClick={onClose}
-                className="block text-lg font-semibold text-[#1F1F1F] transition hover:text-[#E60012]"
+                className="block text-lg font-semibold transition"
+                style={{ color: "var(--omni-ink)" }}
               >
                 {link.label}
               </Link>
               {link.description && (
-                <p className="mt-1 text-sm text-[#2C2C2C]/70">{link.description}</p>
+                <p className="mt-1 text-sm" style={{ color: "var(--omni-muted)" }}>{link.description}</p>
               )}
             </li>
           ))}
         </ul>
-        <div className="mt-6 border-t border-[#F6F2EE] pt-4">
+        <div className="mt-6 border-t border-[var(--omni-bg-paper)] pt-4">
           <button
             type="button"
             onClick={() => {
               onClose();
               window.location.href = "mailto:hello@omnimental.ro";
             }}
-            className="inline-flex items-center gap-2 rounded-[8px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+            className="inline-flex items-center gap-2 rounded-[8px] border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] transition"
+            style={{
+              backgroundColor: "var(--omni-brand-soft)",
+              borderColor: "var(--omni-border-soft)",
+              color: "var(--omni-ink)",
+            }}
           >
             {ctaLabel}
             <span aria-hidden>→</span>

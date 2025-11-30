@@ -7,6 +7,7 @@ export type KunoTimelineItem = {
   title: string;
   status: OmniKunoLessonStatus;
   difficulty?: OmniKunoLesson["difficulty"];
+  durationMin?: OmniKunoLesson["durationMin"];
 };
 
 export function computeLessonsStatus(

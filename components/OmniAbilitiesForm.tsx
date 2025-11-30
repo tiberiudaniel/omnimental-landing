@@ -92,21 +92,21 @@ export default function OmniAbilitiesForm({ lang }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <header className="space-y-2 text-center md:text-left">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">Omni-Abilități</p>
-        <h2 className="text-2xl font-semibold text-[#1F1F1F]">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">Omni-Abilități</p>
+        <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">
           {lang === "ro"
             ? "Probe practice (breath, decizie, focus)"
             : "Practice probes (breath, decision, focus)"}
         </h2>
-        <p className="text-sm text-[#4A3A30]">
+        <p className="text-sm text-[var(--omni-ink-soft)]">
           {lang === "ro"
             ? "Selectează nivelul actual pentru fiecare criteriu (0=nu, 3=excelent)."
             : "Select your current level for each criterion (0=not present, 3=excellent)."}
         </p>
       </header>
 
-      <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+      <section className="space-y-4 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "P1 · Respirație de coerență HRV" : "P1 · HRV coherence breathing"}
         </h3>
         <div className="flex items-center gap-2">
@@ -117,7 +117,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
               setP1Active(true);
               setP1StartMs(Date.now());
             }}
-            className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#F6F2EE]"
+            className="rounded-[8px] border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-bg-paper)]"
           >
             {lang === "ro" ? "Start" : "Start"}
           </button>
@@ -132,7 +132,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
               setP1StartMs(null);
               void recordPracticeSession("breathing", start, durationSec);
             }}
-            className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#F6F2EE]"
+            className="rounded-[8px] border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-bg-paper)]"
           >
             {lang === "ro" ? "Final" : "End"}
           </button>
@@ -145,7 +145,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
             ["calm", lang === "ro" ? "Echilibru emoțional perceput" : "Perceived emotional balance"],
             ["coherence", lang === "ro" ? "Coerență ritmică" : "Rhythmic coherence"],
           ] as const).map(([key, label]) => (
-            <label key={key} className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
+            <label key={key} className="flex flex-col gap-2 text-sm text-[var(--omni-ink)]">
               {label}
               <div className="flex gap-2">
                 {levelLabels.map((lvl, index) => (
@@ -155,8 +155,8 @@ export default function OmniAbilitiesForm({ lang }: Props) {
                     onClick={() => updateLevel(["p1", key], index)}
                     className={`flex-1 rounded-[6px] border px-2 py-1 text-xs font-semibold ${
                       levels.p1[key as keyof typeof levels.p1] === index
-                        ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                        : "border-[#D8C6B6] text-[#2C2C2C]"
+                        ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                        : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]"
                     }`}
                   >
                     {lvl}
@@ -169,11 +169,11 @@ export default function OmniAbilitiesForm({ lang }: Props) {
       </section>
 
       {/* Minimal practice logger (dev): marks one practice and bumps skillsIndex */}
-      <section className="space-y-3 rounded-[16px] border border-[#E4D8CE] bg-[#FFFBF7] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-        <p className="text-sm font-semibold text-[#1F1F1F]">
+      <section className="space-y-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <p className="text-sm font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "Practică rapidă" : "Quick practice"}
         </p>
-        <p className="text-xs text-[#5C4F45]">
+        <p className="text-xs text-[var(--omni-ink-soft)]">
           {lang === "ro"
             ? "Marchează un exercițiu finalizat (ex. micro‑pauză 2’)."
             : "Mark one completed exercise (e.g., 2’ micro‑break)."}
@@ -188,14 +188,14 @@ export default function OmniAbilitiesForm({ lang }: Props) {
               setMessage(lang === "ro" ? "Nu am putut marca." : "Could not log.");
             }
           }}
-          className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
         >
           {lang === "ro" ? "Marchează exercițiu" : "Log practice"}
         </button>
       </section>
 
-      <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+      <section className="space-y-4 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
           {lang === "ro"
             ? "P2 · Decizie sub presiune (OODA)"
             : "P2 · Decision under pressure (OODA)"}
@@ -208,7 +208,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
             ["act", lang === "ro" ? "Acțiune" : "Act"],
             ["timing", lang === "ro" ? "Timp & Simplitate" : "Timing & simplicity"],
           ] as const).map(([key, label]) => (
-            <label key={key} className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
+            <label key={key} className="flex flex-col gap-2 text-sm text-[var(--omni-ink)]">
               {label}
               <div className="flex gap-2">
                 {levelLabels.map((lvl, index) => (
@@ -218,8 +218,8 @@ export default function OmniAbilitiesForm({ lang }: Props) {
                     onClick={() => updateLevel(["p2", key], index)}
                     className={`flex-1 rounded-[6px] border px-2 py-1 text-xs font-semibold ${
                       levels.p2[key as keyof typeof levels.p2] === index
-                        ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                        : "border-[#D8C6B6] text-[#2C2C2C]"
+                        ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                        : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]"
                     }`}
                   >
                     {lvl}
@@ -231,13 +231,13 @@ export default function OmniAbilitiesForm({ lang }: Props) {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+      <section className="space-y-4 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "P3 · Reframing dublu" : "P3 · Double reframing"}
         </h3>
         {(["case1", "case2"] as const).map((caseKey, idx) => (
-          <div key={caseKey} className="rounded-[12px] border border-[#F6EDE2] bg-[#FFFBF7] px-4 py-4 space-y-3">
-            <p className="text-sm font-semibold text-[#2C2C2C]">
+          <div key={caseKey} className="rounded-[12px] border border-[#F6EDE2] bg-[var(--omni-bg-paper)] px-4 py-4 space-y-3">
+            <p className="text-sm font-semibold text-[var(--omni-ink)]">
               {lang === "ro" ? `Situația ${idx + 1}` : `Scenario ${idx + 1}`}
             </p>
             {([
@@ -246,7 +246,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
               ["values", lang === "ro" ? "Legare de valori" : "Values link"],
               ["plan", lang === "ro" ? "Plan comportamental" : "Behavioral plan"],
             ] as const).map(([key, label]) => (
-              <label key={`${caseKey}-${key}`} className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
+              <label key={`${caseKey}-${key}`} className="flex flex-col gap-2 text-sm text-[var(--omni-ink)]">
                 {label}
                 <div className="flex gap-2">
                   {levelLabels.map((lvl, index) => (
@@ -256,8 +256,8 @@ export default function OmniAbilitiesForm({ lang }: Props) {
                       onClick={() => updateLevel(["p3", caseKey, key], index)}
                       className={`flex-1 rounded-[6px] border px-2 py-1 text-xs font-semibold ${
                         levels.p3[caseKey][key] === index
-                          ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                          : "border-[#D8C6B6] text-[#2C2C2C]"
+                          ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                          : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]"
                       }`}
                     >
                       {lvl}
@@ -270,8 +270,8 @@ export default function OmniAbilitiesForm({ lang }: Props) {
         ))}
       </section>
 
-      <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+      <section className="space-y-4 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "P4 · Focus sprint 5 minute" : "P4 · 5-minute focus sprint"}
         </h3>
         <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
               setP4Active(true);
               setP4StartMs(Date.now());
             }}
-            className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#F6F2EE]"
+            className="rounded-[8px] border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-bg-paper)]"
           >
             {lang === "ro" ? "Start" : "Start"}
           </button>
@@ -297,7 +297,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
               setP4StartMs(null);
               void recordPracticeSession("drill", start, durationSec);
             }}
-            className="rounded-[8px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#F6F2EE]"
+            className="rounded-[8px] border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-bg-paper)]"
           >
             {lang === "ro" ? "Final" : "End"}
           </button>
@@ -308,7 +308,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
             ["completion", lang === "ro" ? "Completare task" : "Task completion"],
             ["calm", lang === "ro" ? "Echilibru/Atenție" : "Emotional balance/presence"],
           ] as const).map(([key, label]) => (
-            <label key={key} className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
+            <label key={key} className="flex flex-col gap-2 text-sm text-[var(--omni-ink)]">
               {label}
               <div className="flex gap-2">
                 {levelLabels.map((lvl, index) => (
@@ -318,8 +318,8 @@ export default function OmniAbilitiesForm({ lang }: Props) {
                     onClick={() => updateLevel(["p4", key], index)}
                     className={`flex-1 rounded-[6px] border px-2 py-1 text-xs font-semibold ${
                       levels.p4[key as keyof typeof levels.p4] === index
-                        ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                        : "border-[#D8C6B6] text-[#2C2C2C]"
+                        ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                        : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]"
                     }`}
                   >
                     {lvl}
@@ -331,8 +331,8 @@ export default function OmniAbilitiesForm({ lang }: Props) {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+      <section className="space-y-4 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
           {lang === "ro"
             ? "P5 · Aderență la rutină (ultimele 7 zile)"
             : "P5 · Routine adherence (last 7 days)"}
@@ -344,7 +344,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
             ["journalingDays", lang === "ro" ? "Jurnal CGER" : "Journal (CGER)"],
             ["microPauseDays", lang === "ro" ? "Micro-pauze 3/zi" : "3 mindful breaks/day"],
           ] as const).map(([key, label]) => (
-            <label key={key} className="flex flex-col gap-2 text-sm text-[#2C2C2C]">
+            <label key={key} className="flex flex-col gap-2 text-sm text-[var(--omni-ink)]">
               {label}
               <input
                 type="number"
@@ -354,7 +354,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
                 onChange={(event) =>
                   updateLevel(["p5", key], Number(event.target.value))
                 }
-                className="rounded-[6px] border border-[#D8C6B6] px-3 py-2 focus:border-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
+                className="rounded-[6px] border border-[var(--omni-border-soft)] px-3 py-2 focus:border-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
               />
             </label>
           ))}
@@ -365,7 +365,7 @@ export default function OmniAbilitiesForm({ lang }: Props) {
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving
             ? lang === "ro"
@@ -375,16 +375,16 @@ export default function OmniAbilitiesForm({ lang }: Props) {
             ? "Salvează Omni-Abilități"
             : "Save Omni-Abilities"}
         </button>
-        {message ? <p className="text-sm text-[#4A3A30]">{message}</p> : null}
+        {message ? <p className="text-sm text-[var(--omni-ink-soft)]">{message}</p> : null}
       </div>
 
-      <section className="space-y-3 rounded-[16px] border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+      <section className="space-y-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "Rezumat scor" : "Score summary"}
         </h3>
-        <p className="text-sm text-[#4A3A30]">
+        <p className="text-sm text-[var(--omni-ink-soft)]">
           {lang === "ro" ? "Scor total O.A." : "Total OA score"}:{" "}
-          <span className="font-semibold text-[#1F1F1F]">{result.total}/100</span>
+          <span className="font-semibold text-[var(--omni-ink)]">{result.total}/100</span>
         </p>
         <div className="grid gap-3 md:grid-cols-2">
           {(() => {
@@ -406,13 +406,13 @@ export default function OmniAbilitiesForm({ lang }: Props) {
                   };
             const scaledMax: Record<string, number> = { p1: 20, p2: 25, p3: 20, p4: 15, p5: 20 };
             return Object.entries(result.probes).map(([key, value]) => (
-              <div key={key} className="space-y-1 rounded-[10px] border border-[#F6EDE2] bg-[#FFFBF7] px-4 py-3">
-                <p className="text-sm font-semibold text-[#2C2C2C]">
+              <div key={key} className="space-y-1 rounded-[10px] border border-[#F6EDE2] bg-[var(--omni-bg-paper)] px-4 py-3">
+                <p className="text-sm font-semibold text-[var(--omni-ink)]">
                   {labels[key as keyof typeof labels]} · {value.scaled}p
                 </p>
                 <div className="h-1.5 w-full rounded-full bg-[#F6EDE2]">
                   <div
-                    className="h-full rounded-full bg-[#2C2C2C]"
+                    className="h-full rounded-full bg-[var(--omni-ink)]"
                     style={{
                       width: `${Math.min(
                         100,

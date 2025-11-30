@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
+import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useI18n } from "@/components/I18nProvider";
 import { useTStrings } from "@/components/useTStrings";
@@ -169,7 +170,7 @@ function RecommendationContent() {
   );
 
   // Ensure the oldest (index 1 at bottom) is the initial path recommendation: Group vs Individual
-  const basePathRec: OmniRecommendation | null = useMemo(() => {
+  const basePathRecFromProgress: OmniRecommendation | null = useMemo(() => {
     try {
       // Prefer member recommendation computed from current progress
       if (!isPublicTier && progress?.intent && progress?.evaluation) {
@@ -209,35 +210,77 @@ function RecommendationContent() {
           sourceRef: 'path-recommendation',
         };
       }
-      // Fallback: public/cached suggestion
-      if (typeof window !== 'undefined') {
-        const cached = readRecommendationCache();
-        if (cached) {
-          const isGroup = cached.recommendation.path !== 'individual';
-          const label = isGroup ? (lang === 'ro' ? 'Grup OmniMental' : 'OmniMental group') : (lang === 'ro' ? 'Ședințe individuale' : 'Individual sessions');
-          const title = (lang === 'ro' ? 'Recomandare inițială: ' : 'Initial recommendation: ') + label;
-          return {
-            id: 'base-path',
-            userId: profile?.id ?? 'demo',
-            title,
-            shortLabel: label,
-            type: 'onboarding',
-            status: 'done',
-            createdAt: '2000-01-01T00:00:00.000Z',
-            priority: 3,
-            body: isGroup
-              ? (lang === 'ro' ? 'Ți se potrivește ritmul și suportul din programul de grup OmniMental.' : 'Group program seems a good fit.')
-              : (lang === 'ro' ? 'Lucrăm 1-la-1 pentru a avansa pe tema ta prioritară.' : '1-on-1 sessions fit your situation.'),
-            ctaLabel: isGroup ? (lang === 'ro' ? 'Deschide programul de grup' : 'Open group program') : (lang === 'ro' ? 'Programează un call' : 'Book a call'),
-            ctaHref: isGroup ? '/group' : '/contact',
-            source: 'system',
-            sourceRef: 'path-recommendation',
-          } as OmniRecommendation;
-        }
-      }
     } catch {}
     return null;
   }, [isPublicTier, progress, profile, lang, s]);
+
+  const [cachedBasePathRec, setCachedBasePathRec] = useState<OmniRecommendation | null>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+    let cancelled = false;
+    const applyCache = () => {
+      if (cancelled) return;
+      try {
+        const cached = readRecommendationCache();
+        if (!cached) {
+          setCachedBasePathRec(null);
+          return;
+        }
+        const isGroup = cached.recommendation.path !== "individual";
+        const label =
+          isGroup
+            ? lang === "ro"
+              ? "Grup OmniMental"
+              : "OmniMental group"
+            : lang === "ro"
+              ? "Ședințe individuale"
+              : "Individual sessions";
+        const title = (lang === "ro" ? "Recomandare inițială: " : "Initial recommendation: ") + label;
+        const body = isGroup
+          ? lang === "ro"
+            ? "Ți se potrivește ritmul și suportul din programul de grup OmniMental."
+            : "Group program seems a good fit."
+          : lang === "ro"
+            ? "Lucrăm 1-la-1 pentru a avansa pe tema ta prioritară."
+            : "1-on-1 sessions fit your situation.";
+        setCachedBasePathRec({
+          id: "base-path",
+          userId: profile?.id ?? "demo",
+          title,
+          shortLabel: label,
+          type: "onboarding",
+          status: "done",
+          createdAt: "2000-01-01T00:00:00.000Z",
+          priority: 3,
+          body,
+          ctaLabel: isGroup
+            ? lang === "ro"
+              ? "Deschide programul de grup"
+              : "Open group program"
+            : lang === "ro"
+              ? "Programează un call"
+              : "Book a call",
+          ctaHref: isGroup ? "/group" : "/contact",
+          source: "system",
+          sourceRef: "path-recommendation",
+        });
+      } catch {
+        setCachedBasePathRec(null);
+      }
+    };
+    applyCache();
+    window.addEventListener("storage", applyCache);
+    return () => {
+      cancelled = true;
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", applyCache);
+      }
+    };
+  }, [profile?.id, lang]);
+
+  const basePathRec = basePathRecFromProgress ?? cachedBasePathRec;
 
   const withBase: OmniRecommendation[] = useMemo(() => {
     const list = [...baseAll];
@@ -282,41 +325,40 @@ function RecommendationContent() {
 
   // Arrow animates via key change; no setState in effect
 
-  return (
-    <div className="min-h-screen bg-[#FDFCF9]">
-      <SiteHeader
-        showMenu
-        onMenuToggle={() => setMenuOpen(true)}
-        onAuthRequest={redirectToAuth}
-      />
-      {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? (
-        <DemoUserSwitcher />
-      ) : null}
-      {search?.get("demo") ? (
-        <div className="mx-auto mt-3 w-full max-w-4xl px-4">
-          <span className="inline-flex items-center rounded-full bg-[#7A6455] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">
-            {s("badgeDemo", "Demo")}
-          </span>
-        </div>
-      ) : null}
-      <MenuOverlay
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        links={navLinks}
-      />
+  const header = (
+    <SiteHeader
+      showMenu
+      onMenuToggle={() => setMenuOpen(true)}
+      onAuthRequest={redirectToAuth}
+    />
+  );
 
-      <main className="px-4 py-12 md:px-8" data-testid="recommendation-step">
+  return (
+    <>
+      <AppShell header={header}>
+        {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? (
+          <DemoUserSwitcher />
+        ) : null}
+        {search?.get("demo") ? (
+          <div className="mx-auto mt-3 w-full max-w-4xl px-4">
+            <span className="inline-flex items-center rounded-full bg-[var(--omni-muted)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">
+              {s("badgeDemo", "Demo")}
+            </span>
+          </div>
+        ) : null}
+
+        <div className="px-4 py-12 md:px-8" data-testid="recommendation-step">
         {needsAccount ? (
-          <section className="mx-auto mb-6 max-w-3xl rounded-[18px] border border-[#E4D8CE] bg-white px-6 py-8 text-center shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]">
+          <section className="mx-auto mb-6 max-w-3xl rounded-[18px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 text-center shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
               {lang === "ro" ? "Recomandările tale" : "Your recommendations"}
             </p>
-            <h1 className="mt-2 text-2xl font-semibold text-[#2C2C2C]">
+            <h1 className="mt-2 text-2xl font-semibold text-[var(--omni-ink)]">
               {lang === "ro"
                 ? "Ai deja un plan personalizat. Hai să nu-l pierzi."
                 : "You already have a personalised path. Let’s not lose it."}
             </h1>
-            <p className="mt-3 text-sm text-[#4A3A30]/80">
+            <p className="mt-3 text-sm text-[var(--omni-ink-soft)]/80">
               {lang === "ro"
                 ? "Poți vedea direcția recomandată și ca invitat, dar ca să păstrăm traseul, jurnalul și pașii următori în timp, e nevoie de un cont OmniMental."
                 : "You can see your recommended direction as a guest, but to keep your path, journal, and next steps over time, you’ll need an OmniMental account."}
@@ -325,14 +367,14 @@ function RecommendationContent() {
               <button
                 type="button"
                 onClick={() => router.push("/?step=cards")}
-                className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
               >
                 {lang === "ro" ? "Reia wizardul" : "Resume wizard"}
               </button>
               <button
                 type="button"
                 onClick={redirectToAuth}
-                className="inline-flex items-center justify-center rounded-[10px] bg-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:opacity-90"
+                className="inline-flex items-center justify-center rounded-[10px] bg-[var(--omni-ink)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-bg-paper)] transition hover:bg-[var(--omni-energy-soft)]"
               >
                 {lang === "ro" ? "Creează cont" : "Create account"}
               </button>
@@ -340,7 +382,7 @@ function RecommendationContent() {
           </section>
         ) : null}
         {showChooseBanner ? (
-          <div className="mx-auto mb-4 w-full max-w-4xl rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+          <div className="mx-auto mb-4 w-full max-w-4xl rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink)] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p>
                 {lang === "ro"
@@ -354,7 +396,7 @@ function RecommendationContent() {
                   url.searchParams.set("from", "reco");
                   router.push(url.pathname + url.search);
                 }}
-                className="shrink-0 rounded-[10px] border border-[#2C2C2C] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                className="shrink-0 rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
               >
                 {lang === "ro" ? "Alege formatul" : "Choose format"}
               </button>
@@ -364,17 +406,17 @@ function RecommendationContent() {
 
         {/* Hero + CTA */}
         <div className="mx-auto flex max-w-4xl flex-col gap-3 text-center">
-          <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
             OmniMental
           </p>
           <h1 className="text-3xl font-semibold text-[#2C1F18]">
             {pageTitle}
           </h1>
-          <p className="text-sm text-[#4A3A30]">{pageSubtitle}</p>
+          <p className="text-sm text-[var(--omni-ink-soft)]">{pageSubtitle}</p>
           <div className="mt-1 flex justify-center">
             <Link
               href="/experience-onboarding?flow=initiation&step=welcome&from=recommendation"
-              className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+              className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
               data-testid="reco-initiation-cta"
             >
               {lang === 'ro' ? 'Vreau să testez OmniMental' : 'I want to try OmniMental'}
@@ -385,11 +427,11 @@ function RecommendationContent() {
         {/* Stack + detail: istoric recomandări + ultima recomandare activă (mutat imediat după hero) */}
         {hasStack ? (
           <section
-            className="mx-auto mt-8 w-full max-w-5xl rounded-[16px] border border-[#E4D8CE] bg-white/90 px-6 py-6 shadow-[0_18px_40px_rgba(0,0,0,0.05)] md:px-10 md:py-7"
+            className="mx-auto mt-8 w-full max-w-5xl rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/90 px-6 py-6 shadow-[0_18px_40px_rgba(0,0,0,0.05)] md:px-10 md:py-7"
             data-testid="debug-stack-section"
           >
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold text-[#2C2C2C]">
+              <h2 className="text-base font-semibold text-[var(--omni-ink)]">
                 {lang === "ro" ? "Recomandari" : "Your recommendations"}
               </h2>
               <RecommendationFilters
@@ -423,12 +465,12 @@ function RecommendationContent() {
 
             <div className="grid items-stretch gap-6 md:grid-cols-[minmax(0,0.42fr)_auto_minmax(0,0.58fr)]">
               {/* STÂNGA: stiva de carduri */}
-              <div className="pl-5 pr-5 pt-3 md:pt-4 border-b border-[#F0E6DA] md:border-b-0 md:border-l md:border-r">
+              <div className="pl-5 pr-5 pt-3 md:pt-4 border-b border-[var(--omni-border-soft)] md:border-b-0 md:border-l md:border-r">
                 {recLoading ? (
                   <div className="space-y-3">
-                    <div className="h-10 w-full rounded-2xl bg-[#F6F2EE]" />
-                    <div className="h-10 w-11/12 rounded-2xl bg-[#F6F2EE]" />
-                    <div className="h-10 w-10/12 rounded-2xl bg-[#F6F2EE]" />
+                    <div className="h-10 w-full rounded-2xl bg-[var(--omni-bg-paper)]" />
+                    <div className="h-10 w-11/12 rounded-2xl bg-[var(--omni-bg-paper)]" />
+                    <div className="h-10 w-10/12 rounded-2xl bg-[var(--omni-bg-paper)]" />
                   </div>
                 ) : (
                   <RecommendationListStack
@@ -441,7 +483,7 @@ function RecommendationContent() {
               </div>
 
               {/* MIJLOC: săgeată între panouri (doar desktop) */}
-              <div className="relative hidden md:block text-[11px] text-[#A08F82]">
+              <div className="relative hidden md:block text-[11px] text-[var(--omni-muted)]">
                 <div
                   className="pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-1/2 select-none"
                   style={{ top: typeof arrowY === 'number' ? arrowY : 0 }}
@@ -459,10 +501,10 @@ function RecommendationContent() {
               <div className="pt-4 md:pt-0 md:pl-5">
                 {recLoading ? (
                   <div className="space-y-3">
-                    <div className="h-6 w-32 bg-[#F6F2EE]" />
-                    <div className="h-5 w-56 bg-[#F6F2EE]" />
-                    <div className="h-20 w-full bg-[#F6F2EE]" />
-                    <div className="h-10 w-32 bg-[#F6F2EE]" />
+                    <div className="h-6 w-32 bg-[var(--omni-bg-paper)]" />
+                    <div className="h-5 w-56 bg-[var(--omni-bg-paper)]" />
+                    <div className="h-20 w-full bg-[var(--omni-bg-paper)]" />
+                    <div className="h-10 w-32 bg-[var(--omni-bg-paper)]" />
                   </div>
                 ) : (
                   <RecommendationDetailPanel item={activeRec} />
@@ -497,8 +539,14 @@ function RecommendationContent() {
             onContinue={() => router.push("/progress")}
           />
         ) : null}
-      </main>
-    </div>
+        </div>
+      </AppShell>
+      <MenuOverlay
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        links={navLinks}
+      />
+    </>
   );
 }
 
@@ -518,17 +566,17 @@ function PublicRecommendationView({ lang }: { lang: string }) {
   );
   const ctaLabel = s("recommendationPublicCta", "Începe evaluarea");
   return (
-    <section className="mx-auto mt-10 max-w-3xl space-y-4 rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-8 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
-      <h2 className="text-2xl font-semibold text-[#1F1F1F]">{title}</h2>
-      <p className="text-sm text-[#4A3A30]">{body}</p>
+    <section className="mx-auto mt-10 max-w-3xl space-y-4 rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
+      <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">{title}</h2>
+      <p className="text-sm text-[var(--omni-ink-soft)]">{body}</p>
       <div className="flex flex-col items-center gap-3">
         <Link
           href="/antrenament"
-          className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
         >
           {ctaLabel}
         </Link>
-        <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+        <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
           {lang === "ro" ? "Necesită autentificare" : "Requires sign in"}
         </p>
       </div>
@@ -577,21 +625,21 @@ function PublicOrCachedView({ lang }: { lang: string }) {
     : null;
 
   return (
-    <section className="mx-auto mt-10 max-w-3xl space-y-4 rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-8 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
-      <h2 className="text-2xl font-semibold text-[#1F1F1F]">{title}</h2>
-      <p className="text-sm text-[#4A3A30]">
+    <section className="mx-auto mt-10 max-w-3xl space-y-4 rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
+      <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">{title}</h2>
+      <p className="text-sm text-[var(--omni-ink-soft)]">
         {lang === "ro"
           ? "Bazată pe ultimele selecții făcute în aplicație."
           : "Based on your latest selections in the app."}
       </p>
-      <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3">
-        <p className="text-xs uppercase tracking-[0.3em] text-[#C07963]">
+      <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3">
+        <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-energy)]">
           {lang === "ro" ? "Recomandare" : "Recommendation"}
         </p>
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">{label}</h3>
-        <p className="text-sm text-[#5C4F45]">{reason}</p>
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">{label}</h3>
+        <p className="text-sm text-[var(--omni-ink-soft)]">{reason}</p>
         {selectionNote ? (
-          <p className="text-xs text-[#7A6455]">{selectionNote}</p>
+          <p className="text-xs text-[var(--omni-muted)]">{selectionNote}</p>
         ) : null}
       </div>
       <div className="flex items-center justify-center gap-3">
@@ -599,7 +647,7 @@ function PublicOrCachedView({ lang }: { lang: string }) {
           href={
             cached.selectedPath === "group" ? "/group" : "/experience-onboarding"
           }
-          className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
         >
           {lang === "ro" ? "Continuă de aici" : "Continue from here"}
         </Link>
@@ -633,7 +681,7 @@ function MemberRecommendationView({
 
   if (loading) {
     return (
-      <div className="mx-auto mt-10 max-w-4xl rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 text-center text-sm text-[#4A3A30] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+      <div className="mx-auto mt-10 max-w-4xl rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 text-center text-sm text-[var(--omni-ink-soft)] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
         {s(
           "recommendationLoading",
           "Se încarcă recomandarea ta personalizată…",
@@ -643,7 +691,7 @@ function MemberRecommendationView({
   }
   if (error) {
     return (
-      <div className="mx-auto mt-10 max-w-4xl rounded-[16px] border border-[#F4C7C3] bg-[#FFF5F4] px-6 py-6 text-center text-sm text-[#8C2B2F] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+      <div className="mx-auto mt-10 max-w-4xl rounded-[16px] border border-[var(--omni-danger)] bg-[var(--omni-danger-soft)] px-6 py-6 text-center text-sm text-[var(--omni-danger)] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
         {s(
           "recommendationLoadError",
           "Nu am putut încărca recomandarea. Încearcă din nou.",
@@ -653,7 +701,7 @@ function MemberRecommendationView({
   }
   if (!progress?.intent || !progress?.evaluation) {
     return (
-      <div className="mx-auto mt-10 max-w-3xl rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-8 text-center text-sm text-[#4A3A30] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+      <div className="mx-auto mt-10 max-w-3xl rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 text-center text-sm text-[var(--omni-ink-soft)] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
         {s(
           "recommendationMemberFallback",
           "Finalizează o evaluare completă pentru a primi recomandări dedicate.",
@@ -730,13 +778,13 @@ function MemberRecommendationView({
   return (
     <div className="mx-auto mt-10 flex max-w-5xl flex-col gap-8">
       {/* Recomandarea de top (path) */}
-      <section className="space-y-4 rounded-[20px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
+      <section className="space-y-4 rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
+            <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
               {s("recommendationMemberTitle", "Recomandare curentă")}
             </p>
-            <h2 className="text-2xl font-semibold text-[#1F1F1F]">
+            <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">
               {profileName}
             </h2>
           </div>
@@ -744,25 +792,25 @@ function MemberRecommendationView({
             <button
               type="button"
               onClick={() => router.refresh()}
-              className="rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+              className="rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)]"
             >
               {s("recommendationRefresh", "Resincronizează")}
             </button>
-            <span className="rounded-full border border-[#D8C6B6] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#5C4F45]">
+            <span className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-ink-soft)]">
               {badgeLabel}
             </span>
           </div>
         </header>
-        <div className="space-y-3 rounded-[16px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-4">
-          <h3 className="text-lg font-semibold text-[#1F1F1F]">
+        <div className="space-y-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4">
+          <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
             {pathTitle}
           </h3>
-          <p className="text-sm text-[#4A3A30]">{pathBody}</p>
-          <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+          <p className="text-sm text-[var(--omni-ink-soft)]">{pathBody}</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
             {s("recommendationMemberReasonLabel", "Motiv principal")}:{" "}
             {reasonLabel}
           </p>
-          <p className="text-xs text-[#A08F82]">
+          <p className="text-xs text-[var(--omni-muted)]">
             {s("recommendationMemberStageLabel", "Etapă evaluare")}:{" "}
             {STAGE_LABELS[progress.evaluation.stageValue] ??
               progress.evaluation.stageValue}
@@ -772,20 +820,20 @@ function MemberRecommendationView({
       </section>
 
       {/* Rezumat scoruri psihometrice */}
-      <section className="space-y-3 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
+      <section className="space-y-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
           {s("recommendationMemberSummaryHeading", "Rezumat scoruri")}
         </p>
         <div className="grid gap-3 md:grid-cols-3">
           {evaluationRows.map((row) => (
             <div
               key={row.label}
-              className="rounded-[10px] border border-[#F5EBE0] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C]"
+              className="rounded-[10px] border border-[#F5EBE0] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink)]"
             >
-              <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">
+              <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
                 {row.label}
               </p>
-              <p className="text-base font-semibold text-[#1F1F1F]">
+              <p className="text-base font-semibold text-[var(--omni-ink)]">
                 {row.value}
               </p>
             </div>
@@ -794,9 +842,9 @@ function MemberRecommendationView({
       </section>
 
       {/* Quest-uri prioritare */}
-      <section className="space-y-3 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
+      <section className="space-y-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
         <header className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
             {s("recommendationMemberQuestsTitle", "Quest-uri prioritare")}
           </p>
         </header>
@@ -805,11 +853,11 @@ function MemberRecommendationView({
             {quests.map((quest) => (
               <div
                 key={quest.id}
-                className="space-y-2 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C]"
+                className="space-y-2 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink)]"
               >
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="text-base font-semibold">{quest.title}</h3>
-                  <span className="rounded-full border border-[#D8C6B6] px-2 py-[2px] text-[10px] uppercase tracking-[0.3em] text-[#5C4F45]">
+                  <span className="rounded-full border border-[var(--omni-border-soft)] px-2 py-[2px] text-[10px] uppercase tracking-[0.3em] text-[var(--omni-ink-soft)]">
                     {quest.type}
                   </span>
                 </div>
@@ -818,7 +866,7 @@ function MemberRecommendationView({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-[#A08F82]">
+          <p className="text-sm text-[var(--omni-muted)]">
             {s(
               "recommendationMemberQuestsEmpty",
               "Quest-urile apar după evaluări complete.",

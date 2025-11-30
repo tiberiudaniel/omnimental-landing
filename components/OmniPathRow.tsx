@@ -57,8 +57,8 @@ export default function OmniPathRow({ lang: _langProp, progress }: Props) {
       onClick={onClick}
       className={`relative rounded-[10px] border px-3 py-2 text-left text-[12px] font-semibold ${
         unlocked
-          ? "border-[#2C2C2C] bg-white text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white transition"
-          : "border-dashed border-[#E4D8CE] bg-white/70 text-[#A08F82] cursor-not-allowed"
+          ? "border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] transition"
+          : "border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/70 text-[var(--omni-muted)] cursor-not-allowed"
       }`}
       aria-disabled={!unlocked}
     >

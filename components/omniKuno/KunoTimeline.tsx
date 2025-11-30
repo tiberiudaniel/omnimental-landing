@@ -96,28 +96,28 @@ export function KunoTimeline({
                         item.status === "done"
                           ? "border-[#1F7A43] bg-[#ECF8F0] text-[#1F7A43]"
                           : item.status === "active"
-                            ? "border-[#C07963] bg-[#FFF3EC] text-[#C07963]"
-                            : "border-[#F0E8E0] bg-white text-[#B0A295]"
+                            ? "border-[var(--omni-energy)] bg-[var(--omni-energy-tint)] text-[var(--omni-energy)]"
+                            : "border-[#F0E8E0] bg-[var(--omni-surface-card)] text-[#B0A295]"
                       }`}
                     >
                       {item.status === "done" ? "✓" : item.status === "locked" ? "…" : "▶"}
                     </div>
                     <div
                       className={`flex-1 rounded-2xl border px-3.5 py-2 transition ${
-                        isOpen ? "border-[#C07963] bg-white shadow-[0_18px_36px_rgba(192,121,99,0.16)]" : "border-[#F2E7DD] bg-white/70"
+                        isOpen ? "border-[var(--omni-energy)] bg-[var(--omni-surface-card)] shadow-[0_18px_36px_rgba(192,121,99,0.16)]" : "border-[#F2E7DD] bg-[var(--omni-surface-card)]/70"
                       }`}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-1.5">
                         <div className="space-y-0.5">
                           <div className="flex items-baseline gap-2">
-                            <p className="text-[15px] font-semibold text-[#2C2C2C]">
+                            <p className="text-[15px] font-semibold text-[var(--omni-ink)]">
                               {item.order}. {item.title}
                             </p>
                           </div>
-                          <p className="text-[10px] uppercase tracking-[0.3em] text-[#A08F82]">
+                          <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">
                             {item.type === "quiz" ? "Quiz" : lang === "ro" ? "Lecție" : "Lesson"}
                           </p>
-                          {!isOpen ? <p className="text-[11px] text-[#7B6B60]">{objective}</p> : null}
+                          {!isOpen ? <p className="text-[11px] text-[var(--omni-muted)]">{objective}</p> : null}
                         </div>
                         <div className="flex flex-col items-end gap-1 text-right text-xs">
                           <span
@@ -127,7 +127,7 @@ export function KunoTimeline({
                             {difficultyLabel}
                           </span>
                           {centerLabel ? (
-                            <span className="rounded-full bg-[#FFF3EC] px-2 py-0.5 text-[10px] font-semibold text-[#B4634D]">
+                            <span className="rounded-full bg-[var(--omni-energy-tint)] px-2 py-0.5 text-[10px] font-semibold text-[#B4634D]">
                               {centerLabel}
                             </span>
                           ) : null}

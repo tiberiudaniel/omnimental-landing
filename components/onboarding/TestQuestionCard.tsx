@@ -43,30 +43,30 @@ export default function TestQuestionCard({
   const scoredHint = scored ?? graded;
   return (
     <div
-      className="rounded-[12px] border border-[#E4DAD1] bg-white p-4 shadow-sm"
+      className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-4 shadow-sm"
       data-testid={questionTestId ?? undefined}
     >
       <div className="mb-1 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {styleText ? (
-            <span className={`rounded-full border px-2 py-[1px] text-[10px] ${scoredHint ? 'border-[#1F7A53] text-[#1F7A53]' : 'border-[#7B6B60] text-[#7B6B60]'}`} title={scoredHint ? 'Contează la scor' : 'Nu contează la scor'}>
+            <span className={`rounded-full border px-2 py-[1px] text-[10px] ${scoredHint ? 'border-[#1F7A53] text-[#1F7A53]' : 'border-[#7B6B60] text-[var(--omni-muted)]'}`} title={scoredHint ? 'Contează la scor' : 'Nu contează la scor'}>
               {styleText}{scoredHint ? ' · +scor' : ''}
             </span>
           ) : null}
         </div>
         {typeof index === 'number' && typeof total === 'number' ? (
-          <span className="text-[10px] text-[#7B6B60]">{index + 1}/{total}</span>
+          <span className="text-[10px] text-[var(--omni-muted)]">{index + 1}/{total}</span>
         ) : null}
       </div>
-      <p className="text-sm font-medium text-[#1F1F1F]">{item.question}</p>
+      <p className="text-sm font-medium text-[var(--omni-ink)]">{item.question}</p>
       <div className="mt-3 grid gap-2 md:grid-cols-2">
         {item.options.map((opt, idx) => {
           const is = sel === idx;
           const stateClass = sel === null
             ? ""
             : graded
-            ? (idx === item.correctIndex ? "border-[#1F7A53] bg-[#F0FFF6]" : (is ? "border-[#B8000E] bg-[#FFF5F4]" : ""))
-            : (is ? "border-[#2C2C2C] bg-[#FFFBF7]" : "");
+            ? (idx === item.correctIndex ? "border-[#1F7A53] bg-[#F0FFF6]" : (is ? "border-[var(--omni-danger)] bg-[var(--omni-danger-soft)]" : ""))
+            : (is ? "border-[var(--omni-ink)] bg-[var(--omni-bg-paper)]" : "");
           return (
             <button
               key={idx}
@@ -77,12 +77,12 @@ export default function TestQuestionCard({
               }}
               data-testid={optionTestId ?? undefined}
               className={`flex items-center justify-between rounded-[10px] border px-3 py-2 text-left text-[13px] sm:text-sm transition ${
-                stateClass || "border-[#D8C6B6] hover:border-[#2C2C2C]"
-              } text-[#2C2C2C]`}
+                stateClass || "border-[var(--omni-border-soft)] hover:border-[var(--omni-energy)]"
+              } text-[var(--omni-ink)]`}
             >
               <span className="pr-2">{opt}</span>
               {sel !== null && !graded && is ? (
-                <span aria-hidden className="text-[#7B6B60]">✓</span>
+                <span aria-hidden className="text-[var(--omni-muted)]">✓</span>
               ) : null}
             </button>
           );
@@ -90,13 +90,13 @@ export default function TestQuestionCard({
       </div>
       {sel !== null ? (
         graded ? (
-          <p className={`mt-3 text-sm ${correct ? "text-[#1F3C2F]" : "text-[#8C2B2F]"}`}>
+          <p className={`mt-3 text-sm ${correct ? "text-[var(--omni-ink-soft)]" : "text-[var(--omni-danger)]"}`}>
             {correct ? "Corect." : "Incorect."} {item.explanation}
           </p>
         ) : (
-          <div className="mt-3 text-sm text-[#4A3A30]">
+          <div className="mt-3 text-sm text-[var(--omni-ink-soft)]">
             <p>{item.explanation}</p>
-            <p className="mt-1 text-[12px] text-[#7B6B60]">Acest item nu contează la scor (folosit pentru personalizare).</p>
+            <p className="mt-1 text-[12px] text-[var(--omni-muted)]">Acest item nu contează la scor (folosit pentru personalizare).</p>
           </div>
         )
       ) : null}

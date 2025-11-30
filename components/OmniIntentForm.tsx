@@ -161,22 +161,22 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
     return (
       <section
         className={`space-y-4 rounded-[16px] border px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)] ${
-          isActive ? "border-[#2C2C2C]/70 bg-[#FFFBF7]" : "border-[#E4D8CE] bg-white"
+          isActive ? "border-[var(--omni-ink)]/70 bg-[var(--omni-bg-paper)]" : "border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]"
         }`}
       >
         {isActive ? (
-          <span className="mb-1 inline-block rounded-full bg-[#F6F2EE] px-2 py-0.5 text-[10px] text-[#2C2C2C]">
+          <span className="mb-1 inline-block rounded-full bg-[var(--omni-bg-paper)] px-2 py-0.5 text-[10px] text-[var(--omni-ink)]">
             {s("journal.badge.active", "Jurnal activ")}
           </span>
         ) : null}
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h3 className="text-[15px] font-semibold text-[#1F1F1F]">{headerTitleFor(key)}</h3>
-            <p className="text-xs text-[#7A6455]">{scaleDescription}</p>
+            <h3 className="text-[15px] font-semibold text-[var(--omni-ink)]">{headerTitleFor(key)}</h3>
+            <p className="text-xs text-[var(--omni-muted)]">{scaleDescription}</p>
           </div>
           <button
             type="button"
-            className="inline-flex h-7 items-center gap-1 rounded-[10px] border border-[#E4D8CE] px-2 text-[11px] text-[#2C2C2C] hover:border-[#C9B8A8]"
+            className="inline-flex h-7 items-center gap-1 rounded-[10px] border border-[var(--omni-border-soft)] px-2 text-[11px] text-[var(--omni-ink)] hover:border-[#C9B8A8]"
             onClick={() => {
               if (!onOpenJournal) return;
               const ctx: JournalContext = {
@@ -201,12 +201,12 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
 
         {labels.map((label, index) => {
           const v = values[index] ?? 0;
-          const valueClass = v >= 7 ? "text-[#C07963]" : "text-[#2C2C2C]";
+          const valueClass = v >= 7 ? "text-[var(--omni-energy)]" : "text-[var(--omni-ink)]";
           return (
-            <div key={`${key}-${index}`} className="rounded-[10px] border border-[#F6EDE2] bg-[#FFFBF7] p-3">
-              <p className="text-sm text-[#2C2C2C]">{label}</p>
+            <div key={`${key}-${index}`} className="rounded-[10px] border border-[#F6EDE2] bg-[var(--omni-bg-paper)] p-3">
+              <p className="text-sm text-[var(--omni-ink)]">{label}</p>
               <div className="mt-3 flex items-center gap-3">
-                <div className="w-16 text-center text-[11px] text-[#7A6455]">0–10</div>
+                <div className="w-16 text-center text-[11px] text-[var(--omni-muted)]">0–10</div>
                 <div className="flex-1">
                   <input
                     type="range"
@@ -214,19 +214,19 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
                     max={10}
                     value={v}
                     onChange={(event) => updateArray(key, index, Number(event.target.value))}
-                    className="w-full accent-[#2C2C2C]"
+                    className="w-full accent-[var(--omni-ink)]"
                   />
                 </div>
                 <div className={`w-16 text-right text-sm font-semibold ${valueClass}`}>{v} / 10</div>
               </div>
-              <p className="mt-1 text-[11px] text-[#7A6455]">{getLevelLabel(v)}</p>
+              <p className="mt-1 text-[11px] text-[var(--omni-muted)]">{getLevelLabel(v)}</p>
             </div>
           );
         })}
 
-        <p className="mt-1 text-[11px] text-[#7A6455]">
+        <p className="mt-1 text-[11px] text-[var(--omni-muted)]">
           {lang === "ro" ? "Ultima notare (medie secțiune): " : "Last note (section average): "}
-          <span className="font-semibold text-[#2C2C2C]">{avg} / 10</span>
+          <span className="font-semibold text-[var(--omni-ink)]">{avg} / 10</span>
         </p>
       </section>
     );
@@ -235,25 +235,25 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <header className="space-y-2 text-center md:text-left">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#C07963]">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
           {lang === "ro" ? "Omni-Scop" : "Omni-Intent"}
         </p>
         <div className="flex items-start justify-between gap-2">
-          <h2 className="text-2xl font-semibold text-[#1F1F1F]">
+          <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">
           {lang === "ro"
             ? "Claritate, angajament și plan pentru obiectivul tău"
             : "Clarity, commitment, and planning for your goal"}
           </h2>
         </div>
-        <p className="text-sm text-[#4A3A30]">
+        <p className="text-sm text-[var(--omni-ink-soft)]">
           {lang === "ro"
             ? "Completează fiecare rubrică (0–10). Scorul final combină Knowledge, Belief, Commitment, Planning și progresul obiectivului."
             : "Set each rubric (0–10). Final score blends Knowledge, Belief, Commitment, Planning, plus goal progress."}
         </p>
         {progress?.intent ? (
-          <div className="mt-3 grid gap-4 rounded-[16px] border border-[#E4D8CE] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(0,0,0,0.05)] md:grid-cols-2">
+          <div className="mt-3 grid gap-4 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-4 shadow-[0_10px_24px_rgba(0,0,0,0.05)] md:grid-cols-2">
             <div className="space-y-2 text-left">
-              <p className="text-xs uppercase tracking-[0.35em] text-[#A08F82]">
+              <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
                 {lang === "ro" ? "Obiectiv curent" : "Current objective"}
               </p>
               {(() => {
@@ -264,16 +264,16 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
                   ? (labels[primary.category as keyof typeof labels]?.[lang] ?? primary.category)
                   : (lang === "ro" ? "Nespecificat" : "Unspecified");
                 return (
-                  <h3 className="text-lg font-semibold text-[#1F1F1F]">{label}</h3>
+                  <h3 className="text-lg font-semibold text-[var(--omni-ink)]">{label}</h3>
                 );
               })()}
               {progress.intent.firstExpression ? (
-                <p className="text-sm text-[#4A3A30]">{progress.intent.firstExpression}</p>
+                <p className="text-sm text-[var(--omni-ink-soft)]">{progress.intent.firstExpression}</p>
               ) : null}
               {Array.isArray(progress.intent.tags) && progress.intent.tags.length ? (
                 <div className="flex flex-wrap gap-2">
                   {progress.intent.tags.slice(0, 8).map((tag: string) => (
-                    <span key={tag} className="rounded-full border border-[#D8C6B6] px-3 py-1 text-xs text-[#5C4F45]">
+                    <span key={tag} className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs text-[var(--omni-ink-soft)]">
                       {tag}
                     </span>
                   ))}
@@ -309,8 +309,8 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
       {renderSection("commitment", FIELD_LABELS.commitment)}
       {renderSection("planning", FIELD_LABELS.planning)}
 
-      <section className="space-y-4 rounded-[16px] border border-[#E4D8CE] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-        <p className="text-sm font-semibold text-[#2C2C2C]">
+      <section className="space-y-4 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <p className="text-sm font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "Procent progres obiectiv (ultimele 7 zile)" : "Goal progress (%)"}
         </p>
         <input
@@ -321,9 +321,9 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
           onChange={(event) =>
             setAnswers((prev) => ({ ...prev, progress: Number(event.target.value) }))
           }
-          className="w-full accent-[#2C2C2C]"
+          className="w-full accent-[var(--omni-ink)]"
         />
-        <span className="text-xs uppercase tracking-[0.25em] text-[#A08F82]">
+        <span className="text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">
           {answers.progress}%
         </span>
       </section>
@@ -332,7 +332,7 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving
             ? lang === "ro"
@@ -342,15 +342,15 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
             ? "Salvează Omni-Scop"
             : "Save Omni-Intent"}
         </button>
-        {message ? <p className="text-sm text-[#4A3A30]">{message}</p> : null}
+        {message ? <p className="text-sm text-[var(--omni-ink-soft)]">{message}</p> : null}
       </div>
 
-      <section className="space-y-3 rounded-[16px] border border-[#D8C6B6] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
-        <h3 className="text-lg font-semibold text-[#1F1F1F]">
+      <section className="space-y-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+        <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
           {lang === "ro" ? "Rezumat scor" : "Score summary"}
         </h3>
-        <p className="text-sm text-[#4A3A30]">
-          Total: <span className="font-semibold text-[#1F1F1F]">{scores.total}/100</span>
+        <p className="text-sm text-[var(--omni-ink-soft)]">
+          Total: <span className="font-semibold text-[var(--omni-ink)]">{scores.total}/100</span>
         </p>
         <div className="grid gap-2 md:grid-cols-2">
           {([
@@ -360,13 +360,13 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
             ["p", "Planning"],
             ["g", "Progress"],
           ] as const).map(([key, label]) => (
-            <div key={key} className="space-y-1 rounded-[10px] border border-[#F6EDE2] bg-[#FFFBF7] px-4 py-3">
-              <p className="text-sm font-semibold text-[#2C2C2C]">
+            <div key={key} className="space-y-1 rounded-[10px] border border-[#F6EDE2] bg-[var(--omni-bg-paper)] px-4 py-3">
+              <p className="text-sm font-semibold text-[var(--omni-ink)]">
                 {label}: {scores[key as keyof typeof scores]}%
               </p>
               <div className="h-1.5 w-full rounded-full bg-[#F6EDE2]">
                 <div
-                  className="h-full rounded-full bg-[#2C2C2C]"
+                  className="h-full rounded-full bg-[var(--omni-ink)]"
                   style={{ width: `${scores[key as keyof typeof scores]}%` }}
                 />
               </div>

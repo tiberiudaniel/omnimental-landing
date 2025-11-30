@@ -14,7 +14,6 @@ interface SiteHeaderProps {
   showMenu?: boolean;
   onMenuToggle?: () => void;
   onAuthRequest?: () => void;
-  compact?: boolean;
   wizardMode?: boolean; // hide nav and journal, keep only logo + lang
   onWizardExit?: () => void;
   onWizardReset?: () => void;
@@ -25,7 +24,6 @@ export default function SiteHeader({
   showMenu = true,
   onMenuToggle,
   onAuthRequest,
-  compact = false,
   wizardMode = false,
   onWizardExit,
   onWizardReset,
@@ -133,9 +131,9 @@ export default function SiteHeader({
     return age < thresholdMs;
   })();
 
-  const headerPad = compact ? "p-1.5" : "p-2.5";
-  const bottomMarginTop = compact ? "mt-1" : "mt-2";
-  const titleSize = compact ? "text-lg" : "text-xl";
+  const headerPad = "p-1.5";
+  const bottomMarginTop = "mt-1";
+  const titleSize = "text-lg";
   const [actionsOpen, setActionsOpen] = useState(false);
   const actionsRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -149,9 +147,11 @@ export default function SiteHeader({
   }, [actionsOpen]);
 
   return (
-    <header className={`relative bg-white ${headerPad} shadow`}>
+    <header className={`relative w-full border-b border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] ${headerPad} shadow`}>
+      <div className="pointer-events-none absolute inset-0 bg-[var(--omni-surface-card)]" aria-hidden />
+      <div className="relative z-10">
       {/* Top row: Auth | Guest | RO EN (slightly shifted left, tighter) */}
-      <div className="flex items-center justify-end gap-1.5 text-[10px] text-[#4A3A30]">
+      <div className="flex items-center justify-end gap-1.5 text-[10px] text-[var(--omni-ink-soft)]">
         <button
           type="button"
           onClick={
@@ -167,7 +167,7 @@ export default function SiteHeader({
                   router.push('/progress');
                 }
           }
-          className="hover:text-[#E60012]"
+          className="hover:text-[var(--omni-energy)]"
           aria-pressed={isLoggedIn}
           title={isLoggedIn ? (typeof signOutLabel === "string" ? (signOutLabel as string) : "Sign out") : (typeof signInLabel === "string" ? (signInLabel as string) : "Sign in")}
         >
@@ -180,22 +180,22 @@ export default function SiteHeader({
           <button
             type="button"
             onClick={() => setLang("ro")}
-            className={`${lang === "ro" ? "font-bold text-[#2C2C2C]" : "opacity-70"} hover:text-[#E60012] hover:underline transition-colors`}
+            className={`${lang === "ro" ? "font-bold text-[var(--omni-ink)]" : "opacity-70"} hover:text-[var(--omni-energy)] hover:underline transition-colors`}
             aria-pressed={lang === "ro"}
           >
             RO
           </button>
-          <span className="px-0 text-[#4A3A30]/80">-</span>
+          <span className="px-0 text-[var(--omni-ink-soft)]/80">-</span>
           <button
             type="button"
             onClick={() => setLang("en")}
-            className={`${lang === "en" ? "font-bold text-[#2C2C2C]" : "opacity-70"} hover:text-[#E60012] hover:underline transition-colors`}
+            className={`${lang === "en" ? "font-bold text-[var(--omni-ink)]" : "opacity-70"} hover:text-[var(--omni-energy)] hover:underline transition-colors`}
             aria-pressed={lang === "en"}
           >
             EN
           </button>
           {wizardMode ? (
-            <span className="ml-2 hidden text-[10px] text-[#7A6455] sm:inline" title={lang === "ro" ? "Salvare automată" : "Auto‑save"}>
+            <span className="ml-2 hidden text-[10px] text-[var(--omni-muted)] sm:inline" title={lang === "ro" ? "Salvare automată" : "Auto‑save"}>
               {lang === "ro" ? "Salvare automată" : "Auto‑save"}
             </span>
           ) : null}
@@ -206,20 +206,20 @@ export default function SiteHeader({
       <div className={`${bottomMarginTop} grid grid-cols-[auto_1fr_auto] items-center gap-3`}>
         {wizardMode ? (
           <Link href="/intro" className="flex items-center gap-3 shrink-0" aria-label="OmniMental">
-            <Image src="/assets/logo.jpg" alt="OmniMental logo" width={compact ? 60 : 70} height={28} priority style={{ height: "auto", width: "auto" }} />
+            <Image src="/assets/logo.jpg" alt="OmniMental logo" width={60} height={28} priority style={{ height: "auto", width: "auto" }} />
             <span className="flex flex-col leading-tight text-neutral-dark">
               <span className={`${titleSize} font-semibold tracking-wide`}>OmniMental</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.35em] text-[#B08A78]">
+              <span className="text-[10px] font-medium uppercase tracking-[0.35em] text-[var(--omni-muted)]">
                 {lang === "ro" ? "Dezvoltă-ți inteligența adaptativă" : "Develop your adaptive intelligence"}
               </span>
             </span>
           </Link>
         ) : (
           <Link href="/intro" className="flex items-center gap-3 shrink-0">
-            <Image src="/assets/logo.jpg" alt="OmniMental logo" width={compact ? 60 : 70} height={28} priority style={{ height: "auto", width: "auto" }} />
+            <Image src="/assets/logo.jpg" alt="OmniMental logo" width={60} height={28} priority style={{ height: "auto", width: "auto" }} />
             <span className="flex flex-col leading-tight text-neutral-dark">
               <span className={`${titleSize} font-semibold tracking-wide`}>OmniMental</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.35em] text-[#B08A78]">
+              <span className="text-[10px] font-medium uppercase tracking-[0.35em] text-[var(--omni-muted)]">
                 {lang === "ro" ? "Dezvoltă-ți inteligența adaptativă" : "Develop your adaptive intelligence"}
               </span>
             </span>
@@ -230,7 +230,7 @@ export default function SiteHeader({
           <Link
             href="/antrenament"
             className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-              isActive("/antrenament") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
+              isActive("/antrenament") ? "border border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]"
             }`}
             aria-current={isActive("/antrenament") ? "page" : undefined}
           >
@@ -239,7 +239,7 @@ export default function SiteHeader({
           <Link
             href="/progress"
             className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-              isActive("/progress") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
+              isActive("/progress") ? "border border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]"
             }`}
             aria-current={isActive("/progress") ? "page" : undefined}
           >
@@ -249,7 +249,7 @@ export default function SiteHeader({
           <Link
             href="/recommendation"
             className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-              isActive("/recommendation") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
+              isActive("/recommendation") ? "border border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]"
             }`}
             aria-current={isActive("/recommendation") ? "page" : undefined}
           >
@@ -259,7 +259,7 @@ export default function SiteHeader({
             <Link
               href={{ pathname: "/experience-onboarding", query: { flow: "initiation", step: "welcome" } }}
               className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-                isActive("/experience-onboarding") ? "border border-[#2C2C2C] text-[#2C2C2C]" : "border border-transparent text-[#4A3A30] hover:text-[#E60012]"
+                isActive("/experience-onboarding") ? "border border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]"
               }`}
               aria-current={isActive("/experience-onboarding") ? "page" : undefined}
             >
@@ -284,7 +284,8 @@ export default function SiteHeader({
             <button
               onClick={onMenuToggle}
               aria-label={lang === "ro" ? "Deschide meniul" : "Open menu"}
-              className="mt-[-2px] flex h-10 w-10 items-center justify-center rounded-full border border-[#2C2C2C] text-[#2C2C2C] transition hover:bg-[#2C2C2C]/10 focus:outline-none focus:ring-1 focus:ring-[#2C2C2C]"
+              className="mt-[-2px] flex h-10 w-10 items-center justify-center rounded-full border transition hover:bg-[color-mix(in_oklab,var(--omni-ink)_10%,transparent)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-border-soft)]"
+              style={{ borderColor: "var(--omni-ink)", color: "var(--omni-ink)" }}
             >
               <span className="space-y-1">
                 <span className="block h-[2px] w-5 bg-current"></span>
@@ -304,16 +305,19 @@ export default function SiteHeader({
                 type="button"
                 aria-label={lang === 'ro' ? 'Opțiuni wizard' : 'Wizard options'}
                 onClick={() => setActionsOpen((v) => !v)}
-                className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#D8C6B6] text-[#2C2C2C] hover:bg-[#F6F2EE] md:h-9 md:w-9"
+                className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full border md:h-9 md:w-9"
+                style={{ borderColor: "var(--omni-border-soft)", color: "var(--omni-ink)", backgroundColor: "var(--omni-surface-card)" }}
               >
                 ⋯
               </button>
               {actionsOpen ? (
-                <div className="absolute right-2 top-full z-50 mt-2 min-w-[180px] rounded-[10px] border border-[#E4D8CE] bg-white p-2 text-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+                <div className="absolute right-2 top-full z-50 mt-2 min-w-[180px] rounded-[10px] border p-2 text-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+                  style={{ borderColor: "var(--omni-border-soft)", backgroundColor: "var(--omni-surface-card)", color: "var(--omni-ink)" }}>
                   <button
                     type="button"
                     onClick={() => { setActionsOpen(false); if (onWizardExit) onWizardExit(); }}
-                    className="flex w-full items-center justify-between rounded-[8px] px-3 py-1.5 text-left hover:bg-[#F6F2EE]"
+                    className="flex w-full items-center justify-between rounded-[8px] px-3 py-1.5 text-left"
+                    style={{ backgroundColor: "var(--omni-bg-paper)" }}
                   >
                     {lang === 'ro' ? 'Ieși' : 'Exit'}
                     <span className="opacity-60">⌘E</span>
@@ -322,8 +326,9 @@ export default function SiteHeader({
                     <button
                       type="button"
                       onClick={() => { setActionsOpen(false); if (onWizardReset) onWizardReset(); }}
-                      className="mt-1 flex w-full items-center justify-between rounded-[8px] px-3 py-1.5 text-left hover:bg-[#FFF4EE]"
-                    >
+                    className="mt-1 flex w-full items-center justify-between rounded-[8px] px-3 py-1.5 text-left"
+                    style={{ backgroundColor: "var(--omni-bg-paper)" }}
+                  >
                       {lang === 'ro' ? 'Ia de la capăt' : 'Start over'}
                       <span className="opacity-60">⌘R</span>
                     </button>
@@ -340,6 +345,7 @@ export default function SiteHeader({
           <Toast message={authNotice.message} okLabel="OK" onClose={clearAuthNotice} />
         </div>
       ) : null}
+      </div>
     </header>
   );
 }

@@ -56,7 +56,7 @@ export default function InitiationStepKunoContext({ userId, onContinue }: { user
       image={onboardingKunoDocs}
       imageAlt={lang === 'ro' ? 'Note Omni-Kuno și instrumente de cunoaștere' : 'Omni-Kuno notes and learning tools'}
       imageClassName="opacity-70"
-      imageTintClassName="bg-white/40"
+      imageTintClassName="bg-[var(--omni-surface-card)]/40"
       label={lang === 'ro' ? 'Context Omni-Kuno' : 'Omni-Kuno context'}
       title={lang === 'ro' ? 'Hai să acumulăm cunoaștere' : 'Let’s gather knowledge'}
       body={

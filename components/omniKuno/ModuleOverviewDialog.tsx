@@ -29,16 +29,16 @@ export function ModuleOverviewDialog({ open, onClose, timeline, module, lang, t,
   return (
     <div className="fixed inset-0 z-[70] flex items-start justify-center bg-black/30 px-4 py-10" onClick={onClose}>
       <div
-        className="max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-[28px] border border-[#E4DAD1] bg-white shadow-[0_25px_60px_rgba(0,0,0,0.25)]"
+        className="max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] shadow-[0_25px_60px_rgba(0,0,0,0.25)]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#F0E8E0] px-6 py-5">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.35em] text-[#B08A78]">{lang === "ro" ? "Harta misiunilor" : "Mission map"}</p>
-            <h3 className="mt-1 text-xl font-semibold text-[#2C2C2C]">
+            <p className="text-[11px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">{lang === "ro" ? "Harta misiunilor" : "Mission map"}</p>
+            <h3 className="mt-1 text-xl font-semibold text-[var(--omni-ink)]">
               {lang === "ro" ? "Vezi toate misiunile" : "View all missions"}
             </h3>
-            <p className="text-sm text-[#7B6B60]">
+            <p className="text-sm text-[var(--omni-muted)]">
               {lang === "ro"
                 ? "Poți re-deschide orice misiune finalizată sau activă. Cele blocate vor porni automat după ce închei pasul curent."
                 : "Reopen any completed or active mission. Locked ones will unlock right after you finish the current step."}
@@ -47,7 +47,7 @@ export function ModuleOverviewDialog({ open, onClose, timeline, module, lang, t,
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-[#E4DAD1] px-3 py-1 text-sm font-semibold text-[#7B6B60] transition hover:border-[#C07963] hover:text-[#C07963]"
+            className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-sm font-semibold text-[var(--omni-muted)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
             aria-label={lang === "ro" ? "Închide overview" : "Close overview"}
           >
             ×
@@ -78,18 +78,18 @@ export function ModuleOverviewDialog({ open, onClose, timeline, module, lang, t,
                     disabled={disabled}
                     className={`flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left transition ${
                       disabled
-                        ? "border-[#F0E8E0] bg-white/70 text-[#B0A295]"
-                        : "border-[#E4DAD1] bg-white hover:border-[#C07963] hover:shadow-[0_14px_40px_rgba(192,121,99,0.15)]"
+                        ? "border-[#F0E8E0] bg-[var(--omni-surface-card)]/70 text-[#B0A295]"
+                        : "border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] hover:border-[var(--omni-energy)] hover:shadow-[0_14px_40px_rgba(192,121,99,0.15)]"
                     }`}
                   >
                     <div>
-                      <p className="text-base font-semibold text-[#2C2C2C]">
+                      <p className="text-base font-semibold text-[var(--omni-ink)]">
                         {item.order}. {item.title}
                       </p>
-                      <p className="text-[12px] text-[#7B6B60]">{objective}</p>
+                      <p className="text-[12px] text-[var(--omni-muted)]">{objective}</p>
                       <p className="text-[11px] text-[#9A8777]">{statusLabel(item.status)}</p>
                     </div>
-                    <div className="flex flex-col items-end gap-1 text-xs text-[#7B6B60]">
+                    <div className="flex flex-col items-end gap-1 text-xs text-[var(--omni-muted)]">
                       <span className={`inline-flex items-center rounded-full px-3 py-0.5 text-[10px] uppercase tracking-[0.2em] ${DIFFICULTY_STYLES[difficultyKey].badge}`}>
                         {String(difficultyLabel)}
                       </span>

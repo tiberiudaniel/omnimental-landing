@@ -56,7 +56,7 @@ export default function WeeklyTrendsChart({
       : [
           {
             data,
-            accent: "#C07963",
+            accent: "var(--omni-energy)",
             strokeWidth: 2,
           },
         ];
@@ -104,7 +104,7 @@ export default function WeeklyTrendsChart({
               key={idx}
               type="monotone"
               dataKey={`s${idx}`}
-              stroke={s.accent ?? "#C07963"}
+              stroke={s.accent ?? "var(--omni-energy)"}
               strokeWidth={s.strokeWidth ?? 2}
               dot={false}
               activeDot={showValues ? { r: 3 } : { r: 2 }}

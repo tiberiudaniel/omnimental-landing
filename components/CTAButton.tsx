@@ -72,10 +72,10 @@ export default function CTAButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="group inline-flex items-center gap-3 rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+        className="group inline-flex items-center gap-3 rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
       >
         {text}
-        <span className="translate-y-[1px] text-sm text-[#E60012] transition group-hover:translate-x-1 group-hover:text-[#B8000E]">
+        <span className="translate-y-[1px] text-sm text-[var(--omni-energy)] transition group-hover:translate-x-1 group-hover:text-[var(--omni-danger)]">
           →
         </span>
       </button>
@@ -83,29 +83,29 @@ export default function CTAButton({
       <Dialog open={open} onClose={() => setOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="relative w-full max-w-md overflow-hidden rounded-[12px] border border-[#D8C6B6] bg-white/96 p-6 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-[2px]">
+          <DialogPanel className="relative w-full max-w-md overflow-hidden rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/96 p-6 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-[2px]">
             <DialogTitle
-              className="text-center text-xs font-semibold uppercase tracking-[0.35em] text-[#A08F82]"
+              className="text-center text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]"
             >
               {dialogTitle ?? "Formular de înscriere"}
             </DialogTitle>
             {dialogDescription ? (
-              <p className="mt-2 text-center text-sm text-[#2C2C2C]/80">
+              <p className="mt-2 text-center text-sm text-[var(--omni-ink)]/80">
                 {dialogDescription}
               </p>
             ) : null}
             {submitted ? (
               <div className="mt-6 space-y-4 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[#2C2C2C] text-2xl text-[#E60012]">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[var(--omni-border-soft)] text-2xl text-[var(--omni-energy)]">
                   ✓
                 </div>
-                <p className="text-base leading-relaxed text-[#2C2C2C]">
+                <p className="text-base leading-relaxed text-[var(--omni-ink)]">
                   {successMessage ?? "Înscriere trimisă. Te contactăm în scurt timp."}
                 </p>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+                  className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
                 >
                   OK
                 </button>
@@ -115,23 +115,23 @@ export default function CTAButton({
                 <input
                   placeholder="Nume"
                   {...register("name")}
-                  className="w-full rounded-[8px] border border-[#D8C6B6] px-4 py-3 text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:border-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+                  className="w-full rounded-[8px] border border-[var(--omni-border-soft)] px-4 py-3 text-[var(--omni-ink)] placeholder:text-[var(--omni-muted)] transition focus:border-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
                 />
                 {errors.name && (
-                  <p className="text-sm text-[#E60012]">{errors.name.message}</p>
+                  <p className="text-sm text-[var(--omni-energy)]">{errors.name.message}</p>
                 )}
                 <input
                   placeholder="Email"
                   {...register("email")}
-                  className="w-full rounded-[8px] border border-[#D8C6B6] px-4 py-3 text-[#2C2C2C] placeholder:text-[#9F9F9F] transition focus:border-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+                  className="w-full rounded-[8px] border border-[var(--omni-border-soft)] px-4 py-3 text-[var(--omni-ink)] placeholder:text-[var(--omni-muted)] transition focus:border-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
                 />
                 {errors.email && (
-                  <p className="text-sm text-[#E60012]">{errors.email.message}</p>
+                  <p className="text-sm text-[var(--omni-energy)]">{errors.email.message}</p>
                 )}
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="group w-full rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group w-full rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? "Se trimite..." : submitLabel ?? "Trimite"}
                 </button>

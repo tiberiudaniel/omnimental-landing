@@ -87,13 +87,13 @@ export function RecentEntriesCard({ lang, facts }: RecentEntriesCardProps) {
     return { pathname: "/progress", query: { open: "journal", tab } };
   };
   return (
-    <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3.5">
+    <Card className="rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2.5 shadow-sm sm:p-3.5">
       <div className="mb-1 flex items-center justify-between sm:mb-2">
-        <h4 className="text-xs font-semibold text-[#7B6B60] sm:text-sm">{lang === "ro" ? "Însemnări recente" : "Recent Entries"}</h4>
+        <h4 className="text-xs font-semibold text-[var(--omni-muted)] sm:text-sm">{lang === "ro" ? "Însemnări recente" : "Recent Entries"}</h4>
         <div className="flex items-center gap-1">
           <Link
             href={{ pathname: "/progress", query: { open: "journal" } }}
-            className="rounded-[10px] border border-[#2C2C2C] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] sm:px-2 sm:text-[10px]"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] sm:px-2 sm:text-[10px]"
             aria-label="Open journal"
           >
             {lang === "ro" ? "Jurnal" : "Journal"}
@@ -101,14 +101,14 @@ export function RecentEntriesCard({ lang, facts }: RecentEntriesCardProps) {
         </div>
       </div>
       {!hasEntries ? (
-        <p className="rounded-[10px] border border-[#F0E8E0] bg-[#FFFBF7] px-2 py-1.5 text-[11px] text-[#6A6A6A] sm:px-2.5 sm:py-2 sm:text-xs">
+        <p className="rounded-[10px] border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-2 py-1.5 text-[11px] text-[#6A6A6A] sm:px-2.5 sm:py-2 sm:text-xs">
           {lang === "ro" ? "Nimic deocamdată. Scrie un jurnal sau finalizează un exercițiu." : "Nothing yet. Add a journal entry or complete a practice."}
         </p>
       ) : (
         <div className="space-y-2">
           {grouped.map((group) => (
             <div key={group.day}>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#A08F82] sm:text-[11px]">{group.day}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--omni-muted)] sm:text-[11px]">{group.day}</p>
               {group.items.map((item, idx) => {
                 const href = entryHref(item);
                 const full = String(item.text);
@@ -127,24 +127,24 @@ export function RecentEntriesCard({ lang, facts }: RecentEntriesCardProps) {
                   >
                     <div className="mb-0.5 flex items-center justify-between">
                       <span
-                        className="rounded-full border border-[#E4DAD1] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[#A08F82]"
+                        className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[var(--omni-muted)]"
                         data-testid={isKuno ? "recent-entry-omnikuno" : undefined}
                       >
                         {tag}
                       </span>
-                      <span className="text-[9px] text-[#A08F82]" suppressHydrationWarning>
+                      <span className="text-[9px] text-[var(--omni-muted)]" suppressHydrationWarning>
                         {fmtTime(item.ms)}
                       </span>
                     </div>
                     <Link
                       href={href}
-                      className="block text-[11px] font-semibold text-[#2C2C2C] underline-offset-2 hover:underline sm:text-xs"
+                      className="block text-[11px] font-semibold text-[var(--omni-ink)] underline-offset-2 hover:underline sm:text-xs"
                       title={title}
                       data-testid={isKuno ? "recent-entry-link" : undefined}
                     >
                       {title}
                     </Link>
-                    <Link href={href} className="mt-0.5 block text-[11px] text-[#4A3A30] underline-offset-2 hover:underline sm:text-xs" title={full}>
+                    <Link href={href} className="mt-0.5 block text-[11px] text-[var(--omni-ink-soft)] underline-offset-2 hover:underline sm:text-xs" title={full}>
                       {short}
                     </Link>
                   </div>
@@ -157,7 +157,7 @@ export function RecentEntriesCard({ lang, facts }: RecentEntriesCardProps) {
       <div className="mt-1 flex items-center justify-end sm:mt-2">
         <Link
           href={{ pathname: "/progress", query: { open: "journal" } }}
-          className="text-[10px] text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline"
+          className="text-[10px] text-[var(--omni-muted)] underline-offset-2 transition hover:text-[var(--omni-ink)] hover:underline"
         >
           {lang === "ro" ? "Vezi tot" : "See all"}
         </Link>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, Suspense } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
+import { AppShell } from '@/components/AppShell';
 import { CUNO_QUESTIONS } from '@/lib/cunoQuestions';
 import type { KunoAttempt, KunoCategory, KunoDifficulty } from '@/lib/kunoTypes';
 import { useProfile } from '@/components/ProfileProvider';
@@ -75,11 +76,11 @@ function LessonQuiz({ category }: { category: string }) {
     const moduleId = CATEGORY_TO_MODULE[category] ?? "emotional_balance";
     const omniHref = `/omni-kuno?area=${moduleId}&module=${moduleId}`;
     return (
-      <div className="mx-auto max-w-xl rounded-[14px] border border-[#E4DAD1] bg-white p-6 shadow-sm text-center">
-        <h2 className="text-xl font-semibold text-[#2C2C2C]">Rezultat micro‑lecție</h2>
-        <p className="mt-2 text-3xl font-bold text-[#C07963]">{s.percent}%</p>
+      <div className="mx-auto max-w-xl rounded-[14px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-6 shadow-sm text-center">
+        <h2 className="text-xl font-semibold text-[var(--omni-ink)]">Rezultat micro‑lecție</h2>
+        <p className="mt-2 text-3xl font-bold text-[var(--omni-energy)]">{s.percent}%</p>
         <button
-          className="mt-4 rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+          className="mt-4 rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
           onClick={async () => {
             await saveKunoAttempts(profile?.id, attempts, s.percent);
             try {
@@ -108,7 +109,7 @@ function LessonQuiz({ category }: { category: string }) {
         </button>
         <Link
           href={omniHref}
-          className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[#C07963] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white"
+          className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-energy)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-energy)] transition hover:bg-[var(--omni-energy)] hover:text-white"
         >
           Continuă în OmniKuno
         </Link>
@@ -122,14 +123,14 @@ function LessonQuiz({ category }: { category: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-xl rounded-[14px] border border-[#E4DAD1] bg-white p-6 shadow-sm">
-      <p className="text-xs uppercase tracking-[0.3em] text-[#A08F82]">Întrebarea {idx + 1}/{questions.length}</p>
-      <h2 className="mt-2 text-xl sm:text-2xl font-semibold leading-snug text-[#1F1F1F]">{q.question}</h2>
+    <div className="mx-auto max-w-xl rounded-[14px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-6 shadow-sm">
+      <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">Întrebarea {idx + 1}/{questions.length}</p>
+      <h2 className="mt-2 text-xl sm:text-2xl font-semibold leading-snug text-[var(--omni-ink)]">{q.question}</h2>
       <div className="mt-3 grid gap-2">
         {q.options.map((opt, i) => (
           <button
             key={i}
-            className="rounded-[10px] border border-[#D8C6B6] px-3 py-2 text-left text-[13px] sm:text-sm text-[#2C2C2C] hover:border-[#2C2C2C]"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-2 text-left text-[13px] sm:text-sm text-[var(--omni-ink)] hover:border-[var(--omni-energy)]"
             onClick={() => onAnswer(i)}
             data-testid="learn-option"
           >
@@ -148,15 +149,15 @@ function ContentLessonView({ id, locale }: { id: string; locale: 'ro' | 'en' }) 
   const [toast, setToast] = useState<string | null>(null);
   if (!lesson) {
     return (
-      <div className="mx-auto max-w-xl rounded-[14px] border border-[#E4DAD1] bg-[#FFF5F4] p-6 text-[#8C2B2F] shadow-sm">
+      <div className="mx-auto max-w-xl rounded-[14px] border border-[var(--omni-border-soft)] bg-[var(--omni-danger-soft)] p-6 text-[var(--omni-danger)] shadow-sm">
         Lecția nu a fost găsită.
       </div>
     );
   }
   return (
-    <div className="mx-auto max-w-2xl rounded-[14px] border border-[#E4DAD1] bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-semibold text-[#2C2C2C]">{lesson.title}</h1>
-      <div className="mt-3 space-y-3 text-sm text-[#2C2C2C]">
+    <div className="mx-auto max-w-2xl rounded-[14px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-6 shadow-sm">
+      <h1 className="text-2xl font-semibold text-[var(--omni-ink)]">{lesson.title}</h1>
+      <div className="mt-3 space-y-3 text-sm text-[var(--omni-ink)]">
         <p className="font-medium">{locale === 'ro' ? 'Scop' : 'Goal'}</p>
         <p>{lesson.goal}</p>
         <p className="font-medium">{locale === 'ro' ? 'Idei cheie' : 'Key ideas'}</p>
@@ -178,7 +179,7 @@ function ContentLessonView({ id, locale }: { id: string; locale: 'ro' | 'en' }) 
       </div>
       <div className="mt-4 flex justify-end">
         <button
-          className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+          className="rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
           onClick={async () => {
             try {
               const label = lesson.title;
@@ -231,17 +232,16 @@ function LessonInner() {
   const [started, setStarted] = useState(() => qs.get('start') === '1');
 
   return (
-    <div className="min-h-screen bg-[#FDFCF9]">
-      <SiteHeader compact onAuthRequest={e2e ? undefined : goToAuth} />
-      <main className="mx-auto max-w-4xl px-4 py-8">
+    <AppShell header={<SiteHeader onAuthRequest={e2e ? undefined : goToAuth} />}>
+      <div className="mx-auto max-w-4xl px-4 py-8">
         {/* Branch: if a registry lessonId is provided (e.g., initiation.stress_clarity), render content view */}
         {lessonId && lessonId.includes('.') ? (
           <ContentLessonView id={lessonId} locale={locale} />
         ) : (
-          <div className="mx-auto max-w-2xl rounded-[14px] border border-[#E4DAD1] bg-white p-6 shadow-sm">
+          <div className="mx-auto max-w-2xl rounded-[14px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-6 shadow-sm">
             <div className="flex flex-col items-center text-center">
-              <h1 className="text-2xl font-semibold text-[#2C2C2C]">Omni‑Kuno</h1>
-              <p className="mt-1 text-sm text-[#4A3A30]">Lecție scurtă — categorie: <span className="font-medium">{cat}</span></p>
+              <h1 className="text-2xl font-semibold text-[var(--omni-ink)]">Omni‑Kuno</h1>
+              <p className="mt-1 text-sm text-[var(--omni-ink-soft)]">Lecție scurtă — categorie: <span className="font-medium">{cat}</span></p>
             </div>
 
             {!started ? (
@@ -251,7 +251,7 @@ function LessonInner() {
                   <button
                     type="button"
                     onClick={() => setStarted(true)}
-                    className="rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+                    className="rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
                     data-testid="learn-start"
                   >
                     Începe
@@ -265,8 +265,8 @@ function LessonInner() {
             )}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }
 

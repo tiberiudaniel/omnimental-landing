@@ -17,12 +17,12 @@ export default function DemoUserSwitcher() {
     router.replace(url.pathname + url.search);
   };
   return (
-    <div className="fixed bottom-3 right-3 z-50 rounded-[10px] border border-[#D8C6B6] bg-white/95 px-3 py-2 text-[11px] text-[#4A3A30] shadow">
+    <div className="fixed bottom-3 right-3 z-50 rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 px-3 py-2 text-[11px] text-[var(--omni-ink-soft)] shadow">
       <span className="mr-2 opacity-70">Demo:</span>
       {["", "1", "2", "3"].map((v) => (
         <button
           key={v || "none"}
-          className={`mr-1 rounded px-2 py-0.5 ${current === v ? "bg-[#2C2C2C] text-white" : "border border-[#D8C6B6]"}`}
+          className={`mr-1 rounded px-2 py-0.5 ${current === v ? "bg-[var(--omni-ink)] text-white" : "border border-[var(--omni-border-soft)]"}`}
           onClick={() => setDemo(v)}
           title={v ? `Demo ${v}` : "Off"}
         >

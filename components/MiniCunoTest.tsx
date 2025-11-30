@@ -52,15 +52,15 @@ export default function MiniCunoTest({ lang, onDone }: { lang: "ro" | "en"; onDo
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4" data-testid="onboarding-minicuno">
-      <Card className="rounded-2xl border border-[#E4DAD1] bg-white p-5 shadow-sm">
+      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 shadow-sm">
         <header className="mb-3">
-          <h2 className="text-xl font-semibold text-[#1F1F1F]">{getString(t, "minicuno.title", lang === "ro" ? "Mini‑Cuno (6 întrebări)" : "Mini‑Knowledge (6 questions)")}</h2>
-          <p className="mt-1 text-sm text-[#4A3A30]">{getString(t, "minicuno.instructions", lang === "ro" ? "Răspunde rapid la câte o întrebare per modul. Primești un scor instant." : "Answer one quick question per module. You’ll get an instant score.")}</p>
+          <h2 className="text-xl font-semibold text-[var(--omni-ink)]">{getString(t, "minicuno.title", lang === "ro" ? "Mini‑Cuno (6 întrebări)" : "Mini‑Knowledge (6 questions)")}</h2>
+          <p className="mt-1 text-sm text-[var(--omni-ink-soft)]">{getString(t, "minicuno.instructions", lang === "ro" ? "Răspunde rapid la câte o întrebare per modul. Primești un scor instant." : "Answer one quick question per module. You’ll get an instant score.")}</p>
         </header>
         <div className="space-y-4">
           {items.map((it) => (
-            <article key={it.question.id} className="space-y-2 rounded-[12px] border border-[#F0E6DA] bg-[#FFFBF7] px-4 py-3">
-              <p className="text-sm text-[#2C2C2C]">{it.question.question}</p>
+            <article key={it.question.id} className="space-y-2 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3">
+              <p className="text-sm text-[var(--omni-ink)]">{it.question.question}</p>
               <div className="grid gap-2 md:grid-cols-2">
                 {it.question.options.map((opt, idx) => (
                   <button
@@ -68,7 +68,7 @@ export default function MiniCunoTest({ lang, onDone }: { lang: "ro" | "en"; onDo
                     type="button"
                     onClick={() => set(it.question.id, idx)}
                     className={`rounded-[10px] border px-3 py-2 text-left text-sm ${
-                      answers[it.question.id] === idx ? "border-[#2C2C2C] bg-[#2C2C2C] text-white" : "border-[#E4DAD1] bg-white text-[#2C2C2C] hover:border-[#2C2C2C]"
+                      answers[it.question.id] === idx ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]" : "border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]"
                     }`}
                   >
                     {opt}
@@ -79,12 +79,12 @@ export default function MiniCunoTest({ lang, onDone }: { lang: "ro" | "en"; onDo
           ))}
         </div>
         <footer className="mt-4 flex items-center justify-between">
-          <p className="text-[12px] text-[#7B6B60]">{getString(t, "minicuno.currentScore", lang === "ro" ? "Scor curent" : "Current score")}: {score.percent}%</p>
+          <p className="text-[12px] text-[var(--omni-muted)]">{getString(t, "minicuno.currentScore", lang === "ro" ? "Scor curent" : "Current score")}: {score.percent}%</p>
           <button
             type="button"
             onClick={handleSubmit}
             disabled={(!allAnswered && !e2e) || saving}
-            className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:cursor-not-allowed disabled:opacity-60"
             data-testid="onboarding-minicuno-save"
           >
             {getString(t, "minicuno.saveScore", lang === "ro" ? "Salvează scorul" : "Save score")}

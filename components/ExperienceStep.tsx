@@ -57,11 +57,11 @@ export default function ExperienceStep({
       transition={{ duration: 0.35 }}
       className="mx-auto mt-6 w-full max-w-3xl px-4"
     >
-      <Card className="rounded-2xl border border-[#E4DAD1] bg-white p-4 shadow-sm">
-        <h3 className="mb-2 text-base font-semibold text-[#1F1F1F]">
+      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-4 shadow-sm">
+        <h3 className="mb-2 text-base font-semibold text-[var(--omni-ink)]">
           {getString(t, "experience.title", lang === "ro" ? "Hai să vedem cum ar fi…" : "Let’s see how it could feel…")}
         </h3>
-        <p className="mb-4 text-sm text-[#4A3A30]">
+        <p className="mb-4 text-sm text-[var(--omni-ink-soft)]">
           {getString(t, "experience.body", lang === "ro" ? "Imaginează-ți că tocmai ai participat la o sesiune. Ce crezi că ai primit din acea experiență?" : "Imagine you just had a session. What do you feel you received from that experience?")}
         </p>
         <div className="mb-4 flex flex-wrap gap-2">
@@ -72,8 +72,8 @@ export default function ExperienceStep({
               onClick={() => toggle(item)}
               className={`rounded-full border px-3 py-1 text-[12px] ${
                 selected.includes(item)
-                  ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                  : "border-[#E4DAD1] bg-[#FFFBF7] text-[#2C2C2C] hover:border-[#2C2C2C]"
+                  ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                  : "border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]"
               }`}
             >
               {item}
@@ -85,7 +85,7 @@ export default function ExperienceStep({
             type="button"
             onClick={handleSubmit}
             disabled={saving || selected.length === 0}
-            className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {getString(t, "experience.continue", lang === "ro" ? "Continuă" : "Continue")}
           </button>

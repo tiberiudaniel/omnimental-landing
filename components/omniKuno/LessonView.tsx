@@ -196,7 +196,7 @@ export default function LessonView({
     <button
       type="button"
       onClick={() => setJournalOpen(true)}
-      className="inline-flex items-center gap-2 rounded-full border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:border-[#C07963] hover:text-[#C07963]"
+      className="inline-flex items-center gap-2 rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
       data-testid="lesson-journal-button"
     >
       <span aria-hidden="true">📝</span>
@@ -215,26 +215,26 @@ export default function LessonView({
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.35em] text-[#B08A78]">{lang === "ro" ? "Lecție" : "Lesson"}</p>
-                <h3 className="text-xl font-bold leading-tight text-[#2C2C2C]">{lesson.title}</h3>
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">{lang === "ro" ? "Lecție" : "Lesson"}</p>
+                <h3 className="text-xl font-bold leading-tight text-[var(--omni-ink)]">{lesson.title}</h3>
               </div>
-              <div className="flex flex-col items-end gap-2 text-right text-[11px] text-[#7B6B60] sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+              <div className="flex flex-col items-end gap-2 text-right text-[11px] text-[var(--omni-muted)] sm:flex-row sm:items-center sm:justify-end sm:gap-3">
                 <div>
-                  <p className="font-semibold text-[#2C2C2C]">+{xpReward} XP</p>
+                  <p className="font-semibold text-[var(--omni-ink)]">+{xpReward} XP</p>
                   <p>{lang === "ro" ? "Recompensă estimată" : "Projected reward"}</p>
                 </div>
                 {journalButton}
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#7B6B60]">
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--omni-muted)]">
               <span className={`inline-flex items-center rounded-full px-3 py-0.5 uppercase tracking-[0.2em] ${chipClass}`}>
                 {chipText}
               </span>
               {durationText ? <span>{durationText}</span> : null}
               {centerLabel ? (
-                <span className="rounded-full bg-[#FFF3EC] px-2.5 py-0.5 text-xs font-semibold text-[#C07963]">{centerLabel}</span>
+                <span className="rounded-full bg-[var(--omni-energy-tint)] px-2.5 py-0.5 text-xs font-semibold text-[var(--omni-energy)]">{centerLabel}</span>
               ) : null}
-              <span className="rounded-full bg-[#FFF3EC] px-2.5 py-0.5 font-semibold text-[#C07963]">
+              <span className="rounded-full bg-[var(--omni-energy-tint)] px-2.5 py-0.5 font-semibold text-[var(--omni-energy)]">
                 {done ? (lang === "ro" ? "Finalizată" : "Completed") : lang === "ro" ? "Activă" : "Active"}
               </span>
             </div>
@@ -243,11 +243,11 @@ export default function LessonView({
                 {screens.map((_, idx) => (
                   <span
                     key={idx}
-                    className={`h-2 w-2 rounded-full ${idx === currentScreenIndex ? "bg-[#C07963]" : "bg-[#E4DAD1]"}`}
+                    className={`h-2 w-2 rounded-full ${idx === currentScreenIndex ? "bg-[var(--omni-energy)]" : "bg-[#E4DAD1]"}`}
                   />
                 ))}
               </div>
-              <p className="text-[11px] text-[#7B6B60]" id={reflectionHelperId}>
+              <p className="text-[11px] text-[var(--omni-muted)]" id={reflectionHelperId}>
                 {lang === "ro" ? `Pas ${currentScreenIndex + 1} din ${totalScreens}` : `Step ${currentScreenIndex + 1} of ${totalScreens}`}
               </p>
             </div>
@@ -255,7 +255,7 @@ export default function LessonView({
         ) : (
           <div className="flex justify-end">{journalButton}</div>
         )}
-        <div className="rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] p-4 text-[#4D3F36]" data-testid={`lesson-screen-${currentScreenIndex + 1}`}>
+        <div className="rounded-2xl border border-[#F0E8E0] bg-[var(--omni-bg-paper)] p-4 text-[#4D3F36]" data-testid={`lesson-screen-${currentScreenIndex + 1}`}>
           {renderScreenContent(currentScreen, {
             areaKey,
             quizAnswerIndex,
@@ -273,7 +273,7 @@ export default function LessonView({
             type="button"
             onClick={() => setCurrentScreenIndex((prev) => Math.max(prev - 1, 0))}
             disabled={currentScreenIndex === 0}
-            className="inline-flex items-center rounded-full border border-[#E4DAD1] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#7B6B60] transition hover:border-[#C07963] hover:text-[#C07963] disabled:cursor-not-allowed disabled:border-[#F3E9DF] disabled:text-[#CAB7A8]"
+            className="inline-flex items-center rounded-full border border-[var(--omni-border-soft)] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] disabled:cursor-not-allowed disabled:border-[#F3E9DF] disabled:text-[#CAB7A8]"
           >
             {lang === "ro" ? "Înapoi" : "Back"}
           </button>
@@ -283,7 +283,7 @@ export default function LessonView({
               onClick={handleNextScreen}
               disabled={!canContinue}
               data-testid="lesson-next"
-              className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
+              className="inline-flex items-center rounded-full border border-[var(--omni-energy)] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--omni-energy)] transition hover:bg-[var(--omni-energy)] hover:text-white disabled:cursor-not-allowed disabled:border-[var(--omni-border-soft)] disabled:text-[#B99484]"
             >
               {lang === "ro" ? "Continuă" : "Continue"}
             </button>
@@ -293,7 +293,7 @@ export default function LessonView({
               onClick={handleComplete}
               disabled={busy || done || (requiresReflectionInput && reflection.trim().length < reflectionMinChars)}
               data-testid="lesson-complete"
-              className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
+              className="inline-flex items-center rounded-full border border-[var(--omni-energy)] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--omni-energy)] transition hover:bg-[var(--omni-energy)] hover:text-white disabled:cursor-not-allowed disabled:border-[var(--omni-border-soft)] disabled:text-[#B99484]"
             >
               {done
                 ? lang === "ro"
@@ -324,7 +324,7 @@ export default function LessonView({
             </p>
           ) : null}
           {done ? (
-            <div className="rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-2 text-sm text-[#1F3C2F]">
+            <div className="rounded-xl border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-4 py-2 text-sm text-[var(--omni-ink-soft)]">
               {lang === "ro"
                 ? `Excelent! Ai câștigat ${xpReward} XP și lecția este salvată în progres. Continuă cu următoarea misiune.`
                 : `Great! You earned ${xpReward} XP and the lesson is saved. Continue with the next mission.`}
@@ -363,8 +363,8 @@ function renderScreenContent(
   if (screen.kind === "content") {
     return (
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{screen.title}</p>
-        <p className="text-sm leading-relaxed text-[#2C2C2C]">{screen.body}</p>
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{screen.title}</p>
+        <p className="text-sm leading-relaxed text-[var(--omni-ink)]">{screen.body}</p>
         {screen.bullets ? (
           <ul className="list-disc space-y-1 pl-5 text-sm text-[#4D3F36]">
             {screen.bullets.map((bullet) => (
@@ -378,21 +378,21 @@ function renderScreenContent(
   if (screen.kind === "checkpoint") {
     return (
       <div className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{screen.title}</p>
-        <ol className="list-decimal space-y-2 pl-5 text-sm text-[#2C2C2C]">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{screen.title}</p>
+        <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--omni-ink)]">
           {screen.steps.map((step) => (
             <li key={step}>{step}</li>
           ))}
         </ol>
-        {screen.helper ? <p className="text-[12px] text-[#7B6B60]">{screen.helper}</p> : null}
+        {screen.helper ? <p className="text-[12px] text-[var(--omni-muted)]">{screen.helper}</p> : null}
       </div>
     );
   }
   if (screen.kind === "quiz") {
     return (
       <div className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{screen.title}</p>
-        <p className="text-sm text-[#2C2C2C]">{screen.question}</p>
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{screen.title}</p>
+        <p className="text-sm text-[var(--omni-ink)]">{screen.question}</p>
         <div className="space-y-2">
           {screen.options.map((option, index) => {
             const selected = quizAnswerIndex === index;
@@ -400,13 +400,13 @@ function renderScreenContent(
             const showState = quizAnswerIndex !== null;
             const baseClasses =
               "w-full rounded-2xl border px-4 py-2 text-left text-sm transition focus:outline-none";
-            let stateClasses = "border-[#E4DAD1] text-[#2C2C2C] hover:border-[#C07963]";
+            let stateClasses = "border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]";
             if (showState && selected) {
               stateClasses = isCorrect
-                ? "border-[#1F7A43] bg-[#ECF8F0] text-[#1F3C2F]"
+                ? "border-[#1F7A43] bg-[#ECF8F0] text-[var(--omni-ink-soft)]"
                 : "border-[#E54C38] bg-[#FBEAE6] text-[#5C2A1D]";
             } else if (showState && isCorrect) {
-              stateClasses = "border-dashed border-[#1F7A43] text-[#1F3C2F]";
+              stateClasses = "border-dashed border-[#1F7A43] text-[var(--omni-ink-soft)]";
             }
             return (
               <button
@@ -438,7 +438,7 @@ function renderScreenContent(
           <div
             className={`rounded-xl px-4 py-2 text-sm ${
               quizResult === "correct"
-                ? "border border-[#CBE8D7] bg-[#F3FFF8] text-[#1F3C2F]"
+                ? "border border-[var(--omni-success)] bg-[var(--omni-success-soft)] text-[var(--omni-ink-soft)]"
                 : "border border-[#F5C6C0] bg-[#FFF7F5] text-[#5C2A1D]"
             }`}
           >
@@ -460,16 +460,16 @@ function renderScreenContent(
     const remaining = Math.max(0, reflectionMinChars - reflection.trim().length);
     return (
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{screen.title}</p>
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{screen.title}</p>
         <p className="text-sm text-[#4D3F36]">{screen.prompt}</p>
-        <p className="text-[11px] text-[#A08F82]">
+        <p className="text-[11px] text-[var(--omni-muted)]">
           {lang === "ro" ? "Respiră de 3 ori înainte să scrii. Răspunsul rămâne doar în aplicație." : "Take three slow breaths. Your note stays private inside the app."}
         </p>
         <textarea
           value={reflection}
           onChange={(e) => onReflectionChange(e.target.value)}
           rows={4}
-          className="w-full rounded-2xl border border-[#E4DAD1] bg-white px-3 py-2 text-sm text-[#2C2C2C] focus:border-[#C07963] focus:outline-none"
+          className="w-full rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-3 py-2 text-sm text-[var(--omni-ink)] focus:border-[var(--omni-energy)] focus:outline-none"
           aria-describedby={reflectionHelperId}
           placeholder={
             lang === "ro"
@@ -477,7 +477,7 @@ function renderScreenContent(
               : `Write at least ${reflectionMinChars} characters.`
           }
         />
-        <p className="text-[11px] text-[#7B6B60]">
+        <p className="text-[11px] text-[var(--omni-muted)]">
           {remaining > 0
             ? lang === "ro"
               ? "Scrie încă 1–2 propoziții ca să poți continua."
@@ -492,8 +492,8 @@ function renderScreenContent(
   if (screen.kind === "arcIntro") {
     return (
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{screen.title}</p>
-        <p className="text-sm leading-relaxed text-[#2C2C2C]">{screen.body}</p>
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{screen.title}</p>
+        <p className="text-sm leading-relaxed text-[var(--omni-ink)]">{screen.body}</p>
       </div>
     );
   }
@@ -502,8 +502,8 @@ function renderScreenContent(
     const steps = customSteps ?? (areaKey === "emotional_balance" ? CALM_PROTOCOL_STEPS : null);
     return (
       <div className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.35em] text-[#B08A78]">{screen.title}</p>
-        {screen.body ? <p className="text-sm text-[#2C2C2C]">{screen.body}</p> : null}
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{screen.title}</p>
+        {screen.body ? <p className="text-sm text-[var(--omni-ink)]">{screen.body}</p> : null}
         {steps ? (
           <ul className="list-disc space-y-1 pl-5 text-sm text-[#4D3F36]">
             {steps.map((step) => (

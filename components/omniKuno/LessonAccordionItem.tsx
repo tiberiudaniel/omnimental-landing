@@ -69,8 +69,8 @@ export default function LessonAccordionItem({
         onClick={isClickable ? onToggle : undefined}
         className={cn(
           "flex w-full items-start justify-between rounded-3xl px-4 py-4 text-left transition md:px-6",
-          status === "done" && "bg-white text-neutral-700",
-          status === "active" && "bg-[#FFF8F4] text-[#2C2C2C] shadow-[0_15px_35px_rgba(242,114,75,0.25)]",
+          status === "done" && "bg-[var(--omni-surface-card)] text-neutral-700",
+          status === "active" && "bg-[var(--omni-bg-paper)] text-[var(--omni-ink)] shadow-[0_15px_35px_rgba(242,114,75,0.25)]",
           status === "locked" && "bg-[#FCFBF9] text-neutral-400 opacity-40",
           !isClickable && "cursor-default",
           justActivated && status === "active" ? "ring-2 ring-[#F5A47E]/70" : "",
@@ -98,9 +98,9 @@ export default function LessonAccordionItem({
           <div
             className={cn(
               "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border text-sm",
-              status === "done" && "border-[#82C29B] text-[#2F7A4D] bg-white",
-              status === "active" && "border-[#F5A47E] text-[#D55D2A] bg-white",
-              status === "locked" && "border-neutral-200 text-[#6B6B6B] bg-white/80",
+              status === "done" && "border-[#82C29B] text-[#2F7A4D] bg-[var(--omni-surface-card)]",
+              status === "active" && "border-[#F5A47E] text-[#D55D2A] bg-[var(--omni-surface-card)]",
+              status === "locked" && "border-neutral-200 text-[#6B6B6B] bg-[var(--omni-surface-card)]/80",
             )}
           >
             <motion.span
@@ -116,7 +116,7 @@ export default function LessonAccordionItem({
             <span className="text-xs uppercase tracking-[0.18em] text-neutral-400">
               {index}. Lecție
             </span>
-            <span className="text-base font-semibold text-[#2C2C2C]">{title}</span>
+            <span className="text-base font-semibold text-[var(--omni-ink)]">{title}</span>
             <span className="mt-1 text-sm text-neutral-600">{description}</span>
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function LessonAccordionItem({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.35 }}
-            className="mx-2 overflow-hidden rounded-[26px] border border-[#F2B39B]/60 bg-[#FFF8F4] shadow-[0_20px_45px_rgba(242,114,75,0.18)] md:mx-4 lg:mx-6"
+            className="mx-2 overflow-hidden rounded-[26px] border border-[#F2B39B]/60 bg-[var(--omni-bg-paper)] shadow-[0_20px_45px_rgba(242,114,75,0.18)] md:mx-4 lg:mx-6"
           >
             <div className="px-4 py-5 md:px-6">
               <div className="flex flex-col gap-2 text-xs text-neutral-600">

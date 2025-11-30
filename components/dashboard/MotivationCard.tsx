@@ -17,20 +17,20 @@ type MotivationCardProps = {
 export default function MotivationCard({ lang, t, omniScopeScore, motivationDelta, facts }: MotivationCardProps) {
   return (
     <motion.div variants={fadeDelayed(0.15)} {...hoverScale}>
-      <Card className="flex flex-col justify-between rounded-xl border border-[#E4DAD1] bg-[#FCF7F1] p-2 shadow-sm sm:p-2">
-        <h2 className="mb-1 whitespace-nowrap text-[12px] font-semibold text-[#2C2C2C] sm:mb-1.5 sm:text-[13px]" title={lang === "ro" ? "Motivație / Resurse" : "Motivation / Resources"}>
+      <Card className="flex flex-col justify-between rounded-xl border border-[var(--omni-border-soft)] bg-[#FCF7F1] p-2 shadow-sm sm:p-2">
+        <h2 className="mb-1 whitespace-nowrap text-[12px] font-semibold text-[var(--omni-ink)] sm:mb-1.5 sm:text-[13px]" title={lang === "ro" ? "Motivație / Resurse" : "Motivation / Resources"}>
           {lang === "ro" ? "Motivație / Resurse" : "Motivation / Resources"}
         </h2>
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-[11px] text-[#7B6B60] sm:text-xs">
+            <span className="text-[11px] text-[var(--omni-muted)] sm:text-xs">
               {getString(t, "dashboard.motivation.index", lang === "ro" ? "Indice motivație" : "Motivation index")}
             </span>
-            <span className="flex items-baseline gap-1 text-sm font-bold text-[#2C2C2C] sm:text-base">
+            <span className="flex items-baseline gap-1 text-sm font-bold text-[var(--omni-ink)] sm:text-base">
               {Math.max(0, Math.min(100, Math.round(omniScopeScore)))}
               {motivationDelta != null && Number.isFinite(motivationDelta) ? (
                 <span
-                  className={`text-[10px] font-semibold ${motivationDelta >= 0 ? "text-[#1F7A43]" : "text-[#B8000E]"}`}
+                  className={`text-[10px] font-semibold ${motivationDelta >= 0 ? "text-[#1F7A43]" : "text-[var(--omni-danger)]"}`}
                   title={getString(t, "dashboard.delta.vsLast", lang === "ro" ? "față de ultima vizită" : "vs last visit")}
                 >
                   {motivationDelta >= 0 ? "+" : ""}
@@ -66,18 +66,18 @@ export default function MotivationCard({ lang, t, omniScopeScore, motivationDelt
             if (!chips.length) {
               return (
                 <span
-                  className="rounded-[10px] border border-[#E4DAD1] bg-white px-2 py-0.5 text-[10px] text-[#7B6B60]"
+                  className="rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-2 py-0.5 text-[10px] text-[var(--omni-muted)]"
                   title={getString(t, "dashboard.motivation.completeTooltip", lang === "ro" ? "Completează motivația pentru detalii." : "Complete motivation for details.")}
                 >
                   {getString(t, "dashboard.motivation.complete", lang === "ro" ? "Completează motivația pentru detalii." : "Complete motivation for details.")}
                 </span>
               );
             }
-            return <p className="text-[10px] text-[#7B6B60]">{chips.join(" · ")}</p>;
+            return <p className="text-[10px] text-[var(--omni-muted)]">{chips.join(" · ")}</p>;
           })()}
         </div>
         <div className="mt-2 flex items-center justify-end">
-          <Link href="/wizard?step=intentMotivation" className="text-[10px] text-[#7B6B60] underline-offset-2 transition hover:text-[#2C2C2C] hover:underline">
+          <Link href="/wizard?step=intentMotivation" className="text-[10px] text-[var(--omni-muted)] underline-offset-2 transition hover:text-[var(--omni-ink)] hover:underline">
             {lang === "ro" ? "Schimbă" : "Change"}
           </Link>
         </div>

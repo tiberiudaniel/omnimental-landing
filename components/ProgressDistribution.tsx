@@ -45,9 +45,9 @@ export default function ProgressDistribution({ data }: { data: DistEntry[] }) {
           ) : null}
         </g>
       </svg>
-      <div className="space-y-1 text-xs text-[#2C2C2C]">
+      <div className="space-y-1 text-xs text-[var(--omni-ink)]">
         {data.length === 0 ? (
-          <div className="text-[#7A6455]">No data</div>
+          <div className="text-[var(--omni-muted)]">No data</div>
         ) : (
           data.map((d, i) => (
             <div key={`legend-${i}`} className="flex items-center gap-2">

@@ -78,7 +78,7 @@ export default function WizardSondajCBT({ userId, onContinue }: { userId: string
   return (
     <section className="space-y-4">
       <div
-        className="rounded-[16px] border px-6 py-6 shadow-sm"
+        className="omni-card px-6 py-6"
         style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
       >
         <TypewriterText text={D('t', 'Un scurt sondaj CBT ca să personalizăm pașii următori.', 'A short CBT survey to tailor your next steps.')} />

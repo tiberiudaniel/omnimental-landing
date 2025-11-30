@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
+import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { JournalDrawer } from "@/components/journal/JournalDrawer";
 import { useI18n } from "@/components/I18nProvider";
@@ -11,6 +12,8 @@ import { getString } from "@/lib/i18nGetString";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
 import ProgressDashboard from "@/components/dashboard/ProgressDashboard";
+import { OmniCard } from "@/components/OmniCard";
+import { PrimaryButton, SecondaryButton } from "@/components/PrimaryButton";
 import type { JournalTabId } from "@/lib/journal";
 import DemoUserSwitcher from "@/components/DemoUserSwitcher";
 import { getDemoProgressFacts } from "@/lib/demoData";
@@ -212,56 +215,66 @@ function ProgressContent() {
 
   if (!profile?.id) {
     if (demoParam || e2e) {
+      const header = (
+        <SiteHeader onAuthRequest={e2e ? undefined : goToAuth} onMenuToggle={() => setMenuOpen(true)} />
+      );
       return (
-        <div className="min-h-screen bg-[#FAF7F2]">
-          <SiteHeader compact onAuthRequest={e2e ? undefined : goToAuth} onMenuToggle={() => setMenuOpen(true)} />
-          <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-          {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
-          <main className="mx-auto max-w-5xl px-4 py-6 md:px-8">
+        <>
+          <AppShell header={header}>
+            {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
+            <div className="mx-auto max-w-5xl px-4 py-6 md:px-8">
             {fromParam === 'experience-onboarding' && !guestExpDone ? (
-              <div className="mb-3 rounded-[14px] border border-[#CBE8D7] bg-[#F3FFF8] px-5 py-4 shadow-sm">
+              <OmniCard
+                className="mb-3 rounded-[14px] px-5 py-4"
+                style={{ borderColor: "var(--omni-success)", backgroundColor: "var(--omni-success-soft)" }}
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="text-base font-semibold text-[#1F3C2F]">{lang === 'ro' ? 'Continuă experiența ghidată' : 'Continue the guided experience'}</p>
-                    <p className="text-sm text-[#1F3C2F]/80">{lang === 'ro' ? 'Mai ai 2 pași scurți: jurnal și exercițiu de respirație.' : '2 short steps left: journal and breathing practice.'}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push('/experience-onboarding?flow=initiation&step=journal')}
-                    className="rounded-[10px] border border-[#1F3C2F] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#1F3C2F] hover:bg-[#1F3C2F] hover:text-white"
-                    data-testid="progress-cta-eo-continue"
-                  >
-                    {lang === 'ro' ? 'Continuă' : 'Continue'}
-                  </button>
+                    <p className="text-base font-semibold text-[var(--omni-ink-soft)]">{lang === 'ro' ? 'Continuă experiența ghidată' : 'Continue the guided experience'}</p>
+                      <p className="text-sm text-[var(--omni-ink-soft)]/80">{lang === 'ro' ? 'Mai ai 2 pași scurți: jurnal și exercițiu de respirație.' : '2 short steps left: journal and breathing practice.'}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => router.push('/experience-onboarding?flow=initiation&step=journal')}
+                      className="rounded-[10px] border border-[var(--omni-ink-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink-soft)] hover:bg-[var(--omni-ink-soft)] hover:text-white"
+                      data-testid="progress-cta-eo-continue"
+                    >
+                      {lang === 'ro' ? 'Continuă' : 'Continue'}
+                    </button>
                 </div>
-              </div>
+              </OmniCard>
             ) : null}
-            <ProgressDashboard profileId={journalUserId ?? "demo-user"} demoFacts={demoFacts} debugGrid={debugGrid} />
-          </main>
-          {journalDrawer}
-        </div>
+              <ProgressDashboard profileId={journalUserId ?? "demo-user"} demoFacts={demoFacts} debugGrid={debugGrid} />
+            </div>
+            {journalDrawer}
+          </AppShell>
+          <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+        </>
       );
     }
+    const header = <SiteHeader onAuthRequest={goToAuth} />;
     return (
-      <div className="min-h-screen bg-[#FAF7F2]">
-        <SiteHeader compact onAuthRequest={goToAuth} />
-        <main className="mx-auto max-w-5xl px-4 py-8">
-          <p className="text-sm text-[#4A3A30]">{getString(t, "progress.loginToView", lang === "ro" ? "Conectează-te pentru a vedea tabloul tău de bord." : "Sign in to view your dashboard.")}</p>
-        </main>
-      </div>
+      <AppShell header={header}>
+        <div className="mx-auto max-w-5xl px-4 py-8">
+          <p className="text-sm text-[var(--omni-ink-soft)]">
+            {getString(t, "progress.loginToView", lang === "ro" ? "Conectează-te pentru a vedea tabloul tău de bord." : "Sign in to view your dashboard.")}
+          </p>
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2]">
-      <SiteHeader compact onAuthRequest={goToAuth} onMenuToggle={() => setMenuOpen(true)} />
-      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-      {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
+    <>
+      <AppShell
+        header={<SiteHeader onAuthRequest={goToAuth} onMenuToggle={() => setMenuOpen(true)} />}
+      >
+        {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
       {demoParam ? (
         <div className="mx-auto mt-3 w-full max-w-5xl px-4">
           <div className="flex items-center gap-2 text-[12px]">
-            <span className="inline-flex items-center rounded-full bg-[#7A6455] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">{lang === "ro" ? "Demo" : "Demo"}</span>
-            <span className="inline-flex items-center rounded-[8px] border border-[#E4D8CE] bg-[#FFF8F2] px-2.5 py-1 text-[#4A3A30]">
+            <span className="inline-flex items-center rounded-full bg-[var(--omni-muted)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white">{lang === "ro" ? "Demo" : "Demo"}</span>
+            <span className="inline-flex items-center rounded-[8px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-2.5 py-1 text-[var(--omni-ink-soft)]">
               {lang === "ro"
                 ? "Mod demo: date sintetice — nu se salvează în cont."
                 : "Demo mode: synthetic data — not saved to your account."}
@@ -271,8 +284,8 @@ function ProgressContent() {
       ) : null}
       {!hasProgressData && !progressLoading ? (
         <div className="mx-auto mt-4 w-full max-w-5xl px-4">
-          <div className="rounded-[12px] border border-[#E4D8CE] bg-white px-5 py-4 text-sm text-[#2C2C2C] shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
-            <p className="text-base font-semibold text-[#1F1F1F]">
+          <OmniCard className="px-5 py-4 text-sm">
+            <p className="text-base font-semibold text-[var(--omni-ink)]">
               {lang === "ro" ? "Încă nu ai date salvate" : "No progress data yet"}
             </p>
             <p className="mt-1">
@@ -280,41 +293,45 @@ function ProgressContent() {
                 ? "Completează primul test din experiența ghidată pentru a-ți construi tabloul de bord."
                 : "Complete the guided experience to generate your personalized dashboard."}
             </p>
-            <button
+            <PrimaryButton
               type="button"
               onClick={() => router.push("/?from=progress&step=preIntro")}
-              className="mt-3 inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+              className="mt-3 uppercase tracking-[0.2em]"
             >
               {lang === "ro" ? "Începe mini-evaluarea" : "Start the mini assessment"}
-            </button>
-          </div>
+            </PrimaryButton>
+          </OmniCard>
         </div>
       ) : null}
       {journalBlocked ? (
         <div className="mx-auto mt-3 w-full max-w-5xl px-4">
-          <div className="rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
+          <OmniCard className="bg-[var(--omni-bg-paper)] px-4 py-3 text-sm shadow-[0_10px_24px_rgba(0,0,0,0.05)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p>
                 {lang === 'ro'
                   ? 'Jurnalul se activează după ce alegi modul de lucru (individual sau grup).'
                   : 'The journal unlocks after you choose a format (individual or group).'}
               </p>
-              <button
+              <SecondaryButton
                 type="button"
                 onClick={() => router.push('/choose?from=journal')}
-                className="rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012]"
+                className="text-[11px] font-semibold uppercase tracking-[0.2em] px-4 py-2"
               >
                 {lang === 'ro' ? 'Alege formatul' : 'Choose format'}
-              </button>
+              </SecondaryButton>
             </div>
-          </div>
+          </OmniCard>
         </div>
       ) : null}
       {/* Force-open journal drawer when allowed */}
       {journalDrawer}
-      <main className="mx-auto max-w-5xl px-4 py-6 md:px-8">
+      <div className="mx-auto max-w-5xl px-4 py-6 md:px-8">
         {fromParam === 'onboarding-auth' ? (
-          <div className="mb-3 rounded-[12px] border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-3 text-sm text-[#1F3C2F]" data-testid="onboarding-auth-banner">
+          <OmniCard
+            className="mb-3 rounded-[12px] px-4 py-3 text-sm"
+            data-testid="onboarding-auth-banner"
+            style={{ borderColor: "var(--omni-success)", backgroundColor: "var(--omni-success-soft)", color: "var(--omni-ink)" }}
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p>
                 {lang === 'ro'
@@ -323,69 +340,83 @@ function ProgressContent() {
               </p>
               <a
                 href={`/auth${returnToParam ? `?returnTo=${encodeURIComponent(returnToParam)}` : ''}`}
-                className="rounded-[10px] border border-[#1F3C2F] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#1F3C2F] hover:bg-[#1F3C2F] hover:text-white"
+                className="rounded-[10px] border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em]"
+                style={{ borderColor: "var(--omni-energy)", color: "var(--omni-energy)" }}
               >
                 {lang === 'ro' ? 'Conectează-te' : 'Sign in'}
               </a>
             </div>
-          </div>
+          </OmniCard>
         ) : null}
         {absenceNudge ? (
-          <div className="mb-3 rounded-[12px] border border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]" data-testid="absence-nudge">
+          <OmniCard className="mb-3 bg-[var(--omni-bg-paper)] px-4 py-3 text-sm shadow-[0_10px_24px_rgba(0,0,0,0.05)]" data-testid="absence-nudge">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p>{lang === 'ro' ? 'Ai lipsit câteva zile. Vrei să adaugi rapid 1–2 acțiuni pentru zilele trecute?' : 'You’ve been away a few days. Want to quickly add 1–2 actions for past days?'}</p>
-              <a href="/progress#actions-trend" className="rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]">{lang === 'ro' ? 'Mergi la Trendul acțiunilor' : 'Go to Actions trend'}</a>
+              <a
+                href="/progress#actions-trend"
+                className="rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+                style={{
+                  backgroundColor: "var(--omni-brand-soft)",
+                  color: "var(--omni-ink)",
+                  border: `1px solid var(--omni-border-soft)`,
+                }}
+              >
+                {lang === 'ro' ? 'Mergi la Trendul acțiunilor' : 'Go to Actions trend'}
+              </a>
             </div>
-          </div>
+          </OmniCard>
         ) : null}
         {showDailyNudge ? (
-          <div className="mb-3 rounded-[12px] border border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3 text-sm text-[#2C2C2C] shadow-[0_10px_24px_rgba(0,0,0,0.05)]" data-testid="daily-nudge">
+          <OmniCard className="mb-3 bg-[var(--omni-bg-paper)] px-4 py-3 text-sm shadow-[0_10px_24px_rgba(0,0,0,0.05)]" data-testid="daily-nudge">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p>{lang === 'ro' ? 'Completează o mini‑raportare (1–10) ca să ținem indicatorii interni proaspeți.' : 'Do a quick mini‑report (1–10) to keep internal indicators fresh.'}</p>
-              <button
+              <PrimaryButton
                 type="button"
                 onClick={() => router.push('/experience-onboarding?flow=initiation&step=daily-state')}
-                className="rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+                className="px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
               >
                 {lang === 'ro' ? 'Deschide sliderele' : 'Open sliders'}
-              </button>
+              </PrimaryButton>
             </div>
-          </div>
+          </OmniCard>
         ) : null}
         {fromParam === 'experience-onboarding' && profile && profile.experienceOnboardingCompleted !== true ? (
-          <div className="mb-3 rounded-[14px] border border-[#CBE8D7] bg-[#F3FFF8] px-5 py-4 shadow-sm">
+          <OmniCard
+            className="mb-3 rounded-[14px] px-5 py-4"
+            style={{ borderColor: "var(--omni-success)", backgroundColor: "var(--omni-success-soft)" }}
+          >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-base font-semibold text-[#1F3C2F]">{lang === 'ro' ? 'Continuă experiența ghidată' : 'Continue the guided experience'}</p>
-                <p className="text-sm text-[#1F3C2F]/80">{lang === 'ro' ? 'Mai ai 2 pași scurți: jurnal și exercițiu de respirație.' : '2 short steps left: journal and breathing practice.'}</p>
+                <p className="text-base font-semibold text-[var(--omni-ink-soft)]">{lang === 'ro' ? 'Continuă experiența ghidată' : 'Continue the guided experience'}</p>
+                <p className="text-sm text-[var(--omni-ink-soft)]/80">{lang === 'ro' ? 'Mai ai 2 pași scurți: jurnal și exercițiu de respirație.' : '2 short steps left: journal and breathing practice.'}</p>
               </div>
               <button
                 type="button"
                 onClick={() => router.push('/experience-onboarding?flow=initiation&step=journal')}
-                className="rounded-[10px] border border-[#1F3C2F] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#1F3C2F] hover:bg-[#1F3C2F] hover:text-white"
+                className="rounded-[10px] border border-[var(--omni-ink-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink-soft)] hover:bg-[var(--omni-ink-soft)] hover:text-white"
                 data-testid="progress-cta-eo-continue"
               >
                 {lang === 'ro' ? 'Continuă' : 'Continue'}
               </button>
             </div>
-          </div>
+          </OmniCard>
         ) : null}
         {fromParam === 'onboarding-test' || fromParam === 'experience-onboarding' ? (
-          <div className="mb-3 rounded-[12px] border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-3 text-sm text-[#1F3C2F]">
+          <div className="mb-3 rounded-[12px] border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]">
             {lang === 'ro' ? 'Ai completat primul tău test.' : 'You completed your first test.'}
           </div>
         ) : null}
         {fromParam === 'initiation' && stepParam === 'omnikuno-test-done' ? (
-          <div className="mb-3 rounded-[14px] border border-[#CBE8D7] bg-[#F3FFF8] px-5 py-4 shadow-sm" data-testid="init-banner-1">
+          <div className="mb-3 rounded-[14px] border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-5 py-4 shadow-sm" data-testid="init-banner-1">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-base font-semibold text-[#1F3C2F]">{lang === 'ro' ? 'Mini‑test OmniKuno finalizat.' : 'OmniKuno mini‑test completed.'}</p>
-                <p className="text-sm text-[#1F3C2F]/80">{lang === 'ro' ? 'Scorul tău și trendurile au fost actualizate.' : 'Your score and trends have been updated.'}</p>
+                <p className="text-base font-semibold text-[var(--omni-ink-soft)]">{lang === 'ro' ? 'Mini‑test OmniKuno finalizat.' : 'OmniKuno mini‑test completed.'}</p>
+                <p className="text-sm text-[var(--omni-ink-soft)]/80">{lang === 'ro' ? 'Scorul tău și trendurile au fost actualizate.' : 'Your score and trends have been updated.'}</p>
               </div>
               <button
                 type="button"
                 onClick={() => router.push('/experience-onboarding?flow=initiation&step=journal')}
-                className="rounded-[10px] border border-[#1F3C2F] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#1F3C2F] hover:bg-[#1F3C2F] hover:text-white"
+                className="rounded-[10px] border border-[var(--omni-ink-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink-soft)] hover:bg-[var(--omni-ink-soft)] hover:text-white"
               >
                 {lang === 'ro' ? 'Pasul 2: Jurnal' : 'Step 2: Journal'}
               </button>
@@ -393,22 +424,22 @@ function ProgressContent() {
           </div>
         ) : null}
         {fromParam === 'initiation' && stepParam === 'journal-open' ? (
-          <div className="mb-3 rounded-[12px] border border-[#E4DAD1] bg-white px-4 py-3 text-sm text-[#4A3A30]" data-testid="init-banner-2a">
+          <div className="mb-3 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]" data-testid="init-banner-2a">
             <div className="flex flex-col gap-1">
               <p>{lang === 'ro' ? 'Deschide „Note libere” și scrie 2 propoziții (~60 caractere). Apoi închide jurnalul.' : 'Open “Free notes” and write 2 short sentences (~60 chars). Then close the journal.'}</p>
-              <p className="text-[12px] text-[#7B6B60]">{lang === 'ro' ? 'Vei vedea intrarea la „Însemnări recente”, „Trends” și „Reflecții”.' : 'You’ll see it under “Recent entries”, “Trends” and “Reflections”.'}</p>
+              <p className="text-[12px] text-[var(--omni-muted)]">{lang === 'ro' ? 'Vei vedea intrarea la „Însemnări recente”, „Trends” și „Reflecții”.' : 'You’ll see it under “Recent entries”, “Trends” and “Reflections”.'}</p>
               <div className="mt-1 flex gap-2">
                 <button
                   type="button"
                   onClick={() => router.push('/experience-onboarding?flow=initiation&step=omniscope')}
-                  className="rounded-[10px] border border-[#2C2C2C] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+                  className="rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)]"
                 >
                   {lang === 'ro' ? 'Am scris' : 'I wrote it'}
                 </button>
                 <button
                   type="button"
                   onClick={() => router.push('/experience-onboarding?flow=initiation&step=omniscope')}
-                  className="rounded-[10px] border border-[#D8C6B6] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#7B6B60] hover:border-[#2C2C2C] hover:text-[#2C2C2C]"
+                  className="rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-ink)]"
                 >
                   {lang === 'ro' ? 'Sari peste' : 'Skip'}
                 </button>
@@ -417,43 +448,45 @@ function ProgressContent() {
           </div>
         ) : null}
         {fromParam === 'initiation' && stepParam === 'journal-done' ? (
-          <div className="mb-3 rounded-[12px] border border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3 text-sm text-[#4A3A30]" data-testid="init-banner-2">
+          <div className="mb-3 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]" data-testid="init-banner-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p>{lang === 'ro' ? 'Pas 2 complet: reflecția ta a fost salvată.' : 'Step 2 complete: your reflection has been saved.'}</p>
-              <button type="button" onClick={() => router.push('/experience-onboarding?flow=initiation&step=omniscope')} className="rounded-[10px] border border-[#2C2C2C] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white">{lang === 'ro' ? 'Pasul 3: OmniScope' : 'Step 3: OmniScope'}</button>
+              <button type="button" onClick={() => router.push('/experience-onboarding?flow=initiation&step=omniscope')} className="rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)]">{lang === 'ro' ? 'Pasul 3: OmniScope' : 'Step 3: OmniScope'}</button>
             </div>
           </div>
         ) : null}
         {fromParam === 'initiation' && stepParam === 'omniscope-done' ? (
-          <div className="mb-3 rounded-[12px] border border-[#E4DAD1] bg-white px-4 py-3 text-sm text-[#4A3A30]" data-testid="init-banner-3">
+          <div className="mb-3 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]" data-testid="init-banner-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p>{lang === 'ro' ? 'Pas 3 complet: contextul tău a fost actualizat.' : 'Step 3 complete: your context has been updated.'}</p>
-              <button type="button" onClick={() => router.push('/experience-onboarding?flow=initiation&step=daily-state')} className="rounded-[10px] border border-[#2C2C2C] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white">{lang === 'ro' ? 'Pasul 4: Stare zilnică' : 'Step 4: Daily state'}</button>
+              <button type="button" onClick={() => router.push('/experience-onboarding?flow=initiation&step=daily-state')} className="rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)]">{lang === 'ro' ? 'Pasul 4: Stare zilnică' : 'Step 4: Daily state'}</button>
             </div>
           </div>
         ) : null}
         {fromParam === 'initiation' && stepParam === 'daily-state-done' ? (
-          <div className="mb-3 rounded-[12px] border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-3 text-sm text-[#1F3C2F]" data-testid="init-banner-4">
+          <div className="mb-3 rounded-[12px] border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]" data-testid="init-banner-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p>{lang === 'ro' ? 'Pas 4 complet: starea de azi a fost înregistrată.' : 'Step 4 complete: today’s state recorded.'}</p>
-              <button type="button" onClick={() => router.push('/experience-onboarding?flow=initiation&step=omnikuno-lesson')} className="rounded-[10px] border border-[#1F3C2F] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#1F3C2F] hover:bg-[#1F3C2F] hover:text-white">{lang === 'ro' ? 'Pasul 5: Lecție Kuno' : 'Step 5: Kuno lesson'}</button>
+              <button type="button" onClick={() => router.push('/experience-onboarding?flow=initiation&step=omnikuno-lesson')} className="rounded-[10px] border border-[var(--omni-ink-soft)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink-soft)] hover:bg-[var(--omni-ink-soft)] hover:text-white">{lang === 'ro' ? 'Pasul 5: Lecție Kuno' : 'Step 5: Kuno lesson'}</button>
             </div>
           </div>
         ) : null}
         {afterParam === 'os' ? (
-          <div className="mb-3 rounded-[12px] border border-[#E4DAD1] bg-[#FFFBF7] px-4 py-3 text-sm text-[#4A3A30]">
+          <div className="mb-3 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]">
             {lang === 'ro' ? 'Ai scris în jurnal.' : 'You wrote in your journal.'}
           </div>
         ) : null}
       {afterParam === 'abil' ? (
-        <div className="mb-3 rounded-[12px] border border-[#E4DAD1] bg-white px-4 py-3 text-sm text-[#4A3A30]">
+        <div className="mb-3 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]">
           {lang === 'ro' ? 'Ai încheiat un exercițiu OmniAbil.' : 'You finished an OmniAbil exercise.'}
         </div>
       ) : null}
 
         <ProgressDashboard profileId={profile.id} demoFacts={demoFacts} facts={progress} loading={progressLoading} debugGrid={debugGrid} hideOmniIntel />
-      </main>
-    </div>
+      </div>
+      </AppShell>
+      <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+    </>
   );
 }
 

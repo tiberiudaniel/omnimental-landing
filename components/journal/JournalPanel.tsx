@@ -96,7 +96,7 @@ export function JournalPanel({
 
   if (!userId) {
     return (
-      <div className="rounded-[12px] border border-[#E4D8CE] bg-white/90 p-4 text-xs text-[#7A6455]">
+      <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/90 p-4 text-xs text-[var(--omni-muted)]">
         Autentifică-te pentru a folosi jurnalul personal.
       </div>
     );
@@ -104,25 +104,25 @@ export function JournalPanel({
 
   if (!context) {
     return (
-      <div className="rounded-[12px] border border-[#E4D8CE] bg-white/90 p-4 text-xs text-[#7A6455]">
+      <div className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/90 p-4 text-xs text-[var(--omni-muted)]">
         Selectează un cadran pentru a deschide jurnalul.
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col rounded-[12px] border border-[#E4D8CE] bg-white/95 p-3 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
+    <div className="flex h-full flex-col rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 p-3 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
       <header className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.35em] text-[#A08F82]">{status.title}</p>
-          <h3 className="text-base font-semibold text-[#1F1F1F]">
+          <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">{status.title}</p>
+          <h3 className="text-base font-semibold text-[var(--omni-ink)]">
             {context?.theme ? `${status.relatedPrefix} ${context.theme}` : "Noteaza ceea ce este interesant si util."}
           </h3>
         </div>
         {onClose ? (
           <button
             type="button"
-            className="rounded-full p-1 text-[#7A6455] hover:bg-[#F6F2EE]"
+            className="rounded-full p-1 text-[var(--omni-muted)] hover:bg-[var(--omni-bg-paper)]"
             onClick={onClose}
             aria-label={action.close}
             title={action.close}
@@ -144,8 +144,8 @@ export function JournalPanel({
             }}
             className={`rounded-[10px] border px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] ${
               activeTab === tabId
-                ? "border-[#2C2C2C] bg-[#2C2C2C] text-white"
-                : "border-[#E4D8CE] text-[#2C2C2C] hover:border-[#C9B8A8]"
+                ? "border-[var(--omni-energy-soft)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                : "border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:border-[#C9B8A8]"
             }`}
           >
             {tabLabel(tabId)}
@@ -154,7 +154,7 @@ export function JournalPanel({
       </div>
 
       {showSuggested ? (
-        <div className="mb-3 rounded-[10px] border border-[#EDE6DE] bg-[#FFFBF7] p-3 text-xs text-[#2C2C2C]">
+        <div className="mb-3 rounded-[10px] border border-[#EDE6DE] bg-[var(--omni-bg-paper)] p-3 text-xs text-[var(--omni-ink)]">
           <div className="mb-1 font-medium">Sugestii din ce ai completat:</div>
           <ul className="list-inside list-disc space-y-1">
             {context!.suggestedSnippets!.map((snip, idx) => (
@@ -165,7 +165,7 @@ export function JournalPanel({
       ) : null}
 
       <textarea
-        className="min-h-[220px] w-full flex-1 resize-none rounded-[10px] border border-[#E4D8CE] bg-white p-3 text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+        className="min-h-[220px] w-full flex-1 resize-none rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 text-sm text-[var(--omni-ink)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
         placeholder={tabPlaceholder(activeTab)}
         value={currentText}
         onChange={(e) => {
@@ -179,14 +179,14 @@ export function JournalPanel({
         }}
       />
 
-      <div className="mt-2 text-[10px] text-[#7A6455]">
+      <div className="mt-2 text-[10px] text-[var(--omni-muted)]">
         <div className="flex items-center justify-between">
           <span>{status.autosave}</span>
           {loading ? (
             <span>{status.loading}</span>
           ) : saving ? (
             <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#7A6455]" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--omni-muted)]" />
               {status.saving}
             </span>
           ) : (

@@ -19,7 +19,7 @@ export default function TypewriterText({
   speed = 60, // ~50–70ms/char țintă
   enableSound = false,
   onComplete,
-  wrapperClassName = "mb-6 w-full bg-[#F6F2EE] px-6 py-5 text-left",
+  wrapperClassName = "mb-6 w-full bg-[var(--omni-bg-paper)] px-6 py-5 text-left",
   headingClassName,
   cursorClassName = "typewriter-cursor",
   pauseAtEndMs = 1200, // ~1–1.5s pauză înainte de onComplete
@@ -298,7 +298,7 @@ export default function TypewriterText({
     <div className={wrapperClassName} onClick={handleSkip} role="presentation">
       <div className="min-h-[7.5rem] flex items-start">
         <h2
-          className={`${headingClassName ?? 'text-xl md:text-2xl'} font-semibold leading-snug text-[#1F1F1F] text-left`}
+          className={`${headingClassName ?? 'text-xl md:text-2xl'} font-semibold leading-snug text-[var(--omni-ink)] text-left`}
           style={{
             letterSpacing: "0.04em",
             fontFamily: '"Courier Prime", monospace',

@@ -67,15 +67,15 @@ export default function NextBestStep({ progress, lang, onGoToKuno, onGoToSensei,
 
   const hasChildren = Boolean(children);
   return (
-    <div className={`mb-2 w-full rounded-[12px] border border-[#E4D8CE] bg-[#FFFBF7] ${hasChildren ? "px-4 py-3" : "px-3"} text-sm text-[#2C2C2C] shadow-[0_6px_14px_rgba(0,0,0,0.05)] ${className ?? ""}`}>
+    <div className={`mb-2 w-full rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] ${hasChildren ? "px-4 py-3" : "px-3"} text-sm text-[var(--omni-ink)] shadow-[0_6px_14px_rgba(0,0,0,0.05)] ${className ?? ""}`}>
       <div className={`flex items-center justify-between gap-2 ${hasChildren ? "mb-2" : "h-12"}`}>
-        <p className="text-[12px] font-semibold uppercase tracking-[0.3em] text-[#C07963]">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-energy)]">
           {lang === "ro" ? "Pasul următor" : "Next step"}
         </p>
         <button
           type="button"
           onClick={action}
-          className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white"
+          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)]"
         >
           {label}
         </button>

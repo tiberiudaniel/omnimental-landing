@@ -95,10 +95,10 @@ export default function QuizView({
     <div className="space-y-4">
       {showHeader ? (
       <div>
-        <p className="text-xs uppercase tracking-[0.25em] text-[#7B6B60]">Quiz</p>
-        <h3 className="text-xl font-bold text-[#2C2C2C]">{lesson.title}</h3>
-        <p className="text-sm text-[#7B6B60]">Răspunde la întrebările de mai jos.</p>
-        <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-[#7B6B60]">
+        <p className="text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)]">Quiz</p>
+        <h3 className="text-xl font-bold text-[var(--omni-ink)]">{lesson.title}</h3>
+        <p className="text-sm text-[var(--omni-muted)]">Răspunde la întrebările de mai jos.</p>
+        <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-[var(--omni-muted)]">
           <span className={`inline-flex items-center rounded-full px-3 py-0.5 uppercase tracking-[0.2em] ${chipClass}`}>
             {chipText}
           </span>
@@ -107,8 +107,8 @@ export default function QuizView({
       ) : null}
       <div className="space-y-3">
         {questions.map((question) => (
-          <div key={question.id} className="rounded-xl border border-[#F0E8E0] bg-[#FFFBF7] p-3">
-            <p className="font-semibold text-[#2C2C2C]">{question.text}</p>
+          <div key={question.id} className="rounded-xl border border-[#F0E8E0] bg-[var(--omni-bg-paper)] p-3">
+            <p className="font-semibold text-[var(--omni-ink)]">{question.text}</p>
             <div className="mt-2 space-y-1 text-sm text-[#4D3F36]">
               {question.options.map((option) => (
                 <label key={option.value} className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export default function QuizView({
         type="button"
         onClick={handleSubmit}
         disabled={busy || !questions.length || completed}
-        className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
+        className="inline-flex items-center rounded-full border border-[var(--omni-energy)] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--omni-energy)] transition hover:bg-[var(--omni-energy)] hover:text-white disabled:cursor-not-allowed disabled:border-[var(--omni-border-soft)] disabled:text-[#B99484]"
       >
         {completed ? "Quiz complet" : busy ? "Se evaluează..." : "Trimite răspunsurile"}
       </button>

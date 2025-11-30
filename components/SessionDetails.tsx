@@ -32,8 +32,8 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
   const metaLabel = typeof metaLabelValue === "string" ? metaLabelValue : "";
   const cta = typeof ctaValue === "string" ? ctaValue : "";
   const metaBadge = (
-    <div className="flex items-center gap-4 text-xs uppercase tracking-[0.35em] text-[#2C2C2C]">
-      <div className="relative h-16 w-16 overflow-hidden rounded-full border border-[#D8C6B6] bg-[#F6F2EE]/80 shadow-[0_6px_18px_rgba(0,0,0,0.08)]">
+    <div className="flex items-center gap-4 text-xs uppercase tracking-[0.35em] text-[var(--omni-ink)]">
+      <div className="relative h-16 w-16 overflow-hidden rounded-full border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/80 shadow-[0_6px_18px_rgba(0,0,0,0.08)]">
         <Image
           src="/assets/clock.png"
           alt="Program schedule emblem"
@@ -71,7 +71,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
   );
 
   const reassuranceBlock = reassurancePoints.length ? (
-    <div className="mt-10 rounded-[10px] border border-[#D8C6B6] bg-white/92 p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] backdrop-blur-[1px]">
+    <div className="mt-10 rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/92 p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] backdrop-blur-[1px]">
       <h4 className="text-xs font-semibold uppercase tracking-[0.35em] text-neutral-dark/60">
         {reassuranceTitle}
       </h4>
@@ -79,7 +79,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
         {reassurancePoints.map((point) => (
           <span
             key={point}
-            className="border border-[#D8C6B6] px-4 py-2 text-sm text-[#2C2C2C]"
+            className="border border-[var(--omni-border-soft)] px-4 py-2 text-sm text-[var(--omni-ink)]"
           >
             {point}
           </span>
@@ -90,7 +90,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
 
   if (type === "group") {
     return (
-      <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right relative w-full max-w-5xl rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-10 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px] lg:mx-auto">
+      <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right relative w-full max-w-5xl rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-10 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px] lg:mx-auto">
         <TypewriterText
           key="group-details-heading"
           text="Mental Coaching Online Group"
@@ -105,10 +105,10 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
+              className="rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-6 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
             >
-              <h3 className="text-xl font-semibold text-[#1F1F1F]">{card.title}</h3>
-              <div className="mt-3 space-y-2 text-[15px] leading-relaxed text-[#2C2C2C]">
+              <h3 className="text-xl font-semibold text-[var(--omni-ink)]">{card.title}</h3>
+              <div className="mt-3 space-y-2 text-[15px] leading-relaxed text-[var(--omni-ink)]">
                 {(() => {
                   const lines: string[] = Array.isArray(card.lines)
                     ? card.lines
@@ -123,7 +123,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
                   <p className="pt-1">
                     <Link
                       href={card.inlineLink.href}
-                      className="text-sm font-semibold text-[#C07963] underline underline-offset-4 hover:text-[#A76452]"
+                      className="text-sm font-semibold text-[var(--omni-energy)] underline underline-offset-4 hover:text-[var(--omni-energy-soft)]"
                     >
                       {card.inlineLink.label}
                     </Link>
@@ -143,7 +143,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
                 void recordRecommendationProgressFact({ badgeLabel: "auth_redirect" }).catch(() => undefined);
                 router.push("/auth");
               }}
-              className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+              className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
             >
               {typeof t('guestSpecialAccess') === 'string' ? (t('guestSpecialAccess') as string) : (typeof window !== 'undefined' && (navigator.language || '').startsWith('en') ? 'Enter as Special Guest' : 'Acces Invitat Special')}
             </button>
@@ -306,7 +306,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
     typeof ctaSubmitValue === "string" ? ctaSubmitValue : undefined;
 
   return (
-    <div className="panel-canvas panel-canvas--left panel-canvas--brain-left w-full max-w-5xl rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-10 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px] lg:mx-auto">
+    <div className="panel-canvas panel-canvas--left panel-canvas--brain-left w-full max-w-5xl rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-10 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-[1.5px] lg:mx-auto">
       <TypewriterText
         key={`individual-intro-${intro}`}
         text={intro}
@@ -321,15 +321,15 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-6 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-6 py-8 shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
           >
-            <h3 className="text-xl font-semibold text-[#1F1F1F]">{card.title}</h3>
-            <p className="mt-4 text-base leading-relaxed text-[#2C2C2C]">
+            <h3 className="text-xl font-semibold text-[var(--omni-ink)]">{card.title}</h3>
+            <p className="mt-4 text-base leading-relaxed text-[var(--omni-ink)]">
               {card.description}
               {card.inlineLink && (
                 <Link
                   href={card.inlineLink.href}
-                  className="text-sm font-semibold text-[#C07963] underline underline-offset-4 hover:text-[#A76452]"
+                  className="text-sm font-semibold text-[var(--omni-energy)] underline underline-offset-4 hover:text-[var(--omni-energy-soft)]"
                 >
                   {card.inlineLink.label}
                 </Link>
@@ -345,17 +345,17 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: filteredHighlightCards.length * 0.1 }}
-          className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]"
+          className="mt-10 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]"
         >
           {sectionsTitle ? (
-            <h3 className="text-2xl font-semibold text-[#1F1F1F]">
+            <h3 className="text-2xl font-semibold text-[var(--omni-ink)]">
               {sectionsTitle}
             </h3>
           ) : null}
-          <ul className="mt-4 space-y-3 text-base leading-relaxed text-[#2C2C2C]">
+          <ul className="mt-4 space-y-3 text-base leading-relaxed text-[var(--omni-ink)]">
             {sectionList.map((item) => (
               <li key={item} className="flex items-start gap-3">
-                <span className="mt-2 h-2 w-2 rounded-full bg-[#E60012]" />
+                <span className="mt-2 h-2 w-2 rounded-full bg-[var(--omni-energy)]" />
                 <span>{item}</span>
               </li>
             ))}
@@ -364,16 +364,16 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
       )}
 
       {processSteps.length > 0 && (
-        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
+        <section className="mt-10 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
           {processTitle ? (
-            <h3 className="text-2xl font-semibold text-[#1F1F1F]">
+            <h3 className="text-2xl font-semibold text-[var(--omni-ink)]">
               {processTitle}
             </h3>
           ) : null}
-          <ol className="mt-4 space-y-3 text-base text-[#2C2C2C]">
+          <ol className="mt-4 space-y-3 text-base text-[var(--omni-ink)]">
             {processSteps.map((step) => (
               <li key={step} className="flex gap-3">
-                <span className="text-[#A08F82]">→</span>
+                <span className="text-[var(--omni-muted)]">→</span>
                 <span>{step}</span>
               </li>
             ))}
@@ -382,7 +382,7 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
       )}
 
       {footerText ? (
-        <p className="mt-8 text-sm leading-relaxed text-[#2C2C2C]/80">
+        <p className="mt-8 text-sm leading-relaxed text-[var(--omni-ink)]/80">
           {footerText}
         </p>
       ) : null}
@@ -402,26 +402,26 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
               void recordRecommendationProgressFact({ badgeLabel: "auth_redirect" }).catch(() => undefined);
               router.push("/auth");
             }}
-            className="group inline-flex items-center gap-3 rounded-[10px] border border-[#2C2C2C] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] transition hover:border-[#E60012] hover:text-[#E60012] focus:outline-none focus:ring-1 focus:ring-[#E60012]"
+            className="group inline-flex items-center gap-3 rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
           >
             {typeof t('guestSpecialAccess') === 'string' ? (t('guestSpecialAccess') as string) : 'Acces Invitat Special'}
-            <span className="translate-y-[1px] text-sm text-[#E60012] transition group-hover:translate-x-1 group-hover:text-[#B8000E]">→</span>
+            <span className="translate-y-[1px] text-sm text-[var(--omni-energy)] transition group-hover:translate-x-1 group-hover:text-[var(--omni-danger)]">→</span>
           </button>
         </div>
         {metaBadge}
       </div>
       {faqItems.length > 0 && (
-        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-[#F6F2EE]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
+        <section className="mt-10 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
           {faqTitle ? (
-            <h3 className="text-2xl font-semibold text-[#1F1F1F]">
+            <h3 className="text-2xl font-semibold text-[var(--omni-ink)]">
               {faqTitle}
             </h3>
           ) : null}
-          <div className="mt-4 space-y-4 text-left text-sm text-[#2C2C2C]">
+          <div className="mt-4 space-y-4 text-left text-sm text-[var(--omni-ink)]">
             {faqItems.map((item) => (
               <div key={item.question}>
-                <p className="font-semibold text-[#1F1F1F]">{item.question}</p>
-                <p className="mt-1 text-[#2C2C2C]/80">{item.answer}</p>
+                <p className="font-semibold text-[var(--omni-ink)]">{item.question}</p>
+                <p className="mt-1 text-[var(--omni-ink)]/80">{item.answer}</p>
               </div>
             ))}
           </div>
@@ -429,9 +429,9 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
       )}
 
       {testimonials.length > 0 && (
-        <section className="mt-10 rounded-[12px] border border-[#D8C6B6] bg-white/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
+        <section className="mt-10 rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/94 px-8 py-8 shadow-[0_12px_32px_rgba(0,0,0,0.06)] backdrop-blur-[1px]">
           {testimonialsTitle ? (
-            <h3 className="text-2xl font-semibold text-[#1F1F1F]">
+            <h3 className="text-2xl font-semibold text-[var(--omni-ink)]">
               {testimonialsTitle}
             </h3>
           ) : null}
@@ -439,10 +439,10 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
             {testimonials.map((testimonial) => (
               <blockquote
                 key={testimonial.quote}
-                className="rounded-[10px] border border-[#D8C6B6] bg-[#F6F2EE]/80 px-5 py-4 text-left text-sm text-[#2C2C2C]"
+                className="rounded-[10px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/80 px-5 py-4 text-left text-sm text-[var(--omni-ink)]"
               >
                 <p className="italic">“{testimonial.quote}”</p>
-                <footer className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#A08F82]">
+                <footer className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
                   {testimonial.author}
                   {testimonial.role ? ` • ${testimonial.role}` : ""}
                 </footer>

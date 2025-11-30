@@ -184,7 +184,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
   }, [imageLoaded, prefersReducedMotion, safeComplete, userCompleted]);
 
   return (
-    <div className="intro-container fixed inset-0 z-[60] w-screen h-screen overflow-hidden bg-[#FDFCF9]">
+    <div className="intro-container fixed inset-0 z-[60] w-screen h-screen overflow-hidden bg-[var(--omni-bg-main)]">
       <div className="relative flex w-full h-full items-center justify-center">
         <Image
           src="/assets/vitruvian.png"
@@ -202,16 +202,16 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
 
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 px-4 pt-16 sm:pt-20">
           <div className="text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.45em] text-[#6B4A34] sm:text-base">
+            <p className="text-sm font-bold uppercase tracking-[0.45em] text-[var(--omni-ink-soft)] sm:text-base">
               OmniMental
             </p>
-            <p className="text-[15px] font-semibold text-[#5D3E29] sm:text-lg">
+            <p className="text-[15px] font-semibold text-[var(--omni-ink-soft)] sm:text-lg">
               Dezvoltă-ți inteligența adaptativă
             </p>
           </div>
           <div className="intro-button-panel w-full max-w-[18rem] rounded-[26px] bg-[rgba(255,249,242,0.32)] backdrop-blur-md shadow-[0_3px_18px_rgba(0,0,0,0.12)] py-4 px-3 flex flex-col gap-3.5 sm:max-w-[20rem]">
             <button
-              className="relative w-full rounded-2xl bg-[#FFFAF2] py-2.5 text-[11px] font-semibold tracking-[0.28em] text-[#3A332C] transition-transform duration-200 hover:-translate-y-1"
+              className="relative w-full rounded-2xl bg-[var(--omni-bg-paper)] py-2.5 text-[11px] font-semibold tracking-[0.28em] text-[var(--omni-ink)] transition-transform duration-200 hover:-translate-y-1"
               onClick={safeComplete}
               aria-label="Pornește animația"
             >
@@ -220,7 +220,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
                 <svg viewBox="0 0 200 60" preserveAspectRatio="none" className="h-full w-full">
                   <path
                     d="M4 10 C10 4, 190 4, 196 10 L196 50 C190 56, 10 56, 4 50 Z"
-                    stroke="#3A332C"
+                    stroke="var(--omni-ink)"
                     strokeWidth="1.2"
                     fill="none"
                     strokeLinecap="round"
@@ -230,7 +230,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
               </span>
             </button>
             <button
-              className="relative w-full rounded-2xl bg-[#FFFAF2] py-2.5 text-[11px] font-semibold tracking-[0.28em] text-[#7E5A3A] transition-transform duration-200 hover:-translate-y-1"
+              className="relative w-full rounded-2xl bg-[var(--omni-bg-paper)] py-2.5 text-[11px] font-semibold tracking-[0.28em] text-[var(--omni-ink-soft)] transition-transform duration-200 hover:-translate-y-1"
               onClick={() => router.push(user && !user.isAnonymous ? "/progress" : "/auth")}
               aria-label="Deschide autentificarea"
             >

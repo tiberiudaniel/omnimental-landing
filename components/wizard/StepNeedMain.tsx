@@ -39,11 +39,11 @@ export default function StepNeedMain({ onNext }: { onNext: (sel: NeedOptionId[],
     : `Pick up to ${maxSelections} focus areas (ideally at least ${minSelections}).`;
   return (
     <section className="space-y-4" data-testid={getWizardStepTestId("needMain")}>
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm space-y-2">
+      <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-sm space-y-2">
         <TypewriterText text={lang === 'ro' ? q.label.ro : q.label.en} />
         <p className="text-sm text-[#6A4A3A]">{hint}</p>
       </div>
-      <div className="rounded-[16px] border border-[#E4DAD1] bg-white px-6 py-6 shadow-sm">
+      <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-sm">
         <div className="grid gap-3 md:grid-cols-2">
           {q.options.filter((opt) => opt.id !== 'need_other').map((opt) => {
             const label = lang === 'ro' ? opt.label.ro : opt.label.en;
@@ -52,10 +52,10 @@ export default function StepNeedMain({ onNext }: { onNext: (sel: NeedOptionId[],
                 key={opt.id}
                 type="button"
                 onClick={() => toggle(opt.id)}
-                className={`rounded-[14px] border px-4 py-3 text-left shadow-sm transition ${selected.includes(opt.id) ? 'border-[#1F7A53] bg-[#F0FFF6]' : 'border-[#E4DAD1] bg-white hover:border-[#2C2C2C]'}`}
+                className={`rounded-[14px] border px-4 py-3 text-left shadow-sm transition ${selected.includes(opt.id) ? 'border-[#1F7A53] bg-[#F0FFF6]' : 'border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] hover:border-[var(--omni-energy)]'}`}
                 data-testid={`need-opt-${opt.id}`}
               >
-                <span className="text-sm font-medium text-[#2C2C2C]">{label}</span>
+                <span className="text-sm font-medium text-[var(--omni-ink)]">{label}</span>
               </button>
             );
           })}
@@ -66,7 +66,7 @@ export default function StepNeedMain({ onNext }: { onNext: (sel: NeedOptionId[],
             type="button"
             disabled={!canContinue}
             onClick={() => onNext(selected)}
-            className="rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] disabled:opacity-60 hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
             data-testid="need-main-continue"
           >
             {lang === 'ro' ? 'Continuă' : 'Continue'}

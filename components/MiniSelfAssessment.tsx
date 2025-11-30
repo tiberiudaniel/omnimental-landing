@@ -44,15 +44,15 @@ export default function MiniSelfAssessment({ onDone }: { onDone: () => void }) {
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4" data-testid="onboarding-self">
-      <Card className="rounded-2xl border border-[#E4DAD1] bg-white p-5 shadow-sm">
+      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 shadow-sm">
         <header className="mb-3">
-          <h2 className="text-xl font-semibold text-[#1F1F1F]">{getString(t, "selfAssessment.title", lang === "ro" ? "Mini auto‑evaluare" : "Mini self‑assessment")}</h2>
-          <p className="mt-1 text-sm text-[#4A3A30]">{getString(t, "selfAssessment.instructions", lang === "ro" ? "Alege rapid un nivel 1–10 pentru fiecare axă. Se salvează instant pentru personalizare." : "Pick a quick 1–10 level for each axis. It saves instantly for personalization.")}</p>
+          <h2 className="text-xl font-semibold text-[var(--omni-ink)]">{getString(t, "selfAssessment.title", lang === "ro" ? "Mini auto‑evaluare" : "Mini self‑assessment")}</h2>
+          <p className="mt-1 text-sm text-[var(--omni-ink-soft)]">{getString(t, "selfAssessment.instructions", lang === "ro" ? "Alege rapid un nivel 1–10 pentru fiecare axă. Se salvează instant pentru personalizare." : "Pick a quick 1–10 level for each axis. It saves instantly for personalization.")}</p>
         </header>
         <div className="space-y-3">
           {(Object.keys(values) as SliderKey[]).map((k) => (
             <div key={k} className="grid grid-cols-[110px_1fr_auto] items-center gap-3">
-              <label className="text-sm text-[#2C2C2C]" htmlFor={`s-${k}`}>{label(k)}</label>
+              <label className="text-sm text-[var(--omni-ink)]" htmlFor={`s-${k}`}>{label(k)}</label>
               <input
                 id={`s-${k}`}
                 type="range"
@@ -63,7 +63,7 @@ export default function MiniSelfAssessment({ onDone }: { onDone: () => void }) {
                 onChange={(e) => setValues((prev) => ({ ...prev, [k]: Number(e.target.value) }))}
                 className="w-full"
               />
-              <span className="w-10 text-right text-sm font-semibold text-[#C24B17]">{values[k]}</span>
+              <span className="w-10 text-right text-sm font-semibold text-[var(--omni-energy-soft)]">{values[k]}</span>
             </div>
           ))}
         </div>
@@ -72,7 +72,7 @@ export default function MiniSelfAssessment({ onDone }: { onDone: () => void }) {
             type="button"
             onClick={handleSubmit}
             disabled={saving}
-            className="inline-flex items-center justify-center rounded-[10px] border border-[#2C2C2C] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:cursor-not-allowed disabled:opacity-60"
             data-testid="onboarding-self-continue"
           >
             {getString(t, "selfAssessment.save", lang === "ro" ? "Continuă" : "Continue")}

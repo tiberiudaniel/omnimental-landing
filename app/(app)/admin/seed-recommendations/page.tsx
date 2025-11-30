@@ -98,30 +98,30 @@ export default function SeedRecommendationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCF9]">
+    <div className="min-h-screen bg-[var(--omni-bg-main)]">
       <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={nav} />
       <main className="mx-auto max-w-3xl px-4 py-8">
-        <h1 className="text-2xl font-semibold text-[#2C2C2C]">Seed Recommendations</h1>
-        <p className="mt-1 text-sm text-[#7B6B60]">Dev utility: create 3–4 sample recommendations for the current user.</p>
+        <h1 className="text-2xl font-semibold text-[var(--omni-ink)]">Seed Recommendations</h1>
+        <p className="mt-1 text-sm text-[var(--omni-muted)]">Dev utility: create 3–4 sample recommendations for the current user.</p>
         <div className="mt-4 flex gap-2">
           <button
             type="button"
             onClick={seed}
             disabled={busy}
-            className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] disabled:opacity-60 hover:border-[#E60012] hover:text-[#E60012]"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] disabled:opacity-60 hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
           >
             {busy ? "Se încarcă…" : "Seed now"}
           </button>
           <button
             type="button"
             onClick={() => router.push("/recommendation")}
-            className="rounded-[10px] border border-[#2C2C2C] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#2C2C2C] hover:border-[#E60012] hover:text-[#E60012]"
+            className="rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
           >
             Open Recommendations
           </button>
         </div>
-        {log ? <p className="mt-3 text-sm text-[#4A3A30]">{log}</p> : null}
+        {log ? <p className="mt-3 text-sm text-[var(--omni-ink-soft)]">{log}</p> : null}
       </main>
     </div>
   );

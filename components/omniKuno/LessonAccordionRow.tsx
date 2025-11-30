@@ -53,8 +53,8 @@ export default function LessonAccordionRow({
         disabled={!isClickable}
         className={cn(
           "flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left transition-all md:px-5 md:py-4",
-          status === "done" && "border-transparent bg-white/70 text-neutral-700",
-          status === "active" && "border-[#F2B39B] bg-[#FFF8F4] shadow-sm hover:bg-[#FFF4EE]",
+          status === "done" && "border-transparent bg-[var(--omni-surface-card)]/70 text-neutral-700",
+          status === "active" && "border-[#F2B39B] bg-[var(--omni-bg-paper)] shadow-sm hover:bg-[var(--omni-bg-paper)]",
           status === "locked" && "border-transparent bg-neutral-100 text-neutral-400",
           !isClickable && "cursor-default",
         )}
@@ -88,7 +88,7 @@ export default function LessonAccordionRow({
         </div>
       </button>
       {isOpen && status === "active" ? (
-        <div className="mt-3 rounded-3xl border border-[#F2B39B]/60 bg-white p-4 md:p-5">{children}</div>
+        <div className="mt-3 rounded-3xl border border-[#F2B39B]/60 bg-[var(--omni-surface-card)] p-4 md:p-5">{children}</div>
       ) : null}
     </div>
   );
