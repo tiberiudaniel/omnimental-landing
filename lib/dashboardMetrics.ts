@@ -2,6 +2,7 @@ import { computeConsistencyIndexFromDates } from "./consistencyIndex";
 import { computeDistribution } from "./activityDistribution";
 import type { PracticeSessionLite } from "./progressAnalytics";
 import { normalizeKunoFacts } from "./kunoFacts";
+import type { RecentEntry } from "./progressFacts/types";
 
 export type KunoAggregate = {
   lastPercent: number;
@@ -118,7 +119,7 @@ type FactLike = {
   };
   intent?: { tags?: string[]; categories?: Array<{ category: string; count: number }>; selectionTotal?: number; topShare?: number };
   practiceSessions?: PracticeSessionLite[];
-  recentEntries?: Array<{ text?: string; timestamp?: unknown; tabId?: string }>;
+  recentEntries?: RecentEntry[];
 };
 
 export function computeOmniScope(fact: Record<string, unknown> | null | undefined, weights = {

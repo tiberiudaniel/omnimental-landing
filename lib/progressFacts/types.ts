@@ -51,6 +51,10 @@ export type RecentEntry = {
   tabId?: string;
   theme?: string | null;
   sourceBlock?: string | null;
+  sourceType?: string | null;
+  moduleId?: string | null;
+  lessonId?: string | null;
+  lessonTitle?: string | null;
   sig?: string;
 };
 

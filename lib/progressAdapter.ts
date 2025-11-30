@@ -2,6 +2,7 @@
 // Converts raw firestore progressFacts into the dashboard-ready structure.
 
 import type { InsightTheme } from "./insights";
+import type { RecentEntry } from "./progressFacts/types";
 
 export interface ProgressIndex {
   clarity: number;
@@ -43,7 +44,7 @@ type FactsShape = {
   evaluation?: { scores?: Record<string, unknown> };
   recommendation?: { dimensionScores?: Record<string, unknown> };
   practiceSessions?: Array<{ type?: unknown }>;
-  recentEntries?: Array<{ text?: string; timestamp?: unknown }>;
+  recentEntries?: RecentEntry[];
   quickAssessment?: {
     energy?: unknown;
     stress?: unknown;

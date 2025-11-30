@@ -133,6 +133,33 @@ service cloud.firestore {
       }
     }
 
+    // Daily reset checkins: owner-only access
+    match /userDailyCheckins/{docId} {
+      allow read: if signedIn() && docId.matches(request.auth.uid + "_.*");
+      allow create, update: if signedIn() && docId.matches(request.auth.uid + "_.*");
+    }
+
+    function journalEntryOwnerMatches(data) {
+      return data != null && (
+        data.profileId == request.auth.uid ||
+        (data.profileId == null && data.userId == request.auth.uid)
+      );
+    }
+    function journalEntryIdMatches(entryId) {
+      return signedIn() && entryId.matches(request.auth.uid + ".*");
+    }
+
+    // OmniKuno lesson journal entries (dev): owner-only pe profil
+    match /lessonJournalEntries/{entryId} {
+      allow read: if signedIn() && (
+        resource.data == null ||
+        journalEntryOwnerMatches(resource.data) ||
+        journalEntryIdMatches(entryId)
+      );
+      allow create, update: if signedIn() && journalEntryOwnerMatches(request.resource.data);
+      allow delete: if signedIn() && journalEntryOwnerMatches(resource.data);
+    }
+
     // Fallback: deny everything else.
     match /{document=**} {
       allow read, write: if false;

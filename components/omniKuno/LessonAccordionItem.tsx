@@ -83,6 +83,7 @@ export default function LessonAccordionItem({
               }
             : {}
         }
+        data-testid="kuno-lesson-trigger"
         transition={{
           duration: justActivated ? 0.9 : 0.25,
           ease: justActivated ? "easeOut" : "easeInOut",

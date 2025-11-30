@@ -92,6 +92,10 @@ export default function ProgressDashboard({
             text: String(entry?.text ?? ""),
             timestamp: entry?.timestamp ?? Date.now(),
             tabId: entry?.tabId ? String(entry.tabId) : undefined,
+            sourceType: entry?.sourceType ? String(entry.sourceType) : undefined,
+            moduleId: entry?.moduleId ? String(entry.moduleId) : undefined,
+            lessonId: entry?.lessonId ? String(entry.lessonId) : undefined,
+            lessonTitle: entry?.lessonTitle ? String(entry.lessonTitle) : undefined,
           }))
           .filter((entry) => entry.text.trim().length > 0);
         setLocalRecentEntries(normalized);
@@ -120,6 +124,10 @@ export default function ProgressDashboard({
       text: entry.text,
       timestamp: entry.timestamp,
       tabId: entry.tabId,
+      sourceType: entry.sourceType ?? null,
+      moduleId: entry.moduleId ?? null,
+      lessonId: entry.lessonId ?? null,
+      lessonTitle: entry.lessonTitle ?? null,
     }));
     if (!baseFacts) {
       return { recentEntries: normalizedEntries } as ProgressFact;

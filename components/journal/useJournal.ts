@@ -240,8 +240,10 @@ function persistLocalRecentEntry(userId: string, tabId: JournalTabId, text: stri
   try {
     const key = `${LOCAL_RECENT_PREFIX}${userId}`;
     const existingRaw = window.localStorage.getItem(key);
-    const existing = existingRaw ? (JSON.parse(existingRaw) as Array<{ text: string; timestamp: number; tabId?: string }>) : [];
-    existing.push({ text: normalized, timestamp: Date.now(), tabId });
+    const existing = existingRaw
+      ? (JSON.parse(existingRaw) as Array<{ text: string; timestamp: number; tabId?: string; sourceType?: string }>)
+      : [];
+    existing.push({ text: normalized, timestamp: Date.now(), tabId, sourceType: "journal_tab" });
     const pruned = existing.slice(-50);
     window.localStorage.setItem(key, JSON.stringify(pruned));
     window.dispatchEvent(new CustomEvent("journal:recent-entry", { detail: { userId } }));

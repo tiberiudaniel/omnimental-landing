@@ -1,4 +1,12 @@
 
+Mini-testele descrise în acest document servesc dublu rol:
+
+1. În onboarding, ca „micro-quest” inițial OmniKuno (userul simte că începe deja antrenamentul).
+2. În engine-ul OmniKuno, ca quiz-uri integrate în module (lecțiile și quiz-urile descrise în `omnikuno-content-standard.md`).
+
+Scorurile și interpretările lor sunt transformate în XP și niveluri prin engine-ul generic definit în `lib/engine.ts`. OmniKuno nu folosește un alt sistem de scorare paralel.
+
+
 Gândește OmniKuno Onboarding ca un “micro-quest” ultra-personalizat: 7–8 întrebări care pornesc direct din tema și expresiile pe care le-a ales omul în Intent + Cloud.
 
 Îți propun 3 niveluri:
@@ -8,6 +16,8 @@ Logica de matching (cum alegem mini-testul)
 Structura generală a mini-testului
 
 Un exemplu concret: mini-test pentru RELAȚII (cu întrebări gata de folosit)
+
+
 
 1. Logica de matching: cum decide OmniKuno ce mini-test să dea
 
@@ -584,6 +594,9 @@ XP (ex. +5).
 Mic boost la masteryByCategory[cat] (ex. +2..5% dacă micro-quiz corect).
 
 2.5. Gamification – regulile de bază
+
+Notă: valorile sugerate aici (ex. 0–100) trebuie mapate în XP prin regulile din `omnikuno-content-standard.md` (secțiunea „Scorare, XP și niveluri”), astfel încât să existe un singur sistem de progres coerent la nivel de platformă.
+
 
 Propun:
 

@@ -407,3 +407,450 @@ Poți construi o interfață de tip arbore:
 Domeniu → Categorie → Level → listă de conținut.
 
 Fiecare nod afișează: titlu, tip, timp estimat, taguri, link la editare.
+
+
+## 8. OmniKuno – Engine, Pagina principală și Cardul din Dashboard
+
+2. Arhitectura OmniKuno (conceptual + tehnic)
+2.1. Straturi conceptuale
+
+OmniKuno trăiește pe 3 straturi:
+
+Stratul de conținut
+– deja definit în omnikuno-content-standard.md:
+
+Topic-uri mari: ex. calm / stres, energie, relații, performanță, sens / identitate etc.
+
+Pentru fiecare topic: module (niv. 1, 2, 3…).
+
+Pentru fiecare modul:
+
+micro-lecții (explicații scurte, exemple, exerciții),
+
+quiz-uri (itemi knowledge + mini-scenarii),
+
+eventual micro-exerciții practice.
+
+Stratul de engine (lib/engine.ts + niveluri XP)
+
+un sistem generic de:
+
+XP per arie (calm, energie, relații etc.),
+
+niveluri (level 1–3/5, în funcție de XP),
+
+decay (dacă nu lucrezi, nivelul scade),
+
+„next recommended action” (engine-ul decide următoarea mișcare).
+
+OmniKuno nu inventează alt engine; îl folosește pe acesta:
+
+completarea unei lecții → XP în aria relevantă,
+
+un quiz făcut bine → XP mai mare + poate ajustări de nivel,
+
+onboarding-ul Kuno → XP inițial + setare focus.
+
+Stratul de interacțiune / UI
+
+– 3 suprafețe principale:
+
+Onboarding Kuno mini-test (wizard)
+
+micro-quest inițial: userul face un mini-test,
+
+motorul OmniKuno află în ce arie e „cel mai fierbinte”,
+
+engine-ul setează XP inițial + focus.
+
+Pagina OmniKuno (engine complet)
+
+userul vede „Academia” completă:
+
+toate temele, nivelurile, modulele,
+
+misiunea activă + următoarele lecții și quiz-uri,
+
+istoricul activității.
+
+Card OmniKuno în Dashboard
+
+widget de status + scurtătură:
+
+arată tema activă + progres rezumat,
+
+afișează 1–3 misiuni din modul activ,
+
+buton clar: „Continuă misiunea OmniKuno”.
+
+2.2. Fluxuri principale
+
+Onboarding → OmniKuno
+
+Onboarding-ul rulează mini-test Kuno:
+
+alege topicul principal pe baza intențiilor din wizard (Intent + Cloud),
+
+adună primele răspunsuri și generează un scor inițial (XP de bază).
+
+Rezultatul:
+
+focusTheme (aria principală),
+
+XP inițial pentru acea arie în engine,
+
+eventual un modul OmniKuno recomandat (ex: calm_level1).
+
+Când userul ajunge în Dashboard:
+
+cardul OmniKuno afișează deja:
+
+„Tema ta principală: Calm / Echilibru emoțional”,
+
+„Misiunea: acumulează cunoștințe pe tema asta”,
+
+buton „Continuă misiunea”.
+
+Dashboard → Pagina OmniKuno
+
+Userul vede un snapshot:
+
+[Temă], [Level], [X/Y misiuni completate],
+
+1–3 misiuni următoare.
+
+Când apasă „Continuă misiunea OmniKuno”:
+
+este trimis direct în pagina OmniKuno,
+
+deschizi modulul și lecția/quiz-ul activ pentru tema în focus.
+
+Pagina OmniKuno → Engine de progres
+
+Când userul:
+
+termină o lecție → recordKunoLessonProgress + engine.addXp(area, xpValue);
+
+termină un quiz → aceeași logică, cu XP mai mare + eventual update level;
+
+reia lecții / quiz-uri → logica XP poate fi mai mică sau doar refresh, după cum definești.
+
+Engine-ul face:
+
+recalcularea nivelurilor,
+
+aplică decay periodic,
+
+generează „next recommended action”.
+
+3. Specificație pentru Pagina OmniKuno (engine complet)
+
+Recomandare de URL:
+/omni-kuno (sau /learn/omni-kuno dacă vrei o zonă „learning”).
+
+3.1. Obiectiv UX
+
+Când userul intră în pagina OmniKuno, trebuie să înțeleagă imediat:
+
+Pe ce temă lucrează acum (focus).
+
+Cât de departe a ajuns pe tema aceea (nivel, XP, misiuni terminate).
+
+Ce poate face acum (exact următorul pas).
+
+Ce alte teme există și unde se află pe ele (overview).
+
+Pagina trebuie să fie:
+
+locul principal unde:
+
+parcurgi lecțiile,
+
+faci quiz-uri,
+
+vezi harta completă a învățării.
+
+3.2. Layout propus
+
+Structură simplă, 2–3 zone:
+
+Header OmniKuno (sus)
+
+Titlu: „OmniKuno – engine-ul tău de cunoștințe”.
+
+Subtitlu scurt (ex. în română + engleză).
+
+Badge cu tema în focus:
+
+ex. „Focus actual: Echilibru emoțional (Calm)”.
+
+Rezumat nivel + XP:
+
+ex. „Nivel 2 · 145 XP în zona Calm”.
+
+Coloana stângă / Sidebar Tematic
+
+Listă de arii/teme:
+
+Calm / Echilibru emoțional
+
+Energie & oboseală
+
+Relații & susținere
+
+Performanță & focus
+
+Sens & identitate
+
+Fiecare item afișează:
+
+nivelul curent (1–3/5),
+
+XP (bară mică),
+
+un icon simplu.
+
+Tema în focus (venită din onboarding/wizard) este highlight-uită.
+
+Interacțiune:
+
+click pe o temă → schimbă modulul activ și conținutul din coloana principală.
+
+Coloana principală – Misiunea activă
+
+Conținut:
+
+Header local:
+
+„Misiunea activă: [Numele modulului] (ex. Calm Level 1 – Fundamente)”.
+
+Progress bar:
+
+X / Y misiuni (lecții + quiz-uri).
+
+Timeline de misiuni:
+
+fetch din config/omniKunoLessons.ts pentru modulul activ,
+
+pentru fiecare misiune:
+
+tip: lecție sau quiz,
+
+status: locked / active / done,
+
+titlu + scurtă descriere.
+
+În partea de jos:
+
+buton mare „Continuă de unde ai rămas”:
+
+identifică prima misiune cu status active,
+
+deschide efectiv conținutul (sub timeline sau în panel separat).
+
+Panel de conținut (sub timeline sau în dreapta)
+
+Când userul apasă pe o misiune:
+
+Dacă e lecție:
+
+se afișează:
+
+titlu,
+
+context / idee centrală (1–2 paragrafe),
+
+3–5 bullet-uri cheie,
+
+1–2 scenarii,
+
+1–2 exerciții practice,
+
+buton „Marchează drept înțeles” / „Am exersat” → XP + completare.
+
+Dacă e quiz:
+
+se deschide secvența de întrebări (poate reutilizezi componentele mini-testului),
+
+la final:
+
+scor,
+
+micro-feedback,
+
+XP alocat în funcție de răspunsuri,
+
+misiunea marcată ca done.
+
+3.3. Stări UX importante
+
+User proaspăt (doar onboarding făcut)
+
+Are doar 1 modul recomandat:
+
+ex. „Calm Level 1” cu 0/10 misiuni.
+
+Pagina afișează clar:
+
+„Începe aici”,
+
+un singur modul accentuat,
+
+celelalte teme apar „deschise”, dar cu „Locked până finalizezi 3 misiuni pe Calm” (sau similar).
+
+User activ (a făcut deja lecții)
+
+Vezi:
+
+„Ai finalizat 4/10 misiuni pe Calm”,
+
+timeline cu 4 done, 1 active, rest locked.
+
+CTA principal: „Continuă misiunea”.
+
+User absent de mult timp
+
+Engine-ul a aplicat decay.
+
+Pagina poate afișa:
+
+mesaj de reactivare: „Nu ai mai exersat pe tema Calm de X zile. Reîncepe cu o recapitulare scurtă / quiz recap”.
+
+3.4. Integrare cu engine-ul XP / nivele
+
+Regulă simplă:
+
+TOT ce ține de XP și nivele se face în lib/engine.ts.
+
+OmniKuno doar apelează:
+
+engine.addXp(areaKey, amount) când:
+
+userul marchează o lecție ca finalizată,
+
+userul termină un quiz.
+
+Nivelul, XP și decay sunt citite prin selectorii engine-ului:
+
+de pe pagina OmniKuno,
+
+de pe Dashboard,
+
+eventual și de pe alte zone (ex. OmniAbil, OmniFlex).
+
+Scorurile de quiz și logica de transformare în XP se documentează în omnikuno-content-standard.md:
+
+ex:
+
+lecție finalizată: +5 XP,
+
+quiz cu scor >80%: +15 XP,
+
+quiz cu scor 50–80%: +8 XP,
+
+quiz sub 50%: +3 XP + recomandare de recap.
+
+3.5. Integrare cu Onboarding
+
+Onboarding:
+
+rulează 1 mini-test Kuno (sau 2, dacă vrei),
+
+produce:
+
+XP inițial pentru 1–2 arii,
+
+focusTheme pentru Dashboard + OmniKuno.
+
+Pagina OmniKuno:
+
+la primul acces după onboarding:
+
+arată direct modulul recomandat de mini-test,
+
+evidențiază cum mini-testul a generat „harta ta inițială”.
+
+4. Specificație pentru Cardul OmniKuno din Dashboard
+
+Cardul OmniKuno de pe /progress NU este engine-ul.
+E un widget de status + intrare în pagina OmniKuno.
+
+4.1. Rol
+
+Cardul trebuie să răspundă la 3 întrebări:
+
+„Pe ce lucrez acum?”
+→ tema + modulul în focus (ex. Calm Level 1).
+
+„Cât am avansat?”
+→ X/Y misiuni, nivel, trend față de ultima vizită.
+
+„Ce fac acum?”
+→ un singur CTA clar: „Continuă misiunea OmniKuno”.
+
+4.2. Conținut minim
+
+Header
+
+„OmniKuno – Misiunea ta de cunoștințe”
+
+Subtitlu:
+
+„Tema ta principală: [area]”
+
+„Misiunea: acumulează cunoștințe pe tema asta.”
+
+Rezumat progres
+
+Linie de text + bară mică:
+
+„4 / 10 misiuni finalizate în [Calm Level 1]”
+
+„Nivel 2 · 145 XP”
+
+Misiuni următoare (în mini-listă)
+
+Afișează 2–3 misiuni (nu toată lista):
+
+misiunea activă,
+
+eventual următoarea după ea,
+
+dacă există un quiz apropiat, arată-l ca highlight.
+
+Fiecare misiune:
+
+tip (Lecție / Quiz),
+
+titlu scurt,
+
+icon mic.
+
+CTA principal
+
+Buton mare:
+
+„Continuă misiunea OmniKuno”
+
+Click → /omni-kuno?area=[focusArea]&module=[moduleId]&lesson=[activeLessonId].
+
+Link secundar (opțional)
+
+„Vezi toate misiunile OmniKuno”
+→ /omni-kuno simplu, fără parametrizare.
+
+4.3. Ce NU trebuie să facă cardul
+
+NU trebuie să ruleze quiz-uri complete.
+
+NU trebuie să afișeze toată harta OmniKuno.
+
+NU trebuie să aibă propriul engine de progres.
+
+Toată logica de level, XP, gating, misiuni vine din:
+
+config/omniKunoLessons.ts (conținut + module),
+
+lib/engine.ts (XP, niveluri),
+
+facts.omni.kuno.* (state per user).

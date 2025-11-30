@@ -13,6 +13,7 @@ import {
   type OmniKunoLessonScreen,
 } from "@/config/omniKunoLessonContent";
 import { CALM_PROTOCOL_STEPS } from "@/config/omniKunoConstants";
+import { LessonJournalDrawer } from "./LessonJournalDrawer";
 
 export type LessonViewProps = {
   areaKey: OmniKunoModuleId;
@@ -69,6 +70,7 @@ export default function LessonView({
   const [currentScreenIndex, setCurrentScreenIndex] = useState(0);
   const [quizAnswerIndex, setQuizAnswerIndex] = useState<number | null>(null);
   const [quizResult, setQuizResult] = useState<"correct" | "incorrect" | null>(null);
+  const [journalOpen, setJournalOpen] = useState(false);
   const startRef = useRef(Date.now());
   const xpReward = useMemo(() => getLessonXp(), []);
   const lessonContent = OMNI_KUNO_LESSON_CONTENT[lesson.id];
@@ -190,131 +192,155 @@ export default function LessonView({
       : currentScreen.kind === "reflection"
         ? isRelaxedMode || reflection.trim().length >= reflectionMinChars
         : true;
+  const journalButton = (
+    <button
+      type="button"
+      onClick={() => setJournalOpen(true)}
+      className="inline-flex items-center gap-2 rounded-full border border-[#2C2C2C] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2C2C2C] transition hover:border-[#C07963] hover:text-[#C07963]"
+      data-testid="lesson-journal-button"
+    >
+      <span aria-hidden="true">📝</span>
+      {lang === "ro" ? "Jurnal" : "Journal"}
+    </button>
+  );
 
   useEffect(() => {
     onStepChange?.(currentScreenIndex + 1, totalScreens);
   }, [currentScreenIndex, totalScreens, onStepChange]);
 
   return (
-    <div className="space-y-4" data-testid="lesson-view">
-      {showHeader ? (
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.35em] text-[#B08A78]">{lang === "ro" ? "Lecție" : "Lesson"}</p>
-            <h3 className="text-xl font-bold leading-tight text-[#2C2C2C]">{lesson.title}</h3>
+    <>
+      <div className="space-y-4" data-testid="lesson-view">
+        {showHeader ? (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[#B08A78]">{lang === "ro" ? "Lecție" : "Lesson"}</p>
+                <h3 className="text-xl font-bold leading-tight text-[#2C2C2C]">{lesson.title}</h3>
+              </div>
+              <div className="flex flex-col items-end gap-2 text-right text-[11px] text-[#7B6B60] sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+                <div>
+                  <p className="font-semibold text-[#2C2C2C]">+{xpReward} XP</p>
+                  <p>{lang === "ro" ? "Recompensă estimată" : "Projected reward"}</p>
+                </div>
+                {journalButton}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#7B6B60]">
+              <span className={`inline-flex items-center rounded-full px-3 py-0.5 uppercase tracking-[0.2em] ${chipClass}`}>
+                {chipText}
+              </span>
+              {durationText ? <span>{durationText}</span> : null}
+              {centerLabel ? (
+                <span className="rounded-full bg-[#FFF3EC] px-2.5 py-0.5 text-xs font-semibold text-[#C07963]">{centerLabel}</span>
+              ) : null}
+              <span className="rounded-full bg-[#FFF3EC] px-2.5 py-0.5 font-semibold text-[#C07963]">
+                {done ? (lang === "ro" ? "Finalizată" : "Completed") : lang === "ro" ? "Activă" : "Active"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                {screens.map((_, idx) => (
+                  <span
+                    key={idx}
+                    className={`h-2 w-2 rounded-full ${idx === currentScreenIndex ? "bg-[#C07963]" : "bg-[#E4DAD1]"}`}
+                  />
+                ))}
+              </div>
+              <p className="text-[11px] text-[#7B6B60]" id={reflectionHelperId}>
+                {lang === "ro" ? `Pas ${currentScreenIndex + 1} din ${totalScreens}` : `Step ${currentScreenIndex + 1} of ${totalScreens}`}
+              </p>
+            </div>
           </div>
-          <div className="text-right text-[11px] text-[#7B6B60]">
-            <p className="font-semibold text-[#2C2C2C]">+{xpReward} XP</p>
-            <p>{lang === "ro" ? "Recompensă estimată" : "Projected reward"}</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#7B6B60]">
-          <span className={`inline-flex items-center rounded-full px-3 py-0.5 uppercase tracking-[0.2em] ${chipClass}`}>
-            {chipText}
-          </span>
-          {durationText ? <span>{durationText}</span> : null}
-          {centerLabel ? (
-            <span className="rounded-full bg-[#FFF3EC] px-2.5 py-0.5 text-xs font-semibold text-[#C07963]">{centerLabel}</span>
-          ) : null}
-          <span className="rounded-full bg-[#FFF3EC] px-2.5 py-0.5 font-semibold text-[#C07963]">
-            {done ? (lang === "ro" ? "Finalizată" : "Completed") : lang === "ro" ? "Activă" : "Active"}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1">
-            {screens.map((_, idx) => (
-              <span
-                key={idx}
-                className={`h-2 w-2 rounded-full ${
-                  idx === currentScreenIndex ? "bg-[#C07963]" : "bg-[#E4DAD1]"
-                }`}
-              />
-            ))}
-          </div>
-          <p className="text-[11px] text-[#7B6B60]" id={reflectionHelperId}>
-            {lang === "ro" ? `Pas ${currentScreenIndex + 1} din ${totalScreens}` : `Step ${currentScreenIndex + 1} of ${totalScreens}`}
-          </p>
-        </div>
-      </div>
-      ) : null}
-      <div className="rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] p-4 text-[#4D3F36]" data-testid={`lesson-screen-${currentScreenIndex + 1}`}>
-        {renderScreenContent(currentScreen, {
-          areaKey,
-          quizAnswerIndex,
-          quizResult,
-          reflection,
-          lang,
-          onQuizSelect: handleQuizSelect,
-          onReflectionChange: (value) => setReflection(value),
-          reflectionMinChars,
-          reflectionHelperId,
-        })}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setCurrentScreenIndex((prev) => Math.max(prev - 1, 0))}
-          disabled={currentScreenIndex === 0}
-          className="inline-flex items-center rounded-full border border-[#E4DAD1] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#7B6B60] transition hover:border-[#C07963] hover:text-[#C07963] disabled:cursor-not-allowed disabled:border-[#F3E9DF] disabled:text-[#CAB7A8]"
-        >
-          {lang === "ro" ? "Înapoi" : "Back"}
-        </button>
-        {!isLastScreen ? (
-          <button
-            type="button"
-            onClick={handleNextScreen}
-            disabled={!canContinue}
-            data-testid="lesson-next"
-            className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
-          >
-            {lang === "ro" ? "Continuă" : "Continue"}
-          </button>
         ) : (
+          <div className="flex justify-end">{journalButton}</div>
+        )}
+        <div className="rounded-2xl border border-[#F0E8E0] bg-[#FFFBF7] p-4 text-[#4D3F36]" data-testid={`lesson-screen-${currentScreenIndex + 1}`}>
+          {renderScreenContent(currentScreen, {
+            areaKey,
+            quizAnswerIndex,
+            quizResult,
+            reflection,
+            lang,
+            onQuizSelect: handleQuizSelect,
+            onReflectionChange: (value) => setReflection(value),
+            reflectionMinChars,
+            reflectionHelperId,
+          })}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={handleComplete}
-            disabled={busy || done || (requiresReflectionInput && reflection.trim().length < reflectionMinChars)}
-            data-testid="lesson-complete"
-            className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
+            onClick={() => setCurrentScreenIndex((prev) => Math.max(prev - 1, 0))}
+            disabled={currentScreenIndex === 0}
+            className="inline-flex items-center rounded-full border border-[#E4DAD1] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#7B6B60] transition hover:border-[#C07963] hover:text-[#C07963] disabled:cursor-not-allowed disabled:border-[#F3E9DF] disabled:text-[#CAB7A8]"
           >
-            {done
-              ? lang === "ro"
-                ? "Lecție completă"
-                : "Lesson saved"
-              : busy
-                ? lang === "ro"
-                  ? "Se salvează..."
-                  : "Saving..."
-                : lang === "ro"
-                  ? "Marchează lecția ca finalizată"
-                  : "Mark lesson as done"}
+            {lang === "ro" ? "Înapoi" : "Back"}
           </button>
-        )}
-        {!canContinue && requiresReflectionInput ? (
-          <p className="text-[11px] text-[#B03C2F]">
-            {lang === "ro" ? "Scrie încă 1–2 propoziții ca să poți continua." : "Add 1–2 short sentences to continue."}
-          </p>
-        ) : null}
-        {!canContinue && needsQuizAnswer ? (
-          <p className="text-[11px] text-[#B03C2F]">
-            {lang === "ro" ? "Alege un răspuns ca să poți continua." : "Select an answer to continue."}
-          </p>
-        ) : null}
-        {!canContinue && currentScreen.kind === "quiz" && quizAnswerIndex === null ? (
-          <p className="text-[11px] text-[#B03C2F]">
-            {lang === "ro" ? "Alege un răspuns ca să continui." : "Select an answer to continue."}
-          </p>
-        ) : null}
-        {done ? (
-          <div className="rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-2 text-sm text-[#1F3C2F]">
-            {lang === "ro"
-              ? `Excelent! Ai câștigat ${xpReward} XP și lecția este salvată în progres. Continuă cu următoarea misiune.`
-              : `Great! You earned ${xpReward} XP and the lesson is saved. Continue with the next mission.`}
-          </div>
-        ) : null}
+          {!isLastScreen ? (
+            <button
+              type="button"
+              onClick={handleNextScreen}
+              disabled={!canContinue}
+              data-testid="lesson-next"
+              className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
+            >
+              {lang === "ro" ? "Continuă" : "Continue"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleComplete}
+              disabled={busy || done || (requiresReflectionInput && reflection.trim().length < reflectionMinChars)}
+              data-testid="lesson-complete"
+              className="inline-flex items-center rounded-full border border-[#C07963] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#C07963] transition hover:bg-[#C07963] hover:text-white disabled:cursor-not-allowed disabled:border-[#E4DAD1] disabled:text-[#B99484]"
+            >
+              {done
+                ? lang === "ro"
+                  ? "Lecție completă"
+                  : "Lesson saved"
+                : busy
+                  ? lang === "ro"
+                    ? "Se salvează..."
+                    : "Saving..."
+                  : lang === "ro"
+                    ? "Marchează lecția ca finalizată"
+                    : "Mark lesson as done"}
+            </button>
+          )}
+          {!canContinue && requiresReflectionInput ? (
+            <p className="text-[11px] text-[#B03C2F]">
+              {lang === "ro" ? "Scrie încă 1–2 propoziții ca să poți continua." : "Add 1–2 short sentences to continue."}
+            </p>
+          ) : null}
+          {!canContinue && needsQuizAnswer ? (
+            <p className="text-[11px] text-[#B03C2F]">
+              {lang === "ro" ? "Alege un răspuns ca să poți continua." : "Select an answer to continue."}
+            </p>
+          ) : null}
+          {!canContinue && currentScreen.kind === "quiz" && quizAnswerIndex === null ? (
+            <p className="text-[11px] text-[#B03C2F]">
+              {lang === "ro" ? "Alege un răspuns ca să continui." : "Select an answer to continue."}
+            </p>
+          ) : null}
+          {done ? (
+            <div className="rounded-xl border border-[#CBE8D7] bg-[#F3FFF8] px-4 py-2 text-sm text-[#1F3C2F]">
+              {lang === "ro"
+                ? `Excelent! Ai câștigat ${xpReward} XP și lecția este salvată în progres. Continuă cu următoarea misiune.`
+                : `Great! You earned ${xpReward} XP and the lesson is saved. Continue with the next mission.`}
+            </div>
+          ) : null}
+        </div>
       </div>
-    </div>
+      <LessonJournalDrawer
+        open={journalOpen}
+        onClose={() => setJournalOpen(false)}
+        userId={ownerId}
+        moduleId={moduleId}
+        lessonId={lesson.id}
+        lessonTitle={lesson.title}
+      />
+    </>
   );
 }
 

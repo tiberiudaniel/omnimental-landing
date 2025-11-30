@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import type { ProgressFact } from "@/lib/progressFacts";
+import type { ProgressFact, RecentEntry } from "@/lib/progressFacts";
 import { toMsLocal } from "@/lib/dashboard/progressSelectors";
 
 type RecentEntriesCardProps = {
@@ -9,46 +9,82 @@ type RecentEntriesCardProps = {
 };
 
 export function RecentEntriesCard({ lang, facts }: RecentEntriesCardProps) {
-  const entries = (facts?.recentEntries as Array<{ text?: string; timestamp?: unknown; tabId?: string }> | undefined) ?? [];
-  const hasEntries = entries.length > 0;
+  const entries = (facts?.recentEntries as RecentEntry[] | undefined) ?? [];
+  const normalized = entries
+    .map((entry) => ({
+      text: String(entry?.text ?? "").trim(),
+      ms: toMsLocal(entry?.timestamp),
+      tabId: entry?.tabId ? String(entry.tabId) : undefined,
+      sourceType: entry?.sourceType ?? null,
+      moduleId: entry?.moduleId ?? null,
+      lessonId: entry?.lessonId ?? null,
+      lessonTitle: entry?.lessonTitle ?? null,
+    }))
+    .filter((entry) => entry.text.length > 0 && entry.ms > 0)
+    .sort((a, b) => b.ms - a.ms);
+  const deduped: typeof normalized = [];
+  const seenTexts = new Set<string>();
+  for (const item of normalized) {
+    const key = item.text.toLowerCase();
+    if (seenTexts.has(key)) continue;
+    seenTexts.add(key);
+    deduped.push(item);
+  }
+  const limited = deduped.slice(0, 3);
   const grouped = (() => {
-    if (!hasEntries) return [];
-    const sorted = entries
-      .map((e) => ({ ...e, _ms: toMsLocal(e.timestamp), _text: String(e.text ?? "").trim() }))
-      .sort((a, b) => b._ms - a._ms);
-    const dedup: Array<(typeof sorted)[number]> = [];
-    const seen = new Set<string>();
-    for (const item of sorted) {
-      const key = item._text;
-      if (key && !seen.has(key)) {
-        seen.add(key);
-        dedup.push(item);
-      }
-    }
-    const items = dedup.slice(0, 2);
-    const groups: Record<string, Array<{ text: string; ms: number; tab?: string }>> = {};
+    if (!limited.length) return [];
     const fmtDay = (ms: number) => {
       try {
-        return new Date(ms).toLocaleDateString(lang === "ro" ? "ro-RO" : "en-US", { year: "numeric", month: "short", day: "numeric" });
+        return new Date(ms).toLocaleDateString(lang === "ro" ? "ro-RO" : "en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
       } catch {
         return "";
       }
     };
-    for (const it of items) {
-      if (!it._ms) continue;
-      const day = fmtDay(it._ms);
-      if (!day) continue;
-      if (!groups[day]) groups[day] = [];
-      groups[day].push({ text: it._text || "-", ms: it._ms, tab: it.tabId });
+    const result: Record<string, typeof limited> = {};
+    for (const item of limited) {
+      const dayKey = fmtDay(item.ms);
+      if (!dayKey) continue;
+      if (!result[dayKey]) result[dayKey] = [];
+      result[dayKey].push(item);
     }
-    return Object.entries(groups).map(([day, list]) => ({ day, items: list }));
+    return Object.entries(result).map(([day, items]) => ({ day, items }));
   })();
+  const hasEntries = grouped.length > 0;
   const fmtTime = (ms: number) => {
     try {
       return new Date(ms).toLocaleTimeString(lang === "ro" ? "ro-RO" : "en-US", { hour: "2-digit", minute: "2-digit" });
     } catch {
       return "";
     }
+  };
+  const tabLabel = (tabId?: string) => {
+    switch (tabId) {
+      case "SCOP_INTENTIE":
+        return lang === "ro" ? "Scop & intenție" : "Goal & intent";
+      case "MOTIVATIE_REZURSE":
+        return lang === "ro" ? "Motivație & resurse" : "Motivation & resources";
+      case "PLAN_RECOMANDARI":
+        return lang === "ro" ? "Plan & recomandări" : "Plan & recommendations";
+      case "OBSERVATII_EVALUARE":
+        return lang === "ro" ? "Observații & evaluare" : "Observations & review";
+      case "NOTE_LIBERE":
+        return lang === "ro" ? "Note libere" : "Free notes";
+      default:
+        return lang === "ro" ? "Jurnal" : "Journal";
+    }
+  };
+  const entryHref = (item: (typeof limited)[number]) => {
+    if (item.sourceType === "omniKuno_lesson" && item.moduleId) {
+      const query: Record<string, string> = { module: item.moduleId };
+      if (item.lessonId) query.lesson = item.lessonId;
+      return { pathname: "/omni-kuno", query };
+    }
+    const tab = item.tabId ?? "OBSERVATII_EVALUARE";
+    return { pathname: "/progress", query: { open: "journal", tab } };
   };
   return (
     <Card className="rounded-xl border border-[#E4DAD1] bg-white p-2.5 shadow-sm sm:p-3.5">
@@ -74,19 +110,43 @@ export function RecentEntriesCard({ lang, facts }: RecentEntriesCardProps) {
             <div key={group.day}>
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#A08F82] sm:text-[11px]">{group.day}</p>
               {group.items.map((item, idx) => {
-                const tab = typeof item.tab === "string" && item.tab ? item.tab : "OBSERVATII_EVALUARE";
-                const href = { pathname: "/progress", query: { open: "journal", tab } } as const;
+                const href = entryHref(item);
                 const full = String(item.text);
-                const MAX_PREVIEW = 60;
+                const MAX_PREVIEW = 80;
                 const short = full.length > MAX_PREVIEW ? `${full.slice(0, MAX_PREVIEW).trimEnd()}…` : full;
+                const isKuno = item.sourceType === "omniKuno_lesson";
+                const tag = isKuno ? (lang === "ro" ? "Din OmniKuno" : "From OmniKuno") : lang === "ro" ? "Din jurnal" : "From Journal";
+                const title = isKuno
+                  ? item.lessonTitle || (lang === "ro" ? "Lecție OmniKuno" : "OmniKuno lesson")
+                  : tabLabel(item.tabId);
                 return (
-                  <div key={`${group.day}-${idx}`} className="mb-1.5 border-b border-[#F0E8E0] pb-1.5 last:border-b-0 last:pb-0 sm:mb-2.5 sm:pb-2">
-                    <Link href={href} className="block truncate text-[11px] text-[#2C2C2C] underline-offset-2 hover:underline sm:text-xs" title={full}>
+                  <div
+                    key={`${group.day}-${idx}`}
+                    className="mb-1.5 border-b border-[#F0E8E0] pb-1.5 last:border-b-0 last:pb-0 sm:mb-2.5 sm:pb-2"
+                    data-testid={isKuno ? "recent-entry-omnikuno-item" : undefined}
+                  >
+                    <div className="mb-0.5 flex items-center justify-between">
+                      <span
+                        className="rounded-full border border-[#E4DAD1] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[#A08F82]"
+                        data-testid={isKuno ? "recent-entry-omnikuno" : undefined}
+                      >
+                        {tag}
+                      </span>
+                      <span className="text-[9px] text-[#A08F82]" suppressHydrationWarning>
+                        {fmtTime(item.ms)}
+                      </span>
+                    </div>
+                    <Link
+                      href={href}
+                      className="block text-[11px] font-semibold text-[#2C2C2C] underline-offset-2 hover:underline sm:text-xs"
+                      title={title}
+                      data-testid={isKuno ? "recent-entry-link" : undefined}
+                    >
+                      {title}
+                    </Link>
+                    <Link href={href} className="mt-0.5 block text-[11px] text-[#4A3A30] underline-offset-2 hover:underline sm:text-xs" title={full}>
                       {short}
                     </Link>
-                    <p className="mt-0.5 text-[9px] text-[#A08F82] sm:mt-1 sm:text-[10px]" suppressHydrationWarning>
-                      {fmtTime(item.ms)}
-                    </p>
                   </div>
                 );
               })}

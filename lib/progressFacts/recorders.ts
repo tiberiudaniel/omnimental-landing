@@ -364,13 +364,29 @@ export async function recordRecentEntry(
         tabId?: string;
         theme?: string | null;
         sourceBlock?: string | null;
+        sourceType?: string | null;
+        moduleId?: string | null;
+        lessonId?: string | null;
+        lessonTitle?: string | null;
       },
   at?: unknown,
   ownerId?: string | null,
 ) {
   try {
     const isObj = typeof entryIn === 'object' && entryIn !== null;
-    const src = isObj ? (entryIn as { text?: unknown; timestamp?: unknown; tabId?: unknown; theme?: unknown; sourceBlock?: unknown }) : null;
+    const src = isObj
+      ? (entryIn as {
+          text?: unknown;
+          timestamp?: unknown;
+          tabId?: unknown;
+          theme?: unknown;
+          sourceBlock?: unknown;
+          sourceType?: unknown;
+          moduleId?: unknown;
+          lessonId?: unknown;
+          lessonTitle?: unknown;
+        })
+      : null;
     const normalizeTimestamp = (v: unknown): Date | number | FireTs => {
       if (!v) return new Date();
       if (v instanceof Date) return v;
@@ -402,6 +418,10 @@ export async function recordRecentEntry(
       ...(isObj && src?.tabId ? { tabId: String(src.tabId) } : {}),
       ...(isObj && typeof src?.theme !== 'undefined' ? { theme: (src?.theme as string | null) ?? null } : {}),
       ...(isObj && typeof src?.sourceBlock !== 'undefined' ? { sourceBlock: (src?.sourceBlock as string | null) ?? null } : {}),
+      ...(isObj && typeof src?.sourceType !== 'undefined' ? { sourceType: (src?.sourceType as string | null) ?? null } : {}),
+      ...(isObj && typeof src?.moduleId !== 'undefined' ? { moduleId: (src?.moduleId as string | null) ?? null } : {}),
+      ...(isObj && typeof src?.lessonId !== 'undefined' ? { lessonId: (src?.lessonId as string | null) ?? null } : {}),
+      ...(isObj && typeof src?.lessonTitle !== 'undefined' ? { lessonTitle: (src?.lessonTitle as string | null) ?? null } : {}),
     };
 
     // Source-level dedupe: skip if there is an entry with the same text within the last ~2 minutes
@@ -472,6 +492,10 @@ export async function recordRecentEntry(
             sourceBlock: e.sourceBlock ?? null,
           };
           if (typeof e.tabId === 'string' && e.tabId) obj.tabId = e.tabId;
+          if (typeof e.sourceType === 'string' && e.sourceType) obj.sourceType = e.sourceType;
+          if (typeof e.moduleId === 'string' && e.moduleId) obj.moduleId = e.moduleId;
+          if (typeof e.lessonId === 'string' && e.lessonId) obj.lessonId = e.lessonId;
+          if (typeof e.lessonTitle === 'string' && e.lessonTitle) obj.lessonTitle = e.lessonTitle;
           if (typeof e.sig === 'string' && e.sig) obj.sig = e.sig;
           return obj as RecentEntry;
         });
