@@ -2,14 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
-import InfoTooltip from "@/components/InfoTooltip";
 import {
   getTodayKey,
   loadDailyCheckin,
   saveDailyCheckin,
   getDailyResetPreviousDateKey,
 } from "@/lib/dailyReset";
-import { buildOmniDailySnapshot, type OmniDailySnapshot } from "@/lib/omniState";
+import type { OmniDailySnapshot } from "@/lib/omniState";
 import type { ProgressFact } from "@/lib/progressFacts";
 
 type SliderKey = "energy" | "stress" | "clarity" | "sleep";
@@ -255,36 +254,6 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
     }
   }, [completedToday, lastDate, todayKey]);
 
-  const mergedFacts: ProgressFact | null = useMemo(() => {
-    if (!localCache || localCache.lastCheckinDate !== todayKey || !localCache.values) {
-      return facts;
-    }
-    const entry = convertLocalToEntry(localCache.values);
-    const baseOmni = (facts?.omni ?? {}) as ProgressFact["omni"];
-    const next = {
-      ...(facts ?? {}),
-      omni: {
-        ...baseOmni,
-        daily: {
-          ...(baseOmni?.daily ?? {}),
-          lastCheckinDate: localCache.lastCheckinDate ?? baseOmni?.daily?.lastCheckinDate,
-          streakDays: localCache.streakDays ?? baseOmni?.daily?.streakDays,
-          today: entry,
-          history: {
-            ...(baseOmni?.daily?.history ?? {}),
-            ...(localCache.values?.date ? { [localCache.values.date]: entry } : {}),
-          },
-        },
-      },
-    } as ProgressFact;
-    return next;
-  }, [facts, localCache, todayKey]);
-
-  const snapshot = useMemo(() => {
-    if (!mergedFacts) return null;
-    return buildOmniDailySnapshot({ progress: mergedFacts, facts: mergedFacts });
-  }, [mergedFacts]);
-
   const streakLabel =
     typeof localStreak === "number"
       ? lang === "ro"
@@ -293,6 +262,29 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
       : null;
 
   const allowInteractions = !fallbackMode ? Boolean(profileId) : true;
+  const shouldHideCard = allowInteractions && completedToday;
+  if (shouldHideCard) {
+    return (
+      <Card className="rounded-2xl border border-[#E4DAD1] bg-[#FFFBF7] p-3 text-sm text-[#5A4334] shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#D9C9B8] bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5A4334]">
+            <span>Daily reset completat</span>
+            <span aria-hidden="true">✅</span>
+          </div>
+          {typeof localStreak === "number" ? (
+            <span className="text-[11px] font-semibold text-[#7B6B60]">
+              {lang === "ro" ? `Zile în serie: ${localStreak}` : `Streak: ${localStreak} days`}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-2 text-[12px] text-[#7B6B60]">
+          {lang === "ro"
+            ? "Revină mâine pentru a nota energia, emoția și claritatea."
+            : "Come back tomorrow to capture energy, emotion, and clarity again."}
+        </p>
+      </Card>
+    );
+  }
 
   const handleSave = async () => {
     const payload = {
@@ -341,75 +333,6 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
     } finally {
       setLoading(false);
     }
-  };
-
-  const renderSummary = () => {
-    if (!snapshot || snapshot.date !== todayKey) {
-      return (
-        <div className="rounded-2xl border border-[#EEE3D7] bg-[#FFF6EE] px-3 py-3 text-sm text-[#5A4334]">
-          {lang === "ro"
-            ? "Ai completat reset-ul de azi. Datele se sincronizează în câteva momente."
-            : "You logged today’s reset. Data is syncing shortly."}
-        </div>
-      );
-    }
-    const axisItems = [
-      {
-        key: "mentalClarity",
-        label: lang === "ro" ? "Claritate mentală" : "Mental clarity",
-        value: snapshot.axes.mentalClarity,
-        delta: snapshot.deltas.mentalClarity,
-      },
-      {
-        key: "emotionalBalance",
-        label: lang === "ro" ? "Echilibru emoțional" : "Emotional balance",
-        value: snapshot.axes.emotionalBalance,
-        delta: snapshot.deltas.emotionalBalance,
-      },
-      {
-        key: "physicalEnergy",
-        label: lang === "ro" ? "Energie fizică" : "Physical energy",
-        value: snapshot.axes.physicalEnergy,
-        delta: snapshot.deltas.physicalEnergy,
-      },
-    ] as const;
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#B08A78]">
-          <span>{lang === "ro" ? "Statusul de azi" : "Today’s snapshot"}</span>
-          <InfoTooltip
-            items={[
-              lang === "ro"
-                ? "Valorile sunt comparate cu media ta recentă. Săgețile arată dacă ești peste sau sub baseline."
-                : "Values compare against your personal baseline; arrows show if you’re above or below trend.",
-            ]}
-            label={lang === "ro" ? "Detalii status" : "Snapshot details"}
-          />
-        </div>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {axisItems.map((axis) => {
-            const deltaDisplay = formatAxisDelta(axis.delta, lang);
-            return (
-              <div
-                key={axis.key}
-                className="rounded-2xl border border-[#E7DED3] bg-[#FFFBF7] px-3 py-2 text-center"
-              >
-                <p className="text-[11px] font-semibold text-[#7B6B60]">{axis.label}</p>
-                <p className="text-[20px] font-bold text-[#3C2D24]">
-                  {axis.value.toFixed(1)}
-                </p>
-                <p className={`text-[11px] font-bold ${deltaDisplay.colorClass}`}>
-                  {deltaDisplay.text}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-        <div className="rounded-2xl border border-[#F0E3D8] bg-[#FFFBF7] px-3 py-2 text-[12px] text-[#5A4334]">
-          {buildDailyResetMessage(snapshot, lang)}
-        </div>
-      </div>
-    );
   };
 
   const renderForm = () => (
@@ -476,11 +399,7 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
         ) : null}
       </div>
       {allowInteractions ? (
-        completedToday ? (
-          renderSummary()
-        ) : (
-          renderForm()
-        )
+        renderForm()
       ) : (
         <p className="text-sm text-[#7B6B60]">
           {lang === "ro"
@@ -499,18 +418,7 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   );
 }
 
-function formatAxisDelta(delta: number, lang: string): { text: string; colorClass: string } {
-  if (!Number.isFinite(delta)) {
-    return { text: lang === "ro" ? "0" : "0", colorClass: "text-[#7B6B60]" };
-  }
-  const sign = delta > 0 ? "+" : "";
-  const text = `${sign}${delta.toFixed(1)}`;
-  const arrow = delta > 0 ? "↑" : delta < 0 ? "↓" : "↔";
-  const colorClass = delta > 0 ? "text-[#1F7A43]" : delta < 0 ? "text-[#B82B4F]" : "text-[#7B6B60]";
-  return { text: `${text} ${arrow}`, colorClass };
-}
-
-function buildDailyResetMessage(snapshot: OmniDailySnapshot, lang: string) {
+export function buildDailyResetMessage(snapshot: OmniDailySnapshot, lang: string) {
   const { axes, deltas } = snapshot;
   if (axes.physicalEnergy < 4.5) {
     return lang === "ro"
@@ -530,21 +438,4 @@ function buildDailyResetMessage(snapshot: OmniDailySnapshot, lang: string) {
   return lang === "ro"
     ? "Trend echilibrat. Continuă cu pași mici: finalizează reset-ul zilnic și marchează o acțiune Omni-Abil."
     : "Balanced trend. Keep the steady pace: lock the daily reset and mark one Omni-Abil action.";
-}
-
-function convertLocalToEntry(values: LocalResetValues) {
-  const entry: {
-    clarity: number;
-    energy: number;
-    stress: number;
-    sleep?: number;
-  } = {
-    clarity: clampSliderValue(values.clarity, 6),
-    energy: clampSliderValue(values.energy, 6),
-    stress: clampSliderValue(values.stress, 4),
-  };
-  if (typeof values.sleep === "number") {
-    entry.sleep = clampSliderValue(values.sleep, 6);
-  }
-  return entry;
 }

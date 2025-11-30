@@ -11,6 +11,7 @@ import {
   type OmniDailySnapshot,
   type OmniStateVector,
 } from "@/lib/omniState";
+import { buildDailyResetMessage } from "@/components/dashboard/DailyResetCard";
 
 export type InternalKpiCardProps = {
   lang: string;
@@ -58,6 +59,11 @@ export default function InternalKpiCard({
       delta: snapshot?.deltas.physicalEnergy ?? 0,
     },
   ];
+  const summaryText = snapshot
+    ? buildDailyResetMessage(snapshot, lang)
+    : lang === "ro"
+      ? "Rezumatul scorurilor tale de azi vs. media personală."
+      : "Snapshot of today’s scores vs your personal baseline.";
 
   return (
     <motion.div variants={fadeDelayed(0.05)} {...hoverScale}>
@@ -74,10 +80,61 @@ export default function InternalKpiCard({
               : "Snapshot of today’s scores vs your personal baseline."}
           </p>
 
-          <div className="mt-2 grid grid-cols-3 gap-1.5">
-            {axisStats.map((axis) => (
-              <div key={axis.key} className="rounded-lg border border-[#E7DED3] bg-[#FFFBF7] px-2 py-1.5 text-center">
-                <p className="text-[10px] font-semibold text-[#7B6B60]">{axis.label}</p>
+
+          <div className="mt-2 flex flex-col gap-2">
+            <div className="rounded-xl border border-[#F0E3D8] bg-[#FFFBF7] px-3 py-2 text-[11px] text-[#5A4334]">
+              {summaryText}
+            </div>
+            <div className="rounded-xl border border-[#E4DAD1] bg-[#FFFBF7] p-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex rounded-md border border-[#E4DAD1] bg-white/70 p-0.5 text-[9px] sm:text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setTimeframe("week")}
+                    className={`rounded px-1.5 py-0.5 transition ${
+                      timeframe === "week" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"
+                    }`}
+                    aria-label="Toggle KPI to week"
+                    data-testid="kpi-toggle-week"
+                  >
+                    {getString(t, "dashboard.trendsToggle.week", lang === "ro" ? "Săptămână" : "Week")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTimeframe("month")}
+                    className={`rounded px-1.5 py-0.5 transition ${
+                      timeframe === "month" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"
+                    }`}
+                    aria-label="Toggle KPI to month"
+                    data-testid="kpi-toggle-month"
+                  >
+                    {getString(t, "dashboard.trendsToggle.month", lang === "ro" ? "Lună" : "Month")}
+                  </button>
+                </div>
+                <Link
+                  href="/progress?open=journal&tab=NOTE_LIBERE&source=daily_axes"
+                  className="inline-flex items-center gap-1 rounded-full border border-[#E4DAD1] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#4D3F36] transition hover:border-[#C07963] hover:text-[#C07963]"
+                >
+                  {lang === "ro" ? "Notițe rapide" : "Quick journal"}
+                </Link>
+              </div>
+            </div>
+            <div>{renderHistory({ lang, facts, snapshot, compact: true })}</div>
+          </div>
+          <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+            {axisStats.map((axis, idx) => (
+              <div
+                key={axis.key}
+                className="rounded-lg border border-[#E7DED3] bg-[#FFFBF7] px-3 py-2 text-center text-[10px]"
+              >
+                <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-[#7B6B60]">
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: idx === 0 ? "#2563EB" : idx === 1 ? "#DC2626" : "#059669" }}
+                    aria-hidden
+                  />
+                  {axis.label}
+                </div>
                 <p className="text-[15px] font-bold text-[#2C2C2C]">{axis.value.toFixed(1)}</p>
                 <p className={`text-[10px] ${axis.delta >= 0 ? "text-[#1F7A43]" : "text-[#B82B4F]"}`}>
                   {axis.delta >= 0 ? "+" : ""}
@@ -87,48 +144,6 @@ export default function InternalKpiCard({
             ))}
           </div>
 
-          <div className="mt-3 flex items-center gap-2">
-            <div className="inline-flex rounded-md border border-[#E4DAD1] bg-[#FFFBF7] p-0.5 text-[9px] sm:text-[10px]">
-              <button
-                type="button"
-                onClick={() => setTimeframe("week")}
-                className={`rounded px-1.5 py-0.5 transition ${
-                  timeframe === "week" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"
-                }`}
-                aria-label="Toggle KPI to week"
-                data-testid="kpi-toggle-week"
-              >
-                {getString(t, "dashboard.trendsToggle.week", lang === "ro" ? "Săptămână" : "Week")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setTimeframe("month")}
-                className={`rounded px-1.5 py-0.5 transition ${
-                  timeframe === "month" ? "bg-white border border-[#E4DAD1] text-[#2C2C2C] font-semibold" : "text-[#5C4F45]"
-                }`}
-                aria-label="Toggle KPI to month"
-                data-testid="kpi-toggle-month"
-              >
-                {getString(t, "dashboard.trendsToggle.month", lang === "ro" ? "Lună" : "Month")}
-              </button>
-            </div>
-            <div className="flex gap-1 text-[10px]">
-              <Link
-                href="/progress?highlight=daily-reset"
-                className="inline-flex items-center gap-1 rounded-full border border-[#E4DAD1] px-3 py-1 font-semibold uppercase tracking-[0.2em] text-[#4D3F36] transition hover:border-[#C07963] hover:text-[#C07963]"
-              >
-                {lang === "ro" ? "Actualizează" : "Update"}
-              </Link>
-              <Link
-                href="/progress?open=journal&tab=NOTE_LIBERE"
-                className="inline-flex items-center gap-1 rounded-full border border-[#E4DAD1] px-3 py-1 font-semibold uppercase tracking-[0.2em] text-[#4D3F36] transition hover:border-[#C07963] hover:text-[#C07963]"
-              >
-                {lang === "ro" ? "Jurnal scurt" : "Quick journal"}
-              </Link>
-            </div>
-          </div>
-
-          {renderHistory({ lang, facts, snapshot })}
         </div>
       </Card>
     </motion.div>
@@ -139,10 +154,12 @@ function renderHistory({
   lang,
   facts,
   snapshot,
+  compact = false,
 }: {
   lang: string;
   facts: ProgressFact | null;
   snapshot: OmniDailySnapshot | null;
+  compact?: boolean;
 }) {
   type DailyHistory = Record<string, Partial<Record<keyof OmniStateVector, number>>>;
   const history =
@@ -179,8 +196,8 @@ function renderHistory({
 
   return (
     <>
-      <div className="mt-1.5 border-t border-[#F0E8E0] pt-1.5 sm:pt-2">
-        <div className="h-[110px] sm:h-[120px]">
+      <div className="border-t border-[#F0E8E0] pt-1.5 sm:pt-2">
+        <div className="h-[110px] px-1 sm:h-[120px] sm:px-2">
           <svg viewBox="0 0 220 110" className="h-full w-full">
             <line x1="24" y1="105" x2="214" y2="105" stroke="#D7CABE" strokeWidth={1} />
             {[100, 75, 50, 25].map((level) => {
@@ -203,7 +220,7 @@ function renderHistory({
                 </g>
               );
             })}
-            {["#7A6455", "#4D3F36", "#C07963"].map((accent, idx) => (
+            {["#2563EB", "#DC2626", "#059669"].map((accent, idx) => (
               <polyline
                 key={`serie-${idx}`}
                 fill="none"
@@ -224,10 +241,15 @@ function renderHistory({
           </svg>
         </div>
         <div className="mt-1 h-px bg-[#E4DAD1]" />
-        <div className="mt-1 flex justify-between text-[9px] uppercase tracking-[0.08em] text-[#A08F82]">
+        <div className="mt-1 flex justify-between text-[9px] uppercase tracking-[0.08em] text-[#A08F82] px-1 sm:px-2">
           {recent.map((point, idx) => {
             const date = new Date(point.ts);
-            const label = Number.isNaN(date.getTime()) ? `D${idx + 1}` : `${(date.getUTCDate() + "").padStart(2, "0")}`;
+            const label = Number.isNaN(date.getTime())
+              ? `D${idx + 1}`
+              : date.toLocaleDateString(lang === "ro" ? "ro-RO" : "en-US", {
+                  day: "2-digit",
+                  month: "short",
+                });
             return (
               <span key={`tick-${point.ts}-${idx}`} className="flex-1 text-center first:text-left last:text-right">
                 {label}
@@ -236,7 +258,7 @@ function renderHistory({
           })}
         </div>
       </div>
-      <ChipSummary lang={lang} snapshot={snapshot} />
+      {!compact ? <ChipSummary lang={lang} snapshot={snapshot} /> : null}
     </>
   );
 }
@@ -255,20 +277,14 @@ function ChipSummary({ lang, snapshot }: { lang: string; snapshot: OmniDailySnap
     {
       label: lang === "ro" ? "Claritate" : "Clarity",
       color: "#9A8578",
-      value: snapshot.axes.mentalClarity,
-      delta: snapshot.deltas.mentalClarity,
     },
     {
       label: lang === "ro" ? "Echilibru" : "Emotion",
       color: "#766659",
-      value: snapshot.axes.emotionalBalance,
-      delta: snapshot.deltas.emotionalBalance,
     },
     {
       label: lang === "ro" ? "Energie" : "Energy",
       color: "#B98C7C",
-      value: snapshot.axes.physicalEnergy,
-      delta: snapshot.deltas.physicalEnergy,
     },
   ];
   return (
@@ -279,11 +295,7 @@ function ChipSummary({ lang, snapshot }: { lang: string; snapshot: OmniDailySnap
           className="inline-flex items-center gap-1 rounded-full border border-[#E4DAD1] bg-[#FFFBF7] px-2 py-0.5 text-[10px] text-[#6E5F55]"
         >
           <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: chip.color }} aria-hidden />
-          {chip.label}: {chip.value.toFixed(1)}
-          <span className={chip.delta >= 0 ? "text-[#1F7A43]" : "text-[#B8000E]"}>
-            {chip.delta >= 0 ? "+" : ""}
-            {chip.delta.toFixed(1)}
-          </span>
+          {chip.label}
         </span>
       ))}
     </div>

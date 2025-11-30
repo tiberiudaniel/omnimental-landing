@@ -125,12 +125,28 @@ function ProgressContent() {
     const allowed = new Set(['SCOP_INTENTIE','MOTIVATIE_REZURSE','PLAN_RECOMANDARI','OBSERVATII_EVALUARE','NOTE_LIBERE']);
     return tab && allowed.has(tab) ? (tab as JournalTabId) : undefined;
   })();
-  const journalContext = useMemo(
-    () => ({
-      sourcePage: "progress",
-      sourceBlock: stepParam === "journal-open" ? "initiation.journal" : undefined,
-      suggestedSnippets:
-        stepParam === "journal-open"
+  const journalSource = search?.get("source");
+  const journalContext = useMemo(() => {
+    const fromDailyAxes = journalSource === "daily_axes";
+    const fromStep = stepParam === "journal-open";
+    return {
+      sourcePage: fromDailyAxes ? "dashboard.daily_axes" : "progress",
+      sourceBlock: fromDailyAxes
+        ? "dashboard.daily_axes.card"
+        : fromStep
+          ? "initiation.journal"
+          : undefined,
+      suggestedSnippets: fromDailyAxes
+        ? lang === "ro"
+          ? [
+              "Notează în 2-3 propoziții ce vezi la claritate/emoție/energie.",
+              "Ce schimbare mică vrei să faci azi?",
+            ]
+          : [
+              "Capture 2-3 sentences about clarity/emotion/energy right now.",
+              "What small adjustment will you make today?",
+            ]
+        : fromStep
           ? lang === "ro"
             ? [
                 "Două propoziții despre starea ta acum.",
@@ -141,9 +157,8 @@ function ProgressContent() {
                 "What did you notice in the last hours?",
               ]
           : undefined,
-    }),
-    [lang, stepParam],
-  );
+    };
+  }, [journalSource, lang, stepParam]);
   const journalUserId = profile?.id ?? user?.uid ?? guestJournalId ?? (demoParam || e2e ? "demo-user" : null);
 
   // React to open=journal in URL: open the drawer immediately, then clean the param
@@ -152,6 +167,7 @@ function ProgressContent() {
       const id = window.setTimeout(() => setJournalOpen(true), 0);
       const params = new URLSearchParams(search?.toString() ?? '');
       params.delete('open');
+      params.delete('source');
       router.replace(params.toString() ? `/progress?${params.toString()}` : '/progress');
       return () => window.clearTimeout(id);
     }

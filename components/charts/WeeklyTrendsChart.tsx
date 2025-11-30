@@ -93,7 +93,7 @@ export default function WeeklyTrendsChart({
           <Tooltip formatter={tooltipFormatter} labelStyle={{ fontSize: 10 }} contentStyle={{ fontSize: 10 }} />
           {/* Bars only for single-series usage */}
           {(!series || series.length === 0) && showBars ? (
-            <Bar dataKey="s0" fill="#F0E6DB" radius={[3,3,0,0]}>
+            <Bar dataKey="s0" fill="#F4B890" radius={[4,4,0,0]}>
               {showValues ? (
                 <LabelList dataKey="s0" position="top" offset={6} style={{ fontSize: 10, fill: "#7B6B60" }} />
               ) : null}
