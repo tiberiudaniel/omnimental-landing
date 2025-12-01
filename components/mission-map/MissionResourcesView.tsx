@@ -107,10 +107,10 @@ function ResourceRow({ metric }: { metric: ResourceMetric }) {
         aria-label={`${metric.label} ${metric.score}%`}
       >
         <div
-          className="pointer-events-none absolute inset-0 opacity-50"
+          className="pointer-events-none absolute inset-0 opacity-30"
           style={{
             backgroundImage:
-              "repeating-linear-gradient(to right, transparent 0, transparent calc(25% - 1px), rgba(0,0,0,0.06) calc(25% - 1px), rgba(0,0,0,0.06) 25%)",
+              "repeating-linear-gradient(to right, transparent 0, transparent calc(25% - 1px), rgba(0,0,0,0.05) calc(25% - 1px), rgba(0,0,0,0.05) 25%)",
           }}
         />
         <div
