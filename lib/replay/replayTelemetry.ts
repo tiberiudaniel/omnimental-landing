@@ -1,6 +1,8 @@
 import { arrayUnion, doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { areWritesDisabled, ensureAuth, getDb } from "@/lib/firebase";
 import type { ReplayTimeTrackingPayload } from "@/lib/types/replay";
+import { FEATURE_REPLAY_INTELLIGENCE } from "@/lib/featureFlags";
+import { updateReplayAnalytics } from "./replayAnalytics";
 
 type ReplayWritePayload = Record<string, unknown>;
 
@@ -18,6 +20,7 @@ export async function recordReplayTimeTracking(
   snapshot: ReplayTimeTrackingPayload,
   ownerId?: string | null,
 ) {
+  if (!FEATURE_REPLAY_INTELLIGENCE.telemetry) return;
   const entry = {
     ...snapshot,
     recordedAt: typeof snapshot.endTimestamp === "number" ? snapshot.endTimestamp : Date.now(),
@@ -28,4 +31,9 @@ export async function recordReplayTimeTracking(
     },
     ownerId,
   );
+  if (FEATURE_REPLAY_INTELLIGENCE.enabled) {
+    void updateReplayAnalytics(entry as ReplayTimeTrackingPayload & { recordedAt: number }, ownerId).catch((error) => {
+      console.warn("updateReplayAnalytics failed", error);
+    });
+  }
 }

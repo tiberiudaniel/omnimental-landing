@@ -20,18 +20,25 @@ export interface ReplayRecommendationPayload {
   reason: ReplayReason;
   recommendedMode: ReplayMode;
   createdAt: number;
+  moduleId?: string | null;
+  benefit?: string;
+  estimatedMinutes?: number;
 }
 
 export interface ReplayTimeTrackingPayload {
   activityType: "lesson" | "quiz";
   lessonId: string;
   moduleId?: string;
+  categoryId?: string | null;
   startTimestamp: number;
   endTimestamp: number;
   timeSpentSec: number;
   idleSec: number;
   idleSegments?: Array<{ start: number; end: number }>;
   responseTimes: number[];
+  answerLengths?: number[];
+  quizScore?: number | null;
+  recordedAt?: number;
 }
 
 export interface InsightDepthPayload {
@@ -62,6 +69,27 @@ export interface FlexReplayProfile {
   updatedAt: number;
 }
 
+export interface ReplayStats {
+  totalSessions: number;
+  lessonSessions: number;
+  quizSessions: number;
+  sumTimeSec: number;
+  sumIdleSec: number;
+  responseSamples: number;
+  sumResponseMs: number;
+  shortResponseCount: number;
+  answerSamples: number;
+  totalAnswerChars: number;
+  longAnswerCount: number;
+  quizAttempts: number;
+  lowScoreCount: number;
+  deepNoActionCount: number;
+  fastSessionCount: number;
+  lastLessonId?: string | null;
+  lastModuleId?: string | null;
+  updatedAt: number;
+}
+
 export interface ReplayTelemetryDocument {
   timeTracking?: ReplayTimeTrackingPayload[];
   recommendations?: ReplayRecommendationPayload[];
@@ -70,4 +98,6 @@ export interface ReplayTelemetryDocument {
   replayScores?: ReplayScoresPayload[];
   mastery?: MasteryMetrics | null;
   flexAdaptation?: FlexReplayProfile | null;
+  stats?: ReplayStats;
+  lastRecommendation?: ReplayRecommendationPayload | null;
 }

@@ -148,6 +148,12 @@ service cloud.firestore {
     function journalEntryIdMatches(entryId) {
       return signedIn() && entryId.matches(request.auth.uid + ".*");
     }
+    function quizAttemptOwnerMatches(data) {
+      return data != null && data.userId == request.auth.uid;
+    }
+    function quizAttemptIdMatches(attemptId) {
+      return signedIn() && attemptId.matches(request.auth.uid + ".*");
+    }
 
     // OmniKuno lesson journal entries (dev): owner-only pe profil
     match /lessonJournalEntries/{entryId} {
@@ -158,6 +164,15 @@ service cloud.firestore {
       );
       allow create, update: if signedIn() && journalEntryOwnerMatches(request.resource.data);
       allow delete: if signedIn() && journalEntryOwnerMatches(resource.data);
+    }
+    match /userReplayData/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+    }
+    match /kunoQuizAttempts/{attemptId} {
+      allow read: if signedIn() && (quizAttemptOwnerMatches(resource.data) || quizAttemptIdMatches(attemptId));
+      allow create: if signedIn() && quizAttemptOwnerMatches(request.resource.data);
+      allow update, delete: if signedIn() && quizAttemptOwnerMatches(resource.data);
     }
 
     // Fallback: deny everything else.

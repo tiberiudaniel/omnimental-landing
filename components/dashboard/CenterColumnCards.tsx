@@ -16,6 +16,9 @@ import { OmniAbilCard } from "./OmniAbilCard";
 import { SeasonCard } from "./SeasonCard";
 import { buildOmniGuidance, type OmniDailySnapshot, type OmniGuidance } from "@/lib/omniState";
 import { MissionPerspectiveCard } from "./MissionPerspectiveCard";
+import { ReplayRecommendationCard } from "./ReplayRecommendationCard";
+import { useReplayRecommendation } from "@/lib/hooks/useReplayRecommendation";
+import { FEATURE_REPLAY_INTELLIGENCE } from "@/lib/featureFlags";
 
 export type FocusThemeInfo = {
   area?: string | null;
@@ -58,6 +61,9 @@ export default function CenterColumnCards({
   mission,
 }: CenterColumnCardsProps) {
   const [showFocusCard, setShowFocusCard] = useState(true);
+  const langCode: "ro" | "en" = lang === "ro" ? "ro" : "en";
+  const showReplayCard = FEATURE_REPLAY_INTELLIGENCE.enabled && FEATURE_REPLAY_INTELLIGENCE.recommendationCard;
+  const { recommendation, loading: replayLoading, error: replayError } = useReplayRecommendation(showReplayCard);
   useEffect(() => {
     const timer = window.setTimeout(() => setShowFocusCard(false), 5000);
     return () => window.clearTimeout(timer);
@@ -76,6 +82,14 @@ export default function CenterColumnCards({
         {showFocusCard ? <FocusThemeCard lang={lang} focusTheme={focusTheme} /> : null}
       </div>
       <div className="grid grid-cols-1 items-stretch gap-2 md:gap-3 lg:gap-3">
+        {showReplayCard ? (
+          <ReplayRecommendationCard
+            lang={langCode}
+            recommendation={recommendation}
+            loading={replayLoading}
+            error={replayError}
+          />
+        ) : null}
         <KunoMissionCard
           lang={lang}
           focusAreaLabel={focusTheme.area}

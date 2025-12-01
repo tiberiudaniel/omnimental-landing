@@ -9,6 +9,8 @@ import { updatePerformanceSnapshot, type KunoPerformanceSnapshot } from "@/lib/o
 import { useI18n } from "@/components/I18nProvider";
 import { asDifficulty, DIFFICULTY_STYLES } from "./difficulty";
 import { recordReplayTimeTracking } from "@/lib/replay/replayTelemetry";
+import { FEATURE_REPLAY_INTELLIGENCE } from "@/lib/featureFlags";
+import { getKunoQuizAttempt, lockKunoQuizAnswers, type KunoQuizAttempt } from "@/lib/db/kunoQuizAttempts";
 
 export type QuizViewProps = {
   areaKey: OmniKunoModuleId;
@@ -36,7 +38,7 @@ export default function QuizView({
   onStepChange,
   showHeader = true,
 }: QuizViewProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const difficultyKey = asDifficulty(lesson.difficulty);
   const chipText = String(t(`omnikuno.difficulty.${difficultyKey}Chip`));
   const chipClass = DIFFICULTY_STYLES[difficultyKey].chip;
@@ -44,6 +46,11 @@ export default function QuizView({
   const [score, setScore] = useState<number | null>(null);
   const [selection, setSelection] = useState<Record<string, string>>({});
   const [completed, setCompleted] = useState(existingCompletedIds.includes(lesson.id));
+  const [attempt, setAttempt] = useState<KunoQuizAttempt | null>(null);
+  const [attemptError, setAttemptError] = useState<string | null>(null);
+  const [attemptLoading, setAttemptLoading] = useState(
+    FEATURE_REPLAY_INTELLIGENCE.enabled && FEATURE_REPLAY_INTELLIGENCE.lockedQuiz,
+  );
   const startRef = useRef(Date.now());
   const responseTimesRef = useRef<number[]>([]);
   const interactionRef = useRef(Date.now());
@@ -53,6 +60,9 @@ export default function QuizView({
     setScore(null);
     setSelection({});
     setCompleted(existingCompletedIds.includes(lesson.id));
+    setAttempt(null);
+    setAttemptError(null);
+    setAttemptLoading(FEATURE_REPLAY_INTELLIGENCE.enabled && FEATURE_REPLAY_INTELLIGENCE.lockedQuiz);
     startRef.current = Date.now();
     responseTimesRef.current = [];
     interactionRef.current = Date.now();
@@ -64,6 +74,46 @@ export default function QuizView({
     const quiz = getOmniKunoQuiz(lesson.quizTopicKey);
     return quiz?.questions ?? [];
   }, [lesson.quizTopicKey]);
+  useEffect(() => {
+    if (!FEATURE_REPLAY_INTELLIGENCE.enabled || !FEATURE_REPLAY_INTELLIGENCE.lockedQuiz) {
+      setAttempt(null);
+      setAttemptLoading(false);
+      return;
+    }
+    let active = true;
+    setAttemptLoading(true);
+    setAttemptError(null);
+    (async () => {
+      try {
+        const existing = await getKunoQuizAttempt(moduleId, lesson.id, ownerId);
+        if (!active) return;
+        if (existing && existing.locked) {
+          setAttempt(existing);
+          const restored: Record<string, string> = {};
+          existing.answers.forEach((answer) => {
+            restored[answer.questionId] = answer.answer;
+          });
+          setSelection(restored);
+          setScore(existing.score);
+          setCompleted(true);
+        } else {
+          setAttempt(null);
+        }
+      } catch (error) {
+        if (!active) return;
+        console.warn("quiz attempt load failed", error);
+        setAttemptError(lang === "ro" ? "Nu am putut încărca starea quiz-ului." : "Unable to load quiz progress.");
+      } finally {
+        if (active) {
+          setAttemptLoading(false);
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [lang, lesson.id, moduleId, ownerId]);
+
   const noteInteractionDuration = () => {
     const now = Date.now();
     responseTimesRef.current.push(Math.max(0, now - interactionRef.current));
@@ -90,8 +140,15 @@ export default function QuizView({
     };
   }, []);
 
+  const answersLocked = Boolean(attempt?.locked);
+
   const handleSubmit = async () => {
-    if (busy || !questions.length || completed) return;
+    if (busy || !questions.length || completed || answersLocked) {
+      if (answersLocked) {
+        setAttemptError(lang === "ro" ? "Răspunsurile sunt deja blocate." : "Answers are already locked.");
+      }
+      return;
+    }
     setBusy(true);
     try {
       noteInteractionDuration();
@@ -121,6 +178,28 @@ export default function QuizView({
       setCompleted(true);
       applyKunoXp(areaKey, xpReward);
       onCompleted?.(lesson.id, { score: pct, timeSpentSec, updatedPerformance });
+      if (FEATURE_REPLAY_INTELLIGENCE.enabled && FEATURE_REPLAY_INTELLIGENCE.lockedQuiz) {
+        try {
+          const locked = await lockKunoQuizAnswers(
+            {
+              moduleId,
+              lessonId: lesson.id,
+              quizTopicKey: lesson.quizTopicKey ?? null,
+              score: pct,
+              answers: questions.map((question) => ({
+                questionId: question.id,
+                answer: selection[question.id] ?? "",
+                isCorrect: selection[question.id] === question.correctAnswer,
+              })),
+            },
+            ownerId,
+          );
+          setAttempt(locked);
+        } catch (error) {
+          console.warn("lock quiz answers failed", error);
+          setAttemptError(lang === "ro" ? "Nu am putut bloca răspunsurile." : "Unable to lock your answers.");
+        }
+      }
       const idleSec = Math.max(0, Math.round(idleMsRef.current / 1000));
       void recordReplayTimeTracking(
         {
@@ -132,6 +211,7 @@ export default function QuizView({
           timeSpentSec,
           idleSec,
           responseTimes: [...responseTimesRef.current],
+          quizScore: pct,
         },
         ownerId,
       );
@@ -172,14 +252,20 @@ export default function QuizView({
                     value={option.value}
                     checked={selection[question.id] === option.value}
                     onChange={() => {
-                      if (completed) return;
+                      if (completed || answersLocked) return;
                       setSelection((prev) => ({ ...prev, [question.id]: option.value }));
                       noteInteractionDuration();
                     }}
+                    disabled={completed || answersLocked}
                   />
                   <span>{option.label}</span>
                 </label>
               ))}
+              {answersLocked ? (
+                <p className="text-[11px] text-[var(--omni-muted)]">
+                  {lang === "ro" ? "Răspunsurile sunt blocate pentru acest quiz." : "Answers are locked for this quiz."}
+                </p>
+              ) : null}
             </div>
           </div>
         ))}
@@ -190,14 +276,27 @@ export default function QuizView({
           <p className="text-[12px] text-[#4D3F36]">{String(t(`omnikuno.quizSummary.${difficultyKey}Completed`))}</p>
         </div>
       ) : null}
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={busy || !questions.length || completed}
-        className="inline-flex items-center rounded-full border border-[var(--omni-energy)] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--omni-energy)] transition hover:bg-[var(--omni-energy)] hover:text-white disabled:cursor-not-allowed disabled:border-[var(--omni-border-soft)] disabled:text-[#B99484]"
-      >
-        {completed ? "Quiz complet" : busy ? "Se evaluează..." : "Trimite răspunsurile"}
-      </button>
+      <div className="flex flex-col gap-1">
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={busy || !questions.length || completed || answersLocked}
+          className="inline-flex items-center rounded-full border border-[var(--omni-energy)] px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--omni-energy)] transition hover:bg-[var(--omni-energy)] hover:text-white disabled:cursor-not-allowed disabled:border-[var(--omni-border-soft)] disabled:text-[#B99484]"
+        >
+          {completed || answersLocked ? (lang === "ro" ? "Quiz complet" : "Quiz saved") : busy ? "Se evaluează..." : "Trimite răspunsurile"}
+        </button>
+        {attemptLoading ? (
+          <p className="text-[11px] text-[var(--omni-muted)]">{lang === "ro" ? "Verificăm starea quiz-ului..." : "Loading quiz status..."}</p>
+        ) : attemptError ? (
+          <p className="text-[11px] text-[#B03C2F]">{attemptError}</p>
+        ) : answersLocked ? (
+          <p className="text-[11px] text-[var(--omni-muted)]">
+            {lang === "ro"
+              ? "Acest quiz are răspunsuri blocate. Poți vedea răspunsurile, dar nu le poți modifica."
+              : "This quiz has locked answers. You can review them but not change them."}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -77,6 +77,7 @@ export default function LessonView({
   const stepStartRef = useRef(Date.now());
   const idleMsRef = useRef(0);
   const idleStartRef = useRef<number | null>(null);
+  const answerLengthsRef = useRef<number[]>([]);
   const xpReward = useMemo(() => getLessonXp(), []);
   const lessonContent = OMNI_KUNO_LESSON_CONTENT[lesson.id];
   const fallbackScreens: OmniKunoLessonScreen[] = useMemo(
@@ -130,6 +131,7 @@ export default function LessonView({
     stepStartRef.current = Date.now();
     idleMsRef.current = 0;
     idleStartRef.current = null;
+    answerLengthsRef.current = [];
     let restoredIndex = 0;
     if (!alreadyDone && typeof window !== "undefined") {
       const storedIdx = Number(window.localStorage.getItem(progressStorageKey));
@@ -230,6 +232,9 @@ export default function LessonView({
         unlockedCollectibles: unlocked,
       });
       const idleSec = Math.max(0, Math.round(idleMsRef.current / 1000));
+      if (reflection.trim().length) {
+        answerLengthsRef.current.push(reflection.trim().length);
+      }
       void recordReplayTimeTracking(
         {
           activityType: "lesson",
@@ -240,6 +245,7 @@ export default function LessonView({
           timeSpentSec,
           idleSec,
           responseTimes: [...responseTimesRef.current],
+          answerLengths: [...answerLengthsRef.current],
         },
         ownerId,
       );
