@@ -15,6 +15,7 @@ import {
 import { CALM_PROTOCOL_STEPS } from "@/config/omniKunoConstants";
 import { LessonJournalDrawer } from "./LessonJournalDrawer";
 import { recordReplayTimeTracking } from "@/lib/replay/replayTelemetry";
+import { useSearchParams } from "next/navigation";
 
 export type LessonViewProps = {
   areaKey: OmniKunoModuleId;
@@ -34,6 +35,7 @@ export type LessonViewProps = {
   ) => void;
   onStepChange?: (current: number, total: number) => void;
   showHeader?: boolean;
+  isReplayMode?: boolean;
 };
 
 export default function LessonView({
@@ -46,14 +48,18 @@ export default function LessonView({
   onCompleted,
   onStepChange,
   showHeader = true,
+  isReplayMode = false,
 }: LessonViewProps) {
+  const searchParams = useSearchParams();
+  const replayFromUrl = searchParams?.get("replay") === "1";
+  const replayActive = Boolean(isReplayMode ?? replayFromUrl);
   const { t, lang } = useI18n();
   const difficultyKey = asDifficulty(lesson.difficulty);
   const chipText = String(t(`omnikuno.difficulty.${difficultyKey}Chip`));
   const chipClass = DIFFICULTY_STYLES[difficultyKey].chip;
   const durationText = lesson.durationMin ? `~${lesson.durationMin} min` : null;
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(existingCompletedIds.includes(lesson.id));
+  const [done, setDone] = useState(replayActive ? false : existingCompletedIds.includes(lesson.id));
   const [reflection, setReflection] = useState("");
   const [isRelaxedMode, setIsRelaxedMode] = useState(false);
   useEffect(() => {
@@ -116,6 +122,11 @@ export default function LessonView({
   const reflectionStorageKey = useMemo(() => `omnikuno_reflection_${lesson.id}`, [lesson.id]);
   const progressStorageKey = useMemo(() => `omnikuno_progress_${lesson.id}`, [lesson.id]);
   const reflectionHelperId = `${lesson.id}-reflection-hint`;
+  useEffect(() => {
+    if (replayActive) {
+      console.log("Replay mode active (Phase 1)");
+    }
+  }, [replayActive]);
   const registerStepDuration = () => {
     const now = Date.now();
     const delta = Math.max(0, now - stepStartRef.current);
@@ -125,7 +136,7 @@ export default function LessonView({
 
   useEffect(() => {
     const alreadyDone = existingCompletedIds.includes(lesson.id);
-    setDone(alreadyDone);
+    setDone(replayActive ? false : alreadyDone);
     startRef.current = Date.now();
     responseTimesRef.current = [];
     stepStartRef.current = Date.now();
@@ -133,12 +144,12 @@ export default function LessonView({
     idleStartRef.current = null;
     answerLengthsRef.current = [];
     let restoredIndex = 0;
-    if (!alreadyDone && typeof window !== "undefined") {
+    if (!alreadyDone && !replayActive && typeof window !== "undefined") {
       const storedIdx = Number(window.localStorage.getItem(progressStorageKey));
       if (Number.isFinite(storedIdx) && storedIdx >= 0 && storedIdx < totalScreens) {
         restoredIndex = storedIdx;
       }
-    } else if (alreadyDone && typeof window !== "undefined") {
+    } else if (alreadyDone && !replayActive && typeof window !== "undefined") {
       window.localStorage.removeItem(progressStorageKey);
     }
     setCurrentScreenIndex(restoredIndex);
@@ -150,19 +161,21 @@ export default function LessonView({
     } else {
       setReflection("");
     }
-  }, [existingCompletedIds, lesson.id, progressStorageKey, reflectionStorageKey, totalScreens]);
+  }, [existingCompletedIds, lesson.id, progressStorageKey, reflectionStorageKey, replayActive, totalScreens]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (replayActive) return;
     if (reflection.trim()) {
       window.localStorage.setItem(reflectionStorageKey, reflection);
     }
-  }, [reflection, reflectionStorageKey]);
+  }, [reflection, reflectionStorageKey, replayActive]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (replayActive) return;
     window.localStorage.setItem(progressStorageKey, String(currentScreenIndex));
-  }, [currentScreenIndex, progressStorageKey]);
+  }, [currentScreenIndex, progressStorageKey, replayActive]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -199,38 +212,47 @@ export default function LessonView({
     const updatedPerformance = updatePerformanceSnapshot(performanceSnapshot, { timeSpentSec });
     const wasFirstCompletion = !existingCompletedIds.includes(lesson.id);
     let unlocked: UnlockedCollectible[] = [];
+    const shouldRecordProgress = !replayActive;
     try {
-      await recordKunoLessonProgress({
-        moduleId,
-        completedIds: merged,
-        ownerId,
-        performance: updatedPerformance,
-        xpDelta: wasFirstCompletion ? xpReward : 0,
-        wasFirstCompletion,
-        difficulty: difficultyKey,
-      });
-      applyKunoXp(areaKey, xpReward);
-      if (ownerId) {
-        try {
-          unlocked = await maybeUnlockCollectiblesForLesson(ownerId, lesson.id);
-        } catch (error) {
-          console.warn("unlock collectibles failed", error);
+      if (shouldRecordProgress) {
+        await recordKunoLessonProgress({
+          moduleId,
+          completedIds: merged,
+          ownerId,
+          performance: updatedPerformance,
+          xpDelta: wasFirstCompletion ? xpReward : 0,
+          wasFirstCompletion,
+          difficulty: difficultyKey,
+        });
+        applyKunoXp(areaKey, xpReward);
+        if (ownerId) {
+          try {
+            unlocked = await maybeUnlockCollectiblesForLesson(ownerId, lesson.id);
+          } catch (error) {
+            console.warn("unlock collectibles failed", error);
+          }
         }
       }
     } catch (error) {
-      console.warn("recordKunoLessonProgress failed", error);
-    } finally {
-      setDone(true);
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem(reflectionStorageKey);
-        window.localStorage.removeItem(progressStorageKey);
+      if (shouldRecordProgress) {
+        console.warn("recordKunoLessonProgress failed", error);
       }
-      onCompleted?.(lesson.id, {
-        timeSpentSec,
-        updatedPerformance,
-        note: reflection.trim(),
-        unlockedCollectibles: unlocked,
-      });
+    } finally {
+      if (shouldRecordProgress) {
+        setDone(true);
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(reflectionStorageKey);
+          window.localStorage.removeItem(progressStorageKey);
+        }
+        onCompleted?.(lesson.id, {
+          timeSpentSec,
+          updatedPerformance,
+          note: reflection.trim(),
+          unlockedCollectibles: unlocked,
+        });
+      } else {
+        setDone(false);
+      }
       const idleSec = Math.max(0, Math.round(idleMsRef.current / 1000));
       if (reflection.trim().length) {
         answerLengthsRef.current.push(reflection.trim().length);
@@ -292,6 +314,12 @@ export default function LessonView({
   return (
     <>
       <div className="space-y-4" data-testid="lesson-view">
+        {replayActive ? (
+          <div className="rounded-2xl border border-[var(--omni-energy)] bg-[color-mix(in srgb,var(--omni-energy)_10%,white)] px-4 py-2 text-sm text-[var(--omni-ink)] shadow-sm" data-testid="lesson-replay-banner">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-energy)]">Replay mode (Phase 1)</p>
+            <p className="text-[13px] text-[var(--omni-ink)]">Foundation test — manual replay entry point</p>
+          </div>
+        ) : null}
         {showHeader ? (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">

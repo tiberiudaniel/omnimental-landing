@@ -11,6 +11,7 @@ import { asDifficulty, DIFFICULTY_STYLES } from "./difficulty";
 import { recordReplayTimeTracking } from "@/lib/replay/replayTelemetry";
 import { FEATURE_REPLAY_INTELLIGENCE } from "@/lib/featureFlags";
 import { getKunoQuizAttempt, lockKunoQuizAnswers, type KunoQuizAttempt } from "@/lib/db/kunoQuizAttempts";
+import { useSearchParams } from "next/navigation";
 
 export type QuizViewProps = {
   areaKey: OmniKunoModuleId;
@@ -25,6 +26,7 @@ export type QuizViewProps = {
   ) => void;
   onStepChange?: (current: number, total: number) => void;
   showHeader?: boolean;
+  isReplayMode?: boolean;
 };
 
 export default function QuizView({
@@ -37,15 +39,19 @@ export default function QuizView({
   onCompleted,
   onStepChange,
   showHeader = true,
+  isReplayMode,
 }: QuizViewProps) {
   const { t, lang } = useI18n();
+  const searchParams = useSearchParams();
+  const replayFromUrl = searchParams?.get("replay") === "1";
+  const replayActive = Boolean(isReplayMode ?? replayFromUrl);
   const difficultyKey = asDifficulty(lesson.difficulty);
   const chipText = String(t(`omnikuno.difficulty.${difficultyKey}Chip`));
   const chipClass = DIFFICULTY_STYLES[difficultyKey].chip;
   const [busy, setBusy] = useState(false);
   const [score, setScore] = useState<number | null>(null);
   const [selection, setSelection] = useState<Record<string, string>>({});
-  const [completed, setCompleted] = useState(existingCompletedIds.includes(lesson.id));
+  const [completed, setCompleted] = useState(replayActive ? false : existingCompletedIds.includes(lesson.id));
   const [attempt, setAttempt] = useState<KunoQuizAttempt | null>(null);
   const [attemptError, setAttemptError] = useState<string | null>(null);
   const [attemptLoading, setAttemptLoading] = useState(
@@ -59,23 +65,25 @@ export default function QuizView({
   useEffect(() => {
     setScore(null);
     setSelection({});
-    setCompleted(existingCompletedIds.includes(lesson.id));
+    setCompleted(replayActive ? false : existingCompletedIds.includes(lesson.id));
     setAttempt(null);
     setAttemptError(null);
-    setAttemptLoading(FEATURE_REPLAY_INTELLIGENCE.enabled && FEATURE_REPLAY_INTELLIGENCE.lockedQuiz);
+    setAttemptLoading(
+      FEATURE_REPLAY_INTELLIGENCE.enabled && FEATURE_REPLAY_INTELLIGENCE.lockedQuiz && !replayActive,
+    );
     startRef.current = Date.now();
     responseTimesRef.current = [];
     interactionRef.current = Date.now();
     idleMsRef.current = 0;
     idleStartRef.current = null;
-  }, [existingCompletedIds, lesson.id]);
+  }, [existingCompletedIds, lesson.id, replayActive]);
   const questions = useMemo(() => {
     if (!lesson.quizTopicKey) return [];
     const quiz = getOmniKunoQuiz(lesson.quizTopicKey);
     return quiz?.questions ?? [];
   }, [lesson.quizTopicKey]);
   useEffect(() => {
-    if (!FEATURE_REPLAY_INTELLIGENCE.enabled || !FEATURE_REPLAY_INTELLIGENCE.lockedQuiz) {
+    if (!FEATURE_REPLAY_INTELLIGENCE.enabled || !FEATURE_REPLAY_INTELLIGENCE.lockedQuiz || replayActive) {
       setAttempt(null);
       setAttemptLoading(false);
       return;
@@ -112,7 +120,7 @@ export default function QuizView({
     return () => {
       active = false;
     };
-  }, [lang, lesson.id, moduleId, ownerId]);
+  }, [lang, lesson.id, moduleId, ownerId, replayActive]);
 
   const noteInteractionDuration = () => {
     const now = Date.now();
@@ -166,19 +174,21 @@ export default function QuizView({
       const updatedPerformance = updatePerformanceSnapshot(performanceSnapshot, { score: pct, timeSpentSec });
       const xpReward = getQuizXp(pct);
       const wasFirstCompletion = !existingCompletedIds.includes(lesson.id);
-      await recordKunoLessonProgress({
-        moduleId,
-        completedIds: merged,
-        ownerId,
-        performance: updatedPerformance,
-        xpDelta: wasFirstCompletion ? xpReward : 0,
-        wasFirstCompletion,
-        difficulty: difficultyKey,
-      });
-      setCompleted(true);
-      applyKunoXp(areaKey, xpReward);
-      onCompleted?.(lesson.id, { score: pct, timeSpentSec, updatedPerformance });
-      if (FEATURE_REPLAY_INTELLIGENCE.enabled && FEATURE_REPLAY_INTELLIGENCE.lockedQuiz) {
+      if (!replayActive) {
+        await recordKunoLessonProgress({
+          moduleId,
+          completedIds: merged,
+          ownerId,
+          performance: updatedPerformance,
+          xpDelta: wasFirstCompletion ? xpReward : 0,
+          wasFirstCompletion,
+          difficulty: difficultyKey,
+        });
+        setCompleted(true);
+        applyKunoXp(areaKey, xpReward);
+        onCompleted?.(lesson.id, { score: pct, timeSpentSec, updatedPerformance });
+      }
+      if (!replayActive && FEATURE_REPLAY_INTELLIGENCE.enabled && FEATURE_REPLAY_INTELLIGENCE.lockedQuiz) {
         try {
           const locked = await lockKunoQuizAnswers(
             {
@@ -216,6 +226,9 @@ export default function QuizView({
         ownerId,
       );
     } finally {
+      if (replayActive) {
+        setCompleted(false);
+      }
       setBusy(false);
     }
   };

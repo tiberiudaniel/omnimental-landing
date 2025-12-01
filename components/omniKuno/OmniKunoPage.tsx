@@ -244,6 +244,7 @@ export default function OmniKunoPage() {
   const pathname = usePathname();
   const { profile } = useProfile();
   const searchParams = useSearchParams();
+  const isReplayMode = searchParams?.get("replay") === "1";
   const { data: progress } = useProgressFacts(profile?.id);
   const kunoFacts = useMemo(() => normalizeKunoFacts(progress?.omni?.kuno), [progress?.omni?.kuno]);
   const { lang } = useI18n();
@@ -483,7 +484,7 @@ export default function OmniKunoPage() {
     [activeAreaKey, activeModule.moduleId, updateUrl],
   );
   const focusLabel = areaLabelMap[activeAreaKey];
-  const moduleStateKey = `${activeModule.moduleId}:${completedIdsFromFacts.slice().sort().join("|")}:${normalizedPerformance.difficultyBias}`;
+  const moduleStateKey = `${activeModule.moduleId}:${completedIdsFromFacts.slice().sort().join("|")}:${normalizedPerformance.difficultyBias}:${isReplayMode ? `replay:${lessonQueryParam ?? "l1"}` : "normal"}`;
   const completedLessonsCount = effectiveCompletedIds.length;
   const headerProgressSummary =
     lang === "ro"
@@ -603,6 +604,7 @@ export default function OmniKunoPage() {
                 onLocalProgressUpdate={notifyLocalProgressUpdate}
                 overviewOpen={overviewOpen}
                 onCloseOverview={() => setOverviewOpen(false)}
+                isReplayMode={isReplayMode}
               />
             </section>
           </div>
@@ -647,6 +649,7 @@ type ExperienceProps = {
   finalTestConfig?: ModuleFinalTestContent | null;
   overviewOpen: boolean;
   onCloseOverview: () => void;
+  isReplayMode?: boolean;
 };
 
 function ModuleExperience({
@@ -668,6 +671,7 @@ function ModuleExperience({
   finalTestConfig = null,
   overviewOpen,
   onCloseOverview,
+  isReplayMode = false,
 }: ExperienceProps) {
   const { t, lang } = useI18n();
   const mergedInitialCompletedRaw = useMemo(
@@ -698,6 +702,24 @@ function ModuleExperience({
     [module.lessons, localCompleted],
   );
   const orderedLessons = useMemo(() => module.lessons.slice().sort((a, b) => a.order - b.order), [module.lessons]);
+  const initialReplayLessonId = useMemo(() => {
+    if (!isReplayMode) return null;
+    if (initialLessonId && module.lessons.some((lesson) => lesson.id === initialLessonId)) {
+      return initialLessonId;
+    }
+    return orderedLessons[0]?.id ?? null;
+  }, [initialLessonId, isReplayMode, module.lessons, orderedLessons]);
+  const [replayActiveLessonId, setReplayActiveLessonId] = useState<string | null>(() =>
+    isReplayMode ? initialReplayLessonId ?? orderedLessons[0]?.id ?? null : null,
+  );
+  const [replayLastCompleted, setReplayLastCompleted] = useState<string | null>(null);
+  const replayNextLessonId = useMemo(() => {
+    if (!isReplayMode) return null;
+    return replayActiveLessonId ?? initialReplayLessonId ?? orderedLessons[0]?.id ?? null;
+  }, [initialReplayLessonId, isReplayMode, orderedLessons, replayActiveLessonId]);
+  const replayHref = useMemo(() => {
+    return { pathname: `/replay/module/${module.moduleId}` };
+  }, [module.moduleId]);
   const flatTimeline = useMemo(() => timeline.slice().sort((a, b) => a.order - b.order), [timeline]);
   const timelineWithMeta = useMemo<TimelineItemWithMeta[]>(() => {
     return flatTimeline.map((item) => {
@@ -766,17 +788,19 @@ function ModuleExperience({
     if (storedLessonId) return storedLessonId;
     return activeItem?.id ?? null;
   }, [activeItem?.id, initialLessonId, lessonHasExplicitNone, storedLessonId, timelineWithMeta]);
-  const openLessonId = Object.prototype.hasOwnProperty.call(openLessonsByModule, module.moduleId)
+  const baseOpenLessonId = Object.prototype.hasOwnProperty.call(openLessonsByModule, module.moduleId)
     ? openLessonsByModule[module.moduleId] ?? null
     : defaultOpenLessonId;
+  const openLessonId = isReplayMode ? replayActiveLessonId : baseOpenLessonId;
   const lastPersistSignature = useRef<string | null>(null);
   useEffect(() => {
+    if (isReplayMode) return;
     const signature = `${module.moduleId}:${JSON.stringify(localCompleted)}`;
     if (lastPersistSignature.current === signature) return;
     lastPersistSignature.current = signature;
     persistCompletedIds(module.moduleId, localCompleted);
     onLocalProgressUpdate?.();
-  }, [localCompleted, module.moduleId, onLocalProgressUpdate]);
+  }, [isReplayMode, localCompleted, module.moduleId, onLocalProgressUpdate]);
   useEffect(() => {
     if (!moduleCompleted) {
       if (showFinalTest) {
@@ -813,6 +837,16 @@ function ModuleExperience({
     [module.moduleId],
   );
   useEffect(() => {
+    if (!isReplayMode || !replayActiveLessonId) return;
+    const raf = window.requestAnimationFrame(() => {
+      const anchor = document.getElementById(`kuno-lesson-${replayActiveLessonId}`);
+      if (anchor) {
+        anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [isReplayMode, replayActiveLessonId]);
+  useEffect(() => {
     onLessonSelect?.(openLessonId);
   }, [openLessonId, onLessonSelect]);
   const triggerLessonHighlight = useCallback((lessonId: string) => {
@@ -836,7 +870,7 @@ function ModuleExperience({
     };
   }, []);
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || isReplayMode) return;
     try {
       const payload = {
         moduleId: module.moduleId,
@@ -849,7 +883,7 @@ function ModuleExperience({
     } catch {
       // ignore write errors (private / quota)
     }
-  }, [areaKey, module.moduleId, openLessonId]);
+  }, [areaKey, isReplayMode, module.moduleId, openLessonId]);
   const langKey: "ro" | "en" = lang === "ro" ? "ro" : "en";
   const scrollToLesson = useCallback((lessonId: string) => {
     if (typeof window === "undefined") return;
@@ -885,6 +919,33 @@ function ModuleExperience({
         unlockedCollectibles?: UnlockedCollectible[];
       },
     ) => {
+      if (isReplayMode) {
+        const currentIndex = orderedLessons.findIndex((lesson) => lesson.id === lessonId);
+        const nextLesson =
+          currentIndex >= 0 && currentIndex < orderedLessons.length - 1
+            ? orderedLessons[currentIndex + 1]
+            : null;
+        console.log("[Replay] handleLessonCompleted", {
+          isReplayMode,
+          finishedLessonId: lessonId,
+          nextReplayLessonId: nextLesson?.id ?? null,
+        });
+        if (nextLesson) {
+          setReplayActiveLessonId(nextLesson.id);
+          setReplayLastCompleted(lessonId);
+          scrollToLesson(nextLesson.id);
+          triggerLessonHighlight(nextLesson.id);
+        } else {
+          setReplayActiveLessonId(null);
+          setReplayLastCompleted(lessonId);
+          if (onToast) {
+            onToast({
+              message: lang === "ro" ? "Ai reluat toate lecțiile din modul." : "You replayed all lessons in this module.",
+            });
+          }
+        }
+        return;
+      }
       setLocalOnlyCompletedByModule((prev) => {
         const bucket = prev[module.moduleId] ?? [];
         if (bucket.includes(lessonId)) return prev;
@@ -930,7 +991,18 @@ function ModuleExperience({
         setOpenLessonForModule(null);
       }
     },
-    [lang, module.moduleId, onToast, orderedLessons, scrollToLesson, setLocalOnlyCompletedByModule, setOpenLessonForModule, triggerLessonHighlight],
+    [
+      isReplayMode,
+      lang,
+      module.moduleId,
+      onToast,
+      orderedLessons,
+      scrollToLesson,
+      setLocalOnlyCompletedByModule,
+      setOpenLessonForModule,
+      setReplayActiveLessonId,
+      triggerLessonHighlight,
+    ],
   );
   const translate = useCallback(
     (key: string) => {
@@ -948,6 +1020,18 @@ function ModuleExperience({
   }, [activeItem, scrollToLesson, setOpenLessonForModule, triggerLessonHighlight]);
   return (
     <div className="space-y-8">
+      {isReplayMode ? (
+        <div className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-[color-mix(in srgb,var(--omni-energy)_6%,white)] px-4 py-3 text-xs text-[var(--omni-ink)] shadow-sm">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-energy)]">Replay DEBUG</p>
+          <ul className="mt-1 space-y-0.5 font-mono text-[11px]">
+            <li>isReplayMode: {String(isReplayMode)}</li>
+            <li>replayScope: module</li>
+            <li>replayActiveLessonId: {replayActiveLessonId ?? "-"}</li>
+            <li>nextLessonId: {replayNextLessonId ?? "-"}</li>
+            <li>lastCompletedLessonId: {replayLastCompleted ?? "-"}</li>
+          </ul>
+        </div>
+      ) : null}
       <KunoContainer align="left">
         <KunoActivePanel
           progressSummary={
@@ -969,7 +1053,8 @@ function ModuleExperience({
           <div className="space-y-3 md:space-y-4" data-testid="kuno-timeline">
             {visibleTimeline.map((item, idx) => {
               const lessonConfig = item.lesson ?? module.lessons.find((lesson) => lesson.id === item.id);
-              const isOpen = item.status === "active" && item.id === openLessonId;
+              const isOpen = item.id === openLessonId;
+              const isReplayTarget = Boolean(isReplayMode && replayActiveLessonId === item.id);
               const progress = moduleLessonProgress[item.id];
               const currentStep = progress?.current ?? 1;
               const totalSteps =
@@ -987,17 +1072,18 @@ function ModuleExperience({
                   level={item.levelLabel ?? ""}
                   center={item.centerLabel ?? ""}
                   duration={item.durationLabel ?? ""}
-                  status={item.status}
+                  status={(isReplayTarget ? "active" : item.status) as "done" | "active" | "locked"}
                   currentStep={currentStep}
                   totalSteps={totalSteps}
                   isOpen={Boolean(isOpen)}
                   onToggle={() => {
-                    if (item.status !== "active") return;
+                    if (!isReplayTarget && item.status !== "active") return;
                     const next = openLessonId === item.id ? null : item.id;
                     setOpenLessonForModule(next);
                   }}
                   lang={langKey}
                   justActivated={item.id === justActivatedLessonId}
+                  forceActive={isReplayTarget}
                 >
                   {isOpen && lessonConfig ? (
                     <ActiveLessonInner
@@ -1009,6 +1095,7 @@ function ModuleExperience({
                       performanceSnapshot={localPerformance}
                       onLessonCompleted={(lessonId, meta) => handleLessonCompleted(lessonId, meta)}
                       onProgressChange={handleLessonProgress}
+                      isReplayMode={isReplayMode}
                     />
                   ) : null}
                 </LessonAccordionItem>
@@ -1022,6 +1109,13 @@ function ModuleExperience({
               : "This module does not have missions configured yet."}
           </div>
         )}
+        {isReplayMode && !replayActiveLessonId ? (
+          <p className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3 text-center text-sm text-[var(--omni-ink)]">
+            {lang === "ro"
+              ? "Replay complet: ai revăzut toate lecțiile din modul."
+              : "Replay complete: you revisited every lesson in this module."}
+          </p>
+        ) : null}
       </KunoContainer>
       {moduleCompleted && finalTestConfig ? (
         <KunoContainer align="left">
@@ -1033,6 +1127,7 @@ function ModuleExperience({
               onToggleFinalTest={(value) => onToggleFinalTest?.(value)}
               lang={lang}
               finalTestResult={finalTestResult}
+              replayHref={replayHref}
             />
             {showFinalTest ? (
               <TestView

@@ -46,6 +46,8 @@ import { buildOmniDailySnapshot } from "@/lib/omniState";
 import type { MissionSummary } from "@/lib/hooks/useMissionPerspective";
 import { getDb } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
+import { ReplayRecommendationCard } from "@/components/dashboard/ReplayRecommendationCard";
+import { useReplayRecommendation } from "@/lib/hooks/useReplayRecommendation";
 
 export default function ProgressDashboard({
   profileId,
@@ -66,6 +68,8 @@ export default function ProgressDashboard({
   const baseFacts = demoFacts ?? factsProp ?? null;
   const loading = demoFacts ? false : Boolean(loadingProp);
   const { t, lang } = useI18n();
+  const replayCardForced = true; // TEMP: always enable Replay card for Phase 1 verification
+  const { recommendation, loading: replayLoading, error: replayError } = useReplayRecommendation(replayCardForced);
   const [lastKunoModulePref, setLastKunoModulePref] = useState<{
     moduleId: OmniKunoModuleId | null;
     lessonId: string | null;
@@ -647,6 +651,25 @@ export default function ProgressDashboard({
         .sort((a, b) => a.order - b.order)[0]?.id ?? null;
     return { moduleId: nextModuleId, firstLessonId };
   }, [facts?.intent, focusTheme.moduleId, kunoFacts, kunoMissionData?.module?.moduleId]);
+  const replayLessonTarget = useMemo(() => {
+    if (!kunoMissionData?.module?.lessons?.length) return null;
+    const lessons = kunoMissionData.module.lessons.slice().sort((a, b) => a.order - b.order);
+    const targetLesson = lessons[0] ?? null;
+    if (!targetLesson) return null;
+    return {
+      lessonId: targetLesson.id,
+      lessonTitle: targetLesson.title,
+      moduleId: kunoMissionData.module.moduleId,
+      areaKey: kunoMissionData.areaKey,
+    };
+  }, [kunoMissionData]);
+  const replayModuleHref = useMemo(() => {
+    const moduleId = replayLessonTarget?.moduleId ?? kunoMissionData?.module.moduleId ?? null;
+    if (!moduleId) {
+      return { pathname: "/omni-kuno" };
+    }
+    return { pathname: `/replay/module/${moduleId}` };
+  }, [kunoMissionData?.module.moduleId, replayLessonTarget?.moduleId]);
   // Optional: emit compact debug JSON for E2E when ?debug=1
   const debugJson = (() => {
     try {
@@ -717,6 +740,22 @@ export default function ProgressDashboard({
       {/* WRAPPER: MAIN AREA (stânga+centru) + SIDEBAR (dreapta independentă) */}
       {loading ? (
         <div className="text-sm text-[var(--omni-muted)]">{lang === 'ro' ? 'Se încarcă datele…' : 'Loading data…'}</div>
+      ) : null}
+      {replayCardForced ? (
+        <div className="rounded-3xl border border-dashed border-[var(--omni-border-strong)] bg-[var(--omni-bg-paper)]/80 p-3 sm:p-4">
+          <ReplayRecommendationCard
+            lang={lang === "ro" ? "ro" : "en"}
+            recommendation={recommendation}
+            loading={replayLoading}
+            error={replayError}
+            title="Replay (Phase 1)"
+            subtitle="Basic replay entry point — foundation layer"
+            badge="DEBUG / FOUNDATION"
+            ctaLabel="Replay last completed lesson"
+            ctaHref={replayModuleHref}
+            fallbackReason="Foundation test — manual replay entry point"
+          />
+        </div>
       ) : null}
       <div
         className="flex flex-col gap-2 md:gap-3 lg:flex-row lg:gap-4"

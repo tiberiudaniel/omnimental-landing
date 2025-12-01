@@ -19,6 +19,7 @@ type ActiveLessonInnerProps = {
     meta?: { updatedPerformance?: KunoPerformanceSnapshot; score?: number; timeSpentSec?: number },
   ) => void;
   onProgressChange?: (lessonId: string, current: number, total: number) => void;
+  isReplayMode?: boolean;
 };
 
 export default function ActiveLessonInner({
@@ -30,6 +31,7 @@ export default function ActiveLessonInner({
   performanceSnapshot,
   onLessonCompleted,
   onProgressChange,
+  isReplayMode = false,
 }: ActiveLessonInnerProps) {
   const lessonId = lesson?.id ?? "";
 
@@ -52,9 +54,10 @@ export default function ActiveLessonInner({
         existingCompletedIds={existingCompletedIds}
         ownerId={ownerId}
         performanceSnapshot={performanceSnapshot}
+        isReplayMode={isReplayMode}
         showHeader={false}
         onStepChange={handleStepChange}
-        onCompleted={(lessonId, meta) => onLessonCompleted(lessonId, meta)}
+        onCompleted={onLessonCompleted}
       />
     );
   }
@@ -67,7 +70,8 @@ export default function ActiveLessonInner({
       existingCompletedIds={existingCompletedIds}
       ownerId={ownerId}
       performanceSnapshot={performanceSnapshot}
-      onCompleted={(lessonId, meta) => onLessonCompleted(lessonId, meta)}
+      isReplayMode={isReplayMode}
+      onCompleted={onLessonCompleted}
       onStepChange={handleStepChange}
       showHeader={false}
     />

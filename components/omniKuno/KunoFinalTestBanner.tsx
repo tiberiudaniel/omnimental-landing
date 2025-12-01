@@ -20,6 +20,7 @@ export function KunoFinalTestBanner({
   onToggleFinalTest,
   lang,
   finalTestResult,
+  replayHref,
 }: {
   areaKey: OmniKunoModuleId;
   finalTestConfig: ModuleFinalTestContent | null;
@@ -27,6 +28,7 @@ export function KunoFinalTestBanner({
   onToggleFinalTest: (value: boolean) => void;
   lang: string;
   finalTestResult: { correct: number; total: number } | null;
+  replayHref?: string | { pathname: string; query?: Record<string, string> };
 }) {
   if (!finalTestConfig) return null;
   const arcSet = OMNI_KUNO_ARC_INTROS[areaKey];
@@ -73,6 +75,15 @@ export function KunoFinalTestBanner({
             >
               {lang === "ro" ? "Alege alt modul" : "Pick another module"}
             </Link>
+            {replayHref ? (
+              <Link
+                href={replayHref}
+                className="inline-flex items-center rounded-full border border-[var(--omni-ink)] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink)] transition hover:bg-[var(--omni-ink)] hover:text-white"
+                data-testid="kuno-replay-module-link"
+              >
+                {lang === "ro" ? "Reluare modul" : "Replay module"}
+              </Link>
+            ) : null}
           </div>
         </div>
       ) : null}
