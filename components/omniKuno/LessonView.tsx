@@ -14,6 +14,7 @@ import {
 } from "@/config/omniKunoLessonContent";
 import { CALM_PROTOCOL_STEPS } from "@/config/omniKunoConstants";
 import { LessonJournalDrawer } from "./LessonJournalDrawer";
+import { recordReplayTimeTracking } from "@/lib/replay/replayTelemetry";
 
 export type LessonViewProps = {
   areaKey: OmniKunoModuleId;
@@ -72,6 +73,10 @@ export default function LessonView({
   const [quizResult, setQuizResult] = useState<"correct" | "incorrect" | null>(null);
   const [journalOpen, setJournalOpen] = useState(false);
   const startRef = useRef(Date.now());
+  const responseTimesRef = useRef<number[]>([]);
+  const stepStartRef = useRef(Date.now());
+  const idleMsRef = useRef(0);
+  const idleStartRef = useRef<number | null>(null);
   const xpReward = useMemo(() => getLessonXp(), []);
   const lessonContent = OMNI_KUNO_LESSON_CONTENT[lesson.id];
   const fallbackScreens: OmniKunoLessonScreen[] = useMemo(
@@ -110,11 +115,21 @@ export default function LessonView({
   const reflectionStorageKey = useMemo(() => `omnikuno_reflection_${lesson.id}`, [lesson.id]);
   const progressStorageKey = useMemo(() => `omnikuno_progress_${lesson.id}`, [lesson.id]);
   const reflectionHelperId = `${lesson.id}-reflection-hint`;
+  const registerStepDuration = () => {
+    const now = Date.now();
+    const delta = Math.max(0, now - stepStartRef.current);
+    responseTimesRef.current.push(delta);
+    stepStartRef.current = now;
+  };
 
   useEffect(() => {
     const alreadyDone = existingCompletedIds.includes(lesson.id);
     setDone(alreadyDone);
     startRef.current = Date.now();
+    responseTimesRef.current = [];
+    stepStartRef.current = Date.now();
+    idleMsRef.current = 0;
+    idleStartRef.current = null;
     let restoredIndex = 0;
     if (!alreadyDone && typeof window !== "undefined") {
       const storedIdx = Number(window.localStorage.getItem(progressStorageKey));
@@ -147,12 +162,38 @@ export default function LessonView({
     window.localStorage.setItem(progressStorageKey, String(currentScreenIndex));
   }, [currentScreenIndex, progressStorageKey]);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const handleVisibility = () => {
+      if (document.hidden) {
+        idleStartRef.current = Date.now();
+      } else if (idleStartRef.current) {
+        idleMsRef.current += Date.now() - idleStartRef.current;
+        idleStartRef.current = null;
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (idleStartRef.current) {
+        idleMsRef.current += Date.now() - idleStartRef.current;
+        idleStartRef.current = null;
+      }
+    };
+  }, []);
+
   const handleComplete = async () => {
     if (busy || done) return;
     if (requiresReflectionInput && reflection.trim().length < reflectionMinChars) return;
     setBusy(true);
     const merged = Array.from(new Set([...existingCompletedIds, lesson.id]));
-    const timeSpentSec = Math.max(30, Math.round((Date.now() - startRef.current) / 1000));
+    registerStepDuration();
+    if (idleStartRef.current) {
+      idleMsRef.current += Date.now() - idleStartRef.current;
+      idleStartRef.current = null;
+    }
+    const endTimestamp = Date.now();
+    const timeSpentSec = Math.max(30, Math.round((endTimestamp - startRef.current) / 1000));
     const updatedPerformance = updatePerformanceSnapshot(performanceSnapshot, { timeSpentSec });
     const wasFirstCompletion = !existingCompletedIds.includes(lesson.id);
     let unlocked: UnlockedCollectible[] = [];
@@ -188,12 +229,27 @@ export default function LessonView({
         note: reflection.trim(),
         unlockedCollectibles: unlocked,
       });
+      const idleSec = Math.max(0, Math.round(idleMsRef.current / 1000));
+      void recordReplayTimeTracking(
+        {
+          activityType: "lesson",
+          lessonId: lesson.id,
+          moduleId,
+          startTimestamp: startRef.current,
+          endTimestamp,
+          timeSpentSec,
+          idleSec,
+          responseTimes: [...responseTimesRef.current],
+        },
+        ownerId,
+      );
       setBusy(false);
     }
   };
 
   const handleNextScreen = () => {
     if (isLastScreen) return;
+    registerStepDuration();
     setCurrentScreenIndex((prev) => Math.min(prev + 1, totalScreens - 1));
     setQuizAnswerIndex(null);
     setQuizResult(null);

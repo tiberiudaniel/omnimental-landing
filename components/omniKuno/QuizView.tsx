@@ -8,6 +8,7 @@ import { getOmniKunoQuiz } from "@/lib/omniKunoQuizBank";
 import { updatePerformanceSnapshot, type KunoPerformanceSnapshot } from "@/lib/omniKunoAdaptive";
 import { useI18n } from "@/components/I18nProvider";
 import { asDifficulty, DIFFICULTY_STYLES } from "./difficulty";
+import { recordReplayTimeTracking } from "@/lib/replay/replayTelemetry";
 
 export type QuizViewProps = {
   areaKey: OmniKunoModuleId;
@@ -44,28 +45,67 @@ export default function QuizView({
   const [selection, setSelection] = useState<Record<string, string>>({});
   const [completed, setCompleted] = useState(existingCompletedIds.includes(lesson.id));
   const startRef = useRef(Date.now());
+  const responseTimesRef = useRef<number[]>([]);
+  const interactionRef = useRef(Date.now());
+  const idleMsRef = useRef(0);
+  const idleStartRef = useRef<number | null>(null);
   useEffect(() => {
     setScore(null);
     setSelection({});
     setCompleted(existingCompletedIds.includes(lesson.id));
     startRef.current = Date.now();
+    responseTimesRef.current = [];
+    interactionRef.current = Date.now();
+    idleMsRef.current = 0;
+    idleStartRef.current = null;
   }, [existingCompletedIds, lesson.id]);
   const questions = useMemo(() => {
     if (!lesson.quizTopicKey) return [];
     const quiz = getOmniKunoQuiz(lesson.quizTopicKey);
     return quiz?.questions ?? [];
   }, [lesson.quizTopicKey]);
+  const noteInteractionDuration = () => {
+    const now = Date.now();
+    responseTimesRef.current.push(Math.max(0, now - interactionRef.current));
+    interactionRef.current = now;
+  };
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const handleVisibility = () => {
+      if (document.hidden) {
+        idleStartRef.current = Date.now();
+      } else if (idleStartRef.current) {
+        idleMsRef.current += Date.now() - idleStartRef.current;
+        idleStartRef.current = null;
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (idleStartRef.current) {
+        idleMsRef.current += Date.now() - idleStartRef.current;
+        idleStartRef.current = null;
+      }
+    };
+  }, []);
 
   const handleSubmit = async () => {
     if (busy || !questions.length || completed) return;
     setBusy(true);
     try {
+      noteInteractionDuration();
+      if (idleStartRef.current) {
+        idleMsRef.current += Date.now() - idleStartRef.current;
+        idleStartRef.current = null;
+      }
+      const endTimestamp = Date.now();
       const total = questions.length;
       const correct = questions.filter((q) => selection[q.id] === q.correctAnswer).length;
       const pct = Math.round((correct / Math.max(1, total)) * 100);
       setScore(pct);
       const merged = Array.from(new Set([...existingCompletedIds, lesson.id]));
-      const timeSpentSec = Math.max(30, Math.round((Date.now() - startRef.current) / 1000));
+      const timeSpentSec = Math.max(30, Math.round((endTimestamp - startRef.current) / 1000));
       const updatedPerformance = updatePerformanceSnapshot(performanceSnapshot, { score: pct, timeSpentSec });
       const xpReward = getQuizXp(pct);
       const wasFirstCompletion = !existingCompletedIds.includes(lesson.id);
@@ -81,6 +121,20 @@ export default function QuizView({
       setCompleted(true);
       applyKunoXp(areaKey, xpReward);
       onCompleted?.(lesson.id, { score: pct, timeSpentSec, updatedPerformance });
+      const idleSec = Math.max(0, Math.round(idleMsRef.current / 1000));
+      void recordReplayTimeTracking(
+        {
+          activityType: "quiz",
+          lessonId: lesson.id,
+          moduleId,
+          startTimestamp: startRef.current,
+          endTimestamp,
+          timeSpentSec,
+          idleSec,
+          responseTimes: [...responseTimesRef.current],
+        },
+        ownerId,
+      );
     } finally {
       setBusy(false);
     }
@@ -117,7 +171,11 @@ export default function QuizView({
                     name={question.id}
                     value={option.value}
                     checked={selection[question.id] === option.value}
-                    onChange={() => setSelection((prev) => ({ ...prev, [question.id]: option.value }))}
+                    onChange={() => {
+                      if (completed) return;
+                      setSelection((prev) => ({ ...prev, [question.id]: option.value }));
+                      noteInteractionDuration();
+                    }}
                   />
                   <span>{option.label}</span>
                 </label>
