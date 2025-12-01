@@ -77,15 +77,14 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
             <button
               type="button"
               onClick={onStart}
-              className="inline-flex w-full items-center justify-center rounded-[12px] border border-transparent px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-bg-paper)] transition focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] sm:w-auto"
-              style={{ background: "linear-gradient(135deg,var(--omni-energy),var(--omni-energy-soft))" }}
+              className="omni-btn-ghost w-full text-[11px] font-semibold uppercase tracking-[0.25em] sm:w-auto"
             >
               {buttonLabel}
             </button>
             <button
               type="button"
               onClick={() => router.push(user && !user.isAnonymous ? "/progress" : "/auth")}
-              className="inline-flex w-full items-center justify-center rounded-[12px] border border-[var(--omni-border-soft)] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] sm:w-auto"
+              className="omni-btn-ghost w-full text-[11px] font-semibold uppercase tracking-[0.25em] sm:w-auto"
             >
               {lang === "ro" ? "Am cont" : "I have an account"}
             </button>

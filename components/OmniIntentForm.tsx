@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useProfile } from "./ProfileProvider";
 import { useProgressFacts } from "./useProgressFacts";
 import { buildIndicatorSummary, INDICATOR_LABELS, type IndicatorChartKey, type IndicatorChartValues } from "@/lib/indicators";
@@ -214,7 +214,8 @@ export default function OmniIntentForm({ lang, onOpenJournal, activeJournalSourc
                     max={10}
                     value={v}
                     onChange={(event) => updateArray(key, index, Number(event.target.value))}
-                    className="w-full accent-[var(--omni-ink)]"
+                    className="omni-range"
+                    style={{ "--range-progress": `${(v / 10) * 100}%` } as CSSProperties}
                   />
                 </div>
                 <div className={`w-16 text-right text-sm font-semibold ${valueClass}`}>{v} / 10</div>

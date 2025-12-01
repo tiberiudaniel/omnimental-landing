@@ -31,6 +31,7 @@ import { getPrimaryRecommendation } from "@/lib/recommendations";
 import FirstOfferPanel from "@/components/recommendations/FirstOfferPanel";
 import { choosePrimaryProduct, inferBudgetLevelFromIntent } from "@/lib/primaryProduct";
 import { useAuth } from "@/components/AuthProvider";
+import { PrimaryButton, SecondaryButton } from "@/components/PrimaryButton";
 // useState already imported above
 
 const STAGE_LABELS: Record<string, string> = {
@@ -54,7 +55,7 @@ function RecommendationContent() {
   const { user } = useAuth();
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [arrowY, setArrowY] = useState<number | null>(null);
+  const [, setArrowY] = useState<number | null>(null);
   const allowGuest = Boolean(search?.get("demo") || search?.get("e2e") === "1");
   const hasFullAccount = Boolean(user && !user.isAnonymous);
   const needsAccount = !hasFullAccount && !allowGuest;
@@ -364,20 +365,20 @@ function RecommendationContent() {
                 : "You can see your recommended direction as a guest, but to keep your path, journal, and next steps over time, you’ll need an OmniMental account."}
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <button
+              <SecondaryButton
                 type="button"
                 onClick={() => router.push("/?step=cards")}
-                className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
+                className="text-[11px] uppercase tracking-[0.25em]"
               >
                 {lang === "ro" ? "Reia wizardul" : "Resume wizard"}
-              </button>
-              <button
+              </SecondaryButton>
+              <PrimaryButton
                 type="button"
                 onClick={redirectToAuth}
-                className="inline-flex items-center justify-center rounded-[10px] bg-[var(--omni-ink)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-bg-paper)] transition hover:bg-[var(--omni-energy-soft)]"
+                className="text-[11px] uppercase tracking-[0.25em]"
               >
                 {lang === "ro" ? "Creează cont" : "Create account"}
-              </button>
+              </PrimaryButton>
             </div>
           </section>
         ) : null}
@@ -389,50 +390,47 @@ function RecommendationContent() {
                   ? "Pentru a vedea recomandarea completă, alege modul în care vrei să continui (individual sau grup)."
                   : "To view your full recommendation, choose how you want to continue (individual or group)."}
               </p>
-              <button
+              <SecondaryButton
                 type="button"
                 onClick={() => {
                   const url = new URL(window.location.origin + "/choose");
                   url.searchParams.set("from", "reco");
                   router.push(url.pathname + url.search);
                 }}
-                className="shrink-0 rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
+                className="shrink-0 text-[11px] uppercase tracking-[0.25em]"
               >
                 {lang === "ro" ? "Alege formatul" : "Choose format"}
-              </button>
+              </SecondaryButton>
             </div>
           </div>
         ) : null}
-
-        {/* Hero + CTA */}
-        <div className="mx-auto flex max-w-4xl flex-col gap-3 text-center">
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
-            OmniMental
-          </p>
-          <h1 className="text-3xl font-semibold text-[#2C1F18]">
-            {pageTitle}
-          </h1>
-          <p className="text-sm text-[var(--omni-ink-soft)]">{pageSubtitle}</p>
-          <div className="mt-1 flex justify-center">
-            <Link
-              href="/experience-onboarding?flow=initiation&step=welcome&from=recommendation"
-              className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
-              data-testid="reco-initiation-cta"
-            >
-              {lang === 'ro' ? 'Vreau să testez OmniMental' : 'I want to try OmniMental'}
-            </Link>
-          </div>
+        <div className="w-full max-w-5xl mx-auto px-4">
+          <section className="omni-card rounded-3xl p-6 md:p-7 mb-8 space-y-3 text-center">
+            <p className="text-xs md:text-[11px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">OmniMental</p>
+            <h1 className="text-xl md:text-2xl font-semibold text-[var(--omni-ink)]">{pageTitle}</h1>
+            <p className="text-sm text-[var(--omni-ink-soft)]">{pageSubtitle}</p>
+            <div className="mt-2 flex justify-center">
+              <PrimaryButton
+                shape="pill"
+                data-testid="reco-initiation-cta"
+                className="uppercase tracking-[0.2em] text-[12px]"
+                asChild
+              >
+                <Link href="/experience-onboarding?flow=initiation&step=welcome&from=recommendation">
+                  {lang === "ro" ? "Vreau să testez OmniMental" : "I want to try OmniMental"}
+                </Link>
+              </PrimaryButton>
+            </div>
+          </section>
         </div>
 
-        {/* Stack + detail: istoric recomandări + ultima recomandare activă (mutat imediat după hero) */}
+        <div className="w-full max-w-5xl mx-auto px-4 space-y-8">
+        {/* Stack + detail */}
         {hasStack ? (
-          <section
-            className="mx-auto mt-8 w-full max-w-5xl rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/90 px-6 py-6 shadow-[0_18px_40px_rgba(0,0,0,0.05)] md:px-10 md:py-7"
-            data-testid="debug-stack-section"
-          >
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold text-[var(--omni-ink)]">
-                {lang === "ro" ? "Recomandari" : "Your recommendations"}
+          <section className="space-y-6" data-testid="debug-stack-section">
+            <div className="omni-panel-soft rounded-3xl p-6 md:p-7 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base md:text-lg font-semibold text-[var(--omni-ink)]">
+                {lang === "ro" ? "Recomandări" : "Your recommendations"}
               </h2>
               <RecommendationFilters
                 value={filter}
@@ -463,9 +461,8 @@ function RecommendationContent() {
               />
             </div>
 
-            <div className="grid items-stretch gap-6 md:grid-cols-[minmax(0,0.42fr)_auto_minmax(0,0.58fr)]">
-              {/* STÂNGA: stiva de carduri */}
-              <div className="pl-5 pr-5 pt-3 md:pt-4 border-b border-[var(--omni-border-soft)] md:border-b-0 md:border-l md:border-r">
+            <div className="grid gap-5 md:grid-cols-[minmax(0,0.46fr)_minmax(0,0.54fr)]">
+              <div className="omni-panel-soft rounded-3xl p-6 md:p-7">
                 {recLoading ? (
                   <div className="space-y-3">
                     <div className="h-10 w-full rounded-2xl bg-[var(--omni-bg-paper)]" />
@@ -481,34 +478,26 @@ function RecommendationContent() {
                   />
                 )}
               </div>
-
-              {/* MIJLOC: săgeată între panouri (doar desktop) */}
-              <div className="relative hidden md:block text-[11px] text-[var(--omni-muted)]">
-                <div
-                  className="pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-1/2 select-none"
-                  style={{ top: typeof arrowY === 'number' ? arrowY : 0 }}
-                >
-                  <div className="flex flex-col items-center gap-1">
-                    <svg key={`arrow-${arrowY ?? 0}`} width="22" height="12" viewBox="0 0 22 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden className={'animate-pulse'}>
-                      <path d="M1 6H19" stroke="#A08F82" strokeWidth="1.5" strokeLinecap="round"/>
-                      <path d="M13 1L19 6L13 11" stroke="#A08F82" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
+              <div className="space-y-6">
+                <div className="omni-card rounded-3xl p-6 md:p-7">
+                  {recLoading ? (
+                    <div className="space-y-3">
+                      <div className="h-6 w-32 bg-[var(--omni-bg-paper)]" />
+                      <div className="h-5 w-56 bg-[var(--omni-bg-paper)]" />
+                      <div className="h-20 w-full bg-[var(--omni-bg-paper)]" />
+                      <div className="h-10 w-32 bg-[var(--omni-bg-paper)]" />
+                    </div>
+                  ) : (
+                    <RecommendationDetailPanel item={activeRec} />
+                  )}
                 </div>
-              </div>
-
-              {/* DREAPTA: panou de detalii */}
-              <div className="pt-4 md:pt-0 md:pl-5">
-                {recLoading ? (
-                  <div className="space-y-3">
-                    <div className="h-6 w-32 bg-[var(--omni-bg-paper)]" />
-                    <div className="h-5 w-56 bg-[var(--omni-bg-paper)]" />
-                    <div className="h-20 w-full bg-[var(--omni-bg-paper)]" />
-                    <div className="h-10 w-32 bg-[var(--omni-bg-paper)]" />
-                  </div>
-                ) : (
-                  <RecommendationDetailPanel item={activeRec} />
-                )}
+                <div className="omni-panel-soft rounded-3xl p-6 md:p-7 text-[var(--omni-muted)]">
+                  <p className="text-sm">
+                    {lang === "ro"
+                      ? "Aplică recomandarea principală și revino pentru actualizări bazate pe progres."
+                      : "Apply your primary recommendation and return for updates as progress shifts."}
+                  </p>
+                </div>
               </div>
             </div>
           </section>
@@ -530,8 +519,6 @@ function RecommendationContent() {
           />
         ) : null}
 
-        
-
         {/* Continuare blândă: ExperienceStep */}
         {!isPublicTier && profile?.id ? (
           <ExperienceStep
@@ -539,6 +526,7 @@ function RecommendationContent() {
             onContinue={() => router.push("/progress")}
           />
         ) : null}
+        </div>
         </div>
       </AppShell>
       <MenuOverlay
@@ -586,13 +574,38 @@ function PublicRecommendationView({ lang }: { lang: string }) {
 
 function PublicOrCachedView({ lang }: { lang: string }) {
   const { s } = useTStrings();
-  const [cached] = useState<ReturnType<typeof readRecommendationCache> | null>(() => {
+  const [cached, setCached] = useState<ReturnType<typeof readRecommendationCache> | null>(() => {
+    if (typeof window === "undefined") return null;
     try {
       return readRecommendationCache() ?? null;
     } catch {
       return null;
     }
   });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    const update = () => {
+      if (cancelled) return;
+      try {
+        setCached(readRecommendationCache() ?? null);
+      } catch {
+        setCached(null);
+      }
+    };
+    const raf = window.requestAnimationFrame(update);
+    const listener: EventListener = () => {
+      window.requestAnimationFrame(update);
+    };
+    window.addEventListener("storage", listener);
+    window.addEventListener("recommendation:cache-update", listener);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("storage", listener);
+      window.removeEventListener("recommendation:cache-update", listener);
+    };
+  }, []);
 
   if (!cached) {
     return <PublicRecommendationView lang={lang} />;
@@ -820,7 +833,7 @@ function MemberRecommendationView({
       </section>
 
       {/* Rezumat scoruri psihometrice */}
-      <section className="space-y-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
+      <section className="omni-panel-soft rounded-3xl p-6 md:p-7 space-y-3">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
           {s("recommendationMemberSummaryHeading", "Rezumat scoruri")}
         </p>
@@ -828,7 +841,7 @@ function MemberRecommendationView({
           {evaluationRows.map((row) => (
             <div
               key={row.label}
-              className="rounded-[10px] border border-[#F5EBE0] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink)]"
+              className="rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink)]"
             >
               <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
                 {row.label}
@@ -842,7 +855,7 @@ function MemberRecommendationView({
       </section>
 
       {/* Quest-uri prioritare */}
-      <section className="space-y-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
+      <section className="omni-panel-soft rounded-3xl p-6 md:p-7 space-y-3">
         <header className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
             {s("recommendationMemberQuestsTitle", "Quest-uri prioritare")}

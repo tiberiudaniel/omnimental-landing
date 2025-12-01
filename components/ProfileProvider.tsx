@@ -7,9 +7,10 @@ import {
   useMemo,
   useState,
 } from "react";
-import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, setDoc, Timestamp } from "firebase/firestore";
 import { getDb } from "../lib/firebase";
 import { useAuth } from "./AuthProvider";
+import type { MissionSummary } from "@/lib/hooks/useMissionPerspective";
 
 export type AccessTier = "public" | "member" | "persona";
 
@@ -22,6 +23,7 @@ type ProfileRecord = {
   selection?: "none" | "individual" | "group";
   simulatedInsights?: string[];
   experienceOnboardingCompleted?: boolean;
+  activeMission?: MissionSummary | null;
 };
 
 type ProfileContextValue = {
@@ -45,6 +47,7 @@ async function ensureProfileDocument(uid: string, email: string | null | undefin
     accessTier: "public" as const,
     selection: "none" as const,
     experienceOnboardingCompleted: false as const,
+    activeMission: null as MissionSummary | null,
   };
   await setDoc(profileRef, payload);
   return payload;
@@ -59,48 +62,55 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     if (authLoading) {
       return;
     }
+    let cancelled = false;
     if (!user) {
-      setProfile(null);
-      setLoading(false);
-      return;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setProfile(null);
+        setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
 
     let active = true;
-    const fetchProfile = async () => {
+    let unsubscribe: (() => void) | null = null;
+    const listen = async () => {
       setLoading(true);
       try {
-        const data = await ensureProfileDocument(user.uid, user.email, user.displayName);
-        if (active) {
-          const selectionValue = ((data as { selection?: "none" | "individual" | "group" }).selection ?? "none") as
-            | "none"
-            | "individual"
-            | "group";
-          const simulatedInsights = Array.isArray((data as { simulatedInsights?: unknown }).simulatedInsights)
-            ? ((data as { simulatedInsights?: string[] }).simulatedInsights)
-            : undefined;
-          setProfile({
-            id: user.uid,
-            name: data.name ?? user.email ?? "Utilizator",
-            email: data.email ?? user.email ?? "",
-            createdAt: data.createdAt,
-            accessTier: data.accessTier ?? "public",
-            selection: selectionValue,
-            simulatedInsights,
-            experienceOnboardingCompleted: (data as { experienceOnboardingCompleted?: boolean }).experienceOnboardingCompleted ?? false,
-          });
-        }
+        await ensureProfileDocument(user.uid, user.email, user.displayName);
+        if (!active) return;
+        const profileRef = doc(db, "userProfiles", user.uid);
+        unsubscribe = onSnapshot(
+          profileRef,
+          (snapshot) => {
+            if (!snapshot.exists()) {
+              if (!active) return;
+              setProfile({
+                id: user.uid,
+                name: user.email ?? "Utilizator",
+                email: user.email ?? "",
+                accessTier: "public",
+                selection: "none",
+                activeMission: null,
+              });
+              setLoading(false);
+              return;
+            }
+            if (!active) return;
+            const data = snapshot.data() as Omit<ProfileRecord, "id"> | undefined;
+            setProfile(mapProfilePayload(user.uid, user, data));
+            setLoading(false);
+          },
+          (error) => {
+            console.error("profile snapshot failed", error);
+            if (!active) return;
+            setLoading(false);
+          },
+        );
       } catch (error) {
-        try {
-          const search = typeof window !== 'undefined' ? window.location.search : '';
-          if (search.includes('e2e=1') || search.includes('demo=1')) {
-            console.warn("profile load failed", error);
-          } else {
-            // Keep default severity outside test/demo
-            console.error("profile load failed", error);
-          }
-        } catch {
-          console.error("profile load failed", error);
-        }
+        console.error("profile load failed", error);
         if (active) {
           setProfile({
             id: user.uid,
@@ -108,19 +118,19 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
             email: user.email ?? "",
             accessTier: "public",
             selection: "none",
+            activeMission: null,
           });
-        }
-      } finally {
-        if (active) {
           setLoading(false);
         }
       }
     };
 
-    fetchProfile().catch(() => setLoading(false));
+    listen().catch(() => setLoading(false));
 
     return () => {
+      cancelled = true;
       active = false;
+      unsubscribe?.();
     };
   }, [authLoading, user]);
 
@@ -141,4 +151,33 @@ export function useProfile() {
     throw new Error("useProfile must be used within a ProfileProvider");
   }
   return context;
+}
+
+function mapProfilePayload(
+  uid: string,
+  user: { email: string | null; displayName?: string | null },
+  data: Omit<ProfileRecord, "id"> | undefined,
+): ProfileRecord {
+  const selectionValue = ((data as { selection?: "none" | "individual" | "group" } | undefined)?.selection ?? "none") as
+    | "none"
+    | "individual"
+    | "group";
+  const simulatedInsights = Array.isArray((data as { simulatedInsights?: unknown } | undefined)?.simulatedInsights)
+    ? ((data as { simulatedInsights?: string[] }).simulatedInsights)
+    : undefined;
+  const mission =
+    ((data as { activeMission?: MissionSummary | null } | undefined)?.activeMission as MissionSummary | null | undefined) ??
+    null;
+  return {
+    id: uid,
+    name: data?.name ?? user.displayName ?? user.email ?? "Utilizator OmniMental",
+    email: data?.email ?? user.email ?? "",
+    createdAt: data?.createdAt,
+    accessTier: data?.accessTier ?? "public",
+    selection: selectionValue,
+    simulatedInsights,
+    experienceOnboardingCompleted: (data as { experienceOnboardingCompleted?: boolean } | undefined)
+      ?.experienceOnboardingCompleted ?? false,
+    activeMission: mission,
+  };
 }

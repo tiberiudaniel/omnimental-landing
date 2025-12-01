@@ -3,7 +3,6 @@
 import Typewriter from "@/components/onboarding/Typewriter";
 import { useI18n } from "@/components/I18nProvider";
 import { OmniCard } from "@/components/OmniCard";
-import { PrimaryButton } from "@/components/PrimaryButton";
 
 export default function StepProjection({ onGoTraining }: { onGoTraining: () => void }) {
   const { lang } = useI18n();
@@ -19,12 +18,12 @@ export default function StepProjection({ onGoTraining }: { onGoTraining: () => v
         <Typewriter text={lang === 'ro' ? "Proiecție: în câteva zile simți primele schimbări; în câteva săptămâni apar automatismele; în câteva luni ritmul devine natural." : "Projection: days — first change; weeks — new habits; months — natural cadence."} />
       </OmniCard>
       <div className="flex justify-end">
-        <PrimaryButton
+        <button
           onClick={onGoTraining}
-          className="px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
         >
           {lang === 'ro' ? 'Mergi la Antrenament' : 'Go to Training'}
-        </PrimaryButton>
+        </button>
       </div>
     </section>
   );

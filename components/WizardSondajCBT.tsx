@@ -166,7 +166,7 @@ export default function WizardSondajCBT({ userId, onContinue }: { userId: string
             type="button"
             disabled={busy}
             onClick={submit}
-            className="theme-btn-outline rounded-[10px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] disabled:opacity-60"
+            className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em] disabled:opacity-60"
             data-testid="cbt-continue"
           >
             {D('btn','Continuă','Continue')}

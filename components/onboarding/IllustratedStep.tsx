@@ -49,7 +49,6 @@ export default function IllustratedStep({
         sizes="(max-width: 768px) 100vw, 40vw"
         priority={imagePriority}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.45),_rgba(0,0,0,0.05))]" aria-hidden="true" />
       {imageTintClassName ? (
         <div className={`pointer-events-none absolute inset-0 ${imageTintClassName}`} aria-hidden="true" />
       ) : null}

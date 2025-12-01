@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
@@ -131,10 +132,15 @@ export default function SiteHeader({
     return age < thresholdMs;
   })();
 
-  const headerPad = "p-1.5";
+  const activeMission =
+    ((profile as { activeMission?: { id?: string | null; title?: string | null } | null } | null)?.activeMission) ?? null;
+  const headerPad = "px-3 py-2";
   const bottomMarginTop = "mt-1";
   const titleSize = "text-lg";
+  const headerButtonBase =
+    "rounded-full px-2 py-1 text-[var(--omni-ink-soft)] transition-colors border border-transparent hover:bg-[color-mix(in_srgb,var(--omni-energy-tint)_70%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--omni-energy-tint)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--omni-header-bg)]";
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [initiationEngagement, setInitiationEngagement] = useState({ visits: 0, timeMs: 0 });
   const actionsRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -146,9 +152,50 @@ export default function SiteHeader({
     return () => document.removeEventListener('mousedown', onDoc);
   }, [actionsOpen]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const VISIT_KEY = "omnimental_init_visits";
+    const TIME_KEY = "omnimental_init_time_ms";
+    const SESSION_KEY = "omnimental_init_session";
+
+    let visits = Number(window.localStorage.getItem(VISIT_KEY) ?? "0");
+    if (!Number.isFinite(visits) || visits < 0) visits = 0;
+    if (!window.sessionStorage.getItem(SESSION_KEY)) {
+      visits += 1;
+      window.localStorage.setItem(VISIT_KEY, String(visits));
+      window.sessionStorage.setItem(SESSION_KEY, "1");
+    }
+
+    let timeMs = Number(window.localStorage.getItem(TIME_KEY) ?? "0");
+    if (!Number.isFinite(timeMs) || timeMs < 0) timeMs = 0;
+    setInitiationEngagement({ visits, timeMs });
+
+    let lastTick = Date.now();
+    const interval = window.setInterval(() => {
+      const now = Date.now();
+      const delta = now - lastTick;
+      lastTick = now;
+      timeMs += delta;
+      window.localStorage.setItem(TIME_KEY, String(timeMs));
+      setInitiationEngagement({ visits, timeMs });
+    }, 5000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const shouldDimInitiere = initiationEngagement.visits >= 5 || initiationEngagement.timeMs >= 60 * 60 * 1000;
+
   return (
-    <header className={`relative w-full border-b border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] ${headerPad} shadow`}>
-      <div className="pointer-events-none absolute inset-0 bg-[var(--omni-surface-card)]" aria-hidden />
+    <header
+      className={clsx("sticky top-0 z-40 border-b", headerPad)}
+      style={{
+        backgroundColor: "var(--omni-header-bg)",
+        borderColor: "var(--omni-border-soft)",
+        boxShadow: "0 8px 22px rgba(60, 40, 20, 0.06)",
+      }}
+    >
       <div className="relative z-10">
       {/* Top row: Auth | Guest | RO EN (slightly shifted left, tighter) */}
       <div className="flex items-center justify-end gap-1.5 text-[10px] text-[var(--omni-ink-soft)]">
@@ -167,7 +214,7 @@ export default function SiteHeader({
                   router.push('/progress');
                 }
           }
-          className="hover:text-[var(--omni-energy)]"
+          className={clsx(headerButtonBase, "text-[10px]")}
           aria-pressed={isLoggedIn}
           title={isLoggedIn ? (typeof signOutLabel === "string" ? (signOutLabel as string) : "Sign out") : (typeof signInLabel === "string" ? (signInLabel as string) : "Sign in")}
         >
@@ -180,7 +227,11 @@ export default function SiteHeader({
           <button
             type="button"
             onClick={() => setLang("ro")}
-            className={`${lang === "ro" ? "font-bold text-[var(--omni-ink)]" : "opacity-70"} hover:text-[var(--omni-energy)] hover:underline transition-colors`}
+            className={clsx(
+              headerButtonBase,
+              "text-[10px]",
+              lang === "ro" ? "font-semibold text-[var(--omni-ink)]" : "opacity-70",
+            )}
             aria-pressed={lang === "ro"}
           >
             RO
@@ -189,7 +240,11 @@ export default function SiteHeader({
           <button
             type="button"
             onClick={() => setLang("en")}
-            className={`${lang === "en" ? "font-bold text-[var(--omni-ink)]" : "opacity-70"} hover:text-[var(--omni-energy)] hover:underline transition-colors`}
+            className={clsx(
+              headerButtonBase,
+              "text-[10px]",
+              lang === "en" ? "font-semibold text-[var(--omni-ink)]" : "opacity-70",
+            )}
             aria-pressed={lang === "en"}
           >
             EN
@@ -209,7 +264,7 @@ export default function SiteHeader({
             <Image src="/assets/logo.jpg" alt="OmniMental logo" width={60} height={28} priority style={{ height: "auto", width: "auto" }} />
             <span className="flex flex-col leading-tight text-neutral-dark">
               <span className={`${titleSize} font-semibold tracking-wide`}>OmniMental</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+              <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-[var(--omni-muted)]">
                 {lang === "ro" ? "Dezvoltă-ți inteligența adaptativă" : "Develop your adaptive intelligence"}
               </span>
             </span>
@@ -219,7 +274,7 @@ export default function SiteHeader({
             <Image src="/assets/logo.jpg" alt="OmniMental logo" width={60} height={28} priority style={{ height: "auto", width: "auto" }} />
             <span className="flex flex-col leading-tight text-neutral-dark">
               <span className={`${titleSize} font-semibold tracking-wide`}>OmniMental</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+              <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-[var(--omni-muted)]">
                 {lang === "ro" ? "Dezvoltă-ți inteligența adaptativă" : "Develop your adaptive intelligence"}
               </span>
             </span>
@@ -229,18 +284,24 @@ export default function SiteHeader({
           <nav className="flex items-center gap-x-4 md:gap-x-6 mt-0 md:mt-[2px] justify-center">
           <Link
             href="/antrenament"
-            className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-              isActive("/antrenament") ? "border border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]"
-            }`}
+            className={clsx(
+              "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
+              isActive("/antrenament")
+                ? "omni-tab-active"
+                : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
+            )}
             aria-current={isActive("/antrenament") ? "page" : undefined}
           >
             {evaluationLabel}
           </Link>
           <Link
             href="/progress"
-            className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-              isActive("/progress") ? "border border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]"
-            }`}
+            className={clsx(
+              "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
+              isActive("/progress")
+                ? "omni-tab-active"
+                : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
+            )}
             aria-current={isActive("/progress") ? "page" : undefined}
           >
             {typeof t("navProgres") === "string" ? (t("navProgres") as string) : progressLabel}
@@ -248,9 +309,12 @@ export default function SiteHeader({
           {/* Sensei tab removed */}
           <Link
             href="/recommendation"
-            className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-              isActive("/recommendation") ? "border border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]"
-            }`}
+            className={clsx(
+              "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
+              isActive("/recommendation")
+                ? "omni-tab-active"
+                : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
+            )}
             aria-current={isActive("/recommendation") ? "page" : undefined}
           >
             {typeof t("navRecommendation") === "string" ? (t("navRecommendation") as string) : (lang === "ro" ? "Recomandări" : "Recommendations")}
@@ -258,9 +322,13 @@ export default function SiteHeader({
           {showOnboardingNav ? (
             <Link
               href={{ pathname: "/experience-onboarding", query: { flow: "initiation", step: "welcome" } }}
-              className={`inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition ${
-                isActive("/experience-onboarding") ? "border border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]"
-              }`}
+              className={clsx(
+                "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
+                shouldDimInitiere ? "opacity-20 hover:opacity-30" : null,
+                isActive("/experience-onboarding")
+                  ? "omni-tab-active"
+                  : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
+              )}
               aria-current={isActive("/experience-onboarding") ? "page" : undefined}
             >
               {typeof t("navOnboarding") === "string" ? (t("navOnboarding") as string) : (lang === "ro" ? "Onboarding" : "Onboarding")}
@@ -269,6 +337,18 @@ export default function SiteHeader({
           </nav>
         )}
         <div className="flex items-center justify-end gap-2">
+          {!wizardMode && profile?.id && activeMission ? (
+            <button
+              type="button"
+              onClick={() => {
+                const href = activeMission?.id ? `/mission-map?missionId=${encodeURIComponent(activeMission.id)}` : "/mission-map";
+                router.push(href);
+              }}
+              className="inline-flex items-center rounded-full bg-[var(--omni-surface-card)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink)] transition hover:bg-[var(--omni-bg-paper)]"
+            >
+              Harta mea
+            </button>
+          ) : null}
           {!wizardMode && profile?.id && (
             <JournalTrigger
               userId={profile.id}

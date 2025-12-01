@@ -11,7 +11,6 @@ import type { OmniKunoTopicKey } from "@/lib/omniKunoTypes";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import { OmniCard } from "@/components/OmniCard";
-import { PrimaryButton } from "@/components/PrimaryButton";
 
 type MiniMeta = {
   topicKey?: string;
@@ -175,14 +174,14 @@ export default function StepMiniTest({
         <p className="text-sm" style={{ color: "var(--text-main)" }}>
           {lang === 'ro' ? 'Scor curent' : 'Current score'}: {raw}/{max}
         </p>
-        <PrimaryButton
+        <button
           disabled={!canSubmit}
           onClick={handleSubmit}
           data-testid="eo-submit"
-          className="px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
+          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {lang === 'ro' ? 'Vezi scorul' : 'See score'}
-        </PrimaryButton>
+        </button>
       </div>
     </section>
   );

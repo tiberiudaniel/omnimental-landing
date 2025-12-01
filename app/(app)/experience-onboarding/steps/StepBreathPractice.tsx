@@ -61,13 +61,13 @@ export default function StepBreathPractice({ userId, onDone, onSkip }: { userId?
               }
               onDone();
             }}
-            className="theme-btn-solid rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+            className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
           >
             {lang === 'ro' ? 'Am terminat' : 'Done'}
           </button>
           <button
             onClick={onSkip}
-            className="theme-btn-outline rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+            className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
           >
             {lang === 'ro' ? 'Sari peste' : 'Skip'}
           </button>

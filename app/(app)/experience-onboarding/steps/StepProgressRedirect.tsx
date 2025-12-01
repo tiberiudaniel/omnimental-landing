@@ -31,7 +31,7 @@ export default function StepProgressRedirect({ onRedirect }: { onRedirect: () =>
       <div className="mt-4">
         <button
           onClick={onRedirect}
-          className="theme-btn-outline rounded-[10px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
         >
           {lang === 'ro' ? 'Continuă acum' : 'Continue now'}
         </button>

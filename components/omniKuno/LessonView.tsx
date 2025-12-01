@@ -108,12 +108,23 @@ export default function LessonView({
   }, [lang, lesson.center]);
 
   const reflectionStorageKey = useMemo(() => `omnikuno_reflection_${lesson.id}`, [lesson.id]);
+  const progressStorageKey = useMemo(() => `omnikuno_progress_${lesson.id}`, [lesson.id]);
   const reflectionHelperId = `${lesson.id}-reflection-hint`;
 
   useEffect(() => {
-    setDone(existingCompletedIds.includes(lesson.id));
+    const alreadyDone = existingCompletedIds.includes(lesson.id);
+    setDone(alreadyDone);
     startRef.current = Date.now();
-    setCurrentScreenIndex(0);
+    let restoredIndex = 0;
+    if (!alreadyDone && typeof window !== "undefined") {
+      const storedIdx = Number(window.localStorage.getItem(progressStorageKey));
+      if (Number.isFinite(storedIdx) && storedIdx >= 0 && storedIdx < totalScreens) {
+        restoredIndex = storedIdx;
+      }
+    } else if (alreadyDone && typeof window !== "undefined") {
+      window.localStorage.removeItem(progressStorageKey);
+    }
+    setCurrentScreenIndex(restoredIndex);
     setQuizAnswerIndex(null);
     setQuizResult(null);
     if (typeof window !== "undefined") {
@@ -122,7 +133,7 @@ export default function LessonView({
     } else {
       setReflection("");
     }
-  }, [existingCompletedIds, lesson.id, reflectionStorageKey, totalScreens]);
+  }, [existingCompletedIds, lesson.id, progressStorageKey, reflectionStorageKey, totalScreens]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -131,15 +142,21 @@ export default function LessonView({
     }
   }, [reflection, reflectionStorageKey]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(progressStorageKey, String(currentScreenIndex));
+  }, [currentScreenIndex, progressStorageKey]);
+
   const handleComplete = async () => {
     if (busy || done) return;
     if (requiresReflectionInput && reflection.trim().length < reflectionMinChars) return;
     setBusy(true);
+    const merged = Array.from(new Set([...existingCompletedIds, lesson.id]));
+    const timeSpentSec = Math.max(30, Math.round((Date.now() - startRef.current) / 1000));
+    const updatedPerformance = updatePerformanceSnapshot(performanceSnapshot, { timeSpentSec });
+    const wasFirstCompletion = !existingCompletedIds.includes(lesson.id);
+    let unlocked: UnlockedCollectible[] = [];
     try {
-      const merged = Array.from(new Set([...existingCompletedIds, lesson.id]));
-      const timeSpentSec = Math.max(30, Math.round((Date.now() - startRef.current) / 1000));
-      const updatedPerformance = updatePerformanceSnapshot(performanceSnapshot, { timeSpentSec });
-      const wasFirstCompletion = !existingCompletedIds.includes(lesson.id);
       await recordKunoLessonProgress({
         moduleId,
         completedIds: merged,
@@ -150,11 +167,6 @@ export default function LessonView({
         difficulty: difficultyKey,
       });
       applyKunoXp(areaKey, xpReward);
-      setDone(true);
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem(reflectionStorageKey);
-      }
-      let unlocked: UnlockedCollectible[] = [];
       if (ownerId) {
         try {
           unlocked = await maybeUnlockCollectiblesForLesson(ownerId, lesson.id);
@@ -162,13 +174,20 @@ export default function LessonView({
           console.warn("unlock collectibles failed", error);
         }
       }
+    } catch (error) {
+      console.warn("recordKunoLessonProgress failed", error);
+    } finally {
+      setDone(true);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(reflectionStorageKey);
+        window.localStorage.removeItem(progressStorageKey);
+      }
       onCompleted?.(lesson.id, {
         timeSpentSec,
         updatedPerformance,
         note: reflection.trim(),
         unlockedCollectibles: unlocked,
       });
-    } finally {
       setBusy(false);
     }
   };

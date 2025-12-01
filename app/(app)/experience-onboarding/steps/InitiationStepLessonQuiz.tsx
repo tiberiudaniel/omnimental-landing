@@ -118,7 +118,7 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
               type="button"
               onClick={() => setShowSummary(true)}
               disabled={!allAnswered}
-              className="theme-btn-solid rounded-[10px] px-6 py-2 text-sm font-semibold tracking-[0.12em] disabled:cursor-not-allowed disabled:opacity-60"
+              className="omni-btn-ghost text-sm font-semibold tracking-[0.12em] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {lang === 'ro' ? 'Finalizează' : 'Finalize'}
             </button>
@@ -154,14 +154,14 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
             <button
               type="button"
               onClick={submit}
-              className="theme-btn-solid rounded-[10px] px-5 py-2 text-sm font-medium tracking-[0.12em]"
+              className="omni-btn-ghost text-sm font-medium tracking-[0.12em]"
               data-testid="init-lesson-quiz-submit"
             >
               {lang === 'ro' ? 'Mergi la progres' : 'Go to progress'}
             </button>
             <a
               href="/recommendation?from=initiation"
-              className="theme-btn-outline rounded-[10px] px-5 py-2 text-sm font-medium tracking-[0.12em]"
+              className="omni-btn-ghost text-sm font-medium tracking-[0.12em]"
             >
               {lang === 'ro' ? 'Vezi recomandarea ta' : 'See your recommendation'}
             </a>

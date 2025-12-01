@@ -7,7 +7,7 @@ import type { QuestSuggestion } from "../quests";
 import type { SessionType } from "../recommendation";
 import type { DimensionScores } from "../scoring";
 import type { OmniBlock } from "../omniIntel";
-import { resolveModuleId, type OmniKunoModuleId } from "@/config/omniKunoModules";
+import { resolveModuleId, getModuleLabel, getModuleSummary, type OmniKunoModuleId } from "@/config/omniKunoModules";
 import {
   type DeepPartial,
   type ProgressIntentCategories,
@@ -25,6 +25,113 @@ let lastSigTs = 0;
 const MIN_WRITE_INTERVAL_MS = 800; // cooldown between merged writes
 const DEDUPE_WINDOW_MS = 1500; // skip identical merges within this window
 let suppressUntilTs = 0; // when set due to quota, skip writes until this time
+type MissionSummaryPayload = {
+  id: string;
+  title: string;
+  description: string;
+  category?: string | null;
+};
+
+const DEFAULT_MISSION_DESCRIPTION: Record<"ro" | "en", string> = {
+  ro: "Tema prioritară pe care o lucrezi în acest moment.",
+  en: "The priority mission you're focusing on right now.",
+};
+
+const CATEGORY_LABEL_MAP: Record<"ro" | "en", Record<string, string>> = {
+  ro: {
+    clarity: "Claritate mentală",
+    focus: "Claritate mentală",
+    calm: "Echilibru emoțional",
+    balance: "Echilibru emoțional",
+    energy: "Energie & corp",
+    relationships: "Relații & comunicare",
+    relationship: "Relații & comunicare",
+    relatii: "Relații & comunicare",
+    performance: "Performanță",
+    discipline: "Voință & perseverență",
+    willpower_perseverance: "Voință & perseverență",
+    greutate: "Greutate optimă",
+    weight: "Greutate optimă",
+    optimal_weight_management: "Greutate optimă",
+    anxiety: "Anxietate",
+    stress: "Stres",
+    identity: "Identitate",
+  },
+  en: {
+    clarity: "Mental clarity",
+    focus: "Mental clarity",
+    calm: "Emotional balance",
+    balance: "Emotional balance",
+    energy: "Energy & body",
+    relationships: "Relationships & communication",
+    relationship: "Relationships & communication",
+    performance: "Performance",
+    discipline: "Willpower & perseverance",
+    willpower_perseverance: "Willpower & perseverance",
+    greutate: "Optimal weight",
+    weight: "Optimal weight",
+    optimal_weight_management: "Optimal weight",
+    anxiety: "Anxiety",
+    stress: "Stress",
+    identity: "Identity",
+  },
+};
+
+function prettifyMissionLabel(value: string, lang: "ro" | "en"): string {
+  const normalized = value.replace(/[^a-z0-9_]/gi, "").toLowerCase();
+  const mapped = CATEGORY_LABEL_MAP[lang]?.[normalized];
+  if (mapped) return mapped;
+  const clean = value.replace(/[_-]+/g, " ").trim();
+  if (!clean) return lang === "ro" ? "Tema ta prioritară" : "Priority mission";
+  return clean
+    .split(/\s+/)
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+    .join(" ");
+}
+
+function deriveMissionFromIntent(payload: {
+  lang: string;
+  topCategory?: string | null;
+  firstCategory?: string | null;
+  categories?: ProgressIntentCategories;
+  tags?: string[];
+}): MissionSummaryPayload | null {
+  const lang = payload.lang === "en" ? "en" : "ro";
+  const candidates: string[] = [];
+  const pushCandidate = (value?: string | null) => {
+    if (typeof value !== "string") return;
+    const trimmed = value.trim();
+    if (trimmed.length) candidates.push(trimmed);
+  };
+  pushCandidate(payload.topCategory);
+  pushCandidate(payload.firstCategory);
+  if (Array.isArray(payload.categories)) {
+    payload.categories.forEach((cat) => pushCandidate(cat?.category));
+  }
+  if (Array.isArray(payload.tags)) {
+    payload.tags.forEach((tag) => pushCandidate(tag));
+  }
+  let fallback: string | null = null;
+  for (const candidate of candidates) {
+    if (!fallback) fallback = candidate;
+    const moduleId = resolveModuleId(candidate);
+    if (moduleId) {
+      return {
+        id: moduleId,
+        title: getModuleLabel(moduleId, lang),
+        description: getModuleSummary(moduleId, lang),
+        category: candidate,
+      };
+    }
+  }
+  if (!fallback) return null;
+  return {
+    id: fallback.replace(/[^a-z0-9_]/gi, "_").toLowerCase(),
+    title: prettifyMissionLabel(fallback, lang),
+    description: DEFAULT_MISSION_DESCRIPTION[lang],
+    category: fallback,
+  };
+}
 
 async function mergeProgressFact(data: Record<string, unknown>, ownerId?: string | null) {
   if (areWritesDisabled()) {
@@ -227,15 +334,26 @@ export async function recordIntentProgressFact(
   },
   profileId?: string | null,
 ) {
-  return mergeProgressFact(
+  const mission = deriveMissionFromIntent(payload);
+  const ownerHint = profileId ?? null;
+  const uid = await mergeProgressFact(
     {
       intent: {
         ...payload,
         updatedAt: serverTimestamp(),
       },
     },
-    profileId,
+    ownerHint,
   );
+  const resolvedUid = ownerHint ?? uid;
+  if (mission && resolvedUid) {
+    try {
+      await setDoc(doc(getDb(), "userProfiles", resolvedUid), { activeMission: mission }, { merge: true });
+    } catch (error) {
+      console.warn("activeMission write failed", error);
+    }
+  }
+  return uid;
 }
 
 export async function recordMotivationProgressFact(

@@ -197,7 +197,7 @@ export default function InitiationStepOmniScope({ userId, onComplete }: { userId
                   <button
                     disabled={busy || !allTouched}
                     onClick={submit}
-                    className="theme-btn-solid rounded-[999px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
                     data-testid="init-scope-continue"
                   >
                     {lang === 'ro' ? 'Continuă' : 'Continue'}

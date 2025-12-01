@@ -4,71 +4,109 @@
 @tailwind utilities;
 
 :root {
-  /* Backgrounds */
-  --omni-bg-main:   #F2E5D5;
-  --omni-bg-alt:    #D9C3A9;
-  --omni-bg-paper:  #F2F2F0;
+  /* BACKGROUNDS */
+  --omni-bg-main:   #F2E5D5; /* main canvas */
+  --omni-bg-alt:    #D9C3A9; /* mid band, shell edges */
+  --omni-bg-paper:  #F7F3EC; /* large cards / paper */
 
-  /* Surfaces */
-  --omni-surface-card:   #F2F2F0;
-  --omni-surface-strong: #FFFFFF;
-  --omni-header-bg:      #F2F2F0;
+  /* SURFACES */
+  --omni-surface-card:   #F9F5EF; /* standard cards */
+  --omni-surface-strong: #FFFFFF; /* modals / strong panels */
+  --omni-header-bg:      #F7F3EC; /* header band / dropdown */
 
-  /* Typography */
-  --omni-ink:       #171310;
-  --omni-ink-soft:  #4C3A2A;
-  --omni-muted:     #8C6E56;
+  /* TYPOGRAPHY */
+  --omni-ink:      #171310; /* primary text */
+  --omni-ink-soft: #4C3A2A; /* secondary text */
+  --omni-muted:    #BFA07A; /* meta labels */
 
-  /* Links */
-  --omni-link:       #1F4F7A;
-  --omni-link-hover: #163A59;
+  /* ACCENT / ENERGY */
+  --omni-accent-deep: #582015;
+  --omni-accent: #A05937;
+  --omni-accent-soft: #E5B189;
+  --omni-ink-on-accent: #F9F4EE;
 
-  /* Energy accent */
-  --omni-energy:       #842A3B;
-  --omni-energy-soft:  #A3485A;
-  --omni-energy-tint:  #F5DAA7;
+  --omni-energy:       var(--omni-accent-deep);
+  --omni-energy-soft:  var(--omni-accent);
+  --omni-energy-tint:  #F5DAA7;  /* subtle highlights / chips / bars */
 
-  /* Brand */
+  /* BRAND NEUTRAL WARM */
   --omni-brand:       #8C6B42;
-  --omni-brand-soft:  #BFA07A;
-  --omni-brand-deep:  #5F4323;
+  --omni-brand-soft:  #D1AF7D;
+  --omni-brand-deep:  #582015;
 
-  /* States */
+  /* LINKS & INFO – warm, no blue */
+  --omni-link:       var(--omni-accent-deep);
+  --omni-link-hover: var(--omni-accent);
+  --omni-info:       #8C6B42;
+  --omni-info-soft:  #F5E7D2;
+
+  /* STATES */
   --omni-danger:       #662222;
   --omni-danger-deep:  #590202;
   --omni-danger-soft:  #F9E6E6;
-  --omni-success:      #286053;
-  --omni-success-soft: #E0F1EC;
-  --omni-info:         var(--omni-info);
-  --omni-info-soft:    #E2EEF7;
+  --ommi-success:      #286053;
+  --ommi-success-soft: #E0F1EC;
 
-  /* Borders */
-  --omni-border-soft:   #D9C3A9;
+  /* BORDERS */
+  --omni-border-soft:   #E1CCB0;
   --omni-border-strong: #C4A985;
 
-  /* Shadows */
-  --omni-shadow-soft: 0 4px 12px rgba(60, 40, 20, 0.08);
+  /* SHADOWS */
+  --omni-shadow-soft: 0 18px 40px rgba(60, 40, 20, 0.12);
 
-  /* Legacy mappings */
+  /* RADIUS */
+  --omni-radius-card: 18px;
+  --omni-radius-pill: 999px;
+  --omni-radius-chip: 999px;
+
+  /* SPACING – reference only */
+  --omni-space-xs: 6px;
+  --omni-space-sm: 10px;
+  --omni-space-md: 16px;
+  --omni-space-lg: 24px;
+  --omni-space-xl: 32px;
+
+  /* GRADIENTS */
+  --omni-gradient-shell: linear-gradient(
+    to bottom,
+    var(--omni-bg-paper) 0%,
+    var(--omni-bg-alt) 38%,
+    var(--omni-bg-main) 100%
+  );
+
+  --omni-gradient-hero: radial-gradient(
+    circle at top left,
+    rgba(245, 218, 167, 0.55),
+    transparent 60%
+  );
+
+  /* FOCUS RING */
+  --omni-focus-ring: 0 0 0 1px var(--omni-energy-tint), 0 0 0 3px rgba(88, 32, 21, 0.35);
+
+  /* LEGACY MAPPINGS – keep but point them to the new vars */
   --bg-page: var(--omni-bg-main);
   --bg-elevated: var(--omni-bg-alt);
   --bg-card: var(--omni-surface-card);
   --bg-card-soft: var(--omni-surface-card);
   --bg-deep: #C4A985;
+
   --border-subtle: var(--omni-border-soft);
   --border-strong: var(--omni-border-strong);
   --shadow-card: var(--omni-shadow-soft);
+
   --text-main: var(--omni-ink);
   --text-strong: var(--omni-ink);
   --text-muted: var(--omni-muted);
   --text-soft: var(--omni-ink-soft);
   --text-on-deep: var(--omni-surface-strong);
+
   --accent-main: var(--omni-energy);
-  --accent-soft: var(--omni-energy-soft);
-  --accent-strong: var(--omni-brand-deep);
+  --accent-soft: var(--omni-accent-soft);
+  --accent-strong: var(--omni-accent-deep);
   --accent-alt: var(--omni-link);
-  --state-success: var(--omni-success);
-  --state-success-soft: var(--omni-success-soft);
+
+  --state-success: var(--ommi-success);
+  --state-success-soft: var(--ommi-success-soft);
   --state-warning: #C1821C;
   --state-warning-soft: #F8E3BD;
   --state-danger: var(--omni-danger);
@@ -104,6 +142,33 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+.omni-card {
+  background-color: var(--omni-surface-card);
+  border: 1px solid var(--omni-border-soft);
+  border-radius: var(--omni-radius-card);
+  box-shadow: var(--omni-shadow-soft);
+  color: var(--omni-ink);
+}
+
+.omni-card-strong {
+  background-color: var(--omni-surface-strong);
+  border: 1px solid var(--omni-border-soft);
+  border-radius: var(--omni-radius-card);
+  box-shadow: var(--omni-shadow-soft);
+}
+
+.omni-panel-soft {
+  background-color: color-mix(in srgb, var(--omni-bg-paper) 80%, transparent);
+  border-radius: var(--omni-radius-card);
+}
+
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: var(--omni-focus-ring);
 }
 
 /* Force light theme for Beta — ignore OS dark mode to avoid dark body behind light sections */
@@ -214,26 +279,108 @@ body {
 .theme-link:hover {
   color: var(--accent-main);
 }
-.theme-btn-solid {
-  background-color: var(--accent-main);
-  border: 1px solid var(--accent-main);
-  color: var(--text-on-deep);
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+
+.omni-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 24px;
+  border-radius: 20px;
+  font-weight: 600;
+  background-color: #6C3724;
+  color: #FFFFFF;
+  border: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transition: background-color 150ms ease, color 150ms ease;
 }
-.theme-btn-solid:hover {
-  background-color: var(--accent-strong);
-  border-color: var(--accent-strong);
+.omni-btn-primary:hover {
+  background-color: #7D3F2A;
 }
-.theme-btn-outline {
-  background-color: transparent;
-  border: 1px solid var(--border-strong);
-  color: var(--text-main);
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+.omni-btn-primary:active {
+  background-color: #5D2F1F;
 }
-.theme-btn-outline:hover {
-  border-color: var(--accent-main);
-  color: var(--accent-main);
+
+.omni-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 16px;
+  font-weight: 500;
+  background-color: #F4ECE5;
+  color: #6C3724;
+  border: 1px solid rgba(108, 55, 36, 0.25);
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 }
+.omni-btn-secondary:hover {
+  background-color: #EFE6DE;
+}
+
+.omni-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0 28px;
+  border-radius: 36px;
+  font-weight: 500;
+  background-color: rgba(255, 255, 255, 0.35);
+  color: #3A2A22;
+  border: 1.5px solid rgba(74, 58, 40, 0.35);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.omni-btn-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.45);
+}
+
+.omni-range {
+  width: 100%;
+  appearance: none;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--omni-accent) 0%,
+    var(--omni-accent) var(--range-progress, 50%),
+    #E1CCB0 var(--range-progress, 50%),
+    #E1CCB0 100%
+  );
+  transition: background 150ms ease;
+}
+.omni-range:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(160, 89, 55, 0.15);
+}
+.omni-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--omni-accent);
+  border: 2px solid #FDF6EE;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  cursor: pointer;
+  margin-top: -7px;
+}
+.omni-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--omni-accent);
+  border: 2px solid #FDF6EE;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+.omni-range::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: transparent;
+}
+
 .theme-input {
   background-color: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -269,31 +416,41 @@ body {
 /* Minimal ticks only on bottom; use specific classes for alignment */
 .mixer-wrap::before { content: ""; position: absolute; left: 12px; right: 12px; bottom: 2px; height: 10px; pointer-events: none; background-repeat: repeat; }
 /* 10 stops (1–10): 9 intervals → 11.111% */
-.mixer-wrap.ticks-10::before { background-image: repeating-linear-gradient(to right, rgba(132,42,59,0.32) 0 1px, transparent 1px 11.111%); }
+.mixer-wrap.ticks-10::before { background-image: repeating-linear-gradient(to right, rgba(88,32,21,0.32) 0 1px, transparent 1px 11.111%); }
 /* 5 stops (1–5): 4 intervals → 25% */
-.mixer-wrap.ticks-5::before { background-image: repeating-linear-gradient(to right, rgba(132,42,59,0.32) 0 1px, transparent 1px 25%); }
+.mixer-wrap.ticks-5::before { background-image: repeating-linear-gradient(to right, rgba(88,32,21,0.32) 0 1px, transparent 1px 25%); }
 .mixer-slot { position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); height: 10px; border-radius: 999px; background: var(--omni-border-soft); box-shadow: inset 0 1px 2px rgba(0,0,0,0.15), inset 0 -1px 2px rgba(255,255,255,0.9); pointer-events: none; }
-.mixer-fill { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); height: 10px; border-radius: 999px; background: linear-gradient(90deg, var(--omni-energy-soft) 0%, var(--omni-energy) 100%); box-shadow: inset 0 0 0 1px rgba(132,42,59,0.3); pointer-events: none; }
+.mixer-fill { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); height: 10px; border-radius: 999px; background: linear-gradient(90deg, var(--omni-accent) 0%, var(--omni-accent-soft) 100%); box-shadow: inset 0 0 0 1px rgba(160,89,55,0.25); pointer-events: none; }
 .mixer-range { appearance: none; width: 100%; background: transparent; position: relative; z-index: 1; }
 .mixer-range:focus { outline: none; }
 .mixer-range::-webkit-slider-runnable-track { height: 8px; background: transparent; border-radius: 999px; }
 .mixer-range::-moz-range-track { height: 8px; background: transparent; border-radius: 999px; }
-.mixer-range::-webkit-slider-thumb { appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 1px solid var(--omni-border-soft); box-shadow: 0 10px 18px rgba(0,0,0,0.15), inset -2px -2px 3px rgba(0,0,0,0.04), inset 2px 2px 4px rgba(255,255,255,0.85), 0 0 0 6px rgba(132,42,59,0.12); margin-top: -9px; }
-.mixer-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 1px solid var(--omni-border-soft); box-shadow: 0 10px 18px rgba(0,0,0,0.15), inset -2px -2px 3px rgba(0,0,0,0.04), inset 2px 2px 4px rgba(255,255,255,0.85), 0 0 0 6px rgba(132,42,59,0.12); }
+.mixer-range::-webkit-slider-thumb { appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 1px solid var(--omni-border-soft); box-shadow: 0 10px 18px rgba(0,0,0,0.15), inset -2px -2px 3px rgba(0,0,0,0.04), inset 2px 2px 4px rgba(255,255,255,0.85), 0 0 0 6px rgba(88,32,21,0.12); margin-top: -9px; }
+.mixer-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 1px solid var(--omni-border-soft); box-shadow: 0 10px 18px rgba(0,0,0,0.15), inset -2px -2px 3px rgba(0,0,0,0.04), inset 2px 2px 4px rgba(255,255,255,0.85), 0 0 0 6px rgba(88,32,21,0.12); }
 
 .panel-ghost[data-highlight="true"] {
   animation: sliderGlow 2s ease-in-out infinite;
-  box-shadow: 0 0 0 2px rgba(132, 42, 59, 0.35), var(--shadow-card);
+  box-shadow: 0 0 0 2px rgba(88, 32, 21, 0.35), var(--shadow-card);
 }
 .panel-ghost[data-highlight="true"] .mixer-wrap {
   box-shadow: -6px -6px 14px rgba(255, 255, 255, 0.9),
-    6px 6px 12px rgba(132, 42, 59, 0.18),
-    inset 0 0 0 1px rgba(132, 42, 59, 0.35);
+    6px 6px 12px rgba(88, 32, 21, 0.18),
+    inset 0 0 0 1px rgba(88, 32, 21, 0.35);
 }
 @keyframes sliderGlow {
-  0% { box-shadow: 0 0 0 2px rgba(132,42,59,0.15), 0 12px 32px rgba(0,0,0,0.08); }
-  50% { box-shadow: 0 0 0 6px rgba(132,42,59,0.3), 0 12px 32px rgba(0,0,0,0.08); }
-  100% { box-shadow: 0 0 0 2px rgba(132,42,59,0.15), 0 12px 32px rgba(0,0,0,0.08); }
+  0% { box-shadow: 0 0 0 2px rgba(88,32,21,0.15), 0 12px 32px rgba(0,0,0,0.08); }
+  50% { box-shadow: 0 0 0 6px rgba(88,32,21,0.3), 0 12px 32px rgba(0,0,0,0.08); }
+  100% { box-shadow: 0 0 0 2px rgba(88,32,21,0.15), 0 12px 32px rgba(0,0,0,0.08); }
+}
+
+.omni-tab-active {
+  background: linear-gradient(90deg, var(--omni-accent-deep), var(--omni-accent));
+  color: var(--omni-ink-on-accent) !important;
+  border: none !important;
+}
+
+.omni-tab-active:hover {
+  filter: brightness(1.02);
 }
 
 /* Fluid width wrapper so sliders adapt but don't stretch excessively */

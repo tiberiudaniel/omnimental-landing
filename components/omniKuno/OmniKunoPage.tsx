@@ -27,6 +27,57 @@ import LessonAccordionItem from "./LessonAccordionItem";
 import ActiveLessonInner from "./ActiveLessonInner";
 import type { UnlockedCollectible } from "@/lib/collectibles";
 
+const LOCAL_COMPLETED_PREFIX = "omnikuno_local_completed_";
+
+const readStoredCompletedIds = (moduleId: string): string[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(`${LOCAL_COMPLETED_PREFIX}${moduleId}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((id): id is string => typeof id === "string" && id.length > 0);
+    }
+  } catch {
+    // ignore malformed storage
+  }
+  return [];
+};
+
+const persistCompletedIds = (moduleId: string, ids: string[]) => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(`${LOCAL_COMPLETED_PREFIX}${moduleId}`, JSON.stringify(ids));
+  } catch {
+    // ignore quota issues
+  }
+};
+
+const mergeUniqueIds = (...lists: Array<ReadonlyArray<string>>) => {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const list of lists) {
+    for (const value of list) {
+      if (typeof value !== "string" || !value.length) continue;
+      if (seen.has(value)) continue;
+      seen.add(value);
+      merged.push(value);
+    }
+  }
+  return merged;
+};
+
+function useStableIdList(ids: ReadonlyArray<string>) {
+  const key = useMemo(() => JSON.stringify(ids), [ids]);
+  return useMemo(() => {
+    try {
+      return JSON.parse(key) as string[];
+    } catch {
+      return [];
+    }
+  }, [key]);
+}
+
 type ModuleFinalTestContent = {
   testId: string;
   heading: string;
@@ -204,6 +255,11 @@ export default function OmniKunoPage() {
     setToastMsg(payload);
   }, []);
   const moduleEntries = useMemo(() => Object.entries(OMNIKUNO_MODULES) as Array<[OmniAreaKey, OmniKunoModuleConfig]>, []);
+  const [localCompletionVersion, setLocalCompletionVersion] = useState(0);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const notifyLocalProgressUpdate = useCallback(() => {
+    setLocalCompletionVersion((v) => v + 1);
+  }, []);
   const moduleParam = searchParams?.get("module");
   const areaParam = searchParams?.get("area");
   const lessonParamRaw = searchParams?.get("lesson");
@@ -223,7 +279,36 @@ export default function OmniKunoPage() {
     if (direct) return direct;
     return parseModuleParam(kunoFacts.recommendedModuleId);
   }, [kunoFacts.recommendedArea, kunoFacts.recommendedModuleId, parseModuleParam]);
-  const activeAreaKey: OmniAreaKey = moduleFromUrl ?? areaFromUrl ?? recommendedArea ?? "emotional_balance";
+  const getNextLessonForArea = useCallback(
+    (area: OmniAreaKey, options?: { includeLocalCache?: boolean }) => {
+      const moduleConfig = OMNIKUNO_MODULES[area];
+      const snapshot = getKunoModuleSnapshot(kunoFacts, moduleConfig.moduleId);
+      const shouldUseLocal = (options?.includeLocalCache ?? true) && isHydrated;
+      const localCompleted = shouldUseLocal ? readStoredCompletedIds(moduleConfig.moduleId) : [];
+      const completed = mergeUniqueIds(snapshot.completedIds ?? [], localCompleted);
+      const ordered = moduleConfig.lessons.slice().sort((a, b) => a.order - b.order);
+      const pendingLesson = ordered.find((lesson) => !completed.includes(lesson.id));
+      return { lessonId: pendingLesson?.id ?? null, module: moduleConfig };
+    },
+    [isHydrated, kunoFacts],
+  );
+  const fallbackAreaOrder = useMemo(() => {
+    const recommendedList = [recommendedArea, ...moduleEntries.map(([areaKey]) => areaKey)].filter(
+      (value, index, array): value is OmniAreaKey => Boolean(value) && array.indexOf(value) === index,
+    );
+    return recommendedList;
+  }, [moduleEntries, recommendedArea]);
+  const activeAreaKey = useMemo(() => {
+    const resolveArea = (area: OmniAreaKey) => getNextLessonForArea(area, { includeLocalCache: false }).lessonId !== null;
+    if (moduleFromUrl) {
+      return moduleFromUrl;
+    }
+    if (areaFromUrl) {
+      return areaFromUrl;
+    }
+    const pendingArea = fallbackAreaOrder.find((area) => resolveArea(area));
+    return pendingArea ?? fallbackAreaOrder[0] ?? "emotional_balance";
+  }, [areaFromUrl, fallbackAreaOrder, getNextLessonForArea, moduleFromUrl]);
   const activeModule = OMNIKUNO_MODULES[activeAreaKey];
   const moduleSnapshot = getKunoModuleSnapshot(kunoFacts, activeModule.moduleId);
   const completedIdsFromFacts = moduleSnapshot.completedIds;
@@ -271,25 +356,29 @@ export default function OmniKunoPage() {
   const handleAreaSelect = useCallback(
     (nextArea: ExperienceProps["areaKey"]) => {
       resetFinalTestState();
-      const nextModule = OMNIKUNO_MODULES[nextArea];
-      const nextSnapshot = getKunoModuleSnapshot(kunoFacts, nextModule.moduleId);
-      const nextCompleted = nextSnapshot.completedIds ?? [];
-      const ordered = nextModule.lessons.slice().sort((a, b) => a.order - b.order);
-      const nextLessonId = (() => {
-        const pending = ordered.find((lesson) => !nextCompleted.includes(lesson.id));
-        return pending?.id ?? ordered[0]?.id ?? null;
-      })();
-      updateUrl({ area: nextArea, module: nextModule.moduleId, lesson: nextLessonId });
+      const { lessonId, module: moduleConfig } = getNextLessonForArea(nextArea);
+      updateUrl({ area: nextArea, module: moduleConfig.moduleId, lesson: lessonId });
     },
-    [kunoFacts, resetFinalTestState, updateUrl],
+    [getNextLessonForArea, resetFinalTestState, updateUrl],
   );
   const orderedModuleLessons = useMemo(() => activeModule.lessons.slice().sort((a, b) => a.order - b.order), [activeModule.lessons]);
   const resolvedLessonIdFromQuery =
     lessonQueryParam && orderedModuleLessons.some((lesson) => lesson.id === lessonQueryParam) ? lessonQueryParam : null;
+  const storedLocalCompletions = useMemo(() => {
+    const version = localCompletionVersion;
+    void version;
+    if (!isHydrated) return [];
+    return readStoredCompletedIds(activeModule.moduleId);
+  }, [activeModule.moduleId, isHydrated, localCompletionVersion]);
+  const mergedEffectiveCompletedIds = useMemo(
+    () => mergeUniqueIds(completedIdsFromFacts, storedLocalCompletions),
+    [completedIdsFromFacts, storedLocalCompletions],
+  );
+  const effectiveCompletedIds = useStableIdList(mergedEffectiveCompletedIds);
   const pendingLessonId = useMemo(() => {
-    const next = orderedModuleLessons.find((lesson) => !completedIdsFromFacts.includes(lesson.id));
+    const next = orderedModuleLessons.find((lesson) => !effectiveCompletedIds.includes(lesson.id));
     return next?.id ?? orderedModuleLessons[0]?.id ?? null;
-  }, [completedIdsFromFacts, orderedModuleLessons]);
+  }, [effectiveCompletedIds, orderedModuleLessons]);
   const fallbackLessonId = pendingLessonId;
   const initialLessonIdForModule = resolvedLessonIdFromQuery ?? (lessonHasExplicitNone ? null : fallbackLessonId);
   useEffect(() => {
@@ -315,25 +404,53 @@ export default function OmniKunoPage() {
     lessonQueryParam,
     updateUrl,
   ]);
-const areaStats = useMemo(() => {
-  return Object.fromEntries(
-    moduleEntries.map(([areaKey, module]) => {
-      const snapshot = kunoFacts.modules[module.moduleId];
-      const lessonIdSet = new Set(module.lessons.map((lesson) => lesson.id));
-      const completedIds = (snapshot?.completedIds ?? []).filter((id) => lessonIdSet.has(id));
-      const totalLessons = module.lessons.length;
-      const progressPct = totalLessons > 0 ? Math.round((completedIds.length / totalLessons) * 100) : 0;
-      return [
-        areaKey,
-        {
-          completed: completedIds.length,
-          total: totalLessons,
-          percentage: Number.isFinite(progressPct) ? Math.min(100, Math.max(0, progressPct)) : 0,
-        },
-      ];
-    }),
-  ) as Record<OmniAreaKey, { completed: number; total: number; percentage: number }>;
-}, [kunoFacts.modules, moduleEntries]);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setIsHydrated(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (moduleFromUrl || areaFromUrl) return;
+    const preferredArea = fallbackAreaOrder.find((area) => {
+      const { lessonId } = getNextLessonForArea(area, { includeLocalCache: true });
+      return lessonId !== null;
+    });
+    if (preferredArea && preferredArea !== activeAreaKey) {
+      const { lessonId, module } = getNextLessonForArea(preferredArea, { includeLocalCache: true });
+      updateUrl({ area: preferredArea, module: module.moduleId, lesson: lessonId });
+    }
+  }, [
+    activeAreaKey,
+    areaFromUrl,
+    fallbackAreaOrder,
+    getNextLessonForArea,
+    isHydrated,
+    moduleFromUrl,
+    updateUrl,
+  ]);
+  const areaStats = useMemo(() => {
+    const version = localCompletionVersion;
+    void version;
+    return Object.fromEntries(
+      moduleEntries.map(([areaKey, module]) => {
+        const snapshot = kunoFacts.modules[module.moduleId];
+        const lessonIdSet = new Set(module.lessons.map((lesson) => lesson.id));
+        const remoteCompleted = (snapshot?.completedIds ?? []).filter((id) => lessonIdSet.has(id));
+        const storedCompleted = isHydrated ? readStoredCompletedIds(module.moduleId) : [];
+        const completedIds = mergeUniqueIds(remoteCompleted, storedCompleted);
+        const totalLessons = module.lessons.length;
+        const progressPct = totalLessons > 0 ? Math.round((completedIds.length / totalLessons) * 100) : 0;
+        return [
+          areaKey,
+          {
+            completed: completedIds.length,
+            total: totalLessons,
+            percentage: Number.isFinite(progressPct) ? Math.min(100, Math.max(0, progressPct)) : 0,
+          },
+        ];
+      }),
+    ) as Record<OmniAreaKey, { completed: number; total: number; percentage: number }>;
+  }, [isHydrated, kunoFacts.modules, moduleEntries, localCompletionVersion]);
   const areaLabelMap = useMemo<Record<OmniAreaKey, string>>(() => {
     if (lang === "ro") {
       return {
@@ -367,7 +484,7 @@ const areaStats = useMemo(() => {
   );
   const focusLabel = areaLabelMap[activeAreaKey];
   const moduleStateKey = `${activeModule.moduleId}:${completedIdsFromFacts.slice().sort().join("|")}:${normalizedPerformance.difficultyBias}`;
-  const completedLessonsCount = completedIdsFromFacts.length;
+  const completedLessonsCount = effectiveCompletedIds.length;
   const headerProgressSummary =
     lang === "ro"
       ? `Lecții finalizate: ${completedLessonsCount}/${activeModule.lessons.length}`
@@ -454,7 +571,7 @@ const areaStats = useMemo(() => {
                       </div>
                       <div className="mt-1 h-1.5 rounded-full bg-[#F2E7DD]">
                         <div
-                          className="h-1.5 rounded-full bg-[var(--omni-energy)]"
+                          className="h-1.5 rounded-full bg-[var(--omni-accent)]"
                           style={{ width: `${Math.min(100, stat?.percentage ?? 0)}%` }}
                         />
                       </div>
@@ -472,6 +589,7 @@ const areaStats = useMemo(() => {
                 module={activeModule}
                 profileId={profile?.id}
                 completedIdsFromFacts={completedIdsFromFacts}
+                initialCompletedIds={effectiveCompletedIds}
                 initialPerformance={normalizedPerformance}
                 initialLessonId={initialLessonIdForModule}
                 lessonHasExplicitNone={lessonHasExplicitNone}
@@ -482,6 +600,7 @@ const areaStats = useMemo(() => {
                 onFinalTestComplete={(result) => setFinalTestResult(result)}
                 finalTestConfig={finalTestConfig}
                 onLessonSelect={handleLessonSelect}
+                onLocalProgressUpdate={notifyLocalProgressUpdate}
                 overviewOpen={overviewOpen}
                 onCloseOverview={() => setOverviewOpen(false)}
               />
@@ -518,6 +637,8 @@ type ExperienceProps = {
   initialLessonId?: string | null;
   lessonHasExplicitNone?: boolean;
   onLessonSelect?: (lessonId: string | null) => void;
+  initialCompletedIds?: readonly string[] | null;
+  onLocalProgressUpdate?: () => void;
   onToast?: (payload: LessonToastPayload) => void;
   showFinalTest?: boolean;
   finalTestResult?: { correct: number; total: number } | null;
@@ -533,10 +654,12 @@ function ModuleExperience({
   module,
   profileId,
   completedIdsFromFacts,
+  initialCompletedIds,
   initialPerformance,
   initialLessonId = null,
   lessonHasExplicitNone = false,
   onLessonSelect,
+  onLocalProgressUpdate,
   onToast,
   showFinalTest = false,
   finalTestResult = null,
@@ -547,7 +670,21 @@ function ModuleExperience({
   onCloseOverview,
 }: ExperienceProps) {
   const { t, lang } = useI18n();
-  const [localCompleted, setLocalCompleted] = useState<string[]>(() => completedIdsFromFacts);
+  const mergedInitialCompletedRaw = useMemo(
+    () => mergeUniqueIds(completedIdsFromFacts, Array.isArray(initialCompletedIds) ? initialCompletedIds : []),
+    [completedIdsFromFacts, initialCompletedIds],
+  );
+  const mergedInitialCompleted = useStableIdList(mergedInitialCompletedRaw);
+  const [localOnlyCompletedByModule, setLocalOnlyCompletedByModule] = useState<Record<string, string[]>>({});
+  const localOnlyCompleted = useMemo(
+    () => localOnlyCompletedByModule[module.moduleId] ?? [],
+    [localOnlyCompletedByModule, module.moduleId],
+  );
+  const combinedLocalCompleted = useMemo(
+    () => mergeUniqueIds(mergedInitialCompleted, localOnlyCompleted),
+    [mergedInitialCompleted, localOnlyCompleted],
+  );
+  const localCompleted = useStableIdList(combinedLocalCompleted);
   const [localPerformance, setLocalPerformance] = useState<KunoPerformanceSnapshot>(initialPerformance);
   const [lessonProgressByModule, setLessonProgressByModule] = useState<
     Record<string, Record<string, { current: number; total: number }>>
@@ -606,16 +743,40 @@ function ModuleExperience({
     }
     return result;
   }, [timelineWithMeta]);
+  const storedLessonId = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem("omnikuno_last_module");
+      if (!raw) return null;
+      const payload = JSON.parse(raw) as { moduleId?: string; lessonId?: string };
+      if (payload?.moduleId === module.moduleId && payload.lessonId) {
+        const exists = timelineWithMeta.some((item) => item.id === payload.lessonId);
+        return exists ? payload.lessonId : null;
+      }
+    } catch {
+      // ignore malformed storage
+    }
+    return null;
+  }, [module.moduleId, timelineWithMeta]);
   const defaultOpenLessonId = useMemo(() => {
     if (lessonHasExplicitNone || !timelineWithMeta.length) return null;
     if (initialLessonId && timelineWithMeta.some((item) => item.id === initialLessonId)) {
       return initialLessonId;
     }
+    if (storedLessonId) return storedLessonId;
     return activeItem?.id ?? null;
-  }, [activeItem?.id, initialLessonId, lessonHasExplicitNone, timelineWithMeta]);
+  }, [activeItem?.id, initialLessonId, lessonHasExplicitNone, storedLessonId, timelineWithMeta]);
   const openLessonId = Object.prototype.hasOwnProperty.call(openLessonsByModule, module.moduleId)
     ? openLessonsByModule[module.moduleId] ?? null
     : defaultOpenLessonId;
+  const lastPersistSignature = useRef<string | null>(null);
+  useEffect(() => {
+    const signature = `${module.moduleId}:${JSON.stringify(localCompleted)}`;
+    if (lastPersistSignature.current === signature) return;
+    lastPersistSignature.current = signature;
+    persistCompletedIds(module.moduleId, localCompleted);
+    onLocalProgressUpdate?.();
+  }, [localCompleted, module.moduleId, onLocalProgressUpdate]);
   useEffect(() => {
     if (!moduleCompleted) {
       if (showFinalTest) {
@@ -724,7 +885,11 @@ function ModuleExperience({
         unlockedCollectibles?: UnlockedCollectible[];
       },
     ) => {
-      setLocalCompleted((prev) => (prev.includes(lessonId) ? prev : [...prev, lessonId]));
+      setLocalOnlyCompletedByModule((prev) => {
+        const bucket = prev[module.moduleId] ?? [];
+        if (bucket.includes(lessonId)) return prev;
+        return { ...prev, [module.moduleId]: [...bucket, lessonId] };
+      });
       if (meta?.updatedPerformance) {
         setLocalPerformance(meta.updatedPerformance);
       }
@@ -765,7 +930,7 @@ function ModuleExperience({
         setOpenLessonForModule(null);
       }
     },
-    [lang, onToast, orderedLessons, scrollToLesson, setOpenLessonForModule, triggerLessonHighlight],
+    [lang, module.moduleId, onToast, orderedLessons, scrollToLesson, setLocalOnlyCompletedByModule, setOpenLessonForModule, triggerLessonHighlight],
   );
   const translate = useCallback(
     (key: string) => {
@@ -795,7 +960,7 @@ function ModuleExperience({
           disabled={!activeItem}
         >
           <div className="h-2 rounded-full bg-[#F4EDE4]">
-            <div className="h-2 rounded-full bg-[var(--omni-energy)]" style={{ width: `${Math.min(100, completionPct)}%` }} />
+            <div className="h-2 rounded-full bg-[var(--omni-accent)]" style={{ width: `${Math.min(100, completionPct)}%` }} />
           </div>
         </KunoActivePanel>
       </KunoContainer>

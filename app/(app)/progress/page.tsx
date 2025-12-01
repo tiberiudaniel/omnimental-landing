@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
@@ -19,6 +20,8 @@ import DemoUserSwitcher from "@/components/DemoUserSwitcher";
 import { getDemoProgressFacts } from "@/lib/demoData";
 import { useAuth } from "@/components/AuthProvider";
 import RequireAuth from "@/components/auth/RequireAuth";
+import { getTodayKey } from "@/lib/dailyReset";
+import type { ProgressFact } from "@/lib/progressFacts";
 
 const FALLBACK_GUEST_ID = (() => {
   try {
@@ -47,6 +50,7 @@ function ProgressContent() {
   // Auto-demo only when explicitly requested via demo=1/2/3 or e2e=1; not via from=...
   const autoDemo = demoVariant || e2e ? (demoVariant ?? 1) : null;
   const demoFacts = autoDemo ? getDemoProgressFacts(lang === "en" ? "en" : "ro", autoDemo as 1 | 2 | 3) : undefined;
+  const factsForViz = progress ?? demoFacts ?? null;
   const hasProgressData = useMemo(() => {
     if (demoFacts) return true;
     if (!progress) return false;
@@ -482,7 +486,36 @@ function ProgressContent() {
         </div>
       ) : null}
 
-        <ProgressDashboard profileId={profile.id} demoFacts={demoFacts} facts={progress} loading={progressLoading} debugGrid={debugGrid} hideOmniIntel />
+        {factsForViz ? (
+          <div className="mt-6 space-y-8">
+            <div className="w-full max-w-5xl mx-auto px-4">
+              <ProgressHeroBand lang={lang} facts={factsForViz} />
+            </div>
+            <div className="w-full max-w-5xl mx-auto px-4 space-y-8">
+              <ProgressTwoColumnPanels lang={lang} facts={factsForViz} />
+            </div>
+          </div>
+        ) : null}
+        <section className="omni-panel-soft rounded-3xl p-6 md:p-7 mt-8">
+          <div className="mb-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+              {lang === "ro" ? "Analitice detaliate" : "Detailed analytics"}
+            </p>
+            <p className="text-sm text-[var(--omni-muted)]">
+              {lang === "ro"
+                ? "Vizualizări extinse pentru ritmuri, practici și note."
+                : "Extended views for rhythms, practice, and notes."}
+            </p>
+          </div>
+          <ProgressDashboard
+            profileId={profile.id}
+            demoFacts={demoFacts}
+            facts={progress}
+            loading={progressLoading}
+            debugGrid={debugGrid}
+            hideOmniIntel
+          />
+        </section>
       </div>
       </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
@@ -527,5 +560,247 @@ export default function ProgressPage() {
     <Suspense fallback={null}>
       <ProgressPageInner />
     </Suspense>
+  );
+}
+
+type HeroFacts = ProgressFact | null | undefined;
+
+function ProgressHeroBand({ lang, facts }: { lang: string; facts: HeroFacts }) {
+  const todayKey = getTodayKey();
+  const omni = (facts as { omni?: Record<string, unknown> } | null)?.omni ?? null;
+  const daily = (omni as { daily?: Record<string, unknown> } | null)?.daily ?? null;
+  const streak =
+    typeof ((daily as { streakDays?: number } | null)?.streakDays) === "number"
+      ? (daily as { streakDays?: number }).streakDays!
+      : null;
+  const completedToday = (daily as { lastCheckinDate?: string } | null)?.lastCheckinDate === todayKey;
+  const missionLabel =
+    (facts as { intent?: { primaryNeedLabel?: string; mainNeedLabel?: string } } | null)?.intent?.primaryNeedLabel ??
+    (facts as { intent?: { mainNeedLabel?: string } } | null)?.intent?.mainNeedLabel ??
+    (lang === "ro" ? "Tema prioritară" : "Core focus");
+  const missionXp =
+    typeof ((omni as { kuno?: { global?: { totalXp?: number } } } | null)?.kuno?.global?.totalXp) === "number"
+      ? Math.round(((omni as { kuno?: { global?: { totalXp?: number } } } | null)?.kuno?.global?.totalXp as number) ?? 0)
+      : 0;
+  const quote =
+    (facts as { insights?: { daily?: string } } | null)?.insights?.daily ??
+    (lang === "ro"
+      ? "Somnul profund stabilizează variabilitatea ritmului cardiac și susține energia pe tot parcursul zilei."
+      : "Deep sleep stabilises heart‑rate variability and keeps energy steady throughout the day.");
+  return (
+    <div className="omni-card rounded-3xl p-6 md:p-7 shadow-[0_2px_6px_rgba(0,0,0,0.04)] mb-8 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+      <div className="space-y-2">
+        <p className="text-xs md:text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+          {lang === "ro" ? "Ritual zilnic" : "Daily ritual"}
+        </p>
+        <div className="text-[12px]">
+          {completedToday ? (
+            <p className="text-[var(--omni-ink)]">{lang === "ro" ? "Ai bifat resetul azi." : "You logged today’s reset."}</p>
+          ) : (
+            <p className="text-[var(--omni-ink)]">
+              {lang === "ro" ? "Încă nu ai completat resetul." : "You haven’t completed today’s reset yet."}
+            </p>
+          )}
+          <p className="text-[var(--omni-muted)]">
+            {streak
+              ? lang === "ro"
+                ? `Serie activă: ${streak} zile.`
+                : `Active streak: ${streak} days.`
+              : lang === "ro"
+                ? "Începe o nouă serie astăzi."
+                : "Start a new streak today."}
+          </p>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs md:text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+          {lang === "ro" ? "Misiunea ta" : "Your mission"}
+        </p>
+        <p className="text-base md:text-lg font-semibold text-[var(--omni-energy)]">{missionLabel}</p>
+        <p className="text-[12px] text-[var(--omni-muted)]">
+          {lang === "ro"
+            ? `XP acumulat: ${missionXp.toLocaleString("ro-RO")}`
+            : `XP collected: ${missionXp.toLocaleString("en-US")}`}
+        </p>
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs md:text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+          {lang === "ro" ? "Revelația zilei" : "Insight of the day"}
+        </p>
+        <p className="text-sm italic text-[var(--omni-ink-soft)]">{quote}</p>
+      </div>
+    </div>
+  );
+}
+
+function ProgressTwoColumnPanels({ lang, facts }: { lang: string; facts: HeroFacts }) {
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <div className="space-y-6">
+        <div className="omni-panel-soft rounded-3xl p-6 md:p-7">
+          <ProgressAxesPanel lang={lang} facts={facts} />
+        </div>
+        <div className="omni-panel-soft rounded-3xl p-6 md:p-7">
+          <ProgressPracticePanel lang={lang} facts={facts} />
+        </div>
+      </div>
+      <div className="space-y-6">
+        <div className="omni-card rounded-3xl p-6 md:p-7 shadow-[0_2px_6px_rgba(0,0,0,0.04)]">
+          <ProgressRecommendationCard lang={lang} facts={facts} />
+        </div>
+        <div className="omni-panel-soft rounded-3xl p-6 md:p-7">
+          <ProgressQuickVariants lang={lang} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProgressAxesPanel({ lang, facts }: { lang: string; facts: HeroFacts }) {
+  const daily = ((facts as { omni?: { daily?: Record<string, unknown> } } | null)?.omni?.daily ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const values =
+    (daily.values as { clarity?: number; energy?: number; stress?: number } | undefined) ??
+    ((daily as { levels?: { clarity?: number; energy?: number; stress?: number } }).levels ?? {});
+  const clarity = typeof values?.clarity === "number" ? values.clarity : null;
+  const energy = typeof values?.energy === "number" ? values.energy : null;
+  const emotion = typeof values?.stress === "number" ? 10 - values.stress : null;
+  const hasValues = clarity !== null || energy !== null || emotion !== null;
+  const todayKey = getTodayKey();
+  const completedToday = (daily as { lastCheckinDate?: string } | null)?.lastCheckinDate === todayKey;
+  return (
+    <div className="space-y-3 text-[var(--omni-ink)]">
+      <div>
+        <p className="text-xs font-semibold text-[var(--omni-muted)]">
+          {lang === "ro" ? "Axe zilnice – Claritate · Emoție · Energie" : "Daily axes – Clarity · Emotion · Energy"}
+        </p>
+        <p className="text-sm text-[var(--omni-muted)]">
+          {lang === "ro"
+            ? "Rezumat scurt al energiei, echilibrului emoțional și clarității mentale."
+            : "Short snapshot of energy, emotional balance, and clarity."}
+        </p>
+      </div>
+      {hasValues ? (
+        <dl className="grid grid-cols-3 gap-3 text-center text-sm">
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+              {lang === "ro" ? "Claritate" : "Clarity"}
+            </dt>
+            <dd className="text-lg font-semibold text-[var(--omni-ink)]">
+              {clarity !== null ? clarity.toFixed(1) : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+              {lang === "ro" ? "Emoție" : "Emotion"}
+            </dt>
+            <dd className="text-lg font-semibold text-[var(--omni-ink)]">
+              {emotion !== null ? emotion.toFixed(1) : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">Energy</dt>
+            <dd className="text-lg font-semibold text-[var(--omni-ink)]">
+              {energy !== null ? energy.toFixed(1) : "—"}
+            </dd>
+          </div>
+        </dl>
+      ) : (
+        <p className="text-[12px] text-[var(--omni-muted)]">
+          {completedToday
+            ? lang === "ro"
+              ? "Valorile se sincronizează în câteva momente după Daily Reset."
+              : "Values sync a few moments after you complete the Daily Reset."
+            : lang === "ro"
+              ? "Completează Daily Reset pentru a vedea aceste valori."
+              : "Complete your Daily Reset to unlock these axes."}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ProgressPracticePanel({ lang, facts }: { lang: string; facts: HeroFacts }) {
+  const sessions = Array.isArray((facts as { practiceSessions?: unknown[] } | null)?.practiceSessions)
+    ? ((facts as { practiceSessions?: unknown[] }).practiceSessions as Array<{ type?: string }>).filter(Boolean)
+    : [];
+  const reflections = Array.isArray((facts as { recentEntries?: unknown[] } | null)?.recentEntries)
+    ? ((facts as { recentEntries?: unknown[] }).recentEntries?.length ?? 0)
+    : 0;
+  const breathing = sessions.filter((s) => (s.type ?? "").toLowerCase().includes("breath")).length;
+  return (
+    <div className="space-y-3 text-[var(--omni-ink)]">
+      <p className="text-xs font-semibold text-[var(--omni-muted)]">
+        {lang === "ro" ? "Misiuni de implementare" : "Practice snapshot"}
+      </p>
+      <div className="grid grid-cols-3 gap-3 text-center text-sm">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">{lang === "ro" ? "Sesiuni" : "Sessions"}</p>
+          <p className="text-lg font-semibold text-[var(--omni-ink)]">{sessions.length}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">{lang === "ro" ? "Respirații" : "Breathing"}</p>
+          <p className="text-lg font-semibold text-[var(--omni-ink)]">{breathing}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">{lang === "ro" ? "Reflecții" : "Reflections"}</p>
+          <p className="text-lg font-semibold text-[var(--omni-ink)]">{reflections}</p>
+        </div>
+      </div>
+      <p className="text-[12px] text-[var(--omni-muted)]">
+        {lang === "ro"
+          ? "Ține ritmul: 2 acțiuni scurte/zi stabilizează progresul."
+          : "Keep cadence: two short actions a day stabilise progress."}
+      </p>
+    </div>
+  );
+}
+
+function ProgressRecommendationCard({ lang, facts }: { lang: string; facts: HeroFacts }) {
+  const primary = (facts as { recommendations?: { primary?: { title?: string; body?: string; ctaHref?: string; ctaLabel?: string } } } | null)
+    ?.recommendations?.primary;
+  const title = primary?.title ?? (lang === "ro" ? "Reset ușor + respirație" : "Gentle reset + breathing");
+  const body =
+    primary?.body ??
+    (lang === "ro"
+      ? "Reconectează-te la corp cu un exercițiu de respirație conștientă și o notă în jurnal."
+      : "Reconnect to your body with a slow breathing drill and a quick journal entry.");
+  const ctaHref = typeof primary?.ctaHref === "string" ? primary.ctaHref : "/omni-kuno";
+  const ctaLabel = primary?.ctaLabel ?? (lang === "ro" ? "Deschide OmniKuno" : "Open OmniKuno");
+  return (
+    <div className="space-y-3 text-[var(--omni-ink)]">
+      <p className="text-xs font-semibold text-[var(--omni-muted)]">{lang === "ro" ? "Recomandarea ta" : "Your recommendation"}</p>
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <p className="text-[12px] text-[var(--omni-muted)]">{body}</p>
+      <PrimaryButton shape="pill" className="uppercase tracking-[0.2em] text-[12px]" asChild>
+        <Link href={ctaHref}>{ctaLabel}</Link>
+      </PrimaryButton>
+    </div>
+  );
+}
+
+function ProgressQuickVariants({ lang }: { lang: string }) {
+  const quickOptions = [
+    { label: lang === "ro" ? "Mini OmniKuno (5 min)" : "Mini OmniKuno (5 min)", href: "/omni-kuno?area=emotional_balance" },
+    { label: lang === "ro" ? "Jurnal ghidat" : "Guided journal", href: "/progress?open=journal&tab=NOTE_LIBERE" },
+    { label: lang === "ro" ? "Respirație 4-6" : "4-6 breathing", href: "/omni-kuno?area=energy_body" },
+  ];
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-semibold text-[var(--omni-muted)]">{lang === "ro" ? "Variante rapide" : "Quick variants"}</p>
+      <div className="space-y-2 text-sm text-[var(--omni-ink)]">
+        {quickOptions.map((option) => (
+          <Link
+            key={option.href}
+            href={option.href}
+            className="block rounded-full border border-[var(--omni-border-soft)] px-3 py-2 hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
+          >
+            {option.label}
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }

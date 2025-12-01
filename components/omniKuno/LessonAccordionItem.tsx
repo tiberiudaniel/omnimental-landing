@@ -69,9 +69,9 @@ export default function LessonAccordionItem({
         onClick={isClickable ? onToggle : undefined}
         className={cn(
           "flex w-full items-start justify-between rounded-3xl px-4 py-4 text-left transition md:px-6",
-          status === "done" && "bg-[var(--omni-surface-card)] text-neutral-700",
-          status === "active" && "bg-[var(--omni-bg-paper)] text-[var(--omni-ink)] shadow-[0_15px_35px_rgba(242,114,75,0.25)]",
-          status === "locked" && "bg-[#FCFBF9] text-neutral-400 opacity-40",
+          status === "done" && "bg-[var(--omni-surface-card)] text-[var(--omni-ink-soft)]",
+          status === "active" && "bg-[var(--omni-bg-paper)] text-[var(--omni-ink)] shadow-[0_12px_28px_rgba(0,0,0,0.08)]",
+          status === "locked" && "bg-[var(--omni-bg-paper)] text-[var(--omni-muted)] opacity-40",
           !isClickable && "cursor-default",
           justActivated && status === "active" ? "ring-2 ring-[#F5A47E]/70" : "",
         )}
@@ -100,7 +100,7 @@ export default function LessonAccordionItem({
               "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border text-sm",
               status === "done" && "border-[#82C29B] text-[#2F7A4D] bg-[var(--omni-surface-card)]",
               status === "active" && "border-[#F5A47E] text-[#D55D2A] bg-[var(--omni-surface-card)]",
-              status === "locked" && "border-neutral-200 text-[#6B6B6B] bg-[var(--omni-surface-card)]/80",
+              status === "locked" && "border-[var(--omni-border-soft)] text-[color-mix(in srgb,var(--omni-ink-soft),#c8b9ac)] bg-[var(--omni-surface-card)]/80",
             )}
           >
             <motion.span
@@ -113,14 +113,14 @@ export default function LessonAccordionItem({
             </motion.span>
           </div>
           <div className="flex flex-col">
-            <span className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+            <span className="text-xs uppercase tracking-[0.18em] text-[var(--omni-muted)]">
               {index}. Lecție
             </span>
             <span className="text-base font-semibold text-[var(--omni-ink)]">{title}</span>
-            <span className="mt-1 text-sm text-neutral-600">{description}</span>
+            <span className="mt-1 text-sm text-[color-mix(in srgb,var(--omni-ink-soft)_80%,#ffffff)]">{description}</span>
           </div>
         </div>
-        <div className="ml-4 flex flex-col items-end text-right text-xs text-neutral-500">
+        <div className="ml-4 flex flex-col items-end text-right text-xs text-[var(--omni-muted)]">
           <span>{[level, center, duration].filter(Boolean).join(" · ")}</span>
           <AnimatePresence mode="wait">
             <motion.span
@@ -133,7 +133,7 @@ export default function LessonAccordionItem({
                 "mt-2 text-[10px] font-semibold uppercase tracking-[0.25em]",
                 status === "done" && "text-emerald-500",
                 status === "active" && "text-[#F26F4B]",
-                status === "locked" && "text-neutral-300",
+                status === "locked" && "text-[color-mix(in srgb,var(--omni-muted)_45%,white)]",
               )}
             >
               {statusLabel}
@@ -149,10 +149,10 @@ export default function LessonAccordionItem({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.35 }}
-            className="mx-2 overflow-hidden rounded-[26px] border border-[#F2B39B]/60 bg-[var(--omni-bg-paper)] shadow-[0_20px_45px_rgba(242,114,75,0.18)] md:mx-4 lg:mx-6"
+            className="mx-2 overflow-hidden rounded-[26px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] shadow-[0_18px_40px_rgba(0,0,0,0.12)] md:mx-4 lg:mx-6"
           >
             <div className="px-4 py-5 md:px-6">
-              <div className="flex flex-col gap-2 text-xs text-neutral-600">
+              <div className="flex flex-col gap-2 text-xs text-[color-mix(in srgb,var(--omni-ink-soft)_80%,#ffffff)]">
                 <div className="flex gap-1">
                   {progressDots.map((filled, idx) => (
                     <span
@@ -163,12 +163,12 @@ export default function LessonAccordionItem({
                           ? "h-2.5 w-2.5 bg-[#F26F4B]"
                           : filled
                             ? "h-2 w-2 bg-[#F5BAA7]"
-                            : "h-2 w-2 bg-neutral-200",
+                          : "h-2 w-2 bg-[var(--omni-border-soft)]",
                       )}
                     />
                   ))}
                 </div>
-                <p className="text-neutral-500">{`Pas ${Math.min(currentStep, totalSteps)} din ${Math.max(
+                <p className="text-[var(--omni-muted)]">{`Pas ${Math.min(currentStep, totalSteps)} din ${Math.max(
                   totalSteps,
                   1,
                 )}`}</p>

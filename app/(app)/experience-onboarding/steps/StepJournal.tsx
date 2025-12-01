@@ -75,7 +75,7 @@ export default function StepJournal({ userId, onSaved, onSkip }: { userId: strin
         <button
           disabled={!text || busy}
           onClick={save}
-          className="theme-btn-solid rounded-[999px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
+          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
           data-testid="eo-journal-save"
         >
           {lang === 'ro' ? 'Salvează' : 'Save'}
@@ -83,7 +83,7 @@ export default function StepJournal({ userId, onSaved, onSkip }: { userId: strin
         <button
           type="button"
           onClick={onSkip}
-          className="theme-btn-outline rounded-[999px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
         >
           {lang === 'ro' ? 'Sari peste' : 'Skip'}
         </button>

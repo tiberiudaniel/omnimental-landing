@@ -137,7 +137,7 @@ function AntrenamentContent() {
                     <div className="flex justify-end">
                       <button
                         type="button"
-                        className="rounded-[10px] border border-[#E4D8C6] px-3 py-1 text-[11px] text-[var(--omni-ink)] hover:border-[#C9B8A8]"
+                        className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.2em]"
                         onClick={() => setShowJournalPanel(true)}
                       >
                         {lang === "ro" ? "Arată jurnalul" : "Show journal"}
@@ -170,13 +170,13 @@ function AntrenamentContent() {
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href="/omni-kuno"
-                className="inline-flex items-center rounded-full bg-[linear-gradient(135deg,#4F2C1F,#A55B3C)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#FFF8F0] shadow-[0_12px_28px_rgba(79,44,31,0.22)] transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--omni-energy)]"
+                className="omni-btn-primary text-xs font-semibold uppercase tracking-[0.18em]"
               >
                 {String(t("antrenament.oc.missionCta"))}
               </Link>
               <Link
                 href="/knowledge-exam"
-                className="inline-flex items-center rounded-full border border-[var(--omni-energy)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--omni-energy)] transition hover:bg-[#FFF2EB]"
+                className="omni-btn-secondary text-xs font-semibold uppercase tracking-[0.18em]"
               >
                 {String(t("antrenament.oc.quizCta"))}
               </Link>
@@ -271,7 +271,7 @@ function AntrenamentContent() {
                   isComingSoon
                     ? "cursor-default border-dashed border-[#F2E7DA] bg-[var(--omni-surface-card)]/70 text-[var(--omni-muted)] opacity-10 hover:opacity-45"
                     : isActive
-                    ? "border-transparent bg-[linear-gradient(135deg,#4F2C1F,#A55B3C)] text-[#FFF8F0] shadow-[0_10px_30px_rgba(79,44,31,0.25)]"
+                    ? "omni-tab-active shadow-[0_10px_30px_rgba(108,55,36,0.22)]"
                     : "border border-[var(--omni-border-soft)] bg-[#FCF7F1] text-[var(--omni-ink-soft)] hover:border-[var(--omni-border-soft)] hover:bg-[var(--omni-surface-card)]"
                 }`}
               >

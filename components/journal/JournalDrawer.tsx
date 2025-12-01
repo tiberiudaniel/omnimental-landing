@@ -66,11 +66,14 @@ export function JournalDrawer({ open, onOpenChange, userId, context, initialTab 
   const { data: facts } = useProgressFacts(userId ?? null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<JournalTabId>(() => {
-    if (typeof window === "undefined") return "SCOP_INTENTIE";
-    const last = window.localStorage.getItem("journalLastEditedTab") as JournalTabId | null;
-    if (last) return last as JournalTabId;
-    const raw = window.localStorage.getItem("journalActiveTab") as JournalTabId | null;
-    return (raw as JournalTabId) || "SCOP_INTENTIE";
+    if (initialTab) return initialTab;
+    if (typeof window !== "undefined") {
+      const stored =
+        (window.localStorage.getItem("journalLastEditedTab") as JournalTabId | null) ??
+        (window.localStorage.getItem("journalActiveTab") as JournalTabId | null);
+      if (stored) return stored;
+    }
+    return "SCOP_INTENTIE";
   });
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [loadedBlink, setLoadedBlink] = useState(false);

@@ -1,34 +1,60 @@
 import clsx from "clsx";
-import type { ButtonHTMLAttributes } from "react";
+import {
+  cloneElement,
+  forwardRef,
+  isValidElement,
+  type ButtonHTMLAttributes,
+  type ReactElement,
+} from "react";
 
-type PrimaryButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
+type ButtonShape = "soft" | "pill";
 
-export function PrimaryButton({ className, ...rest }: PrimaryButtonProps) {
-  return (
-    <button
-      {...rest}
-      className={clsx(
-        "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold tracking-[0.08em]",
-        "bg-[var(--omni-energy)] text-[var(--omni-bg-paper)] shadow-[0_12px_30px_rgba(132,42,59,0.25)]",
-        "transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--omni-energy-tint)] focus:ring-offset-2 focus:ring-offset-[var(--omni-bg-paper)]",
-        "hover:-translate-y-0.5 hover:bg-[var(--omni-energy-soft)] hover:shadow-[0_16px_36px_rgba(132,42,59,0.35)] active:translate-y-0",
-        className,
-      )}
-    />
-  );
+type BaseButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  shape?: ButtonShape;
+  asChild?: boolean;
+};
+
+const utilityClasses =
+  "transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--omni-energy-tint)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--omni-bg-paper)] disabled:opacity-60 disabled:pointer-events-none";
+
+const shapeClasses: Record<ButtonShape, string> = {
+  soft: "",
+  pill: "rounded-full",
+};
+
+function createButton(variant: "primary" | "secondary") {
+  const base =
+    variant === "primary"
+      ? "omni-btn-primary"
+      : "omni-btn-secondary";
+
+  return forwardRef<HTMLButtonElement, BaseButtonProps>(function Button(
+    { asChild = false, shape = "soft", className, type, children, ...rest },
+    ref,
+  ) {
+    const combined = clsx(base, shapeClasses[shape], utilityClasses, className);
+
+    if (asChild) {
+      if (!isValidElement(children)) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("PrimaryButton/SecondaryButton with asChild requires a single child element.");
+        }
+        return null;
+      }
+      const element = children as ReactElement<{ className?: string }>;
+      return cloneElement(element, {
+        ...rest,
+        className: clsx(element.props.className, combined),
+      });
+    }
+
+    return (
+      <button ref={ref} type={type ?? "button"} className={combined} {...rest}>
+        {children}
+      </button>
+    );
+  });
 }
 
-export function SecondaryButton({ className, ...rest }: PrimaryButtonProps) {
-  return (
-    <button
-      {...rest}
-      className={clsx(
-        "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold tracking-[0.04em]",
-        "bg-[var(--omni-bg-paper)] text-[var(--omni-ink)] border border-[var(--omni-border-soft)] shadow-[0_10px_20px_rgba(95,67,35,0.1)]",
-        "transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--omni-energy-tint)] focus:ring-offset-2 focus:ring-offset-[var(--omni-bg-paper)]",
-        "hover:-translate-y-0.5 hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]",
-        className,
-      )}
-    />
-  );
-}
+export const PrimaryButton = createButton("primary");
+export const SecondaryButton = createButton("secondary");

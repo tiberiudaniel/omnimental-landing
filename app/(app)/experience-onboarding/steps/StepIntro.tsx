@@ -36,7 +36,7 @@ export default function StepIntro({ onStart }: { onStart: () => void }) {
         <button
           data-testid="eo-start"
           onClick={onStart}
-          className="theme-btn-solid rounded-[999px] px-6 py-2 text-[13px] font-semibold tracking-[0.18em]"
+          className="omni-btn-ghost text-[13px] font-semibold tracking-[0.18em]"
         >
           {isRo ? "Începe" : "Start"}
         </button>

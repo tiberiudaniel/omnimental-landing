@@ -91,60 +91,54 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
   const { data: progressFacts } = useProgressFacts(profile?.id);
   const focusTheme = useMemo(() => getFocusTheme(progressFacts, normalizedLang), [progressFacts, normalizedLang]);
   return (
-    <section className="px-6 pt-6 pb-10 md:px-10">
-      <div
-        className="mx-auto flex w-full max-w-5xl flex-col gap-8 rounded-[36px] p-6 text-center shadow-[0_30px_90px_rgba(15,10,4,0.08)] md:flex-row md:items-center md:text-left"
-        style={{
-          background: "linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-soft) 55%, var(--bg-page) 100%)",
-          border: "1px solid var(--border-subtle)",
-        }}
-      >
-        <div className="order-1 flex flex-1 flex-col items-center text-center md:order-2 md:items-start md:text-left">
-          <p
-            className="text-xs uppercase tracking-[0.45em]"
-            style={{ color: "var(--text-soft)" }}
-          >
-            {lang === "ro" ? "Inițiere OmniMental" : "OmniMental Initiation"}
-          </p>
-          <h1
-            className="mt-3 text-3xl font-semibold leading-snug md:text-4xl"
-            style={{ color: "var(--text-main)" }}
-          >
-            {lang === "ro" ? "Respiră, observă, începe." : "Breathe, observe, begin."}
-          </h1>
-          <div className="mt-4 min-h-[120px] max-w-xl" style={{ color: "var(--text-main)" }}>
-            <Typewriter
-              className="text-base leading-relaxed md:text-lg"
-              text={
-                lang === "ro"
-                  ? "Înainte de mini‑test și exerciții, intri într-un spațiu de focus. Îți arătăm pașii și ce urmează, apoi pornești în ritmul tău."
-                  : "Before the mini-quiz and exercises, settle into a focused space. We’ll outline the path ahead and let you start at your own pace."
-              }
-            />
-          </div>
-          <div className="mt-6 flex flex-col items-center gap-4 md:flex-row md:justify-start">
-            <button
-              type="button"
-              onClick={onBegin}
-              className="theme-btn-solid inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold uppercase tracking-[0.25em] shadow-[0_10px_24px_rgba(92,45,26,0.25)]"
-              data-testid="init-welcome-begin"
-            >
-              {lang === "ro" ? "Intră în inițiere" : "Enter initiation"}
-            </button>
+    <section className="px-4 py-6 md:px-8">
+      <div className="w-full max-w-5xl mx-auto px-4">
+        <div className="omni-card rounded-3xl p-6 md:p-8 mb-8 flex flex-col gap-8 text-center md:flex-row md:items-center md:text-left">
+          <div className="order-1 flex flex-1 flex-col items-center text-center md:order-2 md:items-start md:text-left">
             <p
-              className="text-sm md:ml-4"
-              style={{ color: "var(--text-muted)" }}
+              className="text-xs uppercase tracking-[0.3em]"
+              style={{ color: "var(--text-soft)" }}
             >
-              {lang === "ro"
-                ? "9 pași ghidați · aproximativ 12–15 minute."
-                : "9 guided steps · about 12–15 minutes."}
+              {lang === "ro" ? "Inițiere OmniMental" : "OmniMental Initiation"}
             </p>
+            <h1
+              className="mt-3 text-3xl font-semibold leading-snug md:text-4xl"
+              style={{ color: "var(--text-main)" }}
+            >
+              {lang === "ro" ? "Respiră, observă, începe." : "Breathe, observe, begin."}
+            </h1>
+            <div className="mt-4 min-h-[120px] max-w-xl" style={{ color: "var(--text-main)" }}>
+              <Typewriter
+                className="text-base leading-relaxed md:text-lg"
+                text={
+                  lang === "ro"
+                    ? "Înainte de mini‑test și exerciții, intri într-un spațiu de focus. Îți arătăm pașii și ce urmează, apoi pornești în ritmul tău."
+                    : "Before the mini-quiz and exercises, settle into a focused space. We’ll outline the path ahead and let you start at your own pace."
+                }
+              />
+            </div>
+            <div className="mt-6 flex flex-col items-center gap-4 md:flex-row md:justify-start">
+              <button
+                onClick={onBegin}
+                data-testid="init-welcome-begin"
+                className="omni-btn-ghost text-[12px] font-semibold uppercase tracking-[0.25em]"
+              >
+                {lang === "ro" ? "Intră în inițiere" : "Enter initiation"}
+              </button>
+              <p
+                className="text-sm md:ml-4"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {lang === "ro"
+                  ? "9 pași ghidați · aproximativ 12–15 minute."
+                  : "9 guided steps · about 12–15 minutes."}
+              </p>
+            </div>
           </div>
-        </div>
-        <div
-          className="order-2 relative mx-auto inline-block max-w-[520px] rounded-[26px] border p-2 shadow-[0_30px_90px_rgba(15,10,4,0.25)] md:order-1"
-          style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
-        >
+          <div
+            className="order-2 relative mx-auto inline-block max-w-[520px] rounded-[26px] border p-2 shadow-[0_30px_90px_rgba(15,10,4,0.25)] md:order-1"
+            style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)" }}
+          >
           <Image
             src={onboardingHero}
             alt={lang === "ro" ? "Drum ilustrat spre soare" : "Illustrated path toward the sun"}
@@ -202,6 +196,7 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
           </div>
         </div>
       </div>
+    </div>
     </section>
   );
 }

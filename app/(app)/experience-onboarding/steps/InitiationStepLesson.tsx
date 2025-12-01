@@ -339,14 +339,14 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
           <div className="mt-4 flex gap-2">
             <a
               href="/progress?from=initiation&completed=1"
-              className="theme-btn-outline rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+              className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
               data-testid="init-final-progress"
             >
               {lang === 'ro' ? 'Mergi la progres' : 'Go to progress'}
             </a>
             <a
               href="/recommendation?from=initiation"
-              className="theme-btn-outline rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+              className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
             >
               {lang === 'ro' ? 'Înapoi la recomandări' : 'Back to recommendations'}
             </a>

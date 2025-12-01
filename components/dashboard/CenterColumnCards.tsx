@@ -10,10 +10,12 @@ import { formatUtcShort } from "@/lib/format";
 import { toMsLocal } from "@/lib/dashboard/progressSelectors";
 import KunoMissionCard, { type KunoMissionCardData, type KunoNextModuleSuggestion } from "./KunoMissionCard";
 import type { OmniKunoModuleId } from "@/config/omniKunoModules";
+import type { MissionSummary } from "@/lib/hooks/useMissionPerspective";
 import { useEffect, useState } from "react";
 import { OmniAbilCard } from "./OmniAbilCard";
 import { SeasonCard } from "./SeasonCard";
 import { buildOmniGuidance, type OmniDailySnapshot, type OmniGuidance } from "@/lib/omniState";
+import { MissionPerspectiveCard } from "./MissionPerspectiveCard";
 
 export type FocusThemeInfo = {
   area?: string | null;
@@ -36,6 +38,7 @@ type CenterColumnCardsProps = {
   kunoDelta: number | null;
   kunoMissionData: KunoMissionCardData | null;
   kunoNextModuleSuggestion?: KunoNextModuleSuggestion | null;
+  mission?: MissionSummary | null;
 };
 
 export default function CenterColumnCards({
@@ -52,6 +55,7 @@ export default function CenterColumnCards({
   kunoDelta,
   kunoMissionData,
   kunoNextModuleSuggestion,
+  mission,
 }: CenterColumnCardsProps) {
   const [showFocusCard, setShowFocusCard] = useState(true);
   useEffect(() => {
@@ -80,6 +84,7 @@ export default function CenterColumnCards({
           missionData={kunoMissionData}
           nextModuleSuggestion={kunoNextModuleSuggestion}
         />
+        <MissionPerspectiveCard mission={mission ?? null} />
         <OmniAbilCard lang={lang} />
         <SeasonCard lang={lang} facts={facts} />
       </div>

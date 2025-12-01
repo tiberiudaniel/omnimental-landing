@@ -1,5 +1,4 @@
 "use client";
-import { Card } from "@/components/ui/card";
 import type { ProgressFact, RecentEntry } from "@/lib/progressFacts";
 import { adaptProgressFacts } from "@/lib/progressAdapter";
 import { getDailyInsight } from "@/lib/insights";
@@ -27,6 +26,7 @@ import {
 import {
   getLegacyModuleKeyById,
   getModuleLabel,
+  getModuleSummary,
   resolveModuleId,
   OMNIKUNO_MODULES as OMNIKUNO_META,
 } from "@/config/omniKunoModules";
@@ -43,6 +43,9 @@ import { normalizeKunoFacts } from "@/lib/kunoFacts";
 import { RecentEntriesCard } from "@/components/dashboard/RecentEntriesCard";
 import { DailyResetCard } from "@/components/dashboard/DailyResetCard";
 import { buildOmniDailySnapshot } from "@/lib/omniState";
+import type { MissionSummary } from "@/lib/hooks/useMissionPerspective";
+import { getDb } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function ProgressDashboard({
   profileId,
@@ -139,6 +142,8 @@ export default function ProgressDashboard({
   }, [baseFacts, localRecentEntries]);
   const kunoFacts = useMemo(() => normalizeKunoFacts(facts?.omni?.kuno), [facts?.omni?.kuno]);
   const omniSnapshot = useMemo(() => buildOmniDailySnapshot({ progress: facts, facts }), [facts]);
+  const profileMission =
+    (profile as { activeMission?: MissionSummary | null } | null)?.activeMission ?? null;
   const [timeframe, setTimeframe] = useState<"day" | "week" | "month">("week");
   const [qaOpen, setQaOpen] = useState(false);
   const [qaCategory, setQaCategory] = useState<'practice' | 'reflection' | 'knowledge'>('practice');
@@ -502,6 +507,25 @@ export default function ProgressDashboard({
     }
     return { area, desc, categoryKey: normalizedCategory, moduleId: resolvedModuleId };
   }, [facts, lang]);
+  const langCode = (lang === "ro" ? "ro" : "en") as "ro" | "en";
+  const derivedMission = useMemo(
+    () => buildMissionFromFocusTheme(focusTheme, langCode),
+    [focusTheme, langCode],
+  );
+  useEffect(() => {
+    if (!profile?.id) return;
+    if (profileMission || !derivedMission) return;
+    const db = getDb();
+    const payload = {
+      id: derivedMission.id,
+      title: derivedMission.title,
+      description: derivedMission.description,
+    };
+    void setDoc(doc(db, "userProfiles", profile.id), { activeMission: payload }, { merge: true }).catch((error) => {
+      console.warn("sync activeMission failed", error);
+    });
+  }, [profile?.id, profileMission, derivedMission]);
+  const activeMission = useMemo(() => profileMission ?? derivedMission ?? null, [profileMission, derivedMission]);
   const questPreview = useMemo(() => {
     const txt = (quest?.text || "").trim();
     if (!txt) return "";
@@ -686,55 +710,54 @@ export default function ProgressDashboard({
     };
   }, []);
   return (
-    <motion.section initial="hidden" animate="show" className="w-full px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-5">
-      <Card className="mx-auto max-w-6xl rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/90 px-3 py-4 shadow-[0_4px_18px_rgba(0,0,0,0.04)] sm:px-4 sm:py-5">
-        {debugJson ? (
-          <pre data-testid="debug-progress-facts" style={{ display: 'none' }}>{debugJson}</pre>
-        ) : null}
-        {/* WRAPPER: MAIN AREA (stânga+centru) + SIDEBAR (dreapta independentă) */}
-        {loading ? (
-          <div className="text-sm text-[#6A6A6A]">{lang==='ro'?'Se încarcă datele…':'Loading data…'}</div>
-        ) : null}
-        <div
-          className="flex flex-col gap-2 md:gap-3 lg:flex-row lg:gap-4"
+    <motion.div initial="hidden" animate="show" className="w-full space-y-4">
+      {debugJson ? (
+        <pre data-testid="debug-progress-facts" style={{ display: 'none' }}>{debugJson}</pre>
+      ) : null}
+      {/* WRAPPER: MAIN AREA (stânga+centru) + SIDEBAR (dreapta independentă) */}
+      {loading ? (
+        <div className="text-sm text-[var(--omni-muted)]">{lang === 'ro' ? 'Se încarcă datele…' : 'Loading data…'}</div>
+      ) : null}
+      <div
+        className="flex flex-col gap-2 md:gap-3 lg:flex-row lg:gap-4"
           style={
             debugGrid
               ? {
                   backgroundImage:
-                    "repeating-linear-gradient(to right, rgba(194,75,23,0.12) 0 1px, transparent 1px 12px), repeating-linear-gradient(to bottom, rgba(194,75,23,0.12) 0 1px, transparent 1px 12px)",
+                    "repeating-linear-gradient(to right, rgba(108,55,36,0.12) 0 1px, transparent 1px 12px), repeating-linear-gradient(to bottom, rgba(108,55,36,0.12) 0 1px, transparent 1px 12px)",
                   backgroundSize: "12px 12px",
                 }
               : undefined
           }
-        >
-          {/* MAIN AREA: grid în 2 coloane (stânga + centru) */}
-          <div className="flex-1 grid grid-cols-1 gap-2 md:grid-cols-[0.95fr_1.05fr] md:gap-3 lg:grid-cols-[0.94fr_1.06fr] lg:gap-4">
-            {/* LEFT COLUMN – pie + weekly */}
-            <div
-              className={`order-2 mt-2 sm:mt-3 lg:mt-4 flex h-full min-w-0 flex-col gap-2 md:col-span-1 md:order-1 md:gap-3 lg:gap-4 ${
-                debugGrid ? "outline outline-1 outline-[var(--omni-energy-soft)]/40" : ""
-              }`}
-            >
-              <DailyResetCard
-                lang={lang}
-                profileId={profile?.id ?? profileId ?? null}
-                facts={facts}
-              />
-              <InternalKpiCard
-                lang={lang}
-                t={t}
-                timeframe={timeframe}
-                setTimeframe={setTimeframe}
-                facts={facts}
-                snapshot={omniSnapshot}
-              />
-              <ActionTrendsCard
-                lang={lang}
-                t={t}
-                timeframe={timeframe}
-                setTimeframe={setTimeframe}
-                metric={metric}
-                setMetric={setMetric}
+      >
+        {/* MAIN AREA: grid în 2 coloane (stânga + centru) */}
+        <div className="flex-1 grid grid-cols-1 gap-2 md:grid-cols-[0.95fr_1.05fr] md:gap-3 lg:grid-cols-[0.94fr_1.06fr] lg:gap-4">
+          {/* LEFT COLUMN – pie + weekly */}
+          <div
+            className={`order-2 mt-2 sm:mt-3 lg:mt-4 flex h-full min-w-0 flex-col gap-2 md:col-span-1 md:order-1 md:gap-3 lg:gap-4 ${
+              debugGrid ? "outline outline-1 outline-[var(--omni-energy-soft)]/40" : ""
+            }`}
+          >
+            <DailyResetCard
+              lang={lang}
+              profileId={profile?.id ?? profileId ?? null}
+              facts={facts}
+            />
+            <InternalKpiCard
+              lang={lang}
+              t={t}
+              timeframe={timeframe}
+              setTimeframe={setTimeframe}
+              facts={facts}
+              snapshot={omniSnapshot}
+            />
+            <ActionTrendsCard
+              lang={lang}
+              t={t}
+              timeframe={timeframe}
+              setTimeframe={setTimeframe}
+              metric={metric}
+              setMetric={setMetric}
               weighted={weighted}
               sessions={sessions}
               facts={facts}
@@ -745,80 +768,96 @@ export default function ProgressDashboard({
               refMs={refMs}
               nowAnchor={nowAnchor}
               currentFocusTag={currentFocusTag}
-                qaOpen={qaOpen}
-                setQaOpen={setQaOpen}
-                qaCategory={qaCategory}
-                setQaCategory={setQaCategory}
-                qaMinutes={qaMinutes}
-                setQaMinutes={setQaMinutes}
-                qaBusy={qaBusy}
-                setQaBusy={setQaBusy}
-                qaSelectedDays={qaSelectedDays}
-                setQaSelectedDays={setQaSelectedDays}
-                profileId={profileId}
-              />
-              <MotivationCard
-                lang={lang}
-                t={t}
-                omniScopeScore={omniScopeScore}
-                motivationDelta={motivationDelta}
-                facts={facts}
-              />
-              <RecentEntriesCard lang={lang} facts={facts} />
-            </div>
-
-            <ProfileIndicesCard
-              lang={lang}
-              debugGrid={debugGrid}
-              omniScopeScore={omniScopeScore}
-              omniScopeComp={omniScopeComp}
-              omniCunoScore={omniCunoScore}
-              omniKunoDebugBadge={omniKunoDebugBadge}
-              omniKunoTooltipDynamic={omniKunoTooltipDynamic}
-              omniAbilScore={omniAbilScore}
-              omniFlexScore={omniFlexScore}
-              omniFlexComp={omniFlexComp}
-              omni={omni}
+              qaOpen={qaOpen}
+              setQaOpen={setQaOpen}
+              qaCategory={qaCategory}
+              setQaCategory={setQaCategory}
+              qaMinutes={qaMinutes}
+              setQaMinutes={setQaMinutes}
+              qaBusy={qaBusy}
+              setQaBusy={setQaBusy}
+              qaSelectedDays={qaSelectedDays}
+              setQaSelectedDays={setQaSelectedDays}
+              profileId={profileId}
             />
-
-            <CenterColumnCards
-              showWelcome={showWelcome}
-              hideOmniIntel={hideOmniIntel}
-              debugGrid={debugGrid}
+            <MotivationCard
               lang={lang}
               t={t}
+              omniScopeScore={omniScopeScore}
+              motivationDelta={motivationDelta}
               facts={facts}
-              omniIntelScore={omniIntelScore}
-              omniIntelDelta={omniIntelDelta}
-              focusTheme={focusTheme}
-              omniCunoScore={omniCunoScore}
-              kunoDelta={kunoDelta}
-              kunoMissionData={kunoMissionData}
-              kunoNextModuleSuggestion={kunoNextModuleSuggestion}
             />
+            <RecentEntriesCard lang={lang} facts={facts} />
           </div>
-          <SidebarCards
+
+          <ProfileIndicesCard
+            lang={lang}
+            debugGrid={debugGrid}
+            omniScopeScore={omniScopeScore}
+            omniScopeComp={omniScopeComp}
+            omniCunoScore={omniCunoScore}
+            omniKunoDebugBadge={omniKunoDebugBadge}
+            omniKunoTooltipDynamic={omniKunoTooltipDynamic}
+            omniAbilScore={omniAbilScore}
+            omniFlexScore={omniFlexScore}
+            omniFlexComp={omniFlexComp}
+            omni={omni}
+          />
+
+          <CenterColumnCards
+            showWelcome={showWelcome}
+            hideOmniIntel={hideOmniIntel}
             debugGrid={debugGrid}
             lang={lang}
             t={t}
             facts={facts}
-            snapshot={omniSnapshot}
-            profile={profile}
-            quest={quest}
-            questPreview={questPreview}
-            questExpanded={questExpanded}
-            setQuestExpanded={setQuestExpanded}
-            showAchv={showAchv}
-            setAchvDismissed={setAchvDismissed}
-            insight={insight}
-            prog={prog}
-            sessions={sessions}
-            refMs={refMs}
-            currentFocusTag={currentFocusTag}
-            nowAnchor={nowAnchor}
-          />
+            omniIntelScore={omniIntelScore}
+            omniIntelDelta={omniIntelDelta}
+            focusTheme={focusTheme}
+            omniCunoScore={omniCunoScore}
+          kunoDelta={kunoDelta}
+          kunoMissionData={kunoMissionData}
+          kunoNextModuleSuggestion={kunoNextModuleSuggestion}
+          mission={activeMission}
+        />
         </div>
-      </Card>
-    </motion.section>
+        <SidebarCards
+          debugGrid={debugGrid}
+          lang={lang}
+          t={t}
+          facts={facts}
+          snapshot={omniSnapshot}
+          profile={profile}
+          quest={quest}
+          questPreview={questPreview}
+          questExpanded={questExpanded}
+          setQuestExpanded={setQuestExpanded}
+          showAchv={showAchv}
+          setAchvDismissed={setAchvDismissed}
+          insight={insight}
+          prog={prog}
+          sessions={sessions}
+          refMs={refMs}
+          currentFocusTag={currentFocusTag}
+          nowAnchor={nowAnchor}
+        />
+      </div>
+    </motion.div>
   );
+}
+
+const DEFAULT_MISSION_DESCRIPTION: Record<"ro" | "en", string> = {
+  ro: "Tema prioritară pe care o lucrezi în acest moment.",
+  en: "The priority mission you're focusing on right now.",
+};
+
+function buildMissionFromFocusTheme(focusTheme: FocusThemeInfo, lang: "ro" | "en"): MissionSummary | null {
+  if (!focusTheme) return null;
+  const moduleId = focusTheme.moduleId ?? resolveModuleId(focusTheme.categoryKey ?? undefined);
+  if (!moduleId) return null;
+  return {
+    id: moduleId,
+    title: getModuleLabel(moduleId, lang),
+    description: getModuleSummary(moduleId, lang) ?? DEFAULT_MISSION_DESCRIPTION[lang],
+  };
 }

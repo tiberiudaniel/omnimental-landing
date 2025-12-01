@@ -144,9 +144,22 @@ export function RecentEntriesCard({ lang, facts }: RecentEntriesCardProps) {
                     >
                       {title}
                     </Link>
-                    <Link href={href} className="mt-0.5 block text-[11px] text-[var(--omni-ink-soft)] underline-offset-2 hover:underline sm:text-xs" title={full}>
+                    <Link
+                      href={href}
+                      className="mt-0.5 block text-[11px] text-[var(--omni-ink-soft)] underline-offset-2 hover:underline sm:text-xs"
+                      title={full}
+                    >
                       {short}
                     </Link>
+                    {isKuno ? (
+                      <Link
+                        href={href}
+                        className="mt-1 inline-flex text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-energy)] underline-offset-4 hover:underline sm:text-[10px]"
+                        data-testid="recent-entry-back-to-lesson"
+                      >
+                        {lang === "ro" ? "Înapoi la lecție" : "Back to lesson"}
+                      </Link>
+                    ) : null}
                   </div>
                 );
               })}

@@ -254,34 +254,17 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
     }
   }, [completedToday, lastDate, todayKey]);
 
-  const streakLabel =
-    typeof localStreak === "number"
-      ? lang === "ro"
-        ? `Serie: ${localStreak} zile`
-        : `Streak: ${localStreak} days`
-      : null;
-
   const allowInteractions = !fallbackMode ? Boolean(profileId) : true;
+  const summaryProps: DailyResetSummaryProps = {
+    lang,
+    streak: typeof localStreak === "number" ? localStreak : null,
+    completedToday: allowInteractions && completedToday,
+  };
   const shouldHideCard = allowInteractions && completedToday;
   if (shouldHideCard) {
     return (
       <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-3 text-sm text-[var(--omni-muted)] shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#D9C9B8] bg-[var(--omni-surface-card)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
-            <span>Daily reset completat</span>
-            <span aria-hidden="true">✅</span>
-          </div>
-          {typeof localStreak === "number" ? (
-            <span className="text-[11px] font-semibold text-[var(--omni-muted)]">
-              {lang === "ro" ? `Zile în serie: ${localStreak}` : `Streak: ${localStreak} days`}
-            </span>
-          ) : null}
-        </div>
-        <p className="mt-2 text-[12px] text-[var(--omni-muted)]">
-          {lang === "ro"
-            ? "Revină mâine pentru a nota energia, emoția și claritatea."
-            : "Come back tomorrow to capture energy, emotion, and clarity again."}
-        </p>
+        <DailyResetSummary {...summaryProps} />
       </Card>
     );
   }
@@ -385,19 +368,7 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
 
   return (
     <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 shadow-sm sm:p-4">
-      <div className="mb-2 flex items-center justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-            {lang === "ro" ? "Ritual zilnic" : "Daily ritual"}
-          </p>
-          <h3 className="text-base font-semibold text-[var(--omni-ink)]">
-            {lang === "ro" ? "Daily Reset în 3 pași" : "Daily Reset in 3 steps"}
-          </h3>
-        </div>
-        {streakLabel ? (
-          <span className="text-[11px] font-semibold text-[var(--omni-muted)]">{streakLabel}</span>
-        ) : null}
-      </div>
+      <DailyResetSummary {...summaryProps} />
       {allowInteractions ? (
         renderForm()
       ) : (
@@ -415,6 +386,43 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
         </p>
       ) : null}
     </Card>
+  );
+}
+
+export type DailyResetSummaryProps = {
+  lang: string;
+  streak: number | null;
+  completedToday: boolean;
+};
+
+export function DailyResetSummary({ lang, streak, completedToday }: DailyResetSummaryProps) {
+  return (
+    <div className="flex flex-col gap-2 text-[var(--omni-ink)]">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+            {lang === "ro" ? "Ritual zilnic" : "Daily ritual"}
+          </p>
+          <h3 className="text-base font-semibold text-[var(--omni-ink)]">
+            {lang === "ro" ? "Daily Reset" : "Daily Reset"}
+          </h3>
+        </div>
+        {typeof streak === "number" ? (
+          <span className="text-[11px] font-semibold text-[var(--omni-muted)]">
+            {lang === "ro" ? `Zile în serie: ${streak}` : `Streak: ${streak} days`}
+          </span>
+        ) : null}
+      </div>
+      <p className="text-[12px] text-[var(--omni-muted)]">
+        {completedToday
+          ? lang === "ro"
+            ? "Ai bifat resetul de azi. Revino mâine pentru claritate, emoție și energie."
+            : "You logged today’s reset. Come back tomorrow for clarity, emotion, and energy."
+          : lang === "ro"
+            ? "Notează rapid energia, emoția și claritatea ca să menții ritmul."
+            : "Capture today’s energy, emotion, and clarity to stay on cadence."}
+      </p>
+    </div>
   );
 }
 

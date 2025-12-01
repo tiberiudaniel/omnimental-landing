@@ -518,7 +518,7 @@ export default function WizardRouter(props: Props) {
                       } catch {}
                       navigateToStep('intentMotivation');
                     }}
-                  className="theme-btn-outline rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] transition-colors"
+                  className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
                   data-testid="wizard-microlesson-btn"
                 >
                   {label}
@@ -600,13 +600,13 @@ export default function WizardRouter(props: Props) {
                   onClick={() => {
                     void recordEvaluationTabChange("os");
                   }}
-                  className="theme-btn-solid inline-flex items-center justify-center rounded-[12px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+                  className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
                 >
                   {s("wizardCtaGoTraining", lang === 'ro' ? "Fă un antrenament complet" : "Start a full training")}
                 </Link>
                 <Link
                   href="/progress"
-                  className="theme-btn-outline inline-flex items-center justify-center rounded-[12px] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+                  className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
                 >
                   {s("wizardCtaGoDashboard", lang === 'ro' ? "Vezi tabloul tău de bord" : "Go to your dashboard")}
                 </Link>
@@ -618,7 +618,7 @@ export default function WizardRouter(props: Props) {
                 <button
                   type="button"
                   onClick={onReturnToOrigin}
-                  className="theme-btn-outline rounded-[12px] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+                  className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
                 >
                   {returnLabel ?? s("wizardBack", lang === 'ro' ? "Înapoi" : "Back")}
                 </button>
