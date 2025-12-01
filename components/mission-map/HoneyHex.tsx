@@ -22,22 +22,27 @@ export function HoneyHex({ label, value }: HexProps) {
         />
         <defs>
           <clipPath id={clipId}>
-            <polygon points="50,0 95,25 95,75 50,100 5,75 5,25" />
+            <polygon points="50,4 92,26 92,74 50,96 8,74 8,26" />
           </clipPath>
+          <linearGradient id={`honey-gradient-${clipId}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#e1a02b" />
+            <stop offset="40%" stopColor="#c37300" />
+            <stop offset="100%" stopColor="#502400" />
+          </linearGradient>
         </defs>
         <rect
           x={0}
           y={100 - clamped}
           width={100}
           height={clamped}
-          className="fill-[#d68a2f]"
+          fill={`url(#honey-gradient-${clipId})`}
           clipPath={`url(#${clipId})`}
         />
      </svg>
-     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-[10px] font-semibold text-[#3c2418]">{clamped}%</span>
-        <span className="text-[9px] font-semibold uppercase tracking-wide text-[#4b2d1f]">{label}</span>
-     </div>
+     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center gap-0.5">
+        <span className="text-[11px] font-semibold text-[#3c2418]">{clamped}%</span>
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-[#4b2d1f]">{label}</span>
+    </div>
     </div>
   );
 }

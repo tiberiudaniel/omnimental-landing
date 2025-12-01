@@ -69,7 +69,7 @@ export function MissionMentalProgressView({ missionTitle, mental = [], onNextSte
             <svg
               aria-hidden="true"
               viewBox="0 0 10 36"
-              className="absolute -bottom-9 left-[22%] h-9 w-2 text-[var(--omni-ink-soft)]"
+              className="absolute -bottom-5 left-[22%] h-9 w-2 text-[var(--omni-ink-soft)]"
             >
               <path d="M5 35L5 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               <path d="M1 6L5 2L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -92,7 +92,7 @@ export function MissionMentalProgressView({ missionTitle, mental = [], onNextSte
             </svg>
           </div>
         </div>
-        <div className="pointer-events-none absolute left-[calc(50%+100px)] bottom-[145px] -translate-x-1/2 w-[260px] rounded-2xl bg-white/92 px-5 py-2 text-[11px] font-semibold text-[var(--omni-ink)] shadow-[0_6px_18px_rgba(0,0,0,0.12)]">
+        <div className="pointer-events-none absolute left-[calc(50%+95px)] bottom-[110px] -translate-x-1/2 w-[260px] rounded-2xl bg-white/92 px-5 py-2 text-[11px] font-semibold text-[var(--omni-ink)] shadow-[0_6px_18px_rgba(0,0,0,0.12)]">
           <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">
             {lang === "ro" ? "Tema în focus" : "Focus theme"}
           </p>
@@ -117,14 +117,14 @@ export function MissionMentalProgressView({ missionTitle, mental = [], onNextSte
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {mental.map((metric) => (
-            <div key={metric.key} className="rounded-2xl border border-[var(--omni-border-soft)]/70 bg-[var(--omni-surface-strong)] px-4 py-3 shadow-[0_6px_16px_rgba(0,0,0,0.08)]">
-              <div className="flex items-center justify-between text-sm font-semibold text-[var(--omni-ink)]">
+            <div key={metric.key} className="rounded-2xl border border-[var(--omni-border-soft)]/70 bg-[var(--omni-surface-strong)] px-3 py-2.5 shadow-[0_4px_14px_rgba(0,0,0,0.08)]">
+              <div className="flex items-center justify-between text-[13px] font-semibold text-[var(--omni-ink)]">
                 <span>{metric.label}</span>
                 <span>{metric.score}%</span>
               </div>
-              <p className="mt-2 text-xs text-[var(--omni-ink-soft)]">{metric.description}</p>
+              <p className="mt-1.5 text-[11px] leading-tight text-[var(--omni-ink-soft)]">{metric.description}</p>
             </div>
           ))}
         </div>

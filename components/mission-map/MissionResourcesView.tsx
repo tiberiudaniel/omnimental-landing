@@ -96,29 +96,29 @@ export function MissionResourcesView({ missionTitle, resources = [], onSwitchVie
 
 function ResourceRow({ metric }: { metric: ResourceMetric }) {
   return (
-    <div className="rounded-2xl border border-[var(--omni-border-soft)]/60 bg-[var(--omni-surface-strong)] px-3 py-2.5 shadow-[0_4px_14px_rgba(0,0,0,0.08)]">
-      <div className="flex items-center justify-between text-[13px] font-semibold text-[var(--omni-ink)]">
+    <div className="rounded-2xl border border-[var(--omni-border-soft)]/60 bg-[var(--omni-surface-strong)] px-3 py-2 shadow-[0_4px_14px_rgba(0,0,0,0.08)]">
+      <div className="flex items-center justify-between text-[12px] font-semibold text-[var(--omni-ink)]">
         <span>{metric.label}</span>
         <span>{metric.score}%</span>
       </div>
       <div
-        className="relative mt-2 h-2 w-full overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--omni-border-soft)85%,white)]"
+        className="relative mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--omni-border-soft)85%,white)]"
         role="img"
         aria-label={`${metric.label} ${metric.score}%`}
       >
         <div
-          className="pointer-events-none absolute inset-0 opacity-60"
+          className="pointer-events-none absolute inset-0 opacity-50"
           style={{
             backgroundImage:
-              "repeating-linear-gradient(to right, transparent 0, transparent calc(25% - 1px), rgba(0,0,0,0.08) calc(25% - 1px), rgba(0,0,0,0.08) 25%)",
+              "repeating-linear-gradient(to right, transparent 0, transparent calc(25% - 1px), rgba(0,0,0,0.06) calc(25% - 1px), rgba(0,0,0,0.06) 25%)",
           }}
         />
         <div
-          className="relative h-full rounded-full bg-gradient-to-r from-[var(--omni-accent)] to-[var(--omni-accent-soft)]"
+          className="relative h-full rounded-full bg-gradient-to-r from-[var(--omni-accent-soft)] to-[var(--omni-accent)]"
           style={{ width: `${Math.max(0, Math.min(100, metric.score))}%` }}
         />
       </div>
-      <p className="mt-1.5 text-[11px] leading-snug text-[var(--omni-ink-soft)]">{metric.description}</p>
+      <p className="mt-1 text-[10px] leading-tight text-[var(--omni-ink-soft)]">{metric.description}</p>
     </div>
   );
 }
