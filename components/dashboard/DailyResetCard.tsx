@@ -11,7 +11,7 @@ import {
 import type { OmniDailySnapshot } from "@/lib/omniState";
 import type { ProgressFact } from "@/lib/progressFacts";
 
-type SliderKey = "energy" | "stress" | "clarity" | "sleep";
+type SliderKey = "energy" | "stress" | "clarity";
 
 const sliderCopy: Record<
   SliderKey,
@@ -33,28 +33,20 @@ const sliderCopy: Record<
     maxEn: "High",
   },
   stress: {
-    labelRo: "Stres",
-    labelEn: "Stress",
+    labelRo: "Emoție",
+    labelEn: "Emotion",
     minRo: "Relaxat",
     minEn: "Calm",
     maxRo: "Tensionat",
     maxEn: "Tense",
   },
   clarity: {
-    labelRo: "Claritate",
-    labelEn: "Clarity",
+    labelRo: "Gândire",
+    labelEn: "Thinking",
     minRo: "Ceață mentală",
     minEn: "Foggy",
     maxRo: "Clar",
     maxEn: "Sharp",
-  },
-  sleep: {
-    labelRo: "Somn",
-    labelEn: "Sleep quality",
-    minRo: "Fragmentat",
-    minEn: "Poor",
-    maxRo: "Regenerant",
-    maxEn: "Great",
   },
 };
 
@@ -74,7 +66,7 @@ function ValuePicker({ dimension, value, onChange, disabled, lang, optional }: V
   const maxLabel = lang === "ro" ? copy.maxRo : copy.maxEn;
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--omni-ink)]">
+      <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--omni-ink)] leading-tight">
         <span>
           {title}
           {optional ? (
@@ -85,16 +77,34 @@ function ValuePicker({ dimension, value, onChange, disabled, lang, optional }: V
         </span>
         <span>{value.toFixed(0)}/10</span>
       </div>
-      <input
-        type="range"
-        min={0}
-        max={10}
-        step={1}
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        disabled={disabled}
-        className="w-full accent-[var(--omni-energy)]"
-      />
+      <div className="relative h-[7px] w-full rounded-full bg-gradient-to-r from-[#FDF7F1] to-[color-mix(in_srgb,var(--omni-energy)_45%,var(--omni-bg-paper))]">
+        <input
+          type="range"
+          min={0}
+          max={10}
+          step={1}
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value))}
+          disabled={disabled}
+          className="absolute inset-0 h-full w-full appearance-none
+            [&::-webkit-slider-thumb]:appearance-none
+            [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4
+            [&::-webkit-slider-thumb]:rounded-full
+            [&::-webkit-slider-thumb]:bg-[color-mix(in_srgb,var(--omni-energy)_75%,var(--omni-bg-paper))]
+            [&::-webkit-slider-thumb]:shadow-[0_2px_6px_rgba(0,0,0,0.25)]
+            [&::-moz-range-thumb]:appearance-none
+            [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4
+            [&::-moz-range-thumb]:rounded-full
+            [&::-moz-range-thumb]:bg-[color-mix(in_srgb,var(--omni-energy)_75%,var(--omni-bg-paper))]
+            [&::-moz-range-thumb]:shadow-[0_2px_6px_rgba(0,0,0,0.25)]
+            [&::-moz-range-track]:bg-transparent
+            [&::-ms-thumb]:appearance-none
+            [&::-ms-thumb]:h-4 [&::-ms-thumb]:w-4
+            [&::-ms-thumb]:rounded-full
+            [&::-ms-thumb]:bg-[color-mix(in_srgb,var(--omni-energy)_75%,var(--omni-bg-paper))]
+            [&::-ms-track]:bg-transparent"
+        />
+      </div>
       <div className="flex items-center justify-between text-[10px] text-[var(--omni-muted)]">
         <span>{minLabel}</span>
         <span>{maxLabel}</span>
@@ -116,7 +126,6 @@ type LocalResetValues = {
   clarity: number;
   energy: number;
   stress: number;
-  sleep?: number | null;
 };
 
 type LocalResetState = {
@@ -154,7 +163,6 @@ const readLocalResetState = (): LocalResetState | null => {
           clarity: clampSliderValue(values.clarity, 5),
           energy: clampSliderValue(values.energy, 5),
           stress,
-          ...(values.sleep !== undefined ? { sleep: clampSliderValue(values.sleep, 6) } : {}),
         },
       };
     }
@@ -178,7 +186,6 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   const [clarity, setClarity] = useState(6);
   const [energy, setEnergy] = useState(6);
   const [stress, setStress] = useState(4);
-  const [sleep, setSleep] = useState(6);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(false);
   const [, setLocalCache] = useState<LocalResetState | null>(null);
@@ -201,9 +208,6 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
       setClarity((prev) => local.values?.clarity ?? prev);
       setEnergy((prev) => local.values?.energy ?? prev);
       setStress((prev) => local.values?.stress ?? prev);
-      if (typeof local.values.sleep === "number") {
-        setSleep(local.values.sleep);
-      }
     }
   }, [todayKey]);
 
@@ -227,9 +231,6 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
         setEnergy((prev) => payload.energy ?? prev);
         const payloadStress = (payload as { stress?: number; emotion?: number }).stress;
         setStress((prev) => payloadStress ?? (payload as { emotion?: number }).emotion ?? prev);
-        if (typeof payload.sleep === "number") {
-          setSleep(payload.sleep);
-        }
         setLastDate((prev) => payload.date ?? prev);
         if (payload.date && payload.date === todayKey) {
           setCompletedToday(true);
@@ -263,7 +264,7 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   const shouldHideCard = allowInteractions && completedToday;
   if (shouldHideCard) {
     return (
-      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-3 text-sm text-[var(--omni-muted)] shadow-sm">
+      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 text-sm text-[var(--omni-muted)] shadow-sm">
         <DailyResetSummary {...summaryProps} />
       </Card>
     );
@@ -274,7 +275,6 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
       clarity,
       energy,
       stress,
-      sleep,
     };
     const persistLocal = (streakDays: number) => {
       const nextState: LocalResetState = {
@@ -319,7 +319,7 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   };
 
   const renderForm = () => (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       <ValuePicker
         dimension="energy"
         value={energy}
@@ -341,14 +341,6 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
         disabled={loading || initializing}
         lang={lang}
       />
-      <ValuePicker
-        dimension="sleep"
-        value={sleep}
-        onChange={setSleep}
-        disabled={loading || initializing}
-        lang={lang}
-        optional
-      />
       <button
         type="button"
         onClick={handleSave}
@@ -369,13 +361,14 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   return (
     <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 shadow-sm sm:p-4">
       <DailyResetSummary {...summaryProps} />
+      <div className="mt-1.5 mb-2.5 border-t border-[var(--omni-border-soft)]/70" />
       {allowInteractions ? (
         renderForm()
       ) : (
         <p className="text-sm text-[var(--omni-muted)]">
           {lang === "ro"
-            ? "Autentifică-te pentru a nota rapid energia, stresul și claritatea de azi."
-            : "Sign in to capture today’s energy, stress, and clarity."}
+            ? "Autentifică-te pentru a nota rapid energia, emoția și gândirea de azi."
+            : "Sign in to capture today’s energy, emotion, and thinking."}
         </p>
       )}
       {fallbackMode ? (
@@ -404,7 +397,7 @@ export function DailyResetSummary({ lang, streak, completedToday }: DailyResetSu
             {lang === "ro" ? "Ritual zilnic" : "Daily ritual"}
           </p>
           <h3 className="text-base font-semibold text-[var(--omni-ink)]">
-            {lang === "ro" ? "Daily Reset" : "Daily Reset"}
+            {lang === "ro" ? "Pulsul zilei" : "Daily pulse"}
           </h3>
         </div>
         {typeof streak === "number" ? (
@@ -416,11 +409,11 @@ export function DailyResetSummary({ lang, streak, completedToday }: DailyResetSu
       <p className="text-[12px] text-[var(--omni-muted)]">
         {completedToday
           ? lang === "ro"
-            ? "Ai bifat resetul de azi. Revino mâine pentru claritate, emoție și energie."
-            : "You logged today’s reset. Come back tomorrow for clarity, emotion, and energy."
+            ? "Ai bifat resetul de azi. Revino mâine pentru gândire, emoție și energie."
+            : "You logged today’s reset. Come back tomorrow for thinking, emotion, and energy."
           : lang === "ro"
-            ? "Notează rapid energia, emoția și claritatea ca să menții ritmul."
-            : "Capture today’s energy, emotion, and clarity to stay on cadence."}
+            ? "Notează rapid energia, emoția și gândirea ca să menții ritmul."
+            : "Capture today’s energy, emotion, and thinking to stay on cadence."}
       </p>
     </div>
   );

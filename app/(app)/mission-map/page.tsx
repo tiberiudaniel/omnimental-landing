@@ -12,6 +12,7 @@ import { PrimaryButton, SecondaryButton } from "@/components/PrimaryButton";
 import { MissionResourcesView } from "@/components/mission-map/MissionResourcesView";
 import { MissionMentalProgressView } from "@/components/mission-map/MissionMentalProgressView";
 import { useMissionPerspective, type MissionSummary } from "@/lib/hooks/useMissionPerspective";
+import { useProgressFacts } from "@/components/useProgressFacts";
 
 type ViewType = "resources" | "mental";
 
@@ -21,6 +22,7 @@ function MissionMapContent() {
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
   const { profile } = useProfile();
+  const { data: progressFacts } = useProgressFacts(profile?.id ?? null);
   const activeMission = useMemo(
     () => (profile as { activeMission?: MissionSummary | null } | null)?.activeMission ?? null,
     [profile],
@@ -32,6 +34,7 @@ function MissionMapContent() {
   const { mission, resources, mental } = useMissionPerspective({
     missionId: missionId ?? undefined,
     mission: activeMission ?? undefined,
+    facts: progressFacts ?? null,
   });
 
   const header = (

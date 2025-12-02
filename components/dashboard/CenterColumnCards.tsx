@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import DashboardCard from "@/components/dashboard/DashboardCard";
+import { HoneyHex } from "@/components/mission-map/HoneyHex";
 import InfoTooltip from "@/components/InfoTooltip";
 import { fadeDelayed, hoverScale } from "@/components/dashboard/motionPresets";
 import { getString } from "@/lib/i18nGetString";
@@ -8,7 +10,6 @@ import type { ProgressFact } from "@/lib/progressFacts";
 import type { useI18n } from "@/components/I18nProvider";
 import { formatUtcShort } from "@/lib/format";
 import { toMsLocal } from "@/lib/dashboard/progressSelectors";
-import KunoMissionCard, { type KunoMissionCardData, type KunoNextModuleSuggestion } from "./KunoMissionCard";
 import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 import type { MissionSummary } from "@/lib/hooks/useMissionPerspective";
 import { useEffect, useState } from "react";
@@ -34,10 +35,6 @@ type CenterColumnCardsProps = {
   omniIntelScore: number;
   omniIntelDelta: number | null;
   focusTheme: FocusThemeInfo;
-  omniCunoScore: number;
-  kunoDelta: number | null;
-  kunoMissionData: KunoMissionCardData | null;
-  kunoNextModuleSuggestion?: KunoNextModuleSuggestion | null;
   mission?: MissionSummary | null;
 };
 
@@ -51,10 +48,6 @@ export default function CenterColumnCards({
   omniIntelScore,
   omniIntelDelta,
   focusTheme,
-  omniCunoScore,
-  kunoDelta,
-  kunoMissionData,
-  kunoNextModuleSuggestion,
   mission,
 }: CenterColumnCardsProps) {
   const [showFocusCard, setShowFocusCard] = useState(true);
@@ -76,14 +69,6 @@ export default function CenterColumnCards({
         {showFocusCard ? <FocusThemeCard lang={lang} focusTheme={focusTheme} /> : null}
       </div>
       <div className="grid grid-cols-1 items-stretch gap-2 md:gap-3 lg:gap-3">
-        <KunoMissionCard
-          lang={lang}
-          focusAreaLabel={focusTheme.area}
-          omniCunoScore={omniCunoScore}
-          kunoDelta={kunoDelta}
-          missionData={kunoMissionData}
-          nextModuleSuggestion={kunoNextModuleSuggestion}
-        />
         <MissionPerspectiveCard mission={mission ?? null} />
         <OmniAbilCard lang={lang} />
         <SeasonCard lang={lang} facts={facts} />
@@ -202,13 +187,6 @@ export function TodayGuidanceCard({
     daily: snapshot,
     activityEvents: events,
   });
-  const badgeMap: Record<OmniGuidance["badge"], { ro: string; en: string; cls: string }> = {
-    focus: { ro: "FOCUS", en: "FOCUS", cls: "bg-[#ECF8F0] text-[#1F7A43]" },
-    recovery: { ro: "RESET", en: "RESET", cls: "bg-[#FFF1ED] text-[#B8472B]" },
-    light: { ro: "LIGHT", en: "LIGHT", cls: "bg-[#FFF7E8] text-[#B0660D]" },
-    normal: { ro: "RITUAL", en: "CADENCE", cls: "bg-[#E9E4FF] text-[#5A3998]" },
-  };
-  const badge = badgeMap[guidance.badge];
   const altLinks = [
     { label: lang === "ro" ? "Mini OmniKuno" : "Mini OmniKuno", href: { pathname: "/antrenament", query: { tab: "oc" } } },
     {
@@ -216,43 +194,104 @@ export function TodayGuidanceCard({
       href: { pathname: "/progress", query: { open: "journal", tab: "NOTE_LIBERE" } },
     },
   ];
+  const xpScore = (() => {
+    if (typeof guidance.xpEstimate === "number" && Number.isFinite(guidance.xpEstimate)) return guidance.xpEstimate;
+    if (snapshot?.axes?.physicalEnergy != null) {
+      return Math.round((snapshot.axes.physicalEnergy / 10) * 100);
+    }
+    return null;
+  })();
+  const honeyValue = (() => {
+    if (snapshot?.axes?.emotionalBalance != null) {
+      return Math.round((snapshot.axes.emotionalBalance / 10) * 100);
+    }
+    if (typeof xpScore === "number") {
+      return xpScore;
+    }
+    return null;
+  })();
   return (
     <motion.div variants={fadeDelayed(0.2)} {...hoverScale}>
-      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 shadow-sm sm:p-4">
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-            <span className={`rounded-full px-2 py-0.5 ${badge.cls}`}>{lang === "ro" ? badge.ro : badge.en}</span>
-            <span>{lang === "ro" ? "ghidaj de azi" : "today guidance"}</span>
+      <DashboardCard className="h-full px-4 py-3.5 sm:px-4 sm:py-4" title={null} subtitle={null} footer={null} style={{ display: "flex", flexDirection: "column" }}>
+        <div className="space-y-3 text-[var(--omni-ink)] flex-1">
+          <div className="flex items-center justify-between gap-4 sm:gap-5" style={{ marginTop: "-10px" }}>
+            <div className="flex-1">
+              <p className="text-[8px] font-semibold uppercase tracking-[0.42em] text-[color-mix(in_srgb,var(--omni-muted)_55%,var(--omni-energy)_45%)]">
+                {lang === "ro" ? "OMNI-ABIL" : "Omni-Abil"}
+              </p>
+              <p className="pb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                {lang === "ro" ? "GHIDAJ DE AZI" : "TODAY GUIDANCE"}
+              </p>
+              <h3 className="text-base font-semibold text-[var(--omni-ink)] leading-tight">
+                {lang === "ro" ? "Practică: Re-energizarea" : "Practice: Re-energize"}
+              </h3>
+              <p className="mt-1 text-[12px] leading-relaxed text-[var(--omni-muted)]">{guidance.description}</p>
+            </div>
+            {typeof xpScore === "number" || typeof honeyValue === "number" ? (
+              <div className="ml-1 flex flex-col items-end gap-3 text-right" style={{ marginTop: "-42px", width: "96px" }}>
+                {typeof xpScore === "number" ? (
+                  <div className="flex items-baseline gap-1 text-right">
+                    <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--omni-energy)_70%,var(--omni-ink)_30%)] leading-none">{xpScore}</p>
+                    <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-[color-mix(in_srgb,var(--omni-muted)_80%,var(--omni-ink-soft)_20%)]">XP</p>
+                  </div>
+                ) : null}
+                {typeof honeyValue === "number" ? (
+                  <div className="hidden sm:flex pt-1" style={{ paddingTop: "10px" }}>
+                    <HoneyHex label="Abil" value={Math.max(0, Math.min(100, honeyValue))} size={72} />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
-          <div className="space-y-2 rounded-2xl border border-[#E7DED3] bg-[var(--omni-surface-card)]/70 px-3 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)] sm:text-xs">
-              {lang === "ro" ? "Recomandarea ta" : "Your recommendation"}
-            </div>
-            <div>
-              <p className="text-[14px] font-bold leading-tight text-[var(--omni-ink)] sm:text-base">{guidance.title}</p>
-              <p className="mt-1 text-[11px] text-[var(--omni-muted)] sm:text-[12px]">{guidance.description}</p>
-            </div>
-            <Link
-              href={guidance.ctaHref}
-              className="group flex items-center justify-between rounded-full bg-[var(--omni-energy)] px-5 py-2.5 text-white shadow-sm transition hover:bg-[var(--omni-energy-soft)]"
+
+          <div
+            className="flex items-center gap-3 rounded-2xl border px-2 py-2"
+            style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)", minHeight: "76px" }}
+          >
+            <span
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border text-lg font-semibold"
+              style={{
+                borderColor: "var(--accent-main)",
+                backgroundColor: "color-mix(in srgb, var(--accent-main) 12%, transparent)",
+                color: "var(--accent-main)",
+              }}
+              aria-hidden="true"
             >
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] sm:text-[12px]">
-                {guidance.ctaLabel}
+              ≈
+            </span>
+            <div>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+                {lang === "ro" ? "Recomandarea ta" : "Your recommendation"}
               </span>
-              <span className="text-[10px] opacity-80">↗</span>
-            </Link>
+              <p className="mt-1 text-base font-semibold text-[var(--omni-ink)] leading-tight">{guidance.title}</p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/80 px-3 py-2">
-            <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+
+          <Link
+            href={guidance.ctaHref}
+            className="inline-flex w-full items-center justify-center rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] transition-all duration-200 ease-out transform hover:-translate-y-0.5 hover:shadow-[0_18px_32px_rgba(242,151,84,0.25)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--omni-energy)]"
+            style={{
+              borderColor: "color-mix(in srgb, var(--omni-energy) 78%, var(--omni-border-soft) 22%)",
+              color: "color-mix(in srgb, var(--omni-energy) 92%, #5a2c06 8%)",
+              backgroundImage:
+                "linear-gradient(120deg, color-mix(in srgb, var(--omni-energy) 18%, transparent) 0%, color-mix(in srgb, var(--omni-energy) 5%, transparent) 100%)",
+              boxShadow: "0 12px 28px rgba(242, 151, 84, 0.2)",
+            }}
+          >
+            {lang === "ro" ? "Pornește exercițiul" : "Start exercise"}
+          </Link>
+
+          <div className="rounded-2xl border border-dashed border-[color-mix(in srgb,var(--omni-border-soft)_70%,transparent)] bg-[var(--omni-surface-card)]/85 px-3 py-2.5">
+            <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
               <span>{lang === "ro" ? "Variante rapide" : "Quick options"}</span>
               <span>~5 min</span>
             </div>
-            <div className="space-y-1 text-[11px] text-[var(--omni-ink)] sm:text-xs">
+            <div className="space-y-0.5 text-[12px] leading-snug text-[var(--omni-ink)]">
               {altLinks.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
-                  className="block rounded-[10px] border border-transparent px-2 py-1 transition hover:border-[var(--omni-border-soft)] hover:bg-[var(--omni-bg-paper)]"
+                  className="block rounded-[12px] border border-transparent px-2 py-1 transition hover:border-[var(--omni-border-soft)] hover:bg-[var(--omni-bg-paper)]"
                 >
                   • {link.label}
                 </Link>
@@ -260,7 +299,7 @@ export function TodayGuidanceCard({
             </div>
           </div>
         </div>
-      </Card>
+      </DashboardCard>
     </motion.div>
   );
 }

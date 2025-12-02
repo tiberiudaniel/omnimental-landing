@@ -5,14 +5,22 @@ import { useId } from "react";
 type HexProps = {
   label: string;
   value: number; // 0–100
+  size?: number; // px, defaults to 96
 };
 
-export function HoneyHex({ label, value }: HexProps) {
+export function HoneyHex({ label, value, size = 96 }: HexProps) {
   const clamped = Math.max(0, Math.min(100, value));
   const clipId = `hex-clip-${useId().replace(/:/g, "")}`;
+  const dimension = Math.max(48, size);
 
   return (
-    <div className="relative h-24 w-24">
+    <div
+      className="relative"
+      style={{
+        width: `${dimension}px`,
+        height: `${dimension}px`,
+      }}
+    >
       <svg viewBox="0 0 100 100" className="h-full w-full">
         {/* hexagon pointy-top */}
         <polygon

@@ -32,6 +32,26 @@ import FirstOfferPanel from "@/components/recommendations/FirstOfferPanel";
 import { choosePrimaryProduct, inferBudgetLevelFromIntent } from "@/lib/primaryProduct";
 import { useAuth } from "@/components/AuthProvider";
 import { PrimaryButton, SecondaryButton } from "@/components/PrimaryButton";
+import { DailyResetCard } from "@/components/dashboard/DailyResetCard";
+import { TodayGuidanceCard } from "@/components/dashboard/CenterColumnCards";
+import { computePillarProgress } from "@/lib/pillarProgress";
+import { normalizeKunoFacts } from "@/lib/kunoFacts";
+import { buildOmniDailySnapshot } from "@/lib/omniState";
+import {
+  OMNIKUNO_MODULES as OMNIKUNO_LESSON_MODULES,
+  type OmniKunoModuleConfig,
+} from "@/config/omniKunoLessons";
+import {
+  getLegacyModuleKeyById,
+  resolveModuleId,
+  OMNIKUNO_MODULES as OMNIKUNO_META,
+  type OmniKunoModuleId,
+} from "@/config/omniKunoModules";
+import { normalizePerformance } from "@/lib/omniKunoAdaptive";
+import KunoMissionCard, {
+  type KunoMissionCardData,
+  type KunoNextModuleSuggestion,
+} from "@/components/dashboard/KunoMissionCard";
 // useState already imported above
 
 const STAGE_LABELS: Record<string, string> = {
@@ -72,17 +92,184 @@ function RecommendationContent() {
     [profile?.id, profile?.selection],
   );
 
-  const tier = profile?.accessTier ?? "public";
-  const { data: progress, loading, error } = useProgressFacts(profile?.id);
-  const isPublicTier = tier === "public";
+const tier = profile?.accessTier ?? "public";
+const { data: progress, loading, error } = useProgressFacts(profile?.id);
+const kunoFacts = useMemo(() => normalizeKunoFacts(progress?.omni?.kuno), [progress?.omni?.kuno]);
+const [lastKunoModulePref, setLastKunoModulePref] = useState<{
+  moduleId: OmniKunoModuleId | null;
+  lessonId: string | null;
+  updatedAt: number | null;
+} | null>(null);
+const isPublicTier = tier === "public";
+const pillarProgress = useMemo(() => computePillarProgress(progress ?? null), [progress]);
 
-  const pageTitle = lang === 'ro'
-    ? 'Recomandările tale și progresul lor'
-    : s('recommendationPageTitle', 'Your recommendations and progress');
-  const pageSubtitle = s(
-    "recommendationPageSubtitle",
-    "Folosim datele completate până acum pentru a-ți da direcția cu cele mai multe șanse.",
-  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const parsePref = () => {
+      try {
+        const raw = window.localStorage.getItem("omnikuno_last_module");
+        if (!raw) {
+          setLastKunoModulePref(null);
+          return;
+        }
+        const parsed = JSON.parse(raw) as {
+          moduleId?: string | null;
+          areaKey?: string | null;
+          lessonId?: string | null;
+          updatedAt?: number | null;
+        };
+        const normalized =
+          resolveModuleId(parsed?.moduleId ?? undefined) ?? resolveModuleId(parsed?.areaKey ?? undefined);
+        if (!normalized || !OMNIKUNO_LESSON_MODULES[normalized]) {
+          setLastKunoModulePref(null);
+          return;
+        }
+        setLastKunoModulePref({
+          moduleId: normalized as OmniKunoModuleId,
+          lessonId: typeof parsed?.lessonId === "string" ? parsed!.lessonId! : null,
+          updatedAt: typeof parsed?.updatedAt === "number" ? parsed!.updatedAt! : null,
+        });
+      } catch {
+        setLastKunoModulePref(null);
+      }
+    };
+    parsePref();
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key && event.key !== "omnikuno_last_module") return;
+      parsePref();
+    };
+    const handleCustom = () => parsePref();
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("omnikuno:last-module", handleCustom as EventListener);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("omnikuno:last-module", handleCustom as EventListener);
+    };
+  }, []);
+
+  const activeMissionData =
+    (profile as { activeMission?: { moduleId?: string | null; areaKey?: string | null; area?: string | null; title?: string | null } } | null)
+      ?.activeMission ?? null;
+  const profileActiveModuleKey =
+    activeMissionData?.moduleId ?? activeMissionData?.areaKey ?? activeMissionData?.area ?? null;
+  const focusAreaLabel = activeMissionData?.title ?? null;
+
+  const resolveCandidateId = (value?: string | null) => {
+    if (!value) return null;
+    return resolveModuleId(value);
+  };
+
+  const kunoMissionData: KunoMissionCardData | null = useMemo(() => {
+    const moduleEntries = Object.entries(OMNIKUNO_LESSON_MODULES) as Array<[OmniKunoModuleId, OmniKunoModuleConfig]>;
+    const pushCandidate = (
+      list: Array<[OmniKunoModuleId, OmniKunoModuleConfig]>,
+      value?: string | null,
+    ) => {
+      const normalized = resolveCandidateId(value);
+      if (!normalized) return;
+      if (!OMNIKUNO_LESSON_MODULES[normalized]) return;
+      if (list.some(([key]) => key === normalized)) return;
+      list.push([normalized, OMNIKUNO_LESSON_MODULES[normalized]]);
+    };
+    const candidates: Array<[OmniKunoModuleId, OmniKunoModuleConfig]> = [];
+    if (lastKunoModulePref?.moduleId) {
+      pushCandidate(candidates, lastKunoModulePref.moduleId);
+    }
+    pushCandidate(candidates, kunoFacts.recommendedModuleId ?? null);
+    pushCandidate(candidates, kunoFacts.recommendedArea ?? null);
+    const inProgressModules = moduleEntries
+      .map(([areaKey, module]) => {
+        const snapshot = kunoFacts.modules[module.moduleId];
+        const completedCount = Array.isArray(snapshot?.completedIds) ? snapshot!.completedIds!.length : 0;
+        const totalLessons = module.lessons.length;
+        const hasProgress = totalLessons > 0 && completedCount > 0 && completedCount < totalLessons;
+        const lastUpdated = typeof snapshot?.lastUpdated === "number" ? snapshot.lastUpdated : 0;
+        return { areaKey, module, hasProgress, lastUpdated };
+      })
+      .filter((entry) => entry.hasProgress)
+      .sort((a, b) => b.lastUpdated - a.lastUpdated);
+    inProgressModules.forEach((entry) => pushCandidate(candidates, entry.areaKey));
+    const fallbackArea = (() => {
+      const resolved = resolveCandidateId(profileActiveModuleKey);
+      if (resolved && OMNIKUNO_LESSON_MODULES[resolved as OmniKunoModuleId]) {
+        return resolved as OmniKunoModuleId;
+      }
+      const legacy = resolved ? getLegacyModuleKeyById(resolved) : profileActiveModuleKey ? getLegacyModuleKeyById(profileActiveModuleKey) : null;
+      if (legacy && OMNIKUNO_LESSON_MODULES[legacy as OmniKunoModuleId]) {
+        return legacy as OmniKunoModuleId;
+      }
+      return "emotional_balance";
+    })();
+    pushCandidate(candidates, fallbackArea);
+    if (!candidates.length) {
+      pushCandidate(candidates, "emotional_balance");
+    }
+    const [areaKey, module] = candidates[0] ?? [];
+    if (!areaKey || !module) return null;
+    const moduleSnapshot = kunoFacts.modules[module.moduleId];
+    const completedIds = moduleSnapshot?.completedIds ?? [];
+    const xp = Number((kunoFacts.gamification as { xp?: number } | null)?.xp ?? 0);
+    return {
+      areaKey,
+      module,
+      completedIds,
+      xp: Number.isFinite(xp) ? xp : 0,
+      performance: normalizePerformance(
+        (moduleSnapshot?.performance as Partial<{ recentScores: number[]; recentTimeSpent: number[]; difficultyBias: number }> | null) ?? null,
+      ),
+    };
+  }, [kunoFacts, lastKunoModulePref?.moduleId, profileActiveModuleKey]);
+
+  const kunoNextModuleSuggestion: KunoNextModuleSuggestion | null = useMemo(() => {
+    if (!kunoMissionData?.module?.moduleId) return null;
+    const currentModuleId = kunoMissionData.module.moduleId as OmniKunoModuleId;
+    const ordered: OmniKunoModuleId[] = [];
+    const seen = new Set<OmniKunoModuleId>();
+    const pushCandidate = (value?: string | null) => {
+      const normalized = resolveCandidateId(value);
+      if (normalized && !seen.has(normalized)) {
+        seen.add(normalized);
+        ordered.push(normalized);
+      }
+    };
+    pushCandidate(kunoFacts.recommendedModuleId ?? null);
+    pushCandidate(kunoFacts.recommendedArea ?? null);
+    pushCandidate(profileActiveModuleKey ?? null);
+    type IntentCat = { category?: string | null; count?: number | null };
+    const intentBlock = progress?.intent as { categories?: IntentCat[] } | undefined;
+    if (Array.isArray(intentBlock?.categories)) {
+      const sorted = intentBlock.categories
+        .slice()
+        .sort((a, b) => (Number(b?.count) || 0) - (Number(a?.count) || 0));
+      sorted.forEach((entry) => pushCandidate(entry?.category ?? null));
+    }
+    OMNIKUNO_META.forEach((meta) => {
+      if (!seen.has(meta.id)) {
+        seen.add(meta.id);
+        ordered.push(meta.id);
+      }
+    });
+    const nextModuleId = ordered.find((id) => id !== currentModuleId);
+    if (!nextModuleId) return null;
+    const nextModule = OMNIKUNO_LESSON_MODULES[nextModuleId];
+    if (!nextModule) return null;
+    const firstLessonId =
+      nextModule.lessons
+        .slice()
+        .sort((a, b) => a.order - b.order)[0]?.id ?? null;
+    return { moduleId: nextModuleId, firstLessonId };
+  }, [kunoFacts, kunoMissionData?.module?.moduleId, profileActiveModuleKey, progress?.intent]);
+
+  const kunoMissionProgressPercent = useMemo(() => {
+    if (!kunoMissionData?.module?.moduleId) return null;
+    const moduleId = kunoMissionData.module.moduleId as OmniKunoModuleId;
+    const moduleScore = pillarProgress.metadata.kunoByModule[moduleId];
+    return moduleScore?.percent ?? pillarProgress.kuno.percent;
+  }, [kunoMissionData?.module?.moduleId, pillarProgress]);
+
+  const omniCunoScore = typeof kunoFacts.primaryScore === "number" ? Math.round(kunoFacts.primaryScore) : 0;
+  const kunoDelta: number | null = null;
+  const omniSnapshot = useMemo(() => buildOmniDailySnapshot({ progress: progress ?? null, facts: progress ?? null }), [progress]);
 
   // Stack de recomandări (istoric + starea curentă)
   const { recommendations, loading: recLoading } = useUserRecommendations();
@@ -405,21 +592,25 @@ function RecommendationContent() {
           </div>
         ) : null}
         <div className="w-full max-w-5xl mx-auto px-4">
-          <section className="omni-card rounded-3xl p-6 md:p-7 mb-8 space-y-3 text-center">
-            <p className="text-xs md:text-[11px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">OmniMental</p>
-            <h1 className="text-xl md:text-2xl font-semibold text-[var(--omni-ink)]">{pageTitle}</h1>
-            <p className="text-sm text-[var(--omni-ink-soft)]">{pageSubtitle}</p>
-            <div className="mt-2 flex justify-center">
-              <PrimaryButton
-                shape="pill"
-                data-testid="reco-initiation-cta"
-                className="uppercase tracking-[0.2em] text-[12px]"
-                asChild
-              >
-                <Link href="/experience-onboarding?flow=initiation&step=welcome&from=recommendation">
-                  {lang === "ro" ? "Vreau să testez OmniMental" : "I want to try OmniMental"}
-                </Link>
-              </PrimaryButton>
+          <section className="omni-card rounded-3xl p-6 md:p-7 mb-8">
+            <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:gap-5 md:items-stretch">
+              <div className="flex h-full flex-col min-w-0">
+                <DailyResetCard lang={lang} profileId={profile?.id ?? null} facts={progress ?? null} />
+              </div>
+              <div className="flex h-full flex-col min-w-0">
+                <KunoMissionCard
+                  lang={lang}
+                  focusAreaLabel={focusAreaLabel}
+                  omniCunoScore={omniCunoScore}
+                  kunoDelta={kunoDelta}
+                  missionData={kunoMissionData}
+                  nextModuleSuggestion={kunoNextModuleSuggestion}
+                  progressPercent={kunoMissionProgressPercent}
+                />
+              </div>
+              <div className="flex h-full flex-col min-w-0">
+                <TodayGuidanceCard lang={lang} snapshot={omniSnapshot} facts={progress ?? null} />
+              </div>
             </div>
           </section>
         </div>
@@ -574,14 +765,7 @@ function PublicRecommendationView({ lang }: { lang: string }) {
 
 function PublicOrCachedView({ lang }: { lang: string }) {
   const { s } = useTStrings();
-  const [cached, setCached] = useState<ReturnType<typeof readRecommendationCache> | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      return readRecommendationCache() ?? null;
-    } catch {
-      return null;
-    }
-  });
+  const [cached, setCached] = useState<ReturnType<typeof readRecommendationCache> | null>(null);
   useEffect(() => {
     if (typeof window === "undefined") return;
     let cancelled = false;

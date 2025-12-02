@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
+import type { ProgressFact } from "@/lib/progressFacts";
+import { computePillarProgress } from "@/lib/pillarProgress";
+import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 
 export type MissionSummary = {
   id: string;
@@ -42,6 +45,7 @@ export type MissionPerspective = {
 type Options = {
   missionId?: string;
   mission?: MissionSummary | null;
+  facts?: ProgressFact | null;
 };
 
 type MetricAdjustment<T extends string> = Partial<Record<T, number>>;
@@ -115,6 +119,7 @@ const MENTAL_BLUEPRINT: Array<MentalMetric & { score: number }> = [
 type MissionPreset = MissionSummary & {
   resourceAdjust?: MetricAdjustment<ResourceMetricKey>;
   mentalAdjust?: MetricAdjustment<MentalMetricKey>;
+  kunoModuleId?: OmniKunoModuleId;
 };
 
 const MISSION_LIBRARY: Record<string, MissionPreset> = {
@@ -125,6 +130,7 @@ const MISSION_LIBRARY: Record<string, MissionPreset> = {
     category: "relatii",
     resourceAdjust: { somn: -5, respiratie: -10 },
     mentalAdjust: { kuno: -5, abil: -5 },
+    kunoModuleId: "relationships_communication",
   },
   "optimal-weight": {
     id: "optimal-weight",
@@ -133,6 +139,7 @@ const MISSION_LIBRARY: Record<string, MissionPreset> = {
     category: "energie",
     resourceAdjust: { energie: -10, miscare: -5, intuitie: -5 },
     mentalAdjust: { flex: 5 },
+    kunoModuleId: "optimal_weight_management",
   },
   "focus-performance": {
     id: "focus-performance",
@@ -141,6 +148,7 @@ const MISSION_LIBRARY: Record<string, MissionPreset> = {
     category: "performanta",
     resourceAdjust: { energie: -5, emotii: 5, intuitie: 10 },
     mentalAdjust: { scop: 10, kuno: 5 },
+    kunoModuleId: "focus_clarity",
   },
 };
 
@@ -190,6 +198,25 @@ export function useMissionPerspective(options?: Options): MissionPerspective {
     const preset = MISSION_LIBRARY[mission.id];
     const resources = cloneResourceMetrics(preset?.resourceAdjust);
     const mental = cloneMentalMetrics(preset?.mentalAdjust);
-    return { mission, resources, mental };
-  }, [mission]);
+
+    const pillar = computePillarProgress(options?.facts ?? null);
+    const kunoModuleId = preset?.kunoModuleId ?? null;
+    const missionKunoPercent = kunoModuleId
+      ? pillar.metadata.kunoByModule[kunoModuleId]?.percent ?? pillar.kuno.percent
+      : pillar.kuno.percent;
+
+    const overrides: Partial<Record<MentalMetricKey, number>> = {
+      scop: pillar.scope.percent,
+      kuno: missionKunoPercent,
+      abil: pillar.abil.percent,
+      flex: pillar.flex.percent,
+    };
+
+    const mentalWithProgress = mental.map((metric) => ({
+      ...metric,
+      score: overrides[metric.key] ?? metric.score,
+    }));
+
+    return { mission, resources, mental: mentalWithProgress };
+  }, [mission, options?.facts]);
 }

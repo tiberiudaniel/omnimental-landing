@@ -8,6 +8,7 @@ import type { OmniKunoModuleConfig } from "@/config/omniKunoLessons";
 import { computeLessonsStatus } from "@/components/omniKuno/useKunoTimeline";
 import type { KunoPerformanceSnapshot } from "@/lib/omniKunoAdaptive";
 import { getModuleLabel, type OmniKunoModuleId } from "@/config/omniKunoModules";
+import { HoneyHex } from "@/components/mission-map/HoneyHex";
 
 export type KunoMissionCardData = {
   areaKey: string;
@@ -29,6 +30,7 @@ type KunoMissionCardProps = {
   kunoDelta: number | null;
   missionData: KunoMissionCardData | null;
   nextModuleSuggestion?: KunoNextModuleSuggestion | null;
+  progressPercent?: number | null;
 };
 
 export default function KunoMissionCard({
@@ -38,7 +40,9 @@ export default function KunoMissionCard({
   kunoDelta,
   missionData,
   nextModuleSuggestion,
+  progressPercent,
 }: KunoMissionCardProps) {
+  const router = useRouter();
   const timeline = useMemo(() => {
     if (!missionData) return [];
     return computeLessonsStatus(missionData.module.lessons, missionData.completedIds);
@@ -113,14 +117,13 @@ export default function KunoMissionCard({
     focusLabel,
     omniCunoScore,
     scoreDelta,
-    ctaHref,
-    ctaLabel,
     moduleCompleted,
     nextModuleLabel,
     xp,
     durationCopy,
     completedCount,
     totalLessons,
+    progressPercent,
   };
 
   return (
@@ -185,7 +188,7 @@ export default function KunoMissionCard({
                 ▶
               </span>
               <div>
-                <span className="text-xs uppercase tracking-[0.18em] text-[var(--omni-muted)]">
+                <span className="text-[13px] uppercase tracking-[0.18em] text-[var(--omni-muted)]">
                   {lang === "ro"
                     ? activeLessonOrder
                       ? `${activeLessonOrder}. Lecție`
@@ -194,7 +197,9 @@ export default function KunoMissionCard({
                       ? `Lesson ${activeLessonOrder}`
                       : "Lesson"}
                 </span>
-                <p className="text-base font-semibold theme-text-main leading-tight">{activeLesson.title}</p>
+                <p className="mt-1.5 text-base font-bold text-[var(--omni-ink)] leading-tight tracking-[0.01em]">
+                  {activeLesson.title}
+                </p>
                 <p className="text-[11px] uppercase tracking-[0.2em] theme-text-soft">
                   {activeLesson.type === "quiz" ? (lang === "ro" ? "Quiz" : "Quiz") : ""}
                 </p>
@@ -207,17 +212,34 @@ export default function KunoMissionCard({
           )}
         </div>
 
-        <div className="mt-1 flex flex-col items-center gap-2">
-          <div className="w-full text-right">
-            <Link
-              href={`/omni-kuno?area=${encodeURIComponent(missionData?.areaKey ?? "calm")}&module=${encodeURIComponent(missionData?.module.moduleId ?? "")}`}
-              className="inline-flex items-center text-[11px] font-semibold underline-offset-2 transition theme-link hover:underline"
-            >
-              {lang === "ro" ? "Vezi toate misiunile" : "View all missions"}
-            </Link>
-          </div>
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => router.push(ctaHref)}
+            className="w-full rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] transition-all duration-200 ease-out transform hover:-translate-y-0.5 hover:shadow-[0_18px_32px_rgba(242,151,84,0.25)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--omni-energy)]"
+            style={{
+              borderColor: "color-mix(in srgb, var(--omni-energy) 78%, var(--omni-border-soft) 22%)",
+              color: "color-mix(in srgb, var(--omni-energy) 92%, #5a2c06 8%)",
+              backgroundImage:
+                "linear-gradient(120deg, color-mix(in srgb, var(--omni-energy) 18%, transparent) 0%, color-mix(in srgb, var(--omni-energy) 5%, transparent) 100%)",
+              boxShadow: "0 12px 28px rgba(242, 151, 84, 0.2)",
+            }}
+          >
+            {ctaLabel}
+          </button>
         </div>
       </DashboardCard>
+      <div className="mt-2 pl-1">
+        <Link
+          href={`/omni-kuno?area=${encodeURIComponent(missionData?.areaKey ?? "calm")}&module=${encodeURIComponent(missionData?.module.moduleId ?? "")}`}
+          className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-[color-mix(in_srgb,var(--omni-muted)_70%,var(--accent-main)_30%)] transition hover:text-[var(--accent-main)]"
+        >
+          <span>{lang === "ro" ? "Vezi toate misiunile" : "View all missions"}</span>
+          <svg viewBox="0 0 14 14" className="h-3 w-3">
+            <path d="M4 3l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
+      </div>
     </motion.div>
   );
 }
@@ -227,14 +249,13 @@ type KunoMissionSummaryProps = {
   focusLabel: string;
   omniCunoScore: number;
   scoreDelta: string | null;
-  ctaHref: string;
-  ctaLabel: string;
   moduleCompleted: boolean;
   nextModuleLabel: string | null;
   xp: number;
   durationCopy: string | null;
   completedCount: number;
   totalLessons: number;
+  progressPercent?: number | null;
 };
 
 function KunoMissionSummary({
@@ -242,65 +263,49 @@ function KunoMissionSummary({
   focusLabel,
   omniCunoScore,
   scoreDelta,
-  ctaHref,
-  ctaLabel,
   moduleCompleted,
   nextModuleLabel,
   xp,
   durationCopy,
   completedCount,
   totalLessons,
+  progressPercent,
 }: KunoMissionSummaryProps) {
-  const router = useRouter();
+  const focusHeadline =
+    lang === "ro"
+      ? `Acumulează cunoaștere în ${focusLabel}`
+      : `Build knowledge in ${focusLabel}`;
   return (
     <div className="space-y-3 text-[var(--omni-ink)]">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-            {lang === "ro" ? "Misiunea ta de azi" : "Your mission today"}
+      <div className="flex items-center justify-between gap-4 sm:gap-5" style={{ marginTop: "-10px" }}>
+        <div className="flex-1">
+          <p className="text-[8px] font-semibold uppercase tracking-[0.42em] text-[color-mix(in_srgb,var(--omni-muted)_55%,var(--omni-energy)_45%)]">
+            Omni-Kuno
           </p>
-          <p className="text-[15px] font-semibold leading-tight text-[var(--omni-ink)] sm:text-[16px]">
-            {focusLabel}
+          <p className="pb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+            {lang === "ro" ? "Misiunea de azi" : "Your mission today"}
           </p>
+          <h3 className="text-base font-semibold text-[var(--omni-ink)] leading-tight">
+            {focusHeadline}
+          </h3>
         </div>
-        <div className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-2 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">XP</p>
-          <p className="text-xl font-bold text-[var(--omni-energy)]">
-            {omniCunoScore}
-            {scoreDelta ? (
-              <span className={`ml-1 text-[11px] ${scoreDelta.startsWith("+") ? "text-[#1F7A43]" : "text-[#B82B4F]"}`}>{scoreDelta}</span>
-            ) : null}
-          </p>
+        <div className="ml-1 flex flex-col items-end gap-3 text-right" style={{ marginTop: "-10px", width: "96px" }}>
+          <div className="flex items-baseline gap-1 text-right">
+            <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--omni-energy)_70%,var(--omni-ink)_30%)] leading-none">
+              {omniCunoScore}
+              {scoreDelta ? (
+                <span className={`ml-1 text-[11px] ${scoreDelta.startsWith("+") ? "text-[#1F7A43]" : "text-[#B82B4F]"}`}>{scoreDelta}</span>
+              ) : null}
+            </p>
+            <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-[color-mix(in_srgb,var(--omni-muted)_80%,var(--omni-ink-soft)_20%)]">XP</p>
+          </div>
+          {typeof progressPercent === "number" ? (
+            <div className="hidden sm:flex pt-1" style={{ paddingTop: "10px" }}>
+              <HoneyHex label="Kuno" value={Math.round(progressPercent)} size={72} />
+            </div>
+          ) : null}
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2 rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-3 py-2 text-center text-[11px]">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">{lang === "ro" ? "Progres" : "Progress"}</p>
-          <p className="text-[13px] font-semibold text-[var(--omni-ink)]">
-            {completedCount}/{totalLessons}
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">XP</p>
-          <p className="text-[13px] font-semibold text-[var(--omni-ink)]">{xp}</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">{lang === "ro" ? "Durata" : "Duration"}</p>
-          <p className="text-[13px] font-semibold text-[var(--omni-ink)]">{durationCopy ?? "~5 min"}</p>
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={() => router.push(ctaHref)}
-        className="w-full rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] transition hover:translate-y-[-2px] hover:border-[var(--accent-main)] hover:bg-[color-mix(in_srgb,var(--accent-main)_18%,transparent)]"
-        style={{
-          borderColor: "var(--border-subtle)",
-          color: "var(--accent-main)",
-          backgroundColor: "color-mix(in srgb, var(--accent-main) 10%, transparent)",
-        }}
-      >
-        {ctaLabel}
-      </button>
       <p className="text-[12px] text-[var(--omni-muted)]">
         {moduleCompleted
           ? nextModuleLabel

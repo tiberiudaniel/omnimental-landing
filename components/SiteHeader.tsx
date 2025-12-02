@@ -137,6 +137,10 @@ export default function SiteHeader({
     const age = Date.now() - createdMs;
     return age < thresholdMs;
   })();
+  const navButtonBaseClasses =
+    "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition";
+  const navButtonInactiveClasses =
+    "border border-transparent text-[color-mix(in_srgb,var(--omni-ink-soft)_82%,var(--omni-ink)_18%)] hover:text-[var(--omni-energy)] hover:border-[color-mix(in_srgb,var(--omni-energy)_55%,var(--omni-border-soft)_45%)] hover:bg-[color-mix(in_srgb,var(--omni-energy)_8%,transparent)]";
 
   const activeMission =
     ((profile as { activeMission?: { id?: string | null; title?: string | null } | null } | null)?.activeMission) ?? null;
@@ -290,10 +294,8 @@ export default function SiteHeader({
           <Link
             href="/recommendation"
             className={clsx(
-              "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
-              isActive("/recommendation")
-                ? "omni-tab-active"
-                : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
+              navButtonBaseClasses,
+              isActive("/recommendation") ? "omni-tab-active" : navButtonInactiveClasses,
             )}
             aria-current={isActive("/recommendation") ? "page" : undefined}
           >
@@ -302,10 +304,8 @@ export default function SiteHeader({
           <Link
             href="/antrenament"
             className={clsx(
-              "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
-              isActive("/antrenament")
-                ? "omni-tab-active"
-                : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
+              navButtonBaseClasses,
+              isActive("/antrenament") ? "omni-tab-active" : navButtonInactiveClasses,
             )}
             aria-current={isActive("/antrenament") ? "page" : undefined}
           >
@@ -314,10 +314,8 @@ export default function SiteHeader({
           <Link
             href="/progress"
             className={clsx(
-              "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
-              isActive("/progress")
-                ? "omni-tab-active"
-                : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
+              navButtonBaseClasses,
+              isActive("/progress") ? "omni-tab-active" : navButtonInactiveClasses,
             )}
             aria-current={isActive("/progress") ? "page" : undefined}
           >
@@ -328,11 +326,9 @@ export default function SiteHeader({
             <Link
               href={{ pathname: "/experience-onboarding", query: { flow: "initiation", step: "welcome" } }}
               className={clsx(
-                "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
+                navButtonBaseClasses,
                 shouldDimInitiere ? "opacity-5 hover:opacity-15" : null,
-                isActive("/experience-onboarding")
-                  ? "omni-tab-active"
-                  : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
+                isActive("/experience-onboarding") ? "omni-tab-active" : navButtonInactiveClasses,
               )}
               aria-current={isActive("/experience-onboarding") ? "page" : undefined}
             >

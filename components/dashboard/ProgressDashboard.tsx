@@ -19,26 +19,13 @@ import {
   computeMonthlyDailyCounts,
 } from "@/lib/progressAnalytics";
 import { toMsLocal, getCurrentFocusTag } from "@/lib/dashboard/progressSelectors";
-import {
-  OMNIKUNO_MODULES as OMNIKUNO_LESSON_MODULES,
-  type OmniKunoModuleConfig,
-} from "@/config/omniKunoLessons";
-import {
-  getLegacyModuleKeyById,
-  getModuleLabel,
-  getModuleSummary,
-  resolveModuleId,
-  OMNIKUNO_MODULES as OMNIKUNO_META,
-} from "@/config/omniKunoModules";
-import type { OmniKunoModuleId } from "@/config/omniKunoModules";
-import { normalizePerformance } from "@/lib/omniKunoAdaptive";
+import { getModuleLabel, getModuleSummary, resolveModuleId } from "@/config/omniKunoModules";
 import InternalKpiCard from "@/components/dashboard/InternalKpiCard";
 import ActionTrendsCard from "@/components/dashboard/ActionTrendsCard";
 import MotivationCard from "@/components/dashboard/MotivationCard";
 import ProfileIndicesCard from "@/components/dashboard/ProfileIndicesCard";
 import CenterColumnCards, { type FocusThemeInfo } from "@/components/dashboard/CenterColumnCards";
 import SidebarCards from "@/components/dashboard/SidebarCards";
-import type { KunoMissionCardData, KunoNextModuleSuggestion } from "@/components/dashboard/KunoMissionCard";
 import { normalizeKunoFacts } from "@/lib/kunoFacts";
 import { RecentEntriesCard } from "@/components/dashboard/RecentEntriesCard";
 import { DailyResetCard } from "@/components/dashboard/DailyResetCard";
@@ -70,11 +57,7 @@ export default function ProgressDashboard({
   const { t, lang } = useI18n();
   const replayCardForced = true; // TEMP: always enable Replay card for Phase 1 verification
   const { recommendation, loading: replayLoading, error: replayError } = useReplayRecommendation(replayCardForced);
-  const [lastKunoModulePref, setLastKunoModulePref] = useState<{
-    moduleId: OmniKunoModuleId | null;
-    lessonId: string | null;
-    updatedAt: number | null;
-  } | null>(null);
+  const replayModuleHref = { pathname: "/omni-kuno" } as const;
   // Read debug flag from URL early to keep hook order stable across renders
   const search = useSearchParams();
   const debugMode = (search?.get('debug') === '1');
@@ -158,12 +141,11 @@ export default function ProgressDashboard({
   const [weighted] = useState(false);
   const [achvDismissed, setAchvDismissed] = useState(false);
   const [nowAnchor] = useState(() => Date.now());
-  const { omniIntelDelta, motivationDelta, kunoDelta } = useMemo(() => {
+  const { omniIntelDelta, motivationDelta } = useMemo(() => {
     if (typeof window === "undefined" || loading) {
       return {
         omniIntelDelta: null as number | null,
         motivationDelta: null as number | null,
-        kunoDelta: null as number | null,
       };
     }
     try {
@@ -174,19 +156,16 @@ export default function ProgressDashboard({
         (facts?.omni?.scope?.motivationIndex as number | undefined) ??
         (facts?.omni?.scope?.directionMotivationIndex as number | undefined) ??
         0;
-      const currentKuno = typeof kunoFacts.primaryScore === "number" ? kunoFacts.primaryScore : 0;
       const prevO = window.localStorage.getItem(`omni_intel_prev_${pid}`);
       const prevM = window.localStorage.getItem(`motivation_idx_prev_${pid}`);
-      const prevK = window.localStorage.getItem(`omni_kuno_prev_${pid}`);
       const dO = prevO != null ? currentOmni - Number(prevO) : null;
       const dM =
         prevM != null
           ? Math.round(currentMotivation - Number(prevM))
           : null;
-      const dK = prevK != null ? Math.round(currentKuno - Number(prevK)) : null;
-      return { omniIntelDelta: dO, motivationDelta: dM, kunoDelta: dK };
+      return { omniIntelDelta: dO, motivationDelta: dM };
     } catch {
-      return { omniIntelDelta: null, motivationDelta: null, kunoDelta: null };
+      return { omniIntelDelta: null, motivationDelta: null };
     }
   }, [facts?.omni, kunoFacts.primaryScore, loading, profileId]);
   // const [insightExpanded] = useState(false);
@@ -540,136 +519,6 @@ export default function ProgressDashboard({
     const lastSpace = slice.lastIndexOf(" ");
     return (lastSpace > 60 ? slice.slice(0, lastSpace) : slice).trimEnd() + "…";
   }, [quest?.text]);
-  const kunoMissionData: KunoMissionCardData | null = useMemo(() => {
-    const moduleEntries = Object.entries(OMNIKUNO_LESSON_MODULES) as Array<[OmniKunoModuleId, OmniKunoModuleConfig]>;
-    const resolveCandidateId = (value?: string | null) => {
-      if (!value) return null;
-      return resolveModuleId(value);
-    };
-    const pushCandidate = (
-      list: Array<[OmniKunoModuleId, OmniKunoModuleConfig]>,
-      value?: string | null,
-    ) => {
-      const normalized = resolveCandidateId(value);
-      if (!normalized) return;
-      if (!OMNIKUNO_LESSON_MODULES[normalized]) return;
-      if (list.some(([key]) => key === normalized)) return;
-      list.push([normalized, OMNIKUNO_LESSON_MODULES[normalized]]);
-    };
-    const candidates: Array<[OmniKunoModuleId, OmniKunoModuleConfig]> = [];
-    if (lastKunoModulePref?.moduleId) {
-      pushCandidate(candidates, lastKunoModulePref.moduleId);
-    }
-    pushCandidate(candidates, kunoFacts.recommendedModuleId ?? null);
-    pushCandidate(candidates, kunoFacts.recommendedArea ?? null);
-    const inProgressModules = moduleEntries
-      .map(([areaKey, module]) => {
-        const snapshot = kunoFacts.modules[module.moduleId];
-        const completedCount = Array.isArray(snapshot?.completedIds) ? snapshot!.completedIds!.length : 0;
-        const totalLessons = module.lessons.length;
-        const hasProgress = totalLessons > 0 && completedCount > 0 && completedCount < totalLessons;
-        const lastUpdated =
-          typeof snapshot?.lastUpdated === "number" ? snapshot.lastUpdated : 0;
-        return { areaKey, module, hasProgress, lastUpdated };
-      })
-      .filter((entry) => entry.hasProgress)
-      .sort((a, b) => b.lastUpdated - a.lastUpdated);
-    inProgressModules.forEach((entry) => {
-      pushCandidate(candidates, entry.areaKey);
-    });
-    const fallbackArea = (() => {
-      const focusModuleId =
-        focusTheme.moduleId ?? resolveModuleId(focusTheme.categoryKey ?? undefined) ?? "emotional_balance";
-      if (OMNIKUNO_LESSON_MODULES[focusModuleId as OmniKunoModuleId]) {
-        return focusModuleId as OmniKunoModuleId;
-      }
-      const legacyKey = getLegacyModuleKeyById(focusModuleId);
-      if (legacyKey) {
-        const mapped = resolveModuleId(legacyKey);
-        if (mapped && OMNIKUNO_LESSON_MODULES[mapped as OmniKunoModuleId]) {
-          return mapped as OmniKunoModuleId;
-        }
-      }
-      return "emotional_balance";
-    })();
-    pushCandidate(candidates, fallbackArea);
-    if (!candidates.length) {
-      pushCandidate(candidates, "emotional_balance");
-    }
-    const [areaKey, module] = candidates[0] ?? [];
-    if (!areaKey || !module) return null;
-    const moduleSnapshot = kunoFacts.modules[module.moduleId];
-    const completedIds = moduleSnapshot?.completedIds ?? [];
-    const xp = Number((kunoFacts.gamification as { xp?: number } | null)?.xp ?? 0);
-    return {
-      areaKey,
-      module,
-      completedIds,
-      xp: Number.isFinite(xp) ? xp : 0,
-      performance: normalizePerformance(
-        (moduleSnapshot?.performance as Partial<{ recentScores: number[]; recentTimeSpent: number[]; difficultyBias: number }> | null) ?? null,
-      ),
-    };
-  }, [focusTheme.categoryKey, focusTheme.moduleId, kunoFacts, lastKunoModulePref?.moduleId]);
-  const kunoNextModuleSuggestion: KunoNextModuleSuggestion | null = useMemo(() => {
-    if (!kunoMissionData?.module?.moduleId) return null;
-    const currentModuleId = kunoMissionData.module.moduleId as OmniKunoModuleId;
-    const ordered: OmniKunoModuleId[] = [];
-    const seen = new Set<OmniKunoModuleId>();
-    const pushCandidate = (value?: string | null) => {
-      if (!value) return;
-      const normalized = resolveModuleId(value);
-      if (normalized && !seen.has(normalized)) {
-        seen.add(normalized);
-        ordered.push(normalized);
-      }
-    };
-    pushCandidate(kunoFacts.recommendedModuleId ?? null);
-    pushCandidate(kunoFacts.recommendedArea ?? null);
-    pushCandidate(focusTheme.moduleId ?? null);
-    type IntentCat = { category?: string | null; count?: number | null };
-    const intentBlock = facts?.intent as { categories?: IntentCat[] } | undefined;
-    if (Array.isArray(intentBlock?.categories)) {
-      const sorted = intentBlock.categories
-        .slice()
-        .sort((a, b) => (Number(b?.count) || 0) - (Number(a?.count) || 0));
-      sorted.forEach((entry) => pushCandidate(entry?.category ?? null));
-    }
-    OMNIKUNO_META.forEach((meta) => {
-      if (!seen.has(meta.id)) {
-        seen.add(meta.id);
-        ordered.push(meta.id);
-      }
-    });
-    const nextModuleId = ordered.find((id) => id !== currentModuleId);
-    if (!nextModuleId) return null;
-    const nextModule = OMNIKUNO_LESSON_MODULES[nextModuleId];
-    if (!nextModule) return null;
-    const firstLessonId =
-      nextModule.lessons
-        .slice()
-        .sort((a, b) => a.order - b.order)[0]?.id ?? null;
-    return { moduleId: nextModuleId, firstLessonId };
-  }, [facts?.intent, focusTheme.moduleId, kunoFacts, kunoMissionData?.module?.moduleId]);
-  const replayLessonTarget = useMemo(() => {
-    if (!kunoMissionData?.module?.lessons?.length) return null;
-    const lessons = kunoMissionData.module.lessons.slice().sort((a, b) => a.order - b.order);
-    const targetLesson = lessons[0] ?? null;
-    if (!targetLesson) return null;
-    return {
-      lessonId: targetLesson.id,
-      lessonTitle: targetLesson.title,
-      moduleId: kunoMissionData.module.moduleId,
-      areaKey: kunoMissionData.areaKey,
-    };
-  }, [kunoMissionData]);
-  const replayModuleHref = useMemo(() => {
-    const moduleId = replayLessonTarget?.moduleId ?? kunoMissionData?.module.moduleId ?? null;
-    if (!moduleId) {
-      return { pathname: "/omni-kuno" };
-    }
-    return { pathname: `/replay/module/${moduleId}` };
-  }, [kunoMissionData?.module.moduleId, replayLessonTarget?.moduleId]);
   // Optional: emit compact debug JSON for E2E when ?debug=1
   const debugJson = (() => {
     try {
@@ -689,49 +538,6 @@ export default function ProgressDashboard({
       return JSON.stringify(out);
     } catch { return null; }
   })();
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const parsePref = () => {
-      try {
-        const raw = window.localStorage.getItem("omnikuno_last_module");
-        if (!raw) {
-          setLastKunoModulePref(null);
-          return;
-        }
-        const parsed = JSON.parse(raw) as {
-          moduleId?: string | null;
-          areaKey?: string | null;
-          lessonId?: string | null;
-          updatedAt?: number;
-        };
-        const normalized =
-          resolveModuleId(parsed?.moduleId ?? undefined) ?? resolveModuleId(parsed?.areaKey ?? undefined);
-        if (!normalized || !OMNIKUNO_LESSON_MODULES[normalized]) {
-          setLastKunoModulePref(null);
-          return;
-        }
-        setLastKunoModulePref({
-          moduleId: normalized,
-          lessonId: typeof parsed?.lessonId === "string" ? parsed!.lessonId! : null,
-          updatedAt: typeof parsed?.updatedAt === "number" ? parsed!.updatedAt! : null,
-        });
-      } catch {
-        setLastKunoModulePref(null);
-      }
-    };
-    parsePref();
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key && event.key !== "omnikuno_last_module") return;
-      parsePref();
-    };
-    const handleCustom = () => parsePref();
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener("omnikuno:last-module", handleCustom as EventListener);
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("omnikuno:last-module", handleCustom as EventListener);
-    };
-  }, []);
   return (
     <motion.div initial="hidden" animate="show" className="w-full space-y-4">
       {debugJson ? (
@@ -849,14 +655,10 @@ export default function ProgressDashboard({
             debugGrid={debugGrid}
             lang={lang}
             t={t}
-            facts={facts}
-            omniIntelScore={omniIntelScore}
-            omniIntelDelta={omniIntelDelta}
-            focusTheme={focusTheme}
-            omniCunoScore={omniCunoScore}
-          kunoDelta={kunoDelta}
-          kunoMissionData={kunoMissionData}
-          kunoNextModuleSuggestion={kunoNextModuleSuggestion}
+          facts={facts}
+          omniIntelScore={omniIntelScore}
+          omniIntelDelta={omniIntelDelta}
+          focusTheme={focusTheme}
           mission={activeMission}
         />
         </div>
@@ -865,7 +667,6 @@ export default function ProgressDashboard({
           lang={lang}
           t={t}
           facts={facts}
-          snapshot={omniSnapshot}
           profile={profile}
           quest={quest}
           questPreview={questPreview}

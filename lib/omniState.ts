@@ -52,6 +52,7 @@ export type OmniGuidance = {
   description: string;
   ctaLabel: string;
   ctaHref: { pathname: string; query?: Record<string, string | number | undefined> };
+  xpEstimate?: number | null;
 };
 
 const DIMENSION_KEYS: OmniDimension[] = [
@@ -381,6 +382,7 @@ export function buildOmniGuidance({
           : "Energy trends below your baseline. Take 3 x 4-6 breathing cycles and a short walk.",
       ctaLabel: locale === "ro" ? "Pornește exercițiul" : "Start exercise",
       ctaHref: { pathname: "/antrenament", query: { tab: "ose" } },
+      xpEstimate: 12,
     };
   }
 
@@ -394,6 +396,7 @@ export function buildOmniGuidance({
           : "Emotions run high. Write three lines or use the guided journal.",
       ctaLabel: locale === "ro" ? "Deschide jurnalul" : "Open journal",
       ctaHref: { pathname: "/progress", query: { open: "journal", tab: "NOTE_LIBERE" } },
+      xpEstimate: 6,
     };
   }
 
@@ -407,6 +410,7 @@ export function buildOmniGuidance({
           : "Clarity is above baseline. Use it to tackle your next OmniKuno lesson.",
       ctaLabel: locale === "ro" ? "Continuă lecția" : "Continue lesson",
       ctaHref: { pathname: "/antrenament", query: { tab: "oc" } },
+      xpEstimate: 10,
     };
   }
 
@@ -420,6 +424,7 @@ export function buildOmniGuidance({
           : "No activity logged yet. Mark a quick Omni-Abil task to keep momentum.",
       ctaLabel: locale === "ro" ? "Vezi task-urile" : "View tasks",
       ctaHref: { pathname: "/progress", query: { highlight: "omniabil" } },
+      xpEstimate: 5,
     };
   }
 
