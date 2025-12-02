@@ -11,6 +11,12 @@ import { useProfile } from "./ProfileProvider";
 import Toast from "./Toast";
 import { JournalTrigger } from "./journal/JournalTrigger";
 
+const INIT_VISIT_KEY = "omnimental_init_visits";
+const INIT_TIME_KEY = "omnimental_init_time_ms";
+const INIT_SESSION_KEY = "omnimental_init_session";
+
+type InitiationEngagement = { visits: number; timeMs: number };
+
 interface SiteHeaderProps {
   showMenu?: boolean;
   onMenuToggle?: () => void;
@@ -140,7 +146,10 @@ export default function SiteHeader({
   const headerButtonBase =
     "rounded-full px-2 py-1 text-[var(--omni-ink-soft)] transition-colors border border-transparent hover:bg-[color-mix(in_srgb,var(--omni-energy-tint)_70%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--omni-energy-tint)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--omni-header-bg)]";
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [initiationEngagement, setInitiationEngagement] = useState({ visits: 0, timeMs: 0 });
+  const [initiationEngagement, setInitiationEngagement] = useState<InitiationEngagement>({
+    visits: 0,
+    timeMs: 0,
+  });
   const actionsRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -154,19 +163,15 @@ export default function SiteHeader({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const VISIT_KEY = "omnimental_init_visits";
-    const TIME_KEY = "omnimental_init_time_ms";
-    const SESSION_KEY = "omnimental_init_session";
-
-    let visits = Number(window.localStorage.getItem(VISIT_KEY) ?? "0");
+    let visits = Number(window.localStorage.getItem(INIT_VISIT_KEY) ?? "0");
     if (!Number.isFinite(visits) || visits < 0) visits = 0;
-    if (!window.sessionStorage.getItem(SESSION_KEY)) {
+    if (!window.sessionStorage.getItem(INIT_SESSION_KEY)) {
       visits += 1;
-      window.localStorage.setItem(VISIT_KEY, String(visits));
-      window.sessionStorage.setItem(SESSION_KEY, "1");
+      window.localStorage.setItem(INIT_VISIT_KEY, String(visits));
+      window.sessionStorage.setItem(INIT_SESSION_KEY, "1");
     }
 
-    let timeMs = Number(window.localStorage.getItem(TIME_KEY) ?? "0");
+    let timeMs = Number(window.localStorage.getItem(INIT_TIME_KEY) ?? "0");
     if (!Number.isFinite(timeMs) || timeMs < 0) timeMs = 0;
     setInitiationEngagement({ visits, timeMs });
 
@@ -176,7 +181,7 @@ export default function SiteHeader({
       const delta = now - lastTick;
       lastTick = now;
       timeMs += delta;
-      window.localStorage.setItem(TIME_KEY, String(timeMs));
+      window.localStorage.setItem(INIT_TIME_KEY, String(timeMs));
       setInitiationEngagement({ visits, timeMs });
     }, 5000);
 
@@ -283,6 +288,18 @@ export default function SiteHeader({
         {!wizardMode && (
           <nav className="flex items-center gap-x-4 md:gap-x-6 mt-0 md:mt-[2px] justify-center">
           <Link
+            href="/recommendation"
+            className={clsx(
+              "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
+              isActive("/recommendation")
+                ? "omni-tab-active"
+                : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
+            )}
+            aria-current={isActive("/recommendation") ? "page" : undefined}
+          >
+            {lang === "ro" ? "Astăzi" : "Today"}
+          </Link>
+          <Link
             href="/antrenament"
             className={clsx(
               "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
@@ -307,24 +324,12 @@ export default function SiteHeader({
             {typeof t("navProgres") === "string" ? (t("navProgres") as string) : progressLabel}
           </Link>
           {/* Sensei tab removed */}
-          <Link
-            href="/recommendation"
-            className={clsx(
-              "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
-              isActive("/recommendation")
-                ? "omni-tab-active"
-                : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
-            )}
-            aria-current={isActive("/recommendation") ? "page" : undefined}
-          >
-            {typeof t("navRecommendation") === "string" ? (t("navRecommendation") as string) : (lang === "ro" ? "Recomandări" : "Recommendations")}
-          </Link>
           {showOnboardingNav ? (
             <Link
               href={{ pathname: "/experience-onboarding", query: { flow: "initiation", step: "welcome" } }}
               className={clsx(
                 "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition",
-                shouldDimInitiere ? "opacity-20 hover:opacity-30" : null,
+                shouldDimInitiere ? "opacity-5 hover:opacity-15" : null,
                 isActive("/experience-onboarding")
                   ? "omni-tab-active"
                   : "border border-transparent text-[var(--omni-ink-soft)] hover:text-[var(--omni-energy)]",
@@ -337,18 +342,6 @@ export default function SiteHeader({
           </nav>
         )}
         <div className="flex items-center justify-end gap-2">
-          {!wizardMode && profile?.id && activeMission ? (
-            <button
-              type="button"
-              onClick={() => {
-                const href = activeMission?.id ? `/mission-map?missionId=${encodeURIComponent(activeMission.id)}` : "/mission-map";
-                router.push(href);
-              }}
-              className="inline-flex items-center rounded-full bg-[var(--omni-surface-card)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink)] transition hover:bg-[var(--omni-bg-paper)]"
-            >
-              Harta mea
-            </button>
-          ) : null}
           {!wizardMode && profile?.id && (
             <JournalTrigger
               userId={profile.id}
