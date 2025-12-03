@@ -35,7 +35,7 @@ export default function LegacyOmniKunoV1Page() {
         mainClassName="text-[var(--omni-ink)]"
       >
         <div className="mx-auto max-w-4xl px-4 py-8 md:px-8">
-          <div className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-sm md:px-8 md:py-8">
+          <div className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-sm md:px-8 md:py-8">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
               {sectionLabel}
             </p>

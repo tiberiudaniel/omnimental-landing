@@ -32,11 +32,12 @@ import FirstOfferPanel from "@/components/recommendations/FirstOfferPanel";
 import { choosePrimaryProduct, inferBudgetLevelFromIntent } from "@/lib/primaryProduct";
 import { useAuth } from "@/components/AuthProvider";
 import { PrimaryButton, SecondaryButton } from "@/components/PrimaryButton";
-import { DailyResetCard } from "@/components/dashboard/DailyResetCard";
 import { TodayGuidanceCard } from "@/components/dashboard/CenterColumnCards";
+import { PulseOfDayCard } from "@/components/today/PulseOfDayCard";
 import { computePillarProgress } from "@/lib/pillarProgress";
 import { normalizeKunoFacts } from "@/lib/kunoFacts";
 import { buildOmniDailySnapshot } from "@/lib/omniState";
+import { getLastAxesEntries, type DailyAxesEntry } from "@/lib/dailyReset";
 import {
   OMNIKUNO_MODULES as OMNIKUNO_LESSON_MODULES,
   type OmniKunoModuleConfig,
@@ -102,6 +103,7 @@ const [lastKunoModulePref, setLastKunoModulePref] = useState<{
 } | null>(null);
 const isPublicTier = tier === "public";
 const pillarProgress = useMemo(() => computePillarProgress(progress ?? null), [progress]);
+const [pulseEntries, setPulseEntries] = useState<DailyAxesEntry[]>([]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -147,12 +149,46 @@ const pillarProgress = useMemo(() => computePillarProgress(progress ?? null), [p
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const profileId = profile?.id;
+    if (!profileId) {
+      Promise.resolve().then(() => {
+        if (!cancelled) {
+          setPulseEntries([]);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    (async () => {
+      try {
+        const data = await getLastAxesEntries(profileId, 4);
+        if (process.env.NODE_ENV !== "production") {
+          console.log("Pulsul zilei entries:", data.length, data);
+        }
+        if (!cancelled) {
+          setPulseEntries(data);
+        }
+      } catch {
+        if (!cancelled) {
+          setPulseEntries([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.id, progress?.omni?.daily?.lastCheckinDate]);
+
   const activeMissionData =
     (profile as { activeMission?: { moduleId?: string | null; areaKey?: string | null; area?: string | null; title?: string | null } } | null)
       ?.activeMission ?? null;
   const profileActiveModuleKey =
     activeMissionData?.moduleId ?? activeMissionData?.areaKey ?? activeMissionData?.area ?? null;
   const focusAreaLabel = activeMissionData?.title ?? null;
+  const pulseTodayEntry = pulseEntries.length ? pulseEntries[pulseEntries.length - 1] : null;
 
   const resolveCandidateId = (value?: string | null) => {
     if (!value) return null;
@@ -194,7 +230,7 @@ const pillarProgress = useMemo(() => computePillarProgress(progress ?? null), [p
       if (resolved && OMNIKUNO_LESSON_MODULES[resolved as OmniKunoModuleId]) {
         return resolved as OmniKunoModuleId;
       }
-      const legacy = resolved ? getLegacyModuleKeyById(resolved) : profileActiveModuleKey ? getLegacyModuleKeyById(profileActiveModuleKey) : null;
+      const legacy = resolved ? getLegacyModuleKeyById(resolved) : null;
       if (legacy && OMNIKUNO_LESSON_MODULES[legacy as OmniKunoModuleId]) {
         return legacy as OmniKunoModuleId;
       }
@@ -591,35 +627,37 @@ const pillarProgress = useMemo(() => computePillarProgress(progress ?? null), [p
             </div>
           </div>
         ) : null}
-        <div className="w-full max-w-5xl mx-auto px-4">
-          <section className="omni-card rounded-3xl p-6 md:p-7 mb-8">
-            <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:gap-5 md:items-stretch">
-              <div className="flex h-full flex-col min-w-0">
-                <DailyResetCard lang={lang} profileId={profile?.id ?? null} facts={progress ?? null} />
-              </div>
-              <div className="flex h-full flex-col min-w-0">
-                <KunoMissionCard
-                  lang={lang}
-                  focusAreaLabel={focusAreaLabel}
-                  omniCunoScore={omniCunoScore}
-                  kunoDelta={kunoDelta}
-                  missionData={kunoMissionData}
-                  nextModuleSuggestion={kunoNextModuleSuggestion}
-                  progressPercent={kunoMissionProgressPercent}
-                />
-              </div>
-              <div className="flex h-full flex-col min-w-0">
-                <TodayGuidanceCard lang={lang} snapshot={omniSnapshot} facts={progress ?? null} />
-              </div>
+        <div className="w-full max-w-5xl mx-auto px-4 mb-8">
+          <div className="grid gap-4 md:gap-5 lg:gap-6 lg:grid-cols-[minmax(260px,290px)_minmax(320px,1fr)_minmax(320px,1fr)]">
+            <div className="flex h-full flex-col min-w-0">
+              <PulseOfDayCard
+                lang={lang === "ro" ? "ro" : "en"}
+                today={pulseTodayEntry}
+                recentEntries={pulseEntries}
+              />
             </div>
-          </section>
+            <div className="flex h-full flex-col min-w-0">
+              <KunoMissionCard
+                lang={lang}
+                focusAreaLabel={focusAreaLabel}
+                omniCunoScore={omniCunoScore}
+                kunoDelta={kunoDelta}
+                missionData={kunoMissionData}
+                nextModuleSuggestion={kunoNextModuleSuggestion}
+                progressPercent={kunoMissionProgressPercent}
+              />
+            </div>
+            <div className="flex h-full flex-col min-w-0">
+              <TodayGuidanceCard lang={lang} snapshot={omniSnapshot} facts={progress ?? null} />
+            </div>
+          </div>
         </div>
 
         <div className="w-full max-w-5xl mx-auto px-4 space-y-8">
         {/* Stack + detail */}
         {hasStack ? (
           <section className="space-y-6" data-testid="debug-stack-section">
-            <div className="omni-panel-soft rounded-3xl p-6 md:p-7 flex flex-wrap items-center justify-between gap-3">
+            <div className="omni-panel-soft rounded-card p-6 md:p-7 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-base md:text-lg font-semibold text-[var(--omni-ink)]">
                 {lang === "ro" ? "Recomandări" : "Your recommendations"}
               </h2>
@@ -653,12 +691,12 @@ const pillarProgress = useMemo(() => computePillarProgress(progress ?? null), [p
             </div>
 
             <div className="grid gap-5 md:grid-cols-[minmax(0,0.46fr)_minmax(0,0.54fr)]">
-              <div className="omni-panel-soft rounded-3xl p-6 md:p-7">
+              <div className="omni-panel-soft rounded-card p-6 md:p-7">
                 {recLoading ? (
                   <div className="space-y-3">
-                    <div className="h-10 w-full rounded-2xl bg-[var(--omni-bg-paper)]" />
-                    <div className="h-10 w-11/12 rounded-2xl bg-[var(--omni-bg-paper)]" />
-                    <div className="h-10 w-10/12 rounded-2xl bg-[var(--omni-bg-paper)]" />
+                    <div className="h-10 w-full rounded-card bg-[var(--omni-bg-paper)]" />
+                    <div className="h-10 w-11/12 rounded-card bg-[var(--omni-bg-paper)]" />
+                    <div className="h-10 w-10/12 rounded-card bg-[var(--omni-bg-paper)]" />
                   </div>
                 ) : (
                   <RecommendationListStack
@@ -670,7 +708,7 @@ const pillarProgress = useMemo(() => computePillarProgress(progress ?? null), [p
                 )}
               </div>
               <div className="space-y-6">
-                <div className="omni-card rounded-3xl p-6 md:p-7">
+                <div className="omni-card rounded-card p-6 md:p-7">
                   {recLoading ? (
                     <div className="space-y-3">
                       <div className="h-6 w-32 bg-[var(--omni-bg-paper)]" />
@@ -682,7 +720,7 @@ const pillarProgress = useMemo(() => computePillarProgress(progress ?? null), [p
                     <RecommendationDetailPanel item={activeRec} />
                   )}
                 </div>
-                <div className="omni-panel-soft rounded-3xl p-6 md:p-7 text-[var(--omni-muted)]">
+                <div className="omni-panel-soft rounded-card p-6 md:p-7 text-[var(--omni-muted)]">
                   <p className="text-sm">
                     {lang === "ro"
                       ? "Aplică recomandarea principală și revino pentru actualizări bazate pe progres."
@@ -1017,7 +1055,7 @@ function MemberRecommendationView({
       </section>
 
       {/* Rezumat scoruri psihometrice */}
-      <section className="omni-panel-soft rounded-3xl p-6 md:p-7 space-y-3">
+      <section className="omni-panel-soft rounded-card p-6 md:p-7 space-y-3">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
           {s("recommendationMemberSummaryHeading", "Rezumat scoruri")}
         </p>
@@ -1039,7 +1077,7 @@ function MemberRecommendationView({
       </section>
 
       {/* Quest-uri prioritare */}
-      <section className="omni-panel-soft rounded-3xl p-6 md:p-7 space-y-3">
+      <section className="omni-panel-soft rounded-card p-6 md:p-7 space-y-3">
         <header className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-energy)]">
             {s("recommendationMemberQuestsTitle", "Quest-uri prioritare")}

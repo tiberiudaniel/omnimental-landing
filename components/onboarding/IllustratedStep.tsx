@@ -57,7 +57,7 @@ export default function IllustratedStep({
 
   return (
     <section className="px-0 py-0">
-      <GuideCard className="rounded-[28px] border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-4 md:px-7 md:py-7">
+      <GuideCard className="border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-4 md:px-7 md:py-7">
         <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1.2fr)]">
           {imageFirst ? ImageBlock : null}
           <div className="space-y-4 text-[#3D1C10]">

@@ -280,7 +280,7 @@ export default function ActionTrendsCard({
   return (
     <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
       <div id="actions-trend">
-        <Card className="h-[200px] overflow-hidden rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 shadow-sm sm:h-[240px] sm:p-4 lg:h-[280px]">
+        <Card className="h-[200px] overflow-hidden border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 sm:h-[240px] sm:p-4 lg:h-[280px]">
           <h3 className="mb-1 flex items-center gap-1 text-xs font-semibold text-[var(--omni-muted)] sm:mb-2 sm:text-sm">
             <span>{trendTitle}</span>
             <InfoTooltip

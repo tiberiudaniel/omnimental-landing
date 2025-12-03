@@ -117,7 +117,7 @@ export function OmniAbilReplayCard({ lang }: OmniAbilReplayCardProps) {
   );
 
   return (
-    <section className="omni-card rounded-3xl bg-[var(--omni-surface-card)]/95 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.06)] sm:p-5">
+    <section className="omni-card rounded-card bg-[var(--omni-surface-card)]/95 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.06)] sm:p-5">
       <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
         {normalizedLang === "ro" ? "Replay recomandat" : "Recommended replay"}
       </p>

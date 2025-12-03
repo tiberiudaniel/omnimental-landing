@@ -16,7 +16,7 @@ export default function GuideCard({
   const interactive = typeof onClick === 'function';
   return (
     <div
-      className={`rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 shadow-sm ${interactive ? 'cursor-pointer transition hover:shadow-[0_14px_34px_rgba(0,0,0,0.08)] hover:-translate-y-[1px]' : ''} ${className}`}
+      className={`rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 shadow-soft ${interactive ? 'cursor-pointer transition hover:shadow-[0_14px_34px_rgba(0,0,0,0.08)] hover:-translate-y-[1px]' : ''} ${className}`}
       onClick={onClick}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}

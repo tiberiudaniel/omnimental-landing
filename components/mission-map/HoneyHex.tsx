@@ -6,11 +6,15 @@ type HexProps = {
   label: string;
   value: number; // 0–100
   size?: number; // px, defaults to 96
+  id?: string;
 };
 
-export function HoneyHex({ label, value, size = 96 }: HexProps) {
+export function HoneyHex({ label, value, size = 96, id }: HexProps) {
   const clamped = Math.max(0, Math.min(100, value));
-  const clipId = `hex-clip-${useId().replace(/:/g, "")}`;
+  const generatedId = useId();
+  const baseId = (id ?? generatedId).replace(/[^a-zA-Z0-9_-]/g, "_");
+  const clipId = `hex-clip-${baseId}`;
+  const gradientId = `honey-gradient-${baseId}`;
   const dimension = Math.max(48, size);
 
   return (
@@ -32,7 +36,7 @@ export function HoneyHex({ label, value, size = 96 }: HexProps) {
           <clipPath id={clipId}>
             <polygon points="50,4 92,26 92,74 50,96 8,74 8,26" />
           </clipPath>
-          <linearGradient id={`honey-gradient-${clipId}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#e1a02b" />
             <stop offset="40%" stopColor="#c37300" />
             <stop offset="100%" stopColor="#502400" />
@@ -43,11 +47,11 @@ export function HoneyHex({ label, value, size = 96 }: HexProps) {
           y={100 - clamped}
           width={100}
           height={clamped}
-          fill={`url(#honey-gradient-${clipId})`}
+          fill={`url(#${gradientId})`}
           clipPath={`url(#${clipId})`}
         />
-     </svg>
-     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center gap-0.5">
+      </svg>
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center gap-0.5">
         <span className="text-[11px] font-semibold text-[#3c2418]">{clamped}%</span>
         <span className="text-[10px] font-semibold uppercase tracking-wide text-[#4b2d1f]">{label}</span>
     </div>

@@ -120,7 +120,7 @@ export default function CollectiblesPage() {
           <h1 className="mt-2 text-3xl font-semibold text-[var(--omni-ink)] sm:text-4xl">{headerTitle}</h1>
           <p className="mt-3 text-sm leading-relaxed text-[var(--omni-muted)] sm:text-base">{headerCopy}</p>
           <div className="mt-4 flex flex-wrap items-center gap-3 text-[12px] text-[var(--omni-muted)]">
-            <div className="rounded-2xl border border-[#DECFC0] bg-[#FFF8F0] px-3 py-1.5">
+            <div className="rounded-card border border-[#DECFC0] bg-[#FFF8F0] px-3 py-1.5">
               {lang === "ro" ? "Deblocate" : "Unlocked"}: {unlockedCount}/{totalCollectibles}
             </div>
             {effectiveLoading ? (
@@ -174,7 +174,7 @@ export default function CollectiblesPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-[#E6DAD0] bg-[var(--omni-surface-card)]/70 px-4 py-6 text-sm text-[var(--omni-muted)]">
+            <div className="rounded-card border border-dashed border-[#E6DAD0] bg-[var(--omni-surface-card)]/70 px-4 py-6 text-sm text-[var(--omni-muted)]">
               {lang === "ro"
                 ? "Continuă lecțiile Arc 1 pentru a dezvălui protocoale exclusive."
                 : "Continue Arc 1 lessons to reveal exclusive protocols."}
@@ -236,7 +236,7 @@ function CollectibleCard({
   const icon = ICON_BY_COLLECTIBLE[collectible.id] ?? "📘";
   return (
     <div
-      className={`rounded-3xl border px-4 py-5 ${
+      className={`rounded-card border px-4 py-5 ${
         unlocked ? "border-[#E6DAD0] bg-[var(--omni-surface-card)] shadow-sm" : "border-dashed border-[#E6DAD0] bg-[#F7F0E7]"
       }`}
     >
@@ -284,7 +284,7 @@ function CollectibleDetailDialog({
   const lessons = collectible.unlockAfterLessonIds ?? [];
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4 py-6">
-      <div className="relative w-full max-w-2xl rounded-3xl bg-[var(--omni-surface-card)] px-6 py-6 shadow-2xl">
+      <div className="relative w-full max-w-2xl rounded-card bg-[var(--omni-surface-card)] px-6 py-6 shadow-2xl">
         <button
           type="button"
           aria-label={lang === "ro" ? "Închide" : "Close"}
@@ -293,7 +293,7 @@ function CollectibleDetailDialog({
         >
           {lang === "ro" ? "Închide" : "Close"}
         </button>
-        <div className="relative mb-4 h-48 w-full overflow-hidden rounded-2xl bg-[#F7F0E7] shadow-inner sm:h-60">
+        <div className="relative mb-4 h-48 w-full overflow-hidden rounded-card bg-[#F7F0E7] shadow-inner sm:h-60">
           <Image
             src={collectible.imageUrl || "https://placehold.co/600x360?text=Protocol"}
             alt={collectible.title}
@@ -313,7 +313,7 @@ function CollectibleDetailDialog({
           <h3 className="text-2xl font-semibold text-[var(--omni-ink)]">{collectible.title}</h3>
           <p className="text-sm leading-relaxed text-[var(--omni-muted)]">{collectible.longDescription}</p>
           {lessons.length ? (
-            <div className="rounded-2xl border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-muted)]">
+            <div className="rounded-card border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-muted)]">
               <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
                 {lang === "ro" ? "Se deblochează după" : "Unlocks after"}
               </p>

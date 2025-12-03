@@ -315,7 +315,7 @@ export default function LessonView({
     <>
       <div className="space-y-4" data-testid="lesson-view">
         {replayActive ? (
-          <div className="rounded-2xl border border-[var(--omni-energy)] bg-[color-mix(in srgb,var(--omni-energy)_10%,white)] px-4 py-2 text-sm text-[var(--omni-ink)] shadow-sm" data-testid="lesson-replay-banner">
+          <div className="rounded-card border border-[var(--omni-energy)] bg-[color-mix(in srgb,var(--omni-energy)_10%,white)] px-4 py-2 text-sm text-[var(--omni-ink)] shadow-sm" data-testid="lesson-replay-banner">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-energy)]">Replay mode (Phase 1)</p>
             <p className="text-[13px] text-[var(--omni-ink)]">Foundation test — manual replay entry point</p>
           </div>
@@ -364,7 +364,7 @@ export default function LessonView({
         ) : (
           <div className="flex justify-end">{journalButton}</div>
         )}
-        <div className="rounded-2xl border border-[#F0E8E0] bg-[var(--omni-bg-paper)] p-4 text-[#4D3F36]" data-testid={`lesson-screen-${currentScreenIndex + 1}`}>
+        <div className="rounded-card border border-[#F0E8E0] bg-[var(--omni-bg-paper)] p-4 text-[#4D3F36]" data-testid={`lesson-screen-${currentScreenIndex + 1}`}>
           {renderScreenContent(currentScreen, {
             areaKey,
             quizAnswerIndex,
@@ -433,7 +433,7 @@ export default function LessonView({
             </p>
           ) : null}
           {done ? (
-            <div className="rounded-xl border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-4 py-2 text-sm text-[var(--omni-ink-soft)]">
+            <div className="rounded-card border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-4 py-2 text-sm text-[var(--omni-ink-soft)]">
               {lang === "ro"
                 ? `Excelent! Ai câștigat ${xpReward} XP și lecția este salvată în progres. Continuă cu următoarea misiune.`
                 : `Great! You earned ${xpReward} XP and the lesson is saved. Continue with the next mission.`}
@@ -508,7 +508,7 @@ function renderScreenContent(
             const isCorrect = index === screen.correctIndex;
             const showState = quizAnswerIndex !== null;
             const baseClasses =
-              "w-full rounded-2xl border px-4 py-2 text-left text-sm transition focus:outline-none";
+              "w-full rounded-card border px-4 py-2 text-left text-sm transition focus:outline-none";
             let stateClasses = "border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]";
             if (showState && selected) {
               stateClasses = isCorrect
@@ -545,7 +545,7 @@ function renderScreenContent(
         </div>
         {quizResult ? (
           <div
-            className={`rounded-xl px-4 py-2 text-sm ${
+            className={`rounded-card px-4 py-2 text-sm ${
               quizResult === "correct"
                 ? "border border-[var(--omni-success)] bg-[var(--omni-success-soft)] text-[var(--omni-ink-soft)]"
                 : "border border-[#F5C6C0] bg-[#FFF7F5] text-[#5C2A1D]"
@@ -578,7 +578,7 @@ function renderScreenContent(
           value={reflection}
           onChange={(e) => onReflectionChange(e.target.value)}
           rows={4}
-          className="w-full rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-3 py-2 text-sm text-[var(--omni-ink)] focus:border-[var(--omni-energy)] focus:outline-none"
+          className="w-full rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-3 py-2 text-sm text-[var(--omni-ink)] focus:border-[var(--omni-energy)] focus:outline-none"
           aria-describedby={reflectionHelperId}
           placeholder={
             lang === "ro"

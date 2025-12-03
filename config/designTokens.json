@@ -1,0 +1,128 @@
+{
+  "brand": {
+    "beigeLight": "#F7F2EB",
+    "beige": "#EFE7DF",
+    "beigeDeep": "#E4D4C8",
+    "brownDark": "#4A2E1F",
+    "cream": "#F8F4ED",
+    "goldSoft": "#C7A87A",
+    "terracotta": "#D88C72",
+    "oliveSoft": "#B8BB9A",
+    "sand": "#E7D2B8"
+  },
+  "ui": {
+    "background": "#F8F4ED",
+    "surface": "#F7F2EB",
+    "surfaceAlt": "#E4D4C8",
+    "text": {
+      "primary": "#4A2E1F",
+      "secondary": "#8C7E76",
+      "muted": "rgba(74, 46, 31, 0.55)"
+    },
+    "border": "rgba(0, 0, 0, 0.07)",
+    "borderStrong": "rgba(0, 0, 0, 0.12)",
+    "focus": "rgba(199, 168, 122, 0.65)",
+    "shadow": "rgba(0, 0, 0, 0.05)"
+  },
+  "module": {
+    "scop": {
+      "bg": "#F3E8D9",
+      "bgSoft": "#E6D4C0",
+      "accent": "#C5A170",
+      "textMain": "#5D4631",
+      "textSecondary": "#8C7E76",
+      "gradient": "linear-gradient(135deg, #F7EFE3 0%, #F0DCC7 100%)"
+    },
+    "kuno": {
+      "bg": "#EFE7DF",
+      "bgSoft": "#E3D7CC",
+      "accent": "#BCA690",
+      "textMain": "#4A2E1F",
+      "textSecondary": "#8C7E76",
+      "gradient": "linear-gradient(135deg, #EFE7DF 0%, #D9C9BC 100%)"
+    },
+    "abil": {
+      "bg": "#F3E1D8",
+      "bgSoft": "#E6C0AC",
+      "accent": "#C4775A",
+      "textMain": "#4A2E1F",
+      "textSecondary": "#8C7E76",
+      "gradient": "linear-gradient(135deg, #F3E1D8 0%, #DFAF95 100%)"
+    },
+    "flex": {
+      "bg": "#EBE8DD",
+      "bgSoft": "#DAD7C6",
+      "accent": "#A4A07A",
+      "textMain": "#4A2E1F",
+      "textSecondary": "#8C7E76",
+      "gradient": "linear-gradient(135deg, #EBE8DD 0%, #D0D2BE 100%)"
+    },
+    "intel": {
+      "bg": "#F4EDE3",
+      "bgSoft": "#E8D9CA",
+      "accent": "#C9A679",
+      "textMain": "#4A2E1F",
+      "textSecondary": "#8C7E76",
+      "gradient": "linear-gradient(135deg, #F4EDE3 0%, #E2D0B9 100%)"
+    }
+  },
+  "gradients": {
+    "primarySoft": "linear-gradient(145deg, #F8F4ED 0%, #E4D4C8 100%)",
+    "kuno": "linear-gradient(135deg, #EFE7DF 0%, #D9C9BC 100%)",
+    "abil": "linear-gradient(135deg, #F3E1D8 0%, #DFAF95 100%)",
+    "flex": "linear-gradient(135deg, #EBE8DD 0%, #D0D2BE 100%)",
+    "intel": "linear-gradient(135deg, #F4EDE3 0%, #E2D0B9 100%)"
+  },
+  "shadows": {
+    "card": "0 4px 16px rgba(0, 0, 0, 0.05)",
+    "soft": "0 2px 8px rgba(0, 0, 0, 0.04)",
+    "hover": "0 6px 22px rgba(0, 0, 0, 0.07)"
+  },
+  "typography": {
+    "font": {
+      "display": ["Cormorant Garamond", "serif"],
+      "body": ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "sans-serif"]
+    },
+    "size": {
+      "xl": "26px",
+      "lg": "20px",
+      "md": "16px",
+      "sm": "14px",
+      "xs": "12px"
+    },
+    "weight": {
+      "semibold": 600,
+      "medium": 500,
+      "regular": 400
+    }
+  },
+  "components": {
+    "card": {
+      "radius": "22px",
+      "padding": "24px",
+      "border": "1.5px solid rgba(0, 0, 0, 0.08)",
+      "shadow": "0 4px 16px rgba(0, 0, 0, 0.05)"
+    },
+    "cta": {
+      "radius": "26px",
+      "height": "48px",
+      "textColor": "#4A2E1F",
+      "shadow": "0 2px 8px rgba(0, 0, 0, 0.04)",
+      "hoverShadow": "0 6px 22px rgba(0, 0, 0, 0.07)",
+      "variants": {
+        "kunoPrimary": {
+          "background": "linear-gradient(135deg, #EFE7DF 0%, #D9C9BC 100%)",
+          "textColor": "#4A2E1F"
+        },
+        "abilPrimary": {
+          "background": "linear-gradient(135deg, #F3E1D8 0%, #DFAF95 100%)",
+          "textColor": "#4A2E1F"
+        },
+        "neutralSoft": {
+          "background": "linear-gradient(145deg, #F8F4ED 0%, #E4D4C8 100%)",
+          "textColor": "#4A2E1F"
+        }
+      }
+    }
+  }
+}

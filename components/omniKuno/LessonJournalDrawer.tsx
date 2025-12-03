@@ -57,7 +57,7 @@ export function LessonJournalDrawer({ open, onClose, userId, moduleId, lessonId,
       <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
       <div className="fixed inset-0 flex min-h-full w-full items-end justify-center p-0 sm:items-center sm:p-4">
         <DialogPanel
-          className="flex h-[96vh] w-full max-w-none flex-col gap-4 rounded-t-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 p-4 shadow-2xl sm:h-auto sm:max-w-xl sm:rounded-3xl sm:p-6"
+          className="flex h-[96vh] w-full max-w-none flex-col gap-4 rounded-t-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 p-4 shadow-2xl sm:h-auto sm:max-w-xl sm:rounded-card sm:p-6"
           data-testid="lesson-journal-drawer"
         >
           <div className="flex items-start justify-between gap-3">
@@ -76,13 +76,13 @@ export function LessonJournalDrawer({ open, onClose, userId, moduleId, lessonId,
           </div>
 
           {!canWrite ? (
-            <p className="rounded-2xl border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-muted)]">
+            <p className="rounded-card border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-muted)]">
               Trebuie să fii autentificat pentru a salva notițe din lecții.
             </p>
           ) : (
             <>
               <div
-                className="max-h-[45vh] space-y-3 overflow-y-auto rounded-2xl border border-[#F0E8E0] bg-[var(--omni-surface-card)] px-3 py-3 sm:max-h-60"
+                className="max-h-[45vh] space-y-3 overflow-y-auto rounded-card border border-[#F0E8E0] bg-[var(--omni-surface-card)] px-3 py-3 sm:max-h-60"
                 data-testid="lesson-journal-blocks"
               >
                 {loading ? (
@@ -91,7 +91,7 @@ export function LessonJournalDrawer({ open, onClose, userId, moduleId, lessonId,
                   blocks.map((block) => (
                     <div
                       key={block.id}
-                      className="rounded-xl border border-[#F7E7DA] bg-[var(--omni-bg-paper)] px-3 py-2"
+                      className="rounded-card border border-[#F7E7DA] bg-[var(--omni-bg-paper)] px-3 py-2"
                       data-testid="lesson-journal-block"
                     >
                       <div className="flex items-center justify-between text-[11px] text-[var(--omni-muted)]">
@@ -112,7 +112,7 @@ export function LessonJournalDrawer({ open, onClose, userId, moduleId, lessonId,
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   rows={3}
-                  className="w-full rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-ink)] focus:border-[var(--omni-energy)] focus:outline-none"
+                  className="w-full rounded-card border border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-ink)] focus:border-[var(--omni-energy)] focus:outline-none"
                   placeholder="Notele mele din lecția asta…"
                 data-testid="lesson-journal-textarea"
                 />

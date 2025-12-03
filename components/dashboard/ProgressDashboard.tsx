@@ -28,7 +28,6 @@ import CenterColumnCards, { type FocusThemeInfo } from "@/components/dashboard/C
 import SidebarCards from "@/components/dashboard/SidebarCards";
 import { normalizeKunoFacts } from "@/lib/kunoFacts";
 import { RecentEntriesCard } from "@/components/dashboard/RecentEntriesCard";
-import { DailyResetCard } from "@/components/dashboard/DailyResetCard";
 import { buildOmniDailySnapshot } from "@/lib/omniState";
 import type { MissionSummary } from "@/lib/hooks/useMissionPerspective";
 import { getDb } from "@/lib/firebase";
@@ -167,7 +166,7 @@ export default function ProgressDashboard({
     } catch {
       return { omniIntelDelta: null, motivationDelta: null };
     }
-  }, [facts?.omni, kunoFacts.primaryScore, loading, profileId]);
+  }, [facts?.omni, loading, profileId]);
   // const [insightExpanded] = useState(false);
   const [questExpanded, setQuestExpanded] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
@@ -548,7 +547,7 @@ export default function ProgressDashboard({
         <div className="text-sm text-[var(--omni-muted)]">{lang === 'ro' ? 'Se încarcă datele…' : 'Loading data…'}</div>
       ) : null}
       {replayCardForced ? (
-        <div className="rounded-3xl border border-dashed border-[var(--omni-border-strong)] bg-[var(--omni-bg-paper)]/80 p-3 sm:p-4">
+        <div className="rounded-card border border-dashed border-[var(--omni-border-strong)] bg-[var(--omni-bg-paper)]/80 p-3 sm:p-4">
           <ReplayRecommendationCard
             lang={lang === "ro" ? "ro" : "en"}
             recommendation={recommendation}
@@ -583,11 +582,6 @@ export default function ProgressDashboard({
               debugGrid ? "outline outline-1 outline-[var(--omni-energy-soft)]/40" : ""
             }`}
           >
-            <DailyResetCard
-              lang={lang}
-              profileId={profile?.id ?? profileId ?? null}
-              facts={facts}
-            />
             <InternalKpiCard
               lang={lang}
               t={t}

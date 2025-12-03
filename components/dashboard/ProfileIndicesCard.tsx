@@ -41,7 +41,7 @@ export default function ProfileIndicesCard({
       {...hoverScale}
       className={`order-3 md:order-3 md:col-span-2 ${debugGrid ? "outline outline-1 outline-[var(--omni-energy-soft)]/40" : ""}`}
     >
-      <Card className="rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2.5 shadow-sm sm:p-3">
+      <Card className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2.5 sm:p-3">
         <h3 className="mb-1 text-xs font-semibold text-[var(--omni-muted)] sm:mb-2 sm:text-sm">
           {lang === "ro" ? "Profile indices" : "Profile indices"}
         </h3>

@@ -20,7 +20,7 @@ export function KunoModuleHeader({
   onOpenOverview,
 }: KunoModuleHeaderProps) {
   return (
-    <header className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-4 shadow-sm">
+    <header className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-4 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-energy)]">OmniKuno – Misiunea ta de azi</p>
       <h1 className="text-2xl font-bold text-[var(--omni-ink)]">
         {title} <span className="text-xl text-[var(--omni-energy)]">· {focusLabel}</span>

@@ -2,13 +2,15 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import DashboardCard from "@/components/dashboard/DashboardCard";
 import { fadeDelayed, hoverScale } from "@/components/dashboard/motionPresets";
 import type { OmniKunoModuleConfig } from "@/config/omniKunoLessons";
 import { computeLessonsStatus } from "@/components/omniKuno/useKunoTimeline";
 import type { KunoPerformanceSnapshot } from "@/lib/omniKunoAdaptive";
 import { getModuleLabel, type OmniKunoModuleId } from "@/config/omniKunoModules";
 import { HoneyHex } from "@/components/mission-map/HoneyHex";
+import { designTokens } from "@/config/designTokens";
+import { KunoButton } from "@/components/ui/CTA/KunoButton";
+import { adjustLightness, withAlpha } from "@/lib/colorUtils";
 
 export type KunoMissionCardData = {
   areaKey: string;
@@ -33,6 +35,8 @@ type KunoMissionCardProps = {
   progressPercent?: number | null;
 };
 
+const kunoTone = designTokens.module.kuno;
+
 export default function KunoMissionCard({
   lang,
   focusAreaLabel,
@@ -47,8 +51,6 @@ export default function KunoMissionCard({
     if (!missionData) return [];
     return computeLessonsStatus(missionData.module.lessons, missionData.completedIds);
   }, [missionData]);
-  const completedCount = timeline.filter((item) => item.status === "done").length;
-  const totalLessons = missionData?.module.lessons.length ?? 0;
   const xp = Math.max(0, missionData?.xp ?? 0);
   const missionModuleId = missionData?.module.moduleId as OmniKunoModuleId | undefined;
   const moduleLabel = missionModuleId ? getModuleLabel(missionModuleId, lang === "ro" ? "ro" : "en") : null;
@@ -96,10 +98,10 @@ export default function KunoMissionCard({
     }
     return lang === "ro" ? "Continuă misiunea" : "Continue mission";
   })();
-
-  const activeAccent =
-    activeLesson?.type === "quiz" ? "var(--accent-main)" : "var(--accent-strong)";
-  const activeBg = `color-mix(in srgb, ${activeAccent ?? "var(--accent-main)"} 12%, var(--bg-card))`;
+  const lessonAccent = kunoTone.accent;
+  const quizAccent = designTokens.brand.terracotta;
+  const activeAccent = activeLesson?.type === "quiz" ? quizAccent : lessonAccent;
+  const nextStepBorderColor = withAlpha(kunoTone.accent, 0.35);
   const durationCopy = (() => {
     if (!activeLesson) return null;
     if (typeof activeLesson.durationMin === "number" && activeLesson.durationMin > 0) {
@@ -121,27 +123,40 @@ export default function KunoMissionCard({
     nextModuleLabel,
     xp,
     durationCopy,
-    completedCount,
-    totalLessons,
     progressPercent,
+    accentColor: lessonAccent,
+    textColor: kunoTone.textMain,
+    textSecondary: kunoTone.textSecondary,
   };
 
   return (
     <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
-      <DashboardCard className="px-4 py-3.5 sm:px-4 sm:py-4 max-w-[720px]" title={null} subtitle={null} footer={null}>
+      <div
+        className="rounded-card border px-8 py-5 shadow-card"
+        style={{
+          borderRadius: designTokens.components.card.radius,
+          backgroundColor: designTokens.brand.cream,
+          borderColor: withAlpha(kunoTone.accent, 0.18),
+          boxShadow: "0 20px 45px rgba(0, 0, 0, 0.06)",
+          color: kunoTone.textMain,
+          minHeight: "400px",
+        }}
+      >
         <KunoMissionSummary {...summaryProps} />
-        <div className="mt-2 rounded-2xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--bg-card)", color: "var(--text-main)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A8578]">
-            {moduleCompleted
-              ? lang === "ro"
-                ? "Modul finalizat"
-                : "Module completed"
-              : lang === "ro"
-                ? "Următorul pas"
-                : "Next step"}
-          </p>
-          {moduleCompleted ? (
-            <div className="mt-3 space-y-2 text-sm theme-text-main">
+        {moduleCompleted ? (
+          <div
+            className="mt-6 rounded-card border px-3 py-3 text-sm"
+            style={{
+              borderRadius: designTokens.components.card.radius,
+              borderColor: withAlpha(kunoTone.accent, 0.2),
+              backgroundColor: designTokens.ui.surface,
+              color: kunoTone.textMain,
+            }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: kunoTone.textSecondary }}>
+              {lang === "ro" ? "Modul finalizat" : "Module completed"}
+            </p>
+            <div className="mt-3 space-y-2 text-sm">
               <p>
                 {lang === "ro"
                   ? `Ai parcurs toate lecțiile pentru ${moduleLabel ?? "acest modul"}.`
@@ -149,46 +164,62 @@ export default function KunoMissionCard({
               </p>
               {nextModuleLabel ? (
                 <>
-                  <p className="text-[13px] font-semibold theme-text-main">
+                  <p className="text-[13px] font-semibold">
                     {lang === "ro"
                       ? `Următorul parcurs recomandat: ${nextModuleLabel}.`
                       : `Next suggested path: ${nextModuleLabel}.`}
                   </p>
-                  <p className="text-[12px] theme-text-muted">
+                  <p className="text-[12px]" style={{ color: kunoTone.textSecondary }}>
                     {lang === "ro"
                       ? "Pornește când ești gata — progresul tău se mută automat pe noul modul."
                       : "Start when you’re ready — your progress switches automatically to the new module."}
                   </p>
                 </>
               ) : (
-                <p className="text-[12px] theme-text-muted">
+                <p className="text-[12px]" style={{ color: kunoTone.textSecondary }}>
                   {lang === "ro"
                     ? "Poți alege alt modul OmniKuno sau poți relua lecțiile preferate din aplicație."
                     : "Pick another OmniKuno module or revisit any lesson you want from the app."}
                 </p>
               )}
             </div>
-          ) : activeLesson ? (
-            <Link
-              href={ctaHref}
-              className="mt-3 flex items-center gap-3 rounded-2xl border px-2 py-2 transition hover:border-[var(--accent-main)] hover:bg-[color-mix(in_srgb,var(--accent-main)_10%,var(--bg-card))] hover:-translate-y-0.5"
-              style={{
-                borderColor: "var(--border-subtle)",
-                backgroundColor: "var(--bg-card)",
-              }}
-            >
-              <span
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
+          </div>
+        ) : activeLesson ? (
+          <Link
+            href={ctaHref}
+            className="mt-6 block rounded-card border px-3 py-3 transition hover:-translate-y-0.5"
+            style={{
+              borderRadius: designTokens.components.card.radius,
+              borderColor: nextStepBorderColor,
+              borderWidth: "1px",
+              backgroundColor: designTokens.brand.beigeLight,
+            }}
+          >
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: withAlpha(kunoTone.textSecondary, 0.9) }}>
+              {lang === "ro" ? "Următorul pas" : "Next step"}
+            </div>
+            <div className="mt-2 flex items-center gap-3">
+              <div
+                className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border"
                 style={{
-                  borderColor: activeAccent ?? "var(--accent-main)",
-                  backgroundColor: activeBg,
-                  color: activeAccent ?? "var(--accent-main)",
+                  borderColor: activeAccent,
+                  backgroundColor: withAlpha(activeAccent, 0.12),
                 }}
+                aria-hidden="true"
               >
-                ▶
-              </span>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <circle cx="10" cy="10" r="9" stroke={activeAccent} strokeWidth="1.5" fill="none" />
+                  <path
+                    d="M8 6.5L14 10L8 13.5V6.5Z"
+                    fill={activeAccent}
+                    stroke={activeAccent}
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                  />
+                </svg>
+              </div>
               <div>
-                <span className="text-[13px] uppercase tracking-[0.18em] text-[var(--omni-muted)]">
+                <span className="text-[13px] uppercase tracking-[0.18em]" style={{ color: kunoTone.textSecondary }}>
                   {lang === "ro"
                     ? activeLessonOrder
                       ? `${activeLessonOrder}. Lecție`
@@ -197,42 +228,54 @@ export default function KunoMissionCard({
                       ? `Lesson ${activeLessonOrder}`
                       : "Lesson"}
                 </span>
-                <p className="mt-1.5 text-base font-bold text-[var(--omni-ink)] leading-tight tracking-[0.01em]">
-                  {activeLesson.title}
-                </p>
-                <p className="text-[11px] uppercase tracking-[0.2em] theme-text-soft">
+                <p className="mt-1.5 text-base font-bold leading-tight tracking-[0.01em]">{activeLesson.title}</p>
+                <p className="text-[11px] uppercase tracking-[0.2em]" style={{ color: kunoTone.textSecondary }}>
                   {activeLesson.type === "quiz" ? (lang === "ro" ? "Quiz" : "Quiz") : ""}
                 </p>
               </div>
-            </Link>
-          ) : (
-            <p className="mt-2 text-[12px] theme-text-muted">
-              {lang === "ro" ? "Nu avem momentan un pas activ." : "No active step right now."}
-            </p>
-          )}
-        </div>
-
-        <div className="mt-4">
-          <button
-            type="button"
-            onClick={() => router.push(ctaHref)}
-            className="w-full rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] transition-all duration-200 ease-out transform hover:-translate-y-0.5 hover:shadow-[0_18px_32px_rgba(242,151,84,0.25)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--omni-energy)]"
+            </div>
+          </Link>
+        ) : (
+          <div
+            className="mt-6 rounded-card border px-3 py-3"
             style={{
-              borderColor: "color-mix(in srgb, var(--omni-energy) 78%, var(--omni-border-soft) 22%)",
-              color: "color-mix(in srgb, var(--omni-energy) 92%, #5a2c06 8%)",
-              backgroundImage:
-                "linear-gradient(120deg, color-mix(in srgb, var(--omni-energy) 18%, transparent) 0%, color-mix(in srgb, var(--omni-energy) 5%, transparent) 100%)",
-              boxShadow: "0 12px 28px rgba(242, 151, 84, 0.2)",
+              borderRadius: designTokens.components.card.radius,
+              borderColor: withAlpha(kunoTone.accent, 0.2),
+              backgroundColor: designTokens.ui.surface,
             }}
           >
-            {ctaLabel}
-          </button>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: kunoTone.textSecondary }}>
+              {lang === "ro" ? "Următorul pas" : "Next step"}
+            </p>
+            <p className="mt-2 text-[12px]" style={{ color: kunoTone.textSecondary }}>
+              {lang === "ro" ? "Nu avem momentan un pas activ." : "No active step right now."}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4 flex">
+          <div className="w-[88%] max-w-sm">
+            <KunoButton
+              onClick={() => router.push(ctaHref)}
+              style={{
+                backgroundImage: "none",
+                backgroundColor: adjustLightness(kunoTone.accent, -6),
+                color: designTokens.brand.cream,
+                paddingTop: "14px",
+                paddingBottom: "14px",
+              }}
+              className="rounded-[32px] px-8 py-3 text-[14px] font-medium tracking-wide"
+            >
+              {ctaLabel}
+            </KunoButton>
+          </div>
         </div>
-      </DashboardCard>
+      </div>
       <div className="mt-2 pl-1">
         <Link
           href={`/omni-kuno?area=${encodeURIComponent(missionData?.areaKey ?? "calm")}&module=${encodeURIComponent(missionData?.module.moduleId ?? "")}`}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-[color-mix(in_srgb,var(--omni-muted)_70%,var(--accent-main)_30%)] transition hover:text-[var(--accent-main)]"
+          className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] transition hover:text-kunoAccent"
+          style={{ color: withAlpha(kunoTone.accent, 0.8) }}
         >
           <span>{lang === "ro" ? "Vezi toate misiunile" : "View all missions"}</span>
           <svg viewBox="0 0 14 14" className="h-3 w-3">
@@ -253,9 +296,10 @@ type KunoMissionSummaryProps = {
   nextModuleLabel: string | null;
   xp: number;
   durationCopy: string | null;
-  completedCount: number;
-  totalLessons: number;
   progressPercent?: number | null;
+  accentColor?: string;
+  textColor?: string;
+  textSecondary?: string;
 };
 
 function KunoMissionSummary({
@@ -267,58 +311,87 @@ function KunoMissionSummary({
   nextModuleLabel,
   xp,
   durationCopy,
-  completedCount,
-  totalLessons,
   progressPercent,
+  accentColor,
+  textColor,
+  textSecondary,
 }: KunoMissionSummaryProps) {
   const focusHeadline =
     lang === "ro"
       ? `Acumulează cunoaștere în ${focusLabel}`
       : `Build knowledge in ${focusLabel}`;
+  const microBenefit =
+    lang === "ro"
+      ? "Cunoașterea îți dă direcție clară. De aici încolo e mai ușor."
+      : "Knowledge gives you clarity. From here, every step gets easier.";
+  const detailLine =
+    lang === "ro"
+      ? `+${xp} XP estimate · ${durationCopy ?? "~5 min"}`
+      : `+${xp} XP estimate · ${durationCopy ?? "~5 min"}`;
+  const accent = accentColor ?? designTokens.module.kuno.accent;
+  const textPrimary = textColor ?? designTokens.ui.text.primary;
+  const secondaryColor = textSecondary ?? designTokens.ui.text.secondary;
+  const mutedColor = withAlpha(textPrimary, 0.55);
+  const positiveColor = designTokens.brand.oliveSoft;
+  const negativeColor = designTokens.brand.terracotta;
   return (
-    <div className="space-y-3 text-[var(--omni-ink)]">
-      <div className="flex items-center justify-between gap-4 sm:gap-5" style={{ marginTop: "-10px" }}>
+    <div className="space-y-2.5" style={{ color: textPrimary }}>
+      <div className="flex items-start justify-between gap-3 sm:gap-4" style={{ marginTop: "-6px" }}>
         <div className="flex-1">
-          <p className="text-[8px] font-semibold uppercase tracking-[0.42em] text-[color-mix(in_srgb,var(--omni-muted)_55%,var(--omni-energy)_45%)]">
-            Omni-Kuno
-          </p>
-          <p className="pb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-textMuted">Omni-Kuno</p>
+          <p className="pb-3 text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: mutedColor }}>
             {lang === "ro" ? "Misiunea de azi" : "Your mission today"}
           </p>
-          <h3 className="text-base font-semibold text-[var(--omni-ink)] leading-tight">
-            {focusHeadline}
-          </h3>
+          <div>
+            <h3
+              className="font-bold"
+              style={{ fontSize: designTokens.typography.size.xl, fontWeight: 700, lineHeight: 1.2, color: textPrimary }}
+            >
+              {focusHeadline}
+            </h3>
+            <p className="mt-3 text-[15px] font-normal leading-relaxed text-textSecondary" style={{ color: secondaryColor, width: "100%", maxWidth: "620px" }}>
+              {microBenefit}
+            </p>
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: withAlpha(accent, 0.7) }}>
+              {detailLine}
+            </p>
+          </div>
         </div>
-        <div className="ml-1 flex flex-col items-end gap-3 text-right" style={{ marginTop: "-10px", width: "96px" }}>
+        <div className="ml-2 flex flex-col items-start gap-2 pt-2" style={{ width: "96px" }}>
           <div className="flex items-baseline gap-1 text-right">
-            <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--omni-energy)_70%,var(--omni-ink)_30%)] leading-none">
+            <p className="text-sm font-semibold leading-none" style={{ color: withAlpha(accent, 0.85) }}>
               {omniCunoScore}
               {scoreDelta ? (
-                <span className={`ml-1 text-[11px] ${scoreDelta.startsWith("+") ? "text-[#1F7A43]" : "text-[#B82B4F]"}`}>{scoreDelta}</span>
+                <span
+                  className="ml-1 text-[11px]"
+                  style={{ color: scoreDelta.startsWith("+") ? positiveColor : negativeColor }}
+                >
+                  {scoreDelta}
+                </span>
               ) : null}
             </p>
-            <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-[color-mix(in_srgb,var(--omni-muted)_80%,var(--omni-ink-soft)_20%)]">XP</p>
+            <p className="text-[9px] font-medium uppercase tracking-[0.3em]" style={{ color: withAlpha(textPrimary, 0.6) }}>
+              XP
+            </p>
           </div>
           {typeof progressPercent === "number" ? (
             <div className="hidden sm:flex pt-1" style={{ paddingTop: "10px" }}>
-              <HoneyHex label="Kuno" value={Math.round(progressPercent)} size={72} />
+              <HoneyHex label="Kuno" value={Math.round(progressPercent)} size={66} id="kuno-mission-summary" />
             </div>
           ) : null}
         </div>
       </div>
-      <p className="text-[12px] text-[var(--omni-muted)]">
-        {moduleCompleted
-          ? nextModuleLabel
+      {moduleCompleted ? (
+        <p className="text-[12px]" style={{ color: secondaryColor }}>
+          {nextModuleLabel
             ? lang === "ro"
               ? `Următorul modul recomandat: ${nextModuleLabel}.`
               : `Next suggested module: ${nextModuleLabel}.`
             : lang === "ro"
               ? "Poți alege un nou modul OmniKuno pentru a continua ritmul."
-              : "Pick another OmniKuno module to keep the cadence."
-          : lang === "ro"
-            ? `+${xp} XP estimate · ${durationCopy ?? "~5 min"}`
-            : `+${xp} XP estimated · ${durationCopy ?? "~5 min"}`}
-      </p>
+              : "Pick another OmniKuno module to keep the cadence."}
+        </p>
+      ) : null}
     </div>
   );
 }

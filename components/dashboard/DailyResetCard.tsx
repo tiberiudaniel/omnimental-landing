@@ -7,7 +7,10 @@ import {
   loadDailyCheckin,
   saveDailyCheckin,
   getDailyResetPreviousDateKey,
+  getLastAxesEntries,
+  type DailyAxesEntry,
 } from "@/lib/dailyReset";
+import { DailyResetAxesSection } from "@/components/dailyReset/DailyResetAxesSection";
 import type { OmniDailySnapshot } from "@/lib/omniState";
 import type { ProgressFact } from "@/lib/progressFacts";
 
@@ -188,7 +191,7 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   const [stress, setStress] = useState(4);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(false);
-  const [, setLocalCache] = useState<LocalResetState | null>(null);
+  const [localCache, setLocalCache] = useState<LocalResetState | null>(null);
   const baseSummary = facts?.omni?.daily ?? null;
   const [completedToday, setCompletedToday] = useState(() =>
     baseSummary?.lastCheckinDate === todayKey,
@@ -197,6 +200,9 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   const [lastDate, setLastDate] = useState<string | null>(baseSummary?.lastCheckinDate ?? null);
   const fallbackMode =
     !profileId || /^guest[-_]/i.test(profileId) || /^demo/i.test(profileId);
+  const [summaryEntries, setSummaryEntries] = useState<DailyAxesEntry[] | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const localeLang: "ro" | "en" = lang === "ro" ? "ro" : "en";
 
   useEffect(() => {
     const local = readLocalResetState();
@@ -262,9 +268,74 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
     completedToday: allowInteractions && completedToday,
   };
   const shouldHideCard = allowInteractions && completedToday;
+
+  useEffect(() => {
+    if (!shouldHideCard || fallbackMode || !profileId) {
+      setSummaryEntries(null);
+      setSummaryLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSummaryLoading(true);
+    getLastAxesEntries(profileId, 4)
+      .then((data) => {
+        if (!cancelled) {
+          setSummaryEntries(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSummaryEntries([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setSummaryLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [shouldHideCard, fallbackMode, profileId]);
+
+  const summaryHasToday =
+    summaryEntries?.some((entry) => entry.date === todayKey) ?? false;
+
+  const fallbackSummaryEntries: DailyAxesEntry[] | null = useMemo(() => {
+    if (summaryEntries && summaryEntries.length) return summaryEntries;
+    const local = localCache;
+    if (!local?.values) return null;
+    const emotionScore =
+      typeof local.values.stress === "number" ? Math.max(0, Math.min(10, 10 - local.values.stress)) : 5;
+    const fallbackEntry: DailyAxesEntry = {
+      id: `local-${local.lastCheckinDate ?? todayKey}`,
+      date: local.lastCheckinDate ?? todayKey,
+      createdAt: local.values.date ? new Date(`${local.values.date}T00:00:00Z`) : new Date(),
+      clarityScore: local.values.clarity ?? 5,
+      emotionScore,
+      energyScore: local.values.energy ?? 5,
+      clarityDeltaFromPersonalMean: 0,
+      emotionDeltaFromPersonalMean: 0,
+      energyDeltaFromPersonalMean: 0,
+    };
+    return [fallbackEntry];
+  }, [summaryEntries, localCache, todayKey]);
+
   if (shouldHideCard) {
+    const preferredEntries =
+      (summaryHasToday && summaryEntries?.length ? summaryEntries : null) ?? fallbackSummaryEntries;
+    if (preferredEntries?.length) {
+      return <DailyResetAxesSection entries={preferredEntries} lang={localeLang} />;
+    }
+    if (!fallbackMode && profileId && summaryLoading) {
+      return (
+        <Card className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 text-sm text-[var(--omni-muted)]">
+          {lang === "ro" ? "Se încarcă insight-urile zilnice..." : "Loading daily insights..."}
+        </Card>
+      );
+    }
     return (
-      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 text-sm text-[var(--omni-muted)] shadow-sm">
+      <Card className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 text-sm text-[var(--omni-muted)]">
         <DailyResetSummary {...summaryProps} />
       </Card>
     );
@@ -359,7 +430,7 @@ export function DailyResetCard({ lang, profileId, facts }: DailyResetCardProps) 
   );
 
   return (
-    <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 shadow-sm sm:p-4">
+    <Card className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 sm:p-4">
       <DailyResetSummary {...summaryProps} />
       <div className="mt-1.5 mb-2.5 border-t border-[var(--omni-border-soft)]/70" />
       {allowInteractions ? (

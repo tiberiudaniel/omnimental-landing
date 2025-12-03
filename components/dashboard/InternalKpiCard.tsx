@@ -67,7 +67,7 @@ export default function InternalKpiCard({
 
   return (
     <motion.div variants={fadeDelayed(0.05)} {...hoverScale}>
-      <Card className="flex items-center gap-2 rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-1.5 shadow-sm sm:gap-3 sm:p-2.5">
+      <Card className="flex items-center gap-2 border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-1.5 sm:gap-3 sm:p-2.5">
         <div className="flex-1">
           <div className="mb-1 flex items-center justify-between">
             <h3 className="text-[13px] font-semibold tracking-[0.02em] text-[#6E5F55] sm:text-[14px]">
@@ -82,10 +82,10 @@ export default function InternalKpiCard({
 
 
           <div className="mt-2 flex flex-col gap-2">
-            <div className="rounded-xl border border-[#F0E3D8] bg-[var(--omni-bg-paper)] px-3 py-2 text-[11px] text-[var(--omni-muted)]">
+            <div className="rounded-card border border-[#F0E3D8] bg-[var(--omni-bg-paper)] px-3 py-2 text-[11px] text-[var(--omni-muted)]">
               {summaryText}
             </div>
-            <div className="rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-1.5">
+            <div className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-1.5">
               <div className="flex flex-wrap items-center gap-2">
                 <div className="inline-flex rounded-md border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/70 p-0.5 text-[9px] sm:text-[10px]">
                   <button

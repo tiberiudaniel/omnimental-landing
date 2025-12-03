@@ -16,7 +16,7 @@ function KunoHub() {
     <AppShell header={<SiteHeader onAuthRequest={e2e ? undefined : goToAuth} />}>
       <div className="px-4 py-10">
         <div className="w-full max-w-5xl mx-auto px-4">
-          <section className="omni-card rounded-3xl p-6 md:p-7 mb-8">
+          <section className="omni-card rounded-card p-6 md:p-7 mb-8">
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-xs md:text-[11px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">OmniKuno</p>
@@ -35,19 +35,19 @@ function KunoHub() {
           </section>
         </div>
         <div className="w-full max-w-5xl mx-auto px-4 space-y-8">
-          <section className="omni-panel-soft rounded-3xl p-6 md:p-7">
+          <section className="omni-panel-soft rounded-card p-6 md:p-7">
             <div className="flex flex-col gap-1">
               <p className="text-base md:text-lg font-semibold text-[var(--omni-ink)]">Puncte de pornire rapide</p>
               <p className="text-sm text-[var(--omni-muted)]">Alege modul în care vrei să continui azi.</p>
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <Link href="/kuno/practice" className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-4 text-sm text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]">
+              <Link href="/kuno/practice" className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-4 text-sm text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]">
                 Start practice (5 întrebări)
               </Link>
-              <Link href="/kuno/learn" className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-4 text-sm text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]">
+              <Link href="/kuno/learn" className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-4 text-sm text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]">
                 Lecții scurte per categorie
               </Link>
-              <Link href="/experience-onboarding?flow=initiation&step=welcome&from=kuno" className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-4 text-sm text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]">
+              <Link href="/experience-onboarding?flow=initiation&step=welcome&from=kuno" className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-4 text-sm text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]">
                 Încearcă experiența ghidată
               </Link>
             </div>

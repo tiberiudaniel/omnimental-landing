@@ -5,11 +5,9 @@ import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
 import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
-import { useProfile } from "@/components/ProfileProvider";
 import { useI18n } from "@/components/I18nProvider";
 
 export default function OmniIntelPage() {
-  const { profile } = useProfile();
   const { lang } = useI18n();
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -30,4 +28,3 @@ export default function OmniIntelPage() {
     </>
   );
 }
-

@@ -1,4 +1,7 @@
+import clsx from "clsx";
 import type { HTMLAttributes, ReactNode } from "react";
+import { designTokens } from "@/config/designTokens";
+import { withAlpha } from "@/lib/colorUtils";
 
 type DashboardCardProps = {
   title: ReactNode;
@@ -8,6 +11,7 @@ type DashboardCardProps = {
   footer?: ReactNode;
   headerExtra?: ReactNode;
   children: ReactNode;
+  accentColor?: string;
 } & Omit<HTMLAttributes<HTMLDivElement>, "title">;
 
 export default function DashboardCard({
@@ -18,18 +22,24 @@ export default function DashboardCard({
   footer,
   headerExtra,
   children,
+  accentColor = designTokens.brand.terracotta,
   className = "",
   style,
   ...rest
 }: DashboardCardProps) {
+  const bgColor = designTokens.ui.surface;
+  const borderColor = designTokens.ui.border;
+  const textPrimary = designTokens.ui.text.primary;
+  const textMuted = designTokens.ui.text.muted;
+  const shadow = designTokens.shadows.card;
   return (
     <div
-      className={`rounded-3xl border px-4 py-4 shadow-sm sm:px-5 sm:py-5 ${className}`}
+      className={clsx("rounded-card border px-4 py-4 shadow-card sm:px-5 sm:py-5", className)}
       style={{
-        backgroundColor: "var(--bg-card)",
-        borderColor: "var(--border-subtle)",
-        boxShadow: "var(--shadow-card)",
-        color: "var(--text-main)",
+        backgroundColor: bgColor,
+        borderColor,
+        boxShadow: shadow,
+        color: textPrimary,
         ...style,
       }}
       {...rest}
@@ -39,7 +49,7 @@ export default function DashboardCard({
           {typeof title === "string" || typeof title === "number" ? (
             <p
               className="text-[10px] font-semibold uppercase tracking-[0.35em]"
-              style={{ color: "var(--text-muted)" }}
+              style={{ color: textMuted }}
             >
               {title}
             </p>
@@ -60,29 +70,29 @@ export default function DashboardCard({
               )
             : null}
         </div>
-        {headerExtra ? <div className="text-right text-[11px]">{headerExtra}</div> : null}
+        {headerExtra ? <div className="text-right text-[11px]" style={{ color: textMuted }}>{headerExtra}</div> : null}
         {ctaLabel && onCtaClick ? (
           <button
             type="button"
             onClick={onCtaClick}
             className="rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] transition"
             style={{
-              borderColor: "var(--border-subtle)",
-              color: "var(--accent-main)",
-              backgroundColor: "color-mix(in srgb, var(--accent-main) 10%, transparent)",
+              borderColor: withAlpha(accentColor, 0.35),
+              color: accentColor,
+              backgroundColor: withAlpha(accentColor, 0.12),
             }}
           >
             {ctaLabel}
           </button>
         ) : null}
       </div>
-      <div className="mt-3 text-sm" style={{ color: "var(--text-main)" }}>
+      <div className="mt-3 text-sm" style={{ color: textPrimary }}>
         {children}
       </div>
       {footer ? (
         <div
           className="mt-4 border-t pt-3 text-[11px] uppercase tracking-[0.18em]"
-          style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}
+          style={{ borderColor, color: textMuted }}
         >
           {footer}
         </div>

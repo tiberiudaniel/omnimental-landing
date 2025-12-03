@@ -24,7 +24,7 @@ export function OmniAbilCard({ lang }: { lang: string }) {
     const isDone = task.status === "done";
     const xpLabel = task.xpReward ? `+${task.xpReward} XP` : null;
     return (
-      <div className="rounded-2xl border border-[#EFE4D8] bg-[var(--omni-surface-card)]/90 px-3 py-2">
+      <div className="rounded-card border border-[#EFE4D8] bg-[var(--omni-surface-card)]/90 px-3 py-2">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[13px] font-semibold text-[var(--omni-ink)]">{task.title}</p>
@@ -43,7 +43,7 @@ export function OmniAbilCard({ lang }: { lang: string }) {
               type="button"
               onClick={() => markTask(task)}
               disabled={isDone || markingId === task.id}
-              className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] transition ${
+              className={`rounded-cta px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] transition ${
                 isDone
                   ? "border border-transparent bg-[#E8E1D6] text-[#8A7A68]"
                   : "border border-[#C5B29E] text-[var(--omni-ink-soft)] hover:border-[#8B5A3A]"
@@ -59,7 +59,7 @@ export function OmniAbilCard({ lang }: { lang: string }) {
 
   return (
     <Card
-      className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 shadow-sm sm:p-4"
+      className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-3 sm:p-4"
       data-testid="omniabil-card"
     >
       <div className="mb-2 flex items-center justify-between">

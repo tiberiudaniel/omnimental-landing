@@ -254,7 +254,7 @@ export default function QuizView({
       ) : null}
       <div className="space-y-3">
         {questions.map((question) => (
-          <div key={question.id} className="rounded-xl border border-[#F0E8E0] bg-[var(--omni-bg-paper)] p-3">
+          <div key={question.id} className="rounded-card border border-[#F0E8E0] bg-[var(--omni-bg-paper)] p-3">
             <p className="font-semibold text-[var(--omni-ink)]">{question.text}</p>
             <div className="mt-2 space-y-1 text-sm text-[#4D3F36]">
               {question.options.map((option) => (

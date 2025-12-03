@@ -141,7 +141,7 @@ export default function StepMiniTest({
   }, [autoSubmitAfterMin, canSubmit, handleSubmit]);
   return (
     <section className="space-y-4">
-      <OmniCard className="rounded-[16px] px-6 py-6">
+      <OmniCard className="px-6 py-6">
         <div
           className="mb-1 text-xs uppercase tracking-[0.3em]"
           style={{ color: "var(--omni-muted)" }}

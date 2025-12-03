@@ -20,7 +20,7 @@ function AbilityCard({ entry, lang }: { entry: OmniAbilAbilityWithMoves; lang: "
   const t = (value: { ro: string; en: string }) => (lang === "en" ? value.en : value.ro);
 
   return (
-    <article className="flex h-full flex-col rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 p-4 shadow-[0_10px_24px_rgba(0,0,0,0.06)]">
+    <article className="flex h-full flex-col rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 p-4 shadow-[0_10px_24px_rgba(0,0,0,0.06)]">
       <header className="mb-3 flex items-start justify-between gap-3">
         <div>
           <div className="text-2xl">{ability.icon}</div>
@@ -30,7 +30,7 @@ function AbilityCard({ entry, lang }: { entry: OmniAbilAbilityWithMoves; lang: "
       </header>
       <div className="mt-3 flex flex-1 flex-col gap-2">
         {moves.slice(0, 4).map((move) => (
-          <div key={move.id} className="rounded-2xl border border-[#E6D6C5] bg-[#FFF7EF] px-3 py-2">
+          <div key={move.id} className="rounded-card border border-[#E6D6C5] bg-[#FFF7EF] px-3 py-2">
             <p className="text-[12px] font-semibold text-[var(--omni-ink)]">{t(move.title)}</p>
             <p className="mt-1 text-[11px] leading-snug text-[var(--omni-muted)]">{t(move.description)}</p>
             <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">
@@ -75,7 +75,7 @@ export default function OmniAbilPage() {
     <>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       <AppShell header={header}>
-        <section className="omni-card rounded-3xl bg-[var(--omni-surface-card)]/95 p-6 shadow-[0_16px_40px_rgba(0,0,0,0.06)] md:p-7">
+        <section className="omni-card rounded-card bg-[var(--omni-surface-card)]/95 p-6 shadow-[0_16px_40px_rgba(0,0,0,0.06)] md:p-7">
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
             {normalizedLang === "ro" ? "Nivelul 2 · Acțiune" : "Level 2 · Action"}
           </p>
@@ -89,7 +89,7 @@ export default function OmniAbilPage() {
         </section>
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-          <div className="omni-card h-full rounded-3xl bg-[var(--omni-surface-card)]/95 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.06)] sm:p-5">
+          <div className="omni-card h-full rounded-card bg-[var(--omni-surface-card)]/95 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.06)] sm:p-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
               {normalizedLang === "ro" ? "Misiunile tale de azi" : "Your missions for today"}
             </p>
@@ -103,7 +103,7 @@ export default function OmniAbilPage() {
             </div>
           </div>
 
-          <div className="omni-card h-full rounded-3xl bg-[var(--omni-surface-card)]/95 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.06)] sm:p-5">
+          <div className="omni-card h-full rounded-card bg-[var(--omni-surface-card)]/95 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.06)] sm:p-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
               {normalizedLang === "ro" ? "Cum funcționează OmniAbil" : "How OmniAbil works"}
             </p>

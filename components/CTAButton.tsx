@@ -72,7 +72,7 @@ export default function CTAButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="group inline-flex items-center gap-3 rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
+        className="group inline-flex items-center gap-3 rounded-full border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
       >
         {text}
         <span className="translate-y-[1px] text-sm text-[var(--omni-energy)] transition group-hover:translate-x-1 group-hover:text-[var(--omni-danger)]">
@@ -83,7 +83,7 @@ export default function CTAButton({
       <Dialog open={open} onClose={() => setOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="relative w-full max-w-md overflow-hidden rounded-[12px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/96 p-6 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-[2px]">
+          <DialogPanel className="relative w-full max-w-md overflow-hidden rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/96 p-6 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-[2px]">
             <DialogTitle
               className="text-center text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]"
             >
@@ -105,7 +105,7 @@ export default function CTAButton({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
+                  className="inline-flex items-center justify-center rounded-full border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
                 >
                   OK
                 </button>
@@ -131,7 +131,7 @@ export default function CTAButton({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="group w-full rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group w-full rounded-full border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? "Se trimite..." : submitLabel ?? "Trimite"}
                 </button>

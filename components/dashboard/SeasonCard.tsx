@@ -98,15 +98,15 @@ export function SeasonCard({ lang, facts, arcId = DEFAULT_ARC_ID }: SeasonCardPr
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-[11px] text-[var(--omni-muted)]">
-          <div className="rounded-2xl border border-[#EADFD4] bg-[var(--omni-bg-paper)] px-2 py-2 text-center">
+          <div className="rounded-card border border-[#EADFD4] bg-[var(--omni-bg-paper)] px-2 py-2 text-center">
             <p className="text-[18px] font-semibold text-[var(--omni-ink)]">{abilDailyCount}</p>
             <p>{lang === "ro" ? "Daily" : "Daily"}</p>
           </div>
-          <div className="rounded-2xl border border-[#EADFD4] bg-[var(--omni-bg-paper)] px-2 py-2 text-center">
+          <div className="rounded-card border border-[#EADFD4] bg-[var(--omni-bg-paper)] px-2 py-2 text-center">
             <p className="text-[18px] font-semibold text-[var(--omni-ink)]">{abilWeeklyCount}</p>
             <p>{lang === "ro" ? "Weekly" : "Weekly"}</p>
           </div>
-          <div className="rounded-2xl border border-[#EADFD4] bg-[var(--omni-bg-paper)] px-2 py-2 text-center">
+          <div className="rounded-card border border-[#EADFD4] bg-[var(--omni-bg-paper)] px-2 py-2 text-center">
             <p className="text-[18px] font-semibold text-[var(--omni-ink)]">{dailyStreak}</p>
             <p>{lang === "ro" ? "Streak" : "Streak"}</p>
           </div>

@@ -36,7 +36,7 @@ export default function KunoLessonItem({ lesson, isActive, disabled, onSelect, h
   return (
     <div
       ref={ref}
-      className={`rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] transition shadow-sm ${
+      className={`rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] transition shadow-sm ${
         locked
           ? "opacity-60"
           : isActive

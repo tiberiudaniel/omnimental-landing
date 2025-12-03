@@ -14,7 +14,7 @@ export function MissionPerspectiveCard({ mission }: MissionPerspectiveCardProps)
   if (!mission) return null;
 
   return (
-    <div className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 text-[var(--omni-ink)] shadow-[0_15px_32px_rgba(0,0,0,0.08)]">
+    <div className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 text-[var(--omni-ink)] shadow-[0_15px_32px_rgba(0,0,0,0.08)]">
       <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Harta misiunii</p>
       <h3 className="mt-2 text-lg font-semibold text-[var(--omni-ink)]">Harta misiunii tale</h3>
       <p className="mt-2 text-sm text-[var(--omni-ink-soft)]">

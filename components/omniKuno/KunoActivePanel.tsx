@@ -18,12 +18,12 @@ export function KunoActivePanel({
   disabled,
 }: KunoActivePanelProps) {
   return (
-    <div className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 shadow-sm">
+    <div className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 shadow-sm">
       <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--omni-muted)]">Progres misiune</p>
       <p className="mt-1 text-sm text-[#4D3F36]">{progressSummary}</p>
       {children ? <div className="mt-3">{children}</div> : null}
       {nextLessonTitle ? (
-        <div className="mt-4 rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4">
+        <div className="mt-4 rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--omni-muted)]">Următorul pas</p>
           <p className="mt-2 text-base font-semibold text-[var(--omni-ink)]">{nextLessonTitle}</p>
           <button

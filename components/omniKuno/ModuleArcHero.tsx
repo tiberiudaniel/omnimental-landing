@@ -40,7 +40,7 @@ export default function ModuleArcHero({ areaKey, areaLabel }: Props) {
   if (hidden) {
     return (
       <KunoContainer align="left">
-        <section className="mb-3 flex items-center justify-between rounded-2xl border border-[#E7DED3] bg-[var(--omni-surface-card)]/70 px-4 py-3 text-sm text-[#4D3F36] shadow-sm">
+        <section className="mb-3 flex items-center justify-between rounded-card border border-[#E7DED3] bg-[var(--omni-surface-card)]/70 px-4 py-3 text-sm text-[#4D3F36] shadow-sm">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Arc · {areaLabel}</p>
             <p className="text-sm text-[#4D3F36]">Revizuiește intro-ul modulului oricând ai nevoie.</p>
@@ -59,7 +59,7 @@ export default function ModuleArcHero({ areaKey, areaLabel }: Props) {
 
   return (
       <KunoContainer align="left">
-      <section className="space-y-6 rounded-3xl border border-[#E7DED3] bg-[var(--omni-surface-card)]/80 px-6 py-6 text-[var(--omni-ink)] shadow-sm">
+      <section className="space-y-6 rounded-card border border-[#E7DED3] bg-[var(--omni-surface-card)]/80 px-6 py-6 text-[var(--omni-ink)] shadow-sm">
         <header className="space-y-2">
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Arc · {areaLabel}</p>
           <div className="flex items-start justify-between gap-3">

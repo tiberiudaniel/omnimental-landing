@@ -42,14 +42,14 @@ export default function TestView({ testId, onCompleted }: TestViewProps) {
   };
 
   if (!test) {
-    return <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Testul nu este disponibil momentan.</p>;
+    return <p className="rounded-card border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Testul nu este disponibil momentan.</p>;
   }
 
   if (score) {
     const passed = score.correct >= MIN_PASS_OBJECTIVE;
     const completion = test.completion;
     return (
-      <section className="space-y-3 rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-5 text-[var(--omni-ink)]">
+      <section className="space-y-3 rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-5 text-[var(--omni-ink)]">
         <h3 className="text-xl font-semibold">{completion?.title ?? "Felicitări!"}</h3>
         <p className="text-sm text-[#4D3F36]">
           Ai răspuns corect la {score.correct} din {score.total} întrebări cu răspuns obiectiv.{" "}
@@ -58,7 +58,7 @@ export default function TestView({ testId, onCompleted }: TestViewProps) {
             : "Îți recomandăm să revezi lecțiile-cheie care ți-au ridicat semne de întrebare și să relansezi testul după câteva zile."}
         </p>
         {completion ? (
-          <div className="space-y-2 rounded-2xl border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[#4D3F36]">
+          <div className="space-y-2 rounded-card border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[#4D3F36]">
             <p>{completion.body}</p>
             {completion.suggestions?.length ? (
               <ul className="list-disc space-y-1 pl-5 text-[13px] text-[#513D32]">
@@ -68,7 +68,7 @@ export default function TestView({ testId, onCompleted }: TestViewProps) {
               </ul>
             ) : null}
             {completion.badge ? (
-              <div className="rounded-xl border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink-soft)]">
+              <div className="rounded-card border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-ink-soft)]">
                 {completion.badge}
               </div>
             ) : null}
@@ -79,7 +79,7 @@ export default function TestView({ testId, onCompleted }: TestViewProps) {
   }
 
   return (
-    <section className="space-y-4 rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-5 text-[var(--omni-ink)]">
+    <section className="space-y-4 rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-5 text-[var(--omni-ink)]">
       {index === 0 ? (
         <header className="space-y-1">
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Mini-test</p>
@@ -131,7 +131,7 @@ function renderQuestion(
                 type="button"
                 key={option}
                 onClick={() => setAnswers({ ...answers, [id]: idx })}
-                className={`w-full rounded-2xl border px-4 py-2 text-left text-sm transition focus:outline-none ${
+                className={`w-full rounded-card border px-4 py-2 text-left text-sm transition focus:outline-none ${
                   selected ? "border-[var(--omni-energy)] bg-[var(--omni-bg-paper)] text-[var(--omni-ink)]" : "border-[var(--omni-border-soft)] text-[#4D3F36] hover:border-[var(--omni-energy)]"
                 }`}
               >
@@ -151,7 +151,7 @@ function renderQuestion(
           type="text"
           value={typeof stored === "string" ? stored : ""}
           onChange={(event) => setAnswers({ ...answers, [id]: event.target.value })}
-          className="w-full rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-ink)] focus:border-[var(--omni-energy)] focus:outline-none"
+          className="w-full rounded-card border border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-ink)] focus:border-[var(--omni-energy)] focus:outline-none"
           placeholder="Completează scurt aici"
         />
       </div>
@@ -166,7 +166,7 @@ function renderQuestion(
           type="text"
           value={typeof stored === "string" ? stored : ""}
           onChange={(event) => setAnswers({ ...answers, [id]: event.target.value })}
-          className="w-full rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-ink)] focus:border-[var(--omni-energy)] focus:outline-none"
+          className="w-full rounded-card border border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-ink)] focus:border-[var(--omni-energy)] focus:outline-none"
           placeholder="Scrie o propoziție"
         />
       </div>

@@ -57,7 +57,7 @@ export default function ExperienceStep({
       transition={{ duration: 0.35 }}
       className="mx-auto mt-6 w-full max-w-3xl px-4"
     >
-      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-4 shadow-sm">
+      <Card className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-4">
         <h3 className="mb-2 text-base font-semibold text-[var(--omni-ink)]">
           {getString(t, "experience.title", lang === "ro" ? "Hai să vedem cum ar fi…" : "Let’s see how it could feel…")}
         </h3>

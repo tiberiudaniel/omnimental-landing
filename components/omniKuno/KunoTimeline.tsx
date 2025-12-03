@@ -103,7 +103,7 @@ export function KunoTimeline({
                       {item.status === "done" ? "✓" : item.status === "locked" ? "…" : "▶"}
                     </div>
                     <div
-                      className={`flex-1 rounded-2xl border px-3.5 py-2 transition ${
+                      className={`flex-1 rounded-card border px-3.5 py-2 transition ${
                         isOpen ? "border-[var(--omni-energy)] bg-[var(--omni-surface-card)] shadow-[0_18px_36px_rgba(192,121,99,0.16)]" : "border-[#F2E7DD] bg-[var(--omni-surface-card)]/70"
                       }`}
                     >

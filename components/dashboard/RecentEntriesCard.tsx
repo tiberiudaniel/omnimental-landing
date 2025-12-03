@@ -87,7 +87,7 @@ export function RecentEntriesCard({ lang, facts }: RecentEntriesCardProps) {
     return { pathname: "/progress", query: { open: "journal", tab } };
   };
   return (
-    <Card className="rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2.5 shadow-sm sm:p-3.5">
+    <Card className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2.5 sm:p-3.5">
       <div className="mb-1 flex items-center justify-between sm:mb-2">
         <h4 className="text-xs font-semibold text-[var(--omni-muted)] sm:text-sm">{lang === "ro" ? "Însemnări recente" : "Recent Entries"}</h4>
         <div className="flex items-center gap-1">

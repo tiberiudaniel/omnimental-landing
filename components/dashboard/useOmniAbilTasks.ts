@@ -101,9 +101,12 @@ export function useOmniAbilTasks(userId?: string | null) {
   const fallbackMode = !userId || /^guest[-_]/i.test(userId) || /^demo/i.test(userId);
 
   useEffect(() => {
-    if (fallbackMode) {
+    const enterFallback = () => {
       const { daily, weekly } = initializeLocalTasks();
       setState({ daily, weekly, loading: false, error: null });
+    };
+    if (fallbackMode) {
+      enterFallback();
       return;
     }
     const effectiveUserId = userId!;
@@ -112,7 +115,11 @@ export function useOmniAbilTasks(userId?: string | null) {
     const unsubscribers: Array<() => void> = [];
     const setupWatcher = async (type: OmniAbilTaskType) => {
       try {
-        await ensureOmniAbilTask(effectiveUserId, type);
+        const ensured = await ensureOmniAbilTask(effectiveUserId, type);
+        if (!ensured) {
+          enterFallback();
+          return;
+        }
         if (!active) return;
         const dateKey = type === "daily" ? getTodayKey() : getWeekKey();
         const ref = doc(db, "userAbilTasks", `${effectiveUserId}_${type}_${dateKey}`);
@@ -137,13 +144,15 @@ export function useOmniAbilTasks(userId?: string | null) {
             }));
           },
           (error) => {
-            setState((prev) => ({ ...prev, error, loading: false }));
+            console.warn("OmniAbil task listener failed", error);
+            enterFallback();
           },
         );
         unsubscribers.push(unsub);
       } catch (error) {
         if (active) {
-          setState((prev) => ({ ...prev, error: error as Error, loading: false }));
+          console.warn("OmniAbil task setup failed", error);
+          enterFallback();
         }
       }
     };

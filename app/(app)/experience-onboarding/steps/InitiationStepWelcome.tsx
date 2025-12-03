@@ -93,7 +93,7 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
   return (
     <section className="px-4 py-6 md:px-8">
       <div className="w-full max-w-5xl mx-auto px-4">
-        <div className="omni-card rounded-3xl p-6 md:p-8 mb-8 flex flex-col gap-8 text-center md:flex-row md:items-center md:text-left">
+        <div className="omni-card rounded-card p-6 md:p-8 mb-8 flex flex-col gap-8 text-center md:flex-row md:items-center md:text-left">
           <div className="order-1 flex flex-1 flex-col items-center text-center md:order-2 md:items-start md:text-left">
             <p
               className="text-xs uppercase tracking-[0.3em]"

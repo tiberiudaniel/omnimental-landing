@@ -51,7 +51,7 @@ function MissionMapContent() {
 
   const content = mission ? (
     <div className="space-y-8">
-      <section className="omni-card rounded-3xl p-6 md:p-7 shadow-[0_2px_6px_rgba(0,0,0,0.04)]">
+      <section className="omni-card rounded-card p-6 md:p-7 shadow-[0_2px_6px_rgba(0,0,0,0.04)]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
           OmniMental · Perspectiva misiunii
         </p>
@@ -82,14 +82,14 @@ function MissionMapContent() {
     </div>
   ) : (
     <div className="space-y-6">
-      <section className="omni-card rounded-3xl p-6 md:p-7 shadow-[0_2px_6px_rgba(0,0,0,0.04)]">
+      <section className="omni-card rounded-card p-6 md:p-7 shadow-[0_2px_6px_rgba(0,0,0,0.04)]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
           OmniMental · Perspectiva misiunii
         </p>
         <h1 className="mt-2 text-2xl font-semibold text-[var(--omni-ink)]">{heroTitle}</h1>
         <p className="mt-3 text-sm text-[var(--omni-ink-soft)]">{heroSubtitle}</p>
       </section>
-      <section className="omni-panel-soft rounded-3xl border border-dashed border-[var(--omni-border-soft)] p-6 text-center text-[var(--omni-ink-soft)]">
+      <section className="omni-panel-soft rounded-card border border-dashed border-[var(--omni-border-soft)] p-6 text-center text-[var(--omni-ink-soft)]">
         <p className="text-lg font-semibold text-[var(--omni-ink)]">Nu ai încă o misiune activă</p>
         <p className="mt-2 text-sm">
           Alege o misiune prioritară din onboarding sau din dashboard și revino aici pentru a vedea resursele și progresul mental.

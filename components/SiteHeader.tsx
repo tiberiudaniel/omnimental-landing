@@ -142,8 +142,6 @@ export default function SiteHeader({
   const navButtonInactiveClasses =
     "border border-transparent text-[color-mix(in_srgb,var(--omni-ink-soft)_82%,var(--omni-ink)_18%)] hover:text-[var(--omni-energy)] hover:border-[color-mix(in_srgb,var(--omni-energy)_55%,var(--omni-border-soft)_45%)] hover:bg-[color-mix(in_srgb,var(--omni-energy)_8%,transparent)]";
 
-  const activeMission =
-    ((profile as { activeMission?: { id?: string | null; title?: string | null } | null } | null)?.activeMission) ?? null;
   const headerPad = "px-3 py-2";
   const bottomMarginTop = "mt-1";
   const titleSize = "text-lg";

@@ -70,7 +70,7 @@ export default function OnboardingIntro({ profileId, onDone }: { profileId: stri
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4" data-testid="onboarding-intro">
-      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 shadow-sm">
+      <Card className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5">
         <header className="mb-3">
           <h2 className="text-xl font-semibold text-[var(--omni-ink)]">{getString(t, "onboarding.intro.title", lang === "ro" ? "În diverse perioade, viața ne provoacă la adaptare." : "At times, life asks us to adapt.")}</h2>
           <p className="mt-1 text-sm text-[var(--omni-ink-soft)]">

@@ -46,7 +46,7 @@ function ReplayScreen({ screen }: { screen: OmniKunoLessonScreen }) {
           {screen.title}
         </p>
         <p className="text-sm text-[var(--omni-ink)]">{screen.prompt}</p>
-        <p className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-sm text-[var(--omni-muted)]">
+        <p className="rounded-card border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-sm text-[var(--omni-muted)]">
           {"Scrie-ți notele într-un jurnal separat; această reluare este doar pentru reîmprospătare."}
         </p>
       </div>
@@ -59,7 +59,7 @@ function ReplayScreen({ screen }: { screen: OmniKunoLessonScreen }) {
           {screen.title}
         </p>
         <p className="text-sm text-[var(--omni-ink)]">{screen.question}</p>
-        <ul className="space-y-1 rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-sm text-[var(--omni-ink)]">
+        <ul className="space-y-1 rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-sm text-[var(--omni-ink)]">
           {screen.options.map((option) => (
             <li key={option}>{option}</li>
           ))}
@@ -129,7 +129,7 @@ function ReplayLessonContent({ lesson }: { lesson: OmniKunoLesson }) {
           {screens.map((screen, idx) => (
             <div
               key={`${lesson.id}-${idx}`}
-              className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3"
+              className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3"
             >
               <ReplayScreen screen={screen} />
             </div>
@@ -187,7 +187,7 @@ function ReplayModuleContent({ moduleId }: { moduleId: OmniKunoModuleId }) {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="space-y-2 rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-4">
+      <div className="space-y-2 rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Replay modul</p>
         <h1 className="text-3xl font-bold text-[var(--omni-ink)]">{moduleLabel}</h1>
         {!isComplete ? (
@@ -206,7 +206,7 @@ function ReplayModuleContent({ moduleId }: { moduleId: OmniKunoModuleId }) {
       </div>
 
       {!isComplete && currentLesson ? (
-        <div className="space-y-4 rounded-3xl border border-[var(--omni-border-soft)] bg-white/95 px-5 py-6 shadow-xl">
+        <div className="space-y-4 rounded-card border border-[var(--omni-border-soft)] bg-white/95 px-5 py-6 shadow-xl">
           <div className="rounded-full border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-energy)]">
             {lang === "ro" ? "Mod Replay · conținut" : "Replay mode · content"}
           </div>
@@ -230,7 +230,7 @@ function ReplayModuleContent({ moduleId }: { moduleId: OmniKunoModuleId }) {
           </div>
         </div>
       ) : (
-        <div className="space-y-4 rounded-3xl border border-[var(--omni-border-soft)] bg-white/95 px-5 py-6 text-center shadow-xl">
+        <div className="space-y-4 rounded-card border border-[var(--omni-border-soft)] bg-white/95 px-5 py-6 text-center shadow-xl">
           <p className="text-lg font-semibold text-[var(--omni-ink)]">{lang === "ro" ? "Replay complet" : "Replay complete"}</p>
           <p className="text-sm text-[var(--omni-muted)]">
             {lang === "ro"

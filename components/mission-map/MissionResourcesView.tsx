@@ -17,7 +17,7 @@ export function MissionResourcesView({ missionTitle, resources = [], onSwitchVie
     sensitive.length > 0 ? formatListText(sensitive.map((metric) => metric.label.toLowerCase()), lang === "ro" ? "ro" : "en") : "";
   if (!resources.length) {
     return (
-      <section className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 text-center text-[var(--omni-ink-soft)] shadow-[0_6px_26px_rgba(0,0,0,0.08)]">
+      <section className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 text-center text-[var(--omni-ink-soft)] shadow-[0_6px_26px_rgba(0,0,0,0.08)]">
         {lang === "ro"
           ? "Încă încărcăm resursele pentru misiunea curentă."
           : "We’re still loading the resource metrics for this mission."}
@@ -27,7 +27,7 @@ export function MissionResourcesView({ missionTitle, resources = [], onSwitchVie
 
   return (
     <section className="grid gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.1fr)]">
-      <div className="flex items-center justify-center rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/80 p-6 shadow-[0_8px_26px_rgba(0,0,0,0.08)]">
+      <div className="flex items-center justify-center rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/80 p-6 shadow-[0_8px_26px_rgba(0,0,0,0.08)]">
         <div className="relative w-full max-w-sm">
           <Image
             src="/assets/mission-map/silhouette-resources.png"
@@ -72,7 +72,7 @@ export function MissionResourcesView({ missionTitle, resources = [], onSwitchVie
           ))}
         </div>
 
-        <div className="rounded-2xl border border-[var(--omni-border-soft)]/80 bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink-soft)] shadow-[0_4px_18px_rgba(0,0,0,0.05)]">
+        <div className="rounded-card border border-[var(--omni-border-soft)]/80 bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink-soft)] shadow-[0_4px_18px_rgba(0,0,0,0.05)]">
           {sensitiveText
             ? lang === "ro"
               ? `Observ că ${sensitiveText} sunt cele mai sensibile zone. Ar merita să începi cu 1–2 protocoale scurte aici, înainte să accelerezi restul procesului.`
@@ -96,7 +96,7 @@ export function MissionResourcesView({ missionTitle, resources = [], onSwitchVie
 
 function ResourceRow({ metric }: { metric: ResourceMetric }) {
   return (
-    <div className="rounded-2xl border border-[var(--omni-border-soft)]/60 bg-[var(--omni-surface-strong)] px-3 py-2 shadow-[0_4px_14px_rgba(0,0,0,0.08)]">
+    <div className="rounded-card border border-[var(--omni-border-soft)]/60 bg-[var(--omni-surface-strong)] px-3 py-2 shadow-[0_4px_14px_rgba(0,0,0,0.08)]">
       <div className="flex items-center justify-between text-[12px] font-semibold text-[var(--omni-ink)]">
         <span>{metric.label}</span>
         <span>{metric.score}%</span>

@@ -76,7 +76,7 @@ export function ModuleOverviewDialog({ open, onClose, timeline, module, lang, t,
                       onSelectLesson?.(item.id);
                     }}
                     disabled={disabled}
-                    className={`flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left transition ${
+                    className={`flex w-full items-center justify-between gap-4 rounded-card border px-4 py-3 text-left transition ${
                       disabled
                         ? "border-[#F0E8E0] bg-[var(--omni-surface-card)]/70 text-[#B0A295]"
                         : "border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] hover:border-[var(--omni-energy)] hover:shadow-[0_14px_40px_rgba(192,121,99,0.15)]"

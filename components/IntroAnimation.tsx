@@ -211,7 +211,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
           </div>
           <div className="intro-button-panel w-full max-w-[18rem] rounded-[26px] bg-[rgba(255,249,242,0.32)] backdrop-blur-md shadow-[0_3px_18px_rgba(0,0,0,0.12)] py-4 px-3 flex flex-col gap-3.5 sm:max-w-[20rem]">
             <button
-              className="relative w-full rounded-2xl bg-[var(--omni-bg-paper)] py-2.5 text-[11px] font-semibold tracking-[0.28em] text-[var(--omni-ink)] transition-transform duration-200 hover:-translate-y-1"
+              className="relative w-full rounded-card bg-[var(--omni-bg-paper)] py-2.5 text-[11px] font-semibold tracking-[0.28em] text-[var(--omni-ink)] transition-transform duration-200 hover:-translate-y-1"
               onClick={safeComplete}
               aria-label="Pornește animația"
             >
@@ -230,7 +230,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
               </span>
             </button>
             <button
-              className="relative w-full rounded-2xl bg-[var(--omni-bg-paper)] py-2.5 text-[11px] font-semibold tracking-[0.28em] text-[var(--omni-ink-soft)] transition-transform duration-200 hover:-translate-y-1"
+              className="relative w-full rounded-card bg-[var(--omni-bg-paper)] py-2.5 text-[11px] font-semibold tracking-[0.28em] text-[var(--omni-ink-soft)] transition-transform duration-200 hover:-translate-y-1"
               onClick={() => router.push(user && !user.isAnonymous ? "/progress" : "/auth")}
               aria-label="Deschide autentificarea"
             >

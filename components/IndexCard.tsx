@@ -19,7 +19,7 @@ export default function IndexCard({ title, value, unit, spark = [], accent = "va
   });
   const path = pts.length ? `M ${pts[0]} L ${pts.slice(1).join(" ")}` : "";
   return (
-    <div className="rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-4 shadow flex flex-col justify-between min-h-[120px]">
+    <div className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-4 shadow flex flex-col justify-between min-h-[120px]">
       <div className="flex items-baseline justify-between">
         <h4 className="text-sm font-semibold text-[var(--omni-ink)]">{title}</h4>
         <div className="text-[28px] font-semibold text-[var(--omni-ink)]">

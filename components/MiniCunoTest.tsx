@@ -52,7 +52,7 @@ export default function MiniCunoTest({ lang, onDone }: { lang: "ro" | "en"; onDo
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4" data-testid="onboarding-minicuno">
-      <Card className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5 shadow-sm">
+      <Card className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-5">
         <header className="mb-3">
           <h2 className="text-xl font-semibold text-[var(--omni-ink)]">{getString(t, "minicuno.title", lang === "ro" ? "Mini‑Cuno (6 întrebări)" : "Mini‑Knowledge (6 questions)")}</h2>
           <p className="mt-1 text-sm text-[var(--omni-ink-soft)]">{getString(t, "minicuno.instructions", lang === "ro" ? "Răspunde rapid la câte o întrebare per modul. Primești un scor instant." : "Answer one quick question per module. You’ll get an instant score.")}</p>

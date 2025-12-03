@@ -87,12 +87,12 @@ export default function SidebarCards({
 
 function DailyInsightCard({ lang, t, insight }: { lang: string; t: ReturnType<typeof useI18n>["t"]; insight: ReturnType<typeof getDailyInsight> }) {
   return (
-    <Card className="flex h-full flex-col rounded-xl border border-transparent bg-transparent p-0 shadow-none sm:p-0">
+    <Card className="flex h-full flex-col border border-transparent bg-transparent p-0 sm:p-0">
       <div>
         <h3 className="sr-only">
           {getString(t, "dashboard.insightTitle", lang === "ro" ? "Revelația zilei" : "Insight of the Day")}
         </h3>
-        <div className="relative rounded-2xl border border-transparent bg-[var(--omni-surface-card)]/60 px-3 py-4 text-[#3E2F27] shadow-none">
+        <div className="relative rounded-card border border-transparent bg-[var(--omni-surface-card)]/60 px-3 py-4 text-[#3E2F27] shadow-none">
           <span className="absolute -top-1 left-2 text-xl text-[#E3D3C6]">“</span>
           <p
             id="daily-insight-text"
@@ -122,7 +122,7 @@ function DailyInsightCard({ lang, t, insight }: { lang: string; t: ReturnType<ty
 
 function PracticeSnapshotCard({ prog }: { prog: ReturnType<typeof adaptProgressFacts> }) {
   return (
-    <Card className="flex flex-col justify-between rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2.5 shadow-sm sm:p-3">
+    <Card className="flex flex-col justify-between border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2.5 sm:p-3">
       <h4 className="mb-1 text-xs font-semibold text-[var(--omni-muted)] sm:mb-2 sm:text-sm">Practice snapshot</h4>
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <Metric label="Reflections" value={prog.reflectionCount} testId="metric-reflections" />
@@ -151,7 +151,7 @@ function TodaysQuestCard({ lang, t, quest, questPreview, questExpanded, setQuest
     </div>
   );
   return (
-    <Card className="flex flex-col justify-between rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-3 py-2 shadow-sm sm:px-4 sm:py-3 h-auto">
+    <Card className="flex h-auto flex-col justify-between border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-3 py-2 sm:px-4 sm:py-3">
       <h3 className="mb-1 text-xs font-semibold text-[var(--omni-muted)] sm:mb-2 sm:text-sm">{getString(t, "dashboard.todayQuest", lang === "ro" ? "Provocarea de azi" : "Today’s quest")}</h3>
       <div className="relative">
         <p className="text-[11px] leading-relaxed text-[var(--omni-ink)] sm:text-xs">{questExpanded ? quest.text : questPreview}</p>
@@ -166,7 +166,7 @@ function TodaysQuestCard({ lang, t, quest, questPreview, questExpanded, setQuest
           <span className="text-[11px] text-transparent">—</span>
         )}
       </div>
-      <div className="mt-3 space-y-2 rounded-2xl border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-3 py-2">
+      <div className="mt-3 space-y-2 rounded-card border border-[#F0E8E0] bg-[var(--omni-bg-paper)] px-3 py-2">
         <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
           <span className={`rounded-full border px-2 py-0.5 ${snapshot.badge.cls}`}>{snapshot.badge.text}</span>
           <span>{lang === "ro" ? "Starea ta acum" : "Your current state"}</span>
@@ -185,7 +185,7 @@ function TodaysQuestCard({ lang, t, quest, questPreview, questExpanded, setQuest
             {makeBar(snapshot.clarity / 10, "#6A9FB5")}
           </div>
         </div>
-        <div className="rounded-2xl border border-[#EADFD4] bg-[var(--omni-surface-card)] px-3 py-2 text-[11px] text-[#4D3F36] sm:text-xs">
+        <div className="rounded-card border border-[#EADFD4] bg-[var(--omni-surface-card)] px-3 py-2 text-[11px] text-[#4D3F36] sm:text-xs">
           <p className="text-[11px] font-semibold text-[var(--omni-ink)] sm:text-xs">{lang === "ro" ? "De ce această recomandare" : "Why this recommendation"}</p>
           <p>{snapshot.why}</p>
         </div>
@@ -196,7 +196,7 @@ function TodaysQuestCard({ lang, t, quest, questPreview, questExpanded, setQuest
 
 function AchievementBanner({ lang, setAchvDismissed }: { lang: string; setAchvDismissed: Dispatch<SetStateAction<boolean>> }) {
   return (
-    <div className="mt-1 rounded-xl border border-[var(--omni-success)] bg-[var(--omni-success-soft)] p-2 text-sm text-[var(--omni-ink-soft)] sm:mt-2 sm:p-3">
+    <div className="mt-1 rounded-card border border-[var(--omni-success)] bg-[var(--omni-success-soft)] p-2 text-sm text-[var(--omni-ink-soft)] sm:mt-2 sm:p-3">
       <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2">
         <p className="text-[13px] font-medium sm:text-sm">{lang === "ro" ? "Prima treaptă atinsă: Claritate mentală" : "First milestone reached: Clarity"}</p>
         <div className="flex items-center gap-1 sm:gap-2">
@@ -225,7 +225,7 @@ function AchievementBanner({ lang, setAchvDismissed }: { lang: string; setAchvDi
 
 function SimulatedInsightsCard({ lang, t, insights }: { lang: string; t: ReturnType<typeof useI18n>["t"]; insights: string[] }) {
   return (
-    <Card className="rounded-xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2 shadow-sm sm:p-3">
+    <Card className="border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-2 sm:p-3">
       <h3 className="mb-1 text-xs font-semibold text-[var(--omni-muted)] sm:mb-2 sm:text-sm">{getString(t, "dashboard.initialInsights", lang === "ro" ? "Insight-uri inițiale" : "Initial insights")}</h3>
       <div className="flex flex-wrap gap-1 sm:gap-2">
         {insights.map((tag, i) => (

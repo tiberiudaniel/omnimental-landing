@@ -18,7 +18,7 @@ const utilityClasses =
   "transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--omni-energy-tint)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--omni-bg-paper)] disabled:opacity-60 disabled:pointer-events-none";
 
 const shapeClasses: Record<ButtonShape, string> = {
-  soft: "",
+  soft: "rounded-full",
   pill: "rounded-full",
 };
 

@@ -116,7 +116,7 @@ export default function MentalUniversePage() {
         mainClassName="text-[var(--omni-ink)]"
       >
         <div className="mx-auto max-w-5xl px-4 py-10">
-        <section className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 p-6 shadow-sm sm:p-8">
+        <section className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 p-6 shadow-sm sm:p-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
             {lang === "ro" ? "Harta sezonului mental" : "Your mental season map"}
           </p>
@@ -135,7 +135,7 @@ export default function MentalUniversePage() {
           {UNIVERSE_AREAS.map((area) => (
             <article
               key={area.id}
-              className="flex h-full flex-col justify-between rounded-3xl border border-[#E6DAD0] bg-[var(--omni-surface-card)]/90 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="flex h-full flex-col justify-between rounded-card border border-[#E6DAD0] bg-[var(--omni-surface-card)]/90 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               <div>
                 <div className="text-3xl">{area.icon}</div>

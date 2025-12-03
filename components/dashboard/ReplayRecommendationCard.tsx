@@ -52,7 +52,7 @@ export function ReplayRecommendationCard({
         : "Use the CTA below to replay the module.";
 
   return (
-    <Card className="rounded-2xl border-2 border-[var(--omni-energy)] bg-[color-mix(in_srgb,var(--omni-energy)_6%,white)] px-4 py-4 shadow-lg sm:px-5">
+    <Card className="border-2 border-[var(--omni-energy)] bg-[color-mix(in_srgb,var(--omni-energy)_6%,white)] px-4 py-4 sm:px-5">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <p className="text-xl font-bold tracking-tight text-[var(--omni-ink)]">
           {title ?? "Replay (Phase 1)"}
@@ -70,7 +70,7 @@ export function ReplayRecommendationCard({
         </p>
       ) : (
         <>
-          <div className="mt-3 rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-white/80 px-3 py-2">
+          <div className="mt-3 rounded-card border border-dashed border-[var(--omni-border-soft)] bg-white/80 px-3 py-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
               {lang === "ro" ? "Motivul replay" : "Replay driver"}
             </p>

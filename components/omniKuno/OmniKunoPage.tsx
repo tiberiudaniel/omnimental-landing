@@ -529,7 +529,7 @@ export default function OmniKunoPage() {
             </div>
           </KunoContainer>
           <div className="flex flex-col gap-6 px-2 sm:px-3 lg:flex-row">
-            <aside className="order-2 rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-4 shadow-sm lg:order-1 lg:w-60 lg:flex-shrink-0">
+            <aside className="order-2 rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] p-4 shadow-sm lg:order-1 lg:w-60 lg:flex-shrink-0">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">Teme OmniKuno</p>
             <ul className="space-y-2 text-sm text-[var(--omni-ink)]">
               {moduleEntries.map(([key, module]) => {
@@ -542,7 +542,7 @@ export default function OmniKunoPage() {
                     <button
                       type="button"
                       onClick={() => handleAreaSelect(key)}
-                      className={`w-full rounded-2xl border px-3.5 py-3 text-left transition ${
+                      className={`w-full rounded-card border px-3.5 py-3 text-left transition ${
                         isActive ? "border-[var(--omni-energy)] bg-[var(--omni-bg-paper)] shadow-[0_10px_25px_rgba(192,121,99,0.08)]" : "border-[#F0E8E0] hover:border-[#E3D3C7]"
                       }`}
                     >
@@ -1021,7 +1021,7 @@ function ModuleExperience({
   return (
     <div className="space-y-8">
       {isReplayMode ? (
-        <div className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-[color-mix(in srgb,var(--omni-energy)_6%,white)] px-4 py-3 text-xs text-[var(--omni-ink)] shadow-sm">
+        <div className="rounded-card border border-dashed border-[var(--omni-border-soft)] bg-[color-mix(in srgb,var(--omni-energy)_6%,white)] px-4 py-3 text-xs text-[var(--omni-ink)] shadow-sm">
           <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-energy)]">Replay DEBUG</p>
           <ul className="mt-1 space-y-0.5 font-mono text-[11px]">
             <li>isReplayMode: {String(isReplayMode)}</li>
@@ -1103,14 +1103,14 @@ function ModuleExperience({
             })}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/70 px-4 py-6 text-center text-sm text-[var(--omni-muted)]">
+          <div className="rounded-card border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/70 px-4 py-6 text-center text-sm text-[var(--omni-muted)]">
             {lang === "ro"
               ? "Acest modul nu are încă misiuni configurate."
               : "This module does not have missions configured yet."}
           </div>
         )}
         {isReplayMode && !replayActiveLessonId ? (
-          <p className="rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3 text-center text-sm text-[var(--omni-ink)]">
+          <p className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3 text-center text-sm text-[var(--omni-ink)]">
             {lang === "ro"
               ? "Replay complet: ai revăzut toate lecțiile din modul."
               : "Replay complete: you revisited every lesson in this module."}

@@ -17,7 +17,7 @@ type MotivationCardProps = {
 export default function MotivationCard({ lang, t, omniScopeScore, motivationDelta, facts }: MotivationCardProps) {
   return (
     <motion.div variants={fadeDelayed(0.15)} {...hoverScale}>
-      <Card className="flex flex-col justify-between rounded-xl border border-[var(--omni-border-soft)] bg-[#FCF7F1] p-2 shadow-sm sm:p-2">
+      <Card className="flex flex-col justify-between border border-[var(--omni-border-soft)] bg-[#FCF7F1] p-2 sm:p-2">
         <h2 className="mb-1 whitespace-nowrap text-[12px] font-semibold text-[var(--omni-ink)] sm:mb-1.5 sm:text-[13px]" title={lang === "ro" ? "Motivație / Resurse" : "Motivation / Resources"}>
           {lang === "ro" ? "Motivație / Resurse" : "Motivation / Resources"}
         </h2>

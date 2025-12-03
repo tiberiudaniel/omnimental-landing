@@ -34,9 +34,9 @@ export function KunoFinalTestBanner({
   const arcSet = OMNI_KUNO_ARC_INTROS[areaKey];
   const arc = arcSet?.maestrie;
   return (
-    <div className="space-y-3 rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-4">
+    <div className="space-y-3 rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-4">
       {arc ? (
-        <div className="rounded-2xl border border-[#E7DED3] bg-[var(--omni-surface-card)]/80 px-4 py-3 text-sm text-[var(--omni-ink)] shadow-sm">
+        <div className="rounded-card border border-[#E7DED3] bg-[var(--omni-surface-card)]/80 px-4 py-3 text-sm text-[var(--omni-ink)] shadow-sm">
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Zona 4 · {arc.title}</p>
           <p className="mt-1 text-sm text-[#4D3F36]">{arc.body}</p>
         </div>
@@ -56,7 +56,7 @@ export function KunoFinalTestBanner({
         </button>
       ) : null}
       {finalTestResult ? (
-        <div className="space-y-3 rounded-xl border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]">
+        <div className="space-y-3 rounded-card border border-[var(--omni-success)] bg-[var(--omni-success-soft)] px-4 py-3 text-sm text-[var(--omni-ink-soft)]">
           <p>
             {lang === "ro"
               ? `Felicitări! Ai închis modulul ${finalTestConfig.moduleName} cu ${finalTestResult.correct} răspunsuri corecte din ${finalTestResult.total}. Continuă practica.`

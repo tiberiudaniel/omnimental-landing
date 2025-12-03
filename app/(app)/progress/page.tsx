@@ -168,6 +168,7 @@ function ProgressContent() {
   }, [journalSource, lang, stepParam]);
   const journalUserId = profile?.id ?? user?.uid ?? guestJournalId ?? (demoParam || e2e ? "demo-user" : null);
 
+
   // React to open=journal in URL: open the drawer immediately, then clean the param
   useEffect(() => {
     if (search?.get('open') === 'journal') {
@@ -496,7 +497,7 @@ function ProgressContent() {
             </div>
           </div>
         ) : null}
-        <section className="omni-panel-soft rounded-3xl p-6 md:p-7 mt-8">
+        <section className="omni-panel-soft rounded-card p-6 md:p-7 mt-8">
           <div className="mb-4">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
               {lang === "ro" ? "Analitice detaliate" : "Detailed analytics"}
@@ -588,7 +589,7 @@ function ProgressHeroBand({ lang, facts }: { lang: string; facts: HeroFacts }) {
       ? "Somnul profund stabilizează variabilitatea ritmului cardiac și susține energia pe tot parcursul zilei."
       : "Deep sleep stabilises heart‑rate variability and keeps energy steady throughout the day.");
   return (
-    <div className="omni-card rounded-3xl p-6 md:p-7 shadow-[0_2px_6px_rgba(0,0,0,0.04)] mb-8 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+    <div className="omni-card rounded-card p-6 md:p-7 shadow-[0_2px_6px_rgba(0,0,0,0.04)] mb-8 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
       <div className="space-y-2">
         <p className="text-xs md:text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
           {lang === "ro" ? "Ritual zilnic" : "Daily ritual"}
@@ -637,18 +638,18 @@ function ProgressTwoColumnPanels({ lang, facts }: { lang: string; facts: HeroFac
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
       <div className="space-y-6">
-        <div className="omni-panel-soft rounded-3xl p-6 md:p-7">
+        <div className="omni-panel-soft rounded-card p-6 md:p-7">
           <ProgressAxesPanel lang={lang} facts={facts} />
         </div>
-        <div className="omni-panel-soft rounded-3xl p-6 md:p-7">
+        <div className="omni-panel-soft rounded-card p-6 md:p-7">
           <ProgressPracticePanel lang={lang} facts={facts} />
         </div>
       </div>
       <div className="space-y-6">
-        <div className="omni-card rounded-3xl p-6 md:p-7 shadow-[0_2px_6px_rgba(0,0,0,0.04)]">
+        <div className="omni-card rounded-card p-6 md:p-7 shadow-[0_2px_6px_rgba(0,0,0,0.04)]">
           <ProgressRecommendationCard lang={lang} facts={facts} />
         </div>
-        <div className="omni-panel-soft rounded-3xl p-6 md:p-7">
+        <div className="omni-panel-soft rounded-card p-6 md:p-7">
           <ProgressQuickVariants lang={lang} />
         </div>
       </div>

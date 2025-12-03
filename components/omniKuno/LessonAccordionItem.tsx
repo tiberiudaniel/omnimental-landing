@@ -63,7 +63,7 @@ export default function LessonAccordionItem({
   return (
     <div
       id={containerId}
-      className="rounded-3xl border border-transparent bg-transparent"
+      className="rounded-card border border-transparent bg-transparent"
       data-testid="kuno-lesson-item"
     >
       <motion.button
@@ -71,7 +71,7 @@ export default function LessonAccordionItem({
         disabled={!isClickable}
         onClick={isClickable ? onToggle : undefined}
         className={cn(
-          "flex w-full items-start justify-between rounded-3xl px-4 py-4 text-left transition md:px-6",
+          "flex w-full items-start justify-between rounded-card px-4 py-4 text-left transition md:px-6",
           status === "done" && "bg-[var(--omni-surface-card)] text-[var(--omni-ink-soft)]",
           effectiveStatus === "active" && "bg-[var(--omni-bg-paper)] text-[var(--omni-ink)] shadow-[0_12px_28px_rgba(0,0,0,0.08)]",
           effectiveStatus === "locked" && "bg-[var(--omni-bg-paper)] text-[var(--omni-muted)] opacity-40",

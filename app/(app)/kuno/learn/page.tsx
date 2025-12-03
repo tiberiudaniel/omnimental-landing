@@ -60,7 +60,7 @@ function LearnInner() {
         <h1 className="text-2xl font-semibold text-[var(--omni-ink)]">Omni‑Kuno — Lecții</h1>
         <p className="mt-1 text-sm text-[var(--omni-muted)]">Micro-lecții per categorie cu mini‑quiz rapid.</p>
         {featuredLesson ? (
-          <OmniCard className="mt-4 rounded-[14px] px-4 py-4">
+          <OmniCard className="mt-4 px-4 py-4">
             <div className="flex flex-col gap-2 text-[var(--omni-ink)] sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold">{featuredLesson.title}</p>

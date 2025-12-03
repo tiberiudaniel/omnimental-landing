@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import type { ReactNode } from "react";
+import { designTokens } from "@/config/designTokens";
 
 type OmniCardProps = {
   children: ReactNode;
@@ -10,11 +11,11 @@ type OmniCardProps = {
 export function OmniCard({ children, className, style }: OmniCardProps) {
   return (
     <div
-      className={clsx("rounded-2xl border shadow-sm", className)}
+      className={clsx("rounded-card border shadow-card", className)}
       style={{
-        backgroundColor: "var(--omni-surface-card)",
-        borderColor: "var(--omni-border-soft)",
-        color: "var(--omni-ink)",
+        backgroundColor: designTokens.ui.surface,
+        borderColor: designTokens.ui.border,
+        color: designTokens.ui.text.primary,
         ...style,
       }}
     >
