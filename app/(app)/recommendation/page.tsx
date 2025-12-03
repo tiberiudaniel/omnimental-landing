@@ -628,27 +628,29 @@ const [pulseEntries, setPulseEntries] = useState<DailyAxesEntry[]>([]);
           </div>
         ) : null}
         <div className="w-full max-w-5xl mx-auto px-4 mb-8">
-          <div className="grid gap-4 md:gap-5 lg:gap-6 lg:grid-cols-[minmax(260px,290px)_minmax(320px,1fr)_minmax(320px,1fr)]">
-            <div className="flex h-full flex-col min-w-0">
-              <PulseOfDayCard
-                lang={lang === "ro" ? "ro" : "en"}
-                today={pulseTodayEntry}
-                recentEntries={pulseEntries}
-              />
-            </div>
-            <div className="flex h-full flex-col min-w-0">
-              <KunoMissionCard
-                lang={lang}
-                focusAreaLabel={focusAreaLabel}
-                omniCunoScore={omniCunoScore}
-                kunoDelta={kunoDelta}
-                missionData={kunoMissionData}
-                nextModuleSuggestion={kunoNextModuleSuggestion}
-                progressPercent={kunoMissionProgressPercent}
-              />
-            </div>
-            <div className="flex h-full flex-col min-w-0">
-              <TodayGuidanceCard lang={lang} snapshot={omniSnapshot} facts={progress ?? null} />
+          <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 px-4 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.08)] backdrop-blur-[2px] md:px-6 md:py-6">
+            <div className="grid gap-4 md:gap-5 lg:gap-6 lg:grid-cols-[minmax(260px,290px)_minmax(320px,1fr)_minmax(320px,1fr)]">
+              <div className="flex h-full flex-col min-w-0">
+                <PulseOfDayCard
+                  lang={lang === "ro" ? "ro" : "en"}
+                  today={pulseTodayEntry}
+                  recentEntries={pulseEntries}
+                />
+              </div>
+              <div className="flex h-full flex-col min-w-0">
+                <KunoMissionCard
+                  lang={lang}
+                  focusAreaLabel={focusAreaLabel}
+                  omniCunoScore={omniCunoScore}
+                  kunoDelta={kunoDelta}
+                  missionData={kunoMissionData}
+                  nextModuleSuggestion={kunoNextModuleSuggestion}
+                  progressPercent={kunoMissionProgressPercent}
+                />
+              </div>
+              <div className="flex h-full flex-col min-w-0">
+                <TodayGuidanceCard lang={lang} snapshot={omniSnapshot} facts={progress ?? null} />
+              </div>
             </div>
           </div>
         </div>

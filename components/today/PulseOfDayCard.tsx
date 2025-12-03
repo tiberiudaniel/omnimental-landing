@@ -37,13 +37,30 @@ export function PulseOfDayCard({ today, recentEntries, lang = "ro" }: PulseOfDay
       ? "Completează Reset-ul pentru a debloca evoluția axelor."
       : "Complete the Daily Reset to unlock your trend.";
 
+  const shellClasses =
+    "flex flex-col gap-5 rounded-card border px-4 py-5 shadow-soft sm:px-6";
+
   return (
-    <div className="flex flex-col gap-5 rounded-2xl border border-surface-soft bg-surface px-5 py-6 text-textMain">
-      <div>
-        <p className="mb-1 text-[11px] uppercase tracking-[0.2em] text-textSecondary">{title}</p>
+    <div
+      className={shellClasses}
+      style={{
+        borderRadius: "20px",
+        borderColor: "color-mix(in srgb, var(--omni-ink) 12%, transparent)",
+        backgroundColor: "color-mix(in srgb, var(--omni-bg-paper) 94%, transparent)",
+        boxShadow: "0 20px 45px rgba(0, 0, 0, 0.06)",
+      }}
+    >
+      <div className="space-y-1">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-textSecondary">{title}</p>
         <p className="text-xs text-textSecondary">{subtitle}</p>
       </div>
-      <div className="rounded-xl border border-surface-soft px-4 py-4 text-sm leading-relaxed">
+      <div
+        className="rounded-card border px-4 py-4 text-sm leading-relaxed"
+        style={{
+          borderColor: "color-mix(in srgb, var(--omni-border-soft) 80%, transparent)",
+          backgroundColor: "color-mix(in srgb, white 80%, transparent)",
+        }}
+      >
         {message}
       </div>
 
@@ -73,7 +90,13 @@ export function PulseOfDayCard({ today, recentEntries, lang = "ro" }: PulseOfDay
             />
           </div>
 
-          <div className="rounded-xl border border-surface-soft px-3 py-3">
+          <div
+            className="rounded-card border px-3 py-3"
+            style={{
+              borderColor: "color-mix(in srgb, var(--omni-border-soft) 80%, transparent)",
+              backgroundColor: "color-mix(in srgb, white 80%, transparent)",
+            }}
+          >
             <DailyAxesMicroChart entries={recentEntries} lang={lang} />
           </div>
         </>
@@ -108,7 +131,13 @@ function AxisMiniCard({ label, score, delta, colorClass, lang }: AxisMiniCardPro
         ? "text-[var(--omni-success)]"
         : "text-[var(--omni-danger)]";
   return (
-    <div className="rounded-xl border border-surface-soft px-4 py-3 text-center">
+    <div
+      className="rounded-card border px-4 py-3 text-center"
+      style={{
+        borderColor: "color-mix(in srgb, var(--omni-border-soft) 70%, transparent)",
+        backgroundColor: "color-mix(in srgb, white 85%, transparent)",
+      }}
+    >
       <p className="text-xs text-textSecondary">{label}</p>
       <p className={`text-xl font-semibold ${colorClass}`}>{formattedScore}</p>
       <p className={`text-xs ${deltaClass}`}>{deltaLabel}</p>

@@ -256,7 +256,7 @@ export function TodayGuidanceCard({
   return (
     <motion.div variants={fadeDelayed(0.2)} {...hoverScale}>
       <div
-        className="flex h-full flex-col rounded-card border px-8 py-5 shadow-soft"
+        className="flex h-full flex-col rounded-card border px-4 py-5 shadow-soft sm:px-6"
         style={{
           borderRadius: designTokens.components.card.radius,
           backgroundColor: cardBackground,
@@ -266,21 +266,22 @@ export function TodayGuidanceCard({
           minHeight: "400px",
         }}
       >
-        <div className="flex flex-1 flex-col gap-3 sm:gap-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+        <div className="flex flex-1 flex-col gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
             <div className="flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-textMuted">
                 {lang === "ro" ? "OMNI-ABIL" : "Omni-Abil"}
               </p>
               <p className="text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: textMuted }}>
-                {lang === "ro" ? "GHIDAJ DE AZI" : "TODAY GUIDANCE"}
+                {lang === "ro" ? "ACȚIUNEA DE AZI" : "TODAY’S ACTION"}
               </p>
               <div className="mt-3 space-y-2">
                 <h3
                   className="font-bold"
                   style={{ fontSize: designTokens.typography.size.xl, fontWeight: 700, lineHeight: 1.2 }}
                 >
-                  {lang === "ro" ? "Practică: Re-energizarea" : "Practice: Re-energize"}
+                  {lang === "ro" ? "Practică: " : "Practice: "}
+                  <span style={{ color: accentColor }}>{lang === "ro" ? "Re-energizarea" : "Re-energize"}</span>
                 </h3>
                 <p className="text-[15px] font-normal leading-relaxed text-textSecondary" style={{ color: textSecondary }}>
                   {lang === "ro"
@@ -295,7 +296,7 @@ export function TodayGuidanceCard({
               </div>
             </div>
             {typeof xpScore === "number" || typeof honeyValue === "number" ? (
-              <div className="ml-2 flex flex-shrink-0 flex-col items-start gap-3 pt-2 sm:ml-0">
+              <div className="flex flex-shrink-0 flex-col items-end gap-3 -mt-24 sm:-mt-28 sm:ml-4 sm:items-end sm:pr-1">
                 {typeof xpScore === "number" ? (
                   <div className="flex items-baseline gap-1">
                     <p className="text-xl font-semibold" style={{ color: withAlpha(accentColor, 0.9) }}>
@@ -307,7 +308,7 @@ export function TodayGuidanceCard({
                   </div>
                 ) : null}
                 {typeof honeyValue === "number" ? (
-                  <div className="hidden pt-1 sm:flex">
+                  <div className="hidden sm:flex">
                     <HoneyHex label="Abil" value={Math.max(0, Math.min(100, honeyValue))} size={66} id="abil-guidance" />
                   </div>
                 ) : null}
@@ -316,7 +317,7 @@ export function TodayGuidanceCard({
           </div>
 
           <div
-            className="mt-4 flex flex-col gap-2 rounded-card border px-3 py-3"
+            className="mt-0 flex flex-col gap-2 rounded-card border px-3 py-3"
             style={{
               borderRadius: designTokens.components.card.radius,
               borderColor: capsuleBorder,

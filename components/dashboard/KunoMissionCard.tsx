@@ -132,7 +132,7 @@ export default function KunoMissionCard({
   return (
     <motion.div variants={fadeDelayed(0.12)} {...hoverScale}>
       <div
-        className="rounded-card border px-8 py-5 shadow-card"
+        className="rounded-card border px-4 py-5 shadow-card sm:px-6"
         style={{
           borderRadius: designTokens.components.card.radius,
           backgroundColor: designTokens.brand.cream,
@@ -316,10 +316,8 @@ function KunoMissionSummary({
   textColor,
   textSecondary,
 }: KunoMissionSummaryProps) {
-  const focusHeadline =
-    lang === "ro"
-      ? `Acumulează cunoaștere în ${focusLabel}`
-      : `Build knowledge in ${focusLabel}`;
+  const focusPrefix = lang === "ro" ? "Acumulează cunoaștere în " : "Build knowledge in ";
+  const focusName = focusLabel;
   const microBenefit =
     lang === "ro"
       ? "Cunoașterea îți dă direcție clară. De aici încolo e mai ușor."
@@ -347,7 +345,8 @@ function KunoMissionSummary({
               className="font-bold"
               style={{ fontSize: designTokens.typography.size.xl, fontWeight: 700, lineHeight: 1.2, color: textPrimary }}
             >
-              {focusHeadline}
+              {focusPrefix}
+              <span style={{ color: accent }}>{focusName}</span>
             </h3>
             <p className="mt-3 text-[15px] font-normal leading-relaxed text-textSecondary" style={{ color: secondaryColor, width: "100%", maxWidth: "620px" }}>
               {microBenefit}
@@ -357,7 +356,7 @@ function KunoMissionSummary({
             </p>
           </div>
         </div>
-        <div className="ml-2 flex flex-col items-start gap-2 pt-2" style={{ width: "96px" }}>
+        <div className="flex flex-col items-end gap-2 pt-2 sm:pr-1" style={{ minWidth: "78px" }}>
           <div className="flex items-baseline gap-1 text-right">
             <p className="text-sm font-semibold leading-none" style={{ color: withAlpha(accent, 0.85) }}>
               {omniCunoScore}
@@ -375,7 +374,7 @@ function KunoMissionSummary({
             </p>
           </div>
           {typeof progressPercent === "number" ? (
-            <div className="hidden sm:flex pt-1" style={{ paddingTop: "10px" }}>
+            <div className="hidden sm:flex pt-1">
               <HoneyHex label="Kuno" value={Math.round(progressPercent)} size={66} id="kuno-mission-summary" />
             </div>
           ) : null}
