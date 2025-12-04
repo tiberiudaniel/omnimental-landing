@@ -11,6 +11,7 @@ import type { OmniKunoTopicKey } from "@/lib/omniKunoTypes";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import { OmniCard } from "@/components/OmniCard";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 type MiniMeta = {
   topicKey?: string;
@@ -174,14 +175,15 @@ export default function StepMiniTest({
         <p className="text-sm" style={{ color: "var(--text-main)" }}>
           {lang === 'ro' ? 'Scor curent' : 'Current score'}: {raw}/{max}
         </p>
-        <button
+        <NeutralCtaButton
           disabled={!canSubmit}
           onClick={handleSubmit}
           data-testid="eo-submit"
-          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
+          size="sm"
+          className="text-[11px]"
         >
-          {lang === 'ro' ? 'Vezi scorul' : 'See score'}
-        </button>
+          {lang === "ro" ? "Vezi scorul" : "See score"}
+        </NeutralCtaButton>
       </div>
     </section>
   );

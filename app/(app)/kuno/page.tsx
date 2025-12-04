@@ -5,7 +5,8 @@ import { Suspense } from 'react';
 import SiteHeader from '@/components/SiteHeader';
 import { AppShell } from '@/components/AppShell';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { PrimaryButton, SecondaryButton } from '@/components/PrimaryButton';
+import { KunoCtaButton } from "@/components/ui/cta/KunoCtaButton";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 function KunoHub() {
   const search = useSearchParams();
@@ -24,12 +25,12 @@ function KunoHub() {
                 <p className="mt-2 text-sm text-[var(--omni-ink-soft)]">Mini-teste educative, feedback imediat și progres în timp.</p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <PrimaryButton shape="pill" className="uppercase tracking-[0.2em] text-[12px]" asChild>
-                  <Link href="/omni-kuno">Intră în OmniKuno</Link>
-                </PrimaryButton>
-                <SecondaryButton className="uppercase tracking-[0.2em] text-[12px]" asChild>
-                  <Link href="/kuno/practice">Fă mini-testul</Link>
-                </SecondaryButton>
+                <KunoCtaButton as="link" href="/omni-kuno">
+                  Intră în OmniKuno
+                </KunoCtaButton>
+                <NeutralCtaButton as="link" href="/kuno/practice">
+                  Fă mini-testul
+                </NeutralCtaButton>
               </div>
             </div>
           </section>

@@ -5,6 +5,7 @@ import { useI18n } from "@/components/I18nProvider";
 import TestQuestionCard from "@/components/onboarding/TestQuestionCard";
 import { recordActivityEvent } from "@/lib/progressFacts";
 import OnboardingLessonShell from "@/components/onboarding/OnboardingLessonShell";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 type Q = { id: string; question: string; options: string[]; correctIndex: number; explanation: string };
 
@@ -114,14 +115,15 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
             </p>
           </div>
           <div className="mt-6 flex justify-end">
-            <button
+            <NeutralCtaButton
               type="button"
               onClick={() => setShowSummary(true)}
               disabled={!allAnswered}
-              className="omni-btn-ghost text-sm font-semibold tracking-[0.12em] disabled:cursor-not-allowed disabled:opacity-60"
+              size="sm"
+              className="text-sm tracking-[0.12em]"
             >
-              {lang === 'ro' ? 'Finalizează' : 'Finalize'}
-            </button>
+              {lang === "ro" ? "Finalizează" : "Finalize"}
+            </NeutralCtaButton>
           </div>
         </>
       ) : (
@@ -151,20 +153,23 @@ export default function InitiationStepLessonQuiz({ onDone }: { onDone: () => voi
             <li>{lang === 'ro' ? 'Ai lăsat o primă notă în jurnal, ca reper.' : 'You captured a first note in the journal as an anchor.'}</li>
           </ul>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button
+            <NeutralCtaButton
               type="button"
               onClick={submit}
-              className="omni-btn-ghost text-sm font-medium tracking-[0.12em]"
+              size="sm"
+              className="text-sm font-medium tracking-[0.12em]"
               data-testid="init-lesson-quiz-submit"
             >
-              {lang === 'ro' ? 'Mergi la progres' : 'Go to progress'}
-            </button>
-            <a
+              {lang === "ro" ? "Mergi la progres" : "Go to progress"}
+            </NeutralCtaButton>
+            <NeutralCtaButton
+              as="link"
               href="/recommendation?from=initiation"
-              className="omni-btn-ghost text-sm font-medium tracking-[0.12em]"
+              size="sm"
+              className="text-sm font-medium tracking-[0.12em]"
             >
-              {lang === 'ro' ? 'Vezi recomandarea ta' : 'See your recommendation'}
-            </a>
+              {lang === "ro" ? "Vezi recomandarea ta" : "See your recommendation"}
+            </NeutralCtaButton>
           </div>
         </section>
       )}

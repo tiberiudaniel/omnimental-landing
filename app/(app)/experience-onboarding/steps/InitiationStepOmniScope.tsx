@@ -10,6 +10,7 @@ import { useProgressFacts } from "@/components/useProgressFacts";
 import Image from "next/image";
 import GuideCard from "@/components/onboarding/GuideCard";
 import onboardingPathGeometry from "@/public/assets/onboarding-path-geometry.jpg";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 // (no extra types needed)
 
 function Mixer({ label, value, setValue, min = 1, max = 10, ticks = 10, lowLabel, highLabel, testId, highlight = false, onAfterChange }: {
@@ -194,14 +195,15 @@ export default function InitiationStepOmniScope({ userId, onComplete }: { userId
                   onAfterChange={() => markTouched('frequency')}
                 />
                 <div className="flex justify-end">
-                  <button
+                  <NeutralCtaButton
                     disabled={busy || !allTouched}
                     onClick={submit}
-                    className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
+                    size="sm"
+                    className="text-[11px]"
                     data-testid="init-scope-continue"
                   >
-                    {lang === 'ro' ? 'Continuă' : 'Continue'}
-                  </button>
+                    {lang === "ro" ? "Continuă" : "Continue"}
+                  </NeutralCtaButton>
                 </div>
               </div>
             </GuideCard>

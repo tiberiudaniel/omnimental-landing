@@ -8,6 +8,7 @@ import { getDb, areWritesDisabled } from "../lib/firebase";
 import type { IntentCloudWord, IntentPrimaryCategory } from "@/lib/intentExpressions";
 import { INTENT_MIN_SELECTION, INTENT_MAX_SELECTION, computeCategoryCounts, type IntentSelectionWord } from "@/lib/intentSelection";
 import { getWizardStepTestId } from "./useWizardSteps";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 
 type IntentWord = {
   key: string;
@@ -272,18 +273,19 @@ export default function IntentCloud({
           })}
         </div>
         <div className="space-y-3 pt-4">
-          <button
+          <OmniCtaButton
             type="button"
-          onClick={handleContinue}
-          disabled={
-            selected.length < minSelection ||
-            selected.length > maxSelection || submitting
-          }
-          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
-          data-testid="wizard-continue"
-        >
-          {submitting ? (lang === "ro" ? "Se procesează…" : "Processing…") : buttonLabel}
-        </button>
+            variant="primary"
+            onClick={handleContinue}
+            disabled={
+              selected.length < minSelection ||
+              selected.length > maxSelection ||
+              submitting
+            }
+            data-testid="wizard-continue"
+          >
+            {submitting ? (lang === "ro" ? "Se procesează…" : "Processing…") : buttonLabel}
+          </OmniCtaButton>
           {/* Helper microcopy when disabled */}
           {selected.length < minSelection && !submitting ? (
             <p className="text-[11px] text-[var(--omni-muted)]">

@@ -12,6 +12,7 @@ import { JournalDrawer } from "@/components/journal/JournalDrawer";
 import { JournalPanel } from "@/components/journal/JournalPanel";
 import type { JournalContext } from "@/components/journal/useJournal";
 import { useWindowWidth } from "@/lib/useWindowSize";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 export default function OmniScopePage() {
   const { profile } = useProfile();
@@ -86,13 +87,14 @@ export default function OmniScopePage() {
                     />
                   ) : (
                     <div className="flex justify-end">
-                      <button
+                      <NeutralCtaButton
                         type="button"
-                        className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.2em]"
+                        size="sm"
+                        className="text-[11px] tracking-[0.2em]"
                         onClick={() => setShowJournalPanel(true)}
                       >
                         {lang === "ro" ? "Arată jurnalul" : "Show journal"}
-                      </button>
+                      </NeutralCtaButton>
                     </div>
                   )}
                 </div>

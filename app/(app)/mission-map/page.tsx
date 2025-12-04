@@ -8,7 +8,8 @@ import MenuOverlay from "@/components/MenuOverlay";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useProfile } from "@/components/ProfileProvider";
 import RequireAuth from "@/components/auth/RequireAuth";
-import { PrimaryButton, SecondaryButton } from "@/components/PrimaryButton";
+import { KunoCtaButton } from "@/components/ui/cta/KunoCtaButton";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 import { MissionResourcesView } from "@/components/mission-map/MissionResourcesView";
 import { MissionMentalProgressView } from "@/components/mission-map/MissionMentalProgressView";
 import { useMissionPerspective, type MissionSummary } from "@/lib/hooks/useMissionPerspective";
@@ -95,12 +96,12 @@ function MissionMapContent() {
           Alege o misiune prioritară din onboarding sau din dashboard și revino aici pentru a vedea resursele și progresul mental.
         </p>
         <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <PrimaryButton onClick={() => router.push("/experience-onboarding?flow=initiation&step=welcome")} className="w-full justify-center sm:w-auto">
+          <KunoCtaButton onClick={() => router.push("/experience-onboarding?flow=initiation&step=welcome")} className="w-full justify-center sm:w-auto">
             Deschide onboarding-ul
-          </PrimaryButton>
-          <SecondaryButton onClick={() => router.push("/progress")} className="w-full justify-center sm:w-auto">
+          </KunoCtaButton>
+          <NeutralCtaButton onClick={() => router.push("/progress")} className="w-full justify-center sm:w-auto">
             Înapoi la dashboard
-          </SecondaryButton>
+          </NeutralCtaButton>
         </div>
       </section>
     </div>

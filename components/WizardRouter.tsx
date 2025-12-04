@@ -23,6 +23,7 @@ import StepNeedMain from "./wizard/StepNeedMain";
 import StepNeedConfidence from "./wizard/StepNeedConfidence";
 import type { NeedOptionId } from "@/config/needSurveyConfig";
 import { getWizardStepTestId, type WizardStepId } from "./useWizardSteps";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 export type IntentCategoryCount = { category: string; count: number };
 
@@ -508,23 +509,24 @@ export default function WizardRouter(props: Props) {
               </div>
               <div className="grid max-w-xl grid-cols-1 gap-2 sm:grid-cols-3">
                 {btns.map((label, idx) => (
-                  <button
+                  <NeutralCtaButton
                     key={label}
                     type="button"
+                    size="sm"
                     onClick={async () => {
                       try {
-                        const map: ('knew'|'heard'|'unknown')[] = ['knew','heard','unknown'];
-                        await recordFamiliarityMentalCoaching(map[idx] ?? 'unknown', profileCtx?.profile?.id);
+                        const map: ("knew" | "heard" | "unknown")[] = ["knew", "heard", "unknown"];
+                        await recordFamiliarityMentalCoaching(map[idx] ?? "unknown", profileCtx?.profile?.id);
                       } catch {}
-                      navigateToStep('intentMotivation');
+                      navigateToStep("intentMotivation");
                     }}
-                  className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
-                  data-testid="wizard-microlesson-btn"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+                    className="text-[11px]"
+                    data-testid="wizard-microlesson-btn"
+                  >
+                    {label}
+                  </NeutralCtaButton>
+                ))}
+              </div>
               <p className="text-[10px]" style={{ color: "var(--text-soft)" }}>
                 {lang === 'ro'
                   ? 'Primele studii: Norman Triplett (1898) — efectul competiției la cicliști; termenul „sport psychology” (1900) — Pierre de Coubertin; anii 1920–1930 — Coleman Griffith lucrează cu echipe (ex. Chicago Cubs).'
@@ -595,33 +597,28 @@ export default function WizardRouter(props: Props) {
                 {s("wizardNextStepEyebrow", lang === 'ro' ? "Pasul următor" : "Next step")}
               </p>
               <div className="flex flex-wrap items-center gap-3">
-                <Link
+                <NeutralCtaButton
+                  as="link"
                   href={{ pathname: "/antrenament", query: { tab: "os", source: "wizard" } }}
                   onClick={() => {
                     void recordEvaluationTabChange("os");
                   }}
-                  className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
+                  size="sm"
+                  className="text-[11px]"
                 >
-                  {s("wizardCtaGoTraining", lang === 'ro' ? "Fă un antrenament complet" : "Start a full training")}
-                </Link>
-                <Link
-                  href="/progress"
-                  className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
-                >
-                  {s("wizardCtaGoDashboard", lang === 'ro' ? "Vezi tabloul tău de bord" : "Go to your dashboard")}
-                </Link>
+                  {s("wizardCtaGoTraining", lang === "ro" ? "Fă un antrenament complet" : "Start a full training")}
+                </NeutralCtaButton>
+                <NeutralCtaButton as="link" href="/progress" size="sm" className="text-[11px]">
+                  {s("wizardCtaGoDashboard", lang === "ro" ? "Vezi tabloul tău de bord" : "Go to your dashboard")}
+                </NeutralCtaButton>
               </div>
             </div>
 
             {onReturnToOrigin ? (
               <div className="flex justify-center">
-                <button
-                  type="button"
-                  onClick={onReturnToOrigin}
-                  className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
-                >
+                <NeutralCtaButton type="button" size="sm" onClick={onReturnToOrigin} className="text-[11px]">
                   {returnLabel ?? s("wizardBack", lang === 'ro' ? "Înapoi" : "Back")}
-                </button>
+                </NeutralCtaButton>
               </div>
             ) : null}
           </div>

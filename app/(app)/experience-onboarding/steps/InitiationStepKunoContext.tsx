@@ -12,6 +12,7 @@ import { useProgressFacts } from "@/components/useProgressFacts";
 import { recordPracticeSession } from "@/lib/progressFacts";
 import IllustratedStep from "@/components/onboarding/IllustratedStep";
 import onboardingKunoDocs from "@/public/assets/onboarding-kuno-docs.jpg";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 export default function InitiationStepKunoContext({ userId, onContinue }: { userId: string | null; onContinue: () => void }) {
   const { lang } = useI18n();
@@ -91,14 +92,15 @@ export default function InitiationStepKunoContext({ userId, onContinue }: { user
         ))}
       </div>
       <div className="flex justify-end">
-        <button
+        <NeutralCtaButton
           disabled={!allAnswered}
           onClick={save}
-          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
+          size="sm"
+          className="text-[11px]"
           data-testid="init-kuno-continue"
         >
-          {lang === 'ro' ? 'Continuă' : 'Continue'}
-        </button>
+          {lang === "ro" ? "Continuă" : "Continue"}
+        </NeutralCtaButton>
       </div>
     </IllustratedStep>
   );

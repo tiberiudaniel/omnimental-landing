@@ -9,6 +9,7 @@ import { recordOmniPatch, recordActivityEvent } from "@/lib/progressFacts";
 import { increment } from "firebase/firestore";
 import OnboardingLessonShell from "@/components/onboarding/OnboardingLessonShell";
 import TestQuestionCard from "@/components/onboarding/TestQuestionCard";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 type CardVariant = "neutral" | "accent" | "mint" | "lavender" | "tip";
 
@@ -337,19 +338,18 @@ export default function InitiationStepLesson({ userId, onNext }: { userId: strin
             <li>{lang === 'ro' ? 'Ai înregistrat starea de azi și ai completat o lecție.' : 'You recorded today’s state and completed a lesson.'}</li>
           </ul>
           <div className="mt-4 flex gap-2">
-            <a
+            <NeutralCtaButton
+              as="link"
               href="/progress?from=initiation&completed=1"
-              className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
+              size="sm"
+              className="text-[11px]"
               data-testid="init-final-progress"
             >
-              {lang === 'ro' ? 'Mergi la progres' : 'Go to progress'}
-            </a>
-            <a
-              href="/recommendation?from=initiation"
-              className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
-            >
-              {lang === 'ro' ? 'Înapoi la recomandări' : 'Back to recommendations'}
-            </a>
+              {lang === "ro" ? "Mergi la progres" : "Go to progress"}
+            </NeutralCtaButton>
+            <NeutralCtaButton as="link" href="/recommendation?from=initiation" size="sm" className="text-[11px]">
+              {lang === "ro" ? "Înapoi la recomandări" : "Back to recommendations"}
+            </NeutralCtaButton>
           </div>
         </GuideCard>
       </section>

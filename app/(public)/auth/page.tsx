@@ -13,6 +13,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
 import { AppShell } from "@/components/AppShell";
@@ -115,16 +116,25 @@ function AuthContent() {
       });
   }, [router, search, isRo]);
 
+  const [googleBusy, setGoogleBusy] = useState(false);
+
   const handleGoogleSignIn = async () => {
+    if (googleBusy) return;
     const auth = getFirebaseAuth();
     const provider = new GoogleAuthProvider();
     try {
+      setGoogleBusy(true);
       await signInWithPopup(auth, provider);
       router.push("/progress");
     } catch (err) {
-      console.error("Google sign-in error", err);
-      const msg = isRo ? "Nu am putut face autentificarea cu Google." : "Google sign-in failed.";
-      setToastMessage(msg);
+      const code = (err as { code?: string })?.code ?? "";
+      if (code !== "auth/cancelled-popup-request") {
+        console.error("Google sign-in error", err);
+        const msg = isRo ? "Nu am putut face autentificarea cu Google." : "Google sign-in failed.";
+        setToastMessage(msg);
+      }
+    } finally {
+      setGoogleBusy(false);
     }
   };
 
@@ -249,13 +259,9 @@ function AuthContent() {
           </p>
           {errorMessage ? <p className="text-sm text-[var(--omni-danger)]">{errorMessage}</p> : null}
 
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            className="w-full rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
-          >
+          <OmniCtaButton type="button" onClick={handleGoogleSignIn} disabled={googleBusy} variant="primary">
             {isRo ? "Continuă cu Google" : "Continue with Google"}
-          </button>
+          </OmniCtaButton>
 
           <div className="space-y-2 border-t border-[#F0E4D9] pt-4 text-left">
             <p className="text-xs text-[var(--omni-ink-soft)]">
@@ -280,11 +286,7 @@ function AuthContent() {
                   required
                 />
               ) : null}
-              <button
-                type="submit"
-                disabled={otpSending || otpVerifying}
-                className="w-full rounded-[10px] border border-[var(--omni-border-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] disabled:opacity-60"
-              >
+              <OmniCtaButton type="submit" disabled={otpSending || otpVerifying} variant="neutral">
                 {otpSending
                   ? isRo
                     ? "Trimit codul…"
@@ -300,7 +302,7 @@ function AuthContent() {
                   : isRo
                   ? "Trimite codul"
                   : "Send code"}
-              </button>
+              </OmniCtaButton>
             </form>
           </div>
 
@@ -341,11 +343,7 @@ function AuthContent() {
                 className="w-full rounded-[10px] border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
                 autoComplete="current-password"
               />
-              <button
-                type="submit"
-                disabled={pwdLoading}
-                className="w-full rounded-[10px] border border-[#A08C7A] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)] hover:bg-[#A08C7A] hover:text-white disabled:opacity-60"
-              >
+              <OmniCtaButton type="submit" disabled={pwdLoading} variant="primary">
                 {pwdLoading
                   ? isRo
                     ? "Se conectează…"
@@ -357,7 +355,7 @@ function AuthContent() {
                   : isRo
                   ? "Creează cont cu email + parolă"
                   : "Create account with email + password"}
-              </button>
+              </OmniCtaButton>
             </form>
           </div>
 

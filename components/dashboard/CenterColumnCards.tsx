@@ -13,7 +13,7 @@ import type { OmniKunoModuleId } from "@/config/omniKunoModules";
 import type { MissionSummary } from "@/lib/hooks/useMissionPerspective";
 import { useEffect, useState } from "react";
 import { designTokens } from "@/config/designTokens";
-import { AbilButton } from "@/components/ui/CTA/AbilButton";
+import { AbilCtaButton } from "@/components/ui/cta/AbilCtaButton";
 import { adjustLightness, withAlpha } from "@/lib/colorUtils";
 import { useRouter } from "next/navigation";
 import { OmniAbilCard } from "./OmniAbilCard";
@@ -358,7 +358,7 @@ export function TodayGuidanceCard({
           </div>
 
           <div className="pt-1">
-            <AbilButton
+            <AbilCtaButton
               onClick={() => router.push(ctaHref)}
               className="rounded-[32px] px-8 py-3 text-[14px] font-medium tracking-wide"
               style={{
@@ -368,7 +368,7 @@ export function TodayGuidanceCard({
               }}
             >
               {lang === "ro" ? "Pornește exercițiul" : "Start exercise"}
-            </AbilButton>
+            </AbilCtaButton>
           </div>
 
           <div className="pt-2">

@@ -9,6 +9,7 @@ import { recordOmniPatch, recordPracticeSession, recordActivityEvent } from "@/l
 import { applyKunoGamification } from "@/lib/kunoGamification";
 import Link from "next/link";
 import { useEffect } from "react";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 export default function StepMiniTestScore({ answers, score, userId, topicKey, questionsMeta, onContinue }: { answers: number[]; score: { raw: number; max: number }; userId: string | null; topicKey?: string; questionsMeta?: Array<{ id: string; correctIndex: number; style?: string; facet?: string; topicKey?: string; questionText?: string }>; onContinue: () => void }) {
   const { lang } = useI18n();
@@ -226,13 +227,9 @@ export default function StepMiniTestScore({ answers, score, userId, topicKey, qu
         >
           {lang === 'ro' ? 'Mergi acum să vezi progresul' : 'Go see your progress now'}
         </Link>
-        <button
-          data-testid="eo-continue"
-          onClick={onContinue}
-          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
-        >
-          {lang === 'ro' ? 'Continuă' : 'Continue'}
-        </button>
+        <NeutralCtaButton data-testid="eo-continue" onClick={onContinue} size="sm" className="text-[11px]">
+          {lang === "ro" ? "Continuă" : "Continue"}
+        </NeutralCtaButton>
       </div>
     </section>
   );

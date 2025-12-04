@@ -31,7 +31,7 @@ import { getPrimaryRecommendation } from "@/lib/recommendations";
 import FirstOfferPanel from "@/components/recommendations/FirstOfferPanel";
 import { choosePrimaryProduct, inferBudgetLevelFromIntent } from "@/lib/primaryProduct";
 import { useAuth } from "@/components/AuthProvider";
-import { PrimaryButton, SecondaryButton } from "@/components/PrimaryButton";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { TodayGuidanceCard } from "@/components/dashboard/CenterColumnCards";
 import { PulseOfDayCard } from "@/components/today/PulseOfDayCard";
 import { computePillarProgress } from "@/lib/pillarProgress";
@@ -588,20 +588,16 @@ const [pulseEntries, setPulseEntries] = useState<DailyAxesEntry[]>([]);
                 : "You can see your recommended direction as a guest, but to keep your path, journal, and next steps over time, you’ll need an OmniMental account."}
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <SecondaryButton
+              <OmniCtaButton
                 type="button"
+                variant="neutral"
                 onClick={() => router.push("/?step=cards")}
-                className="text-[11px] uppercase tracking-[0.25em]"
               >
                 {lang === "ro" ? "Reia wizardul" : "Resume wizard"}
-              </SecondaryButton>
-              <PrimaryButton
-                type="button"
-                onClick={redirectToAuth}
-                className="text-[11px] uppercase tracking-[0.25em]"
-              >
+              </OmniCtaButton>
+              <OmniCtaButton type="button" variant="primary" onClick={redirectToAuth}>
                 {lang === "ro" ? "Creează cont" : "Create account"}
-              </PrimaryButton>
+              </OmniCtaButton>
             </div>
           </section>
         ) : null}
@@ -613,17 +609,18 @@ const [pulseEntries, setPulseEntries] = useState<DailyAxesEntry[]>([]);
                   ? "Pentru a vedea recomandarea completă, alege modul în care vrei să continui (individual sau grup)."
                   : "To view your full recommendation, choose how you want to continue (individual or group)."}
               </p>
-              <SecondaryButton
+              <OmniCtaButton
                 type="button"
+                variant="neutral"
                 onClick={() => {
                   const url = new URL(window.location.origin + "/choose");
                   url.searchParams.set("from", "reco");
                   router.push(url.pathname + url.search);
                 }}
-                className="shrink-0 text-[11px] uppercase tracking-[0.25em]"
+                className="shrink-0"
               >
                 {lang === "ro" ? "Alege formatul" : "Choose format"}
-              </SecondaryButton>
+              </OmniCtaButton>
             </div>
           </div>
         ) : null}

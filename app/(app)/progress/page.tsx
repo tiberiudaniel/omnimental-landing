@@ -14,7 +14,7 @@ import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
 import ProgressDashboard from "@/components/dashboard/ProgressDashboard";
 import { OmniCard } from "@/components/OmniCard";
-import { PrimaryButton, SecondaryButton } from "@/components/PrimaryButton";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import type { JournalTabId } from "@/lib/journal";
 import DemoUserSwitcher from "@/components/DemoUserSwitcher";
 import { getDemoProgressFacts } from "@/lib/demoData";
@@ -298,13 +298,14 @@ function ProgressContent() {
                 ? "Completează primul test din experiența ghidată pentru a-ți construi tabloul de bord."
                 : "Complete the guided experience to generate your personalized dashboard."}
             </p>
-            <PrimaryButton
+            <OmniCtaButton
               type="button"
+              variant="primary"
               onClick={() => router.push("/?from=progress&step=preIntro")}
-              className="mt-3 uppercase tracking-[0.2em]"
+              className="mt-3"
             >
               {lang === "ro" ? "Începe mini-evaluarea" : "Start the mini assessment"}
-            </PrimaryButton>
+            </OmniCtaButton>
           </OmniCard>
         </div>
       ) : null}
@@ -317,13 +318,15 @@ function ProgressContent() {
                   ? 'Jurnalul se activează după ce alegi modul de lucru (individual sau grup).'
                   : 'The journal unlocks after you choose a format (individual or group).'}
               </p>
-              <SecondaryButton
+              <OmniCtaButton
                 type="button"
+                variant="neutral"
+                size="sm"
                 onClick={() => router.push('/choose?from=journal')}
-                className="text-[11px] font-semibold uppercase tracking-[0.2em] px-4 py-2"
+                className="px-4"
               >
                 {lang === 'ro' ? 'Alege formatul' : 'Choose format'}
-              </SecondaryButton>
+              </OmniCtaButton>
             </div>
           </OmniCard>
         </div>
@@ -375,13 +378,15 @@ function ProgressContent() {
           <OmniCard className="mb-3 bg-[var(--omni-bg-paper)] px-4 py-3 text-sm shadow-[0_10px_24px_rgba(0,0,0,0.05)]" data-testid="daily-nudge">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p>{lang === 'ro' ? 'Completează o mini‑raportare (1–10) ca să ținem indicatorii interni proaspeți.' : 'Do a quick mini‑report (1–10) to keep internal indicators fresh.'}</p>
-              <PrimaryButton
+              <OmniCtaButton
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={() => router.push('/experience-onboarding?flow=initiation&step=daily-state')}
-                className="px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+                className="px-4"
               >
                 {lang === 'ro' ? 'Deschide sliderele' : 'Open sliders'}
-              </PrimaryButton>
+              </OmniCtaButton>
             </div>
           </OmniCard>
         ) : null}
@@ -775,9 +780,9 @@ function ProgressRecommendationCard({ lang, facts }: { lang: string; facts: Hero
       <p className="text-xs font-semibold text-[var(--omni-muted)]">{lang === "ro" ? "Recomandarea ta" : "Your recommendation"}</p>
       <h3 className="text-lg font-semibold">{title}</h3>
       <p className="text-[12px] text-[var(--omni-muted)]">{body}</p>
-      <PrimaryButton shape="pill" className="uppercase tracking-[0.2em] text-[12px]" asChild>
-        <Link href={ctaHref}>{ctaLabel}</Link>
-      </PrimaryButton>
+      <OmniCtaButton as="link" href={ctaHref} variant="kuno">
+        {ctaLabel}
+      </OmniCtaButton>
     </div>
   );
 }

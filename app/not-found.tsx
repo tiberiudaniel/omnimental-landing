@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 
 export default function NotFound() {
   return (
@@ -12,18 +13,12 @@ export default function NotFound() {
           Verifică adresa introdusă sau revino la prima pagină pentru a continua navigarea în siguranță.
         </p>
         <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href="/"
-            className="omni-btn-primary text-sm font-semibold uppercase tracking-[0.2em]"
-          >
+          <OmniCtaButton as="link" href="/" variant="primary">
             Înapoi acasă
-          </Link>
-          <Link
-            href="/group"
-            className="omni-btn-secondary text-sm font-semibold uppercase tracking-[0.2em]"
-          >
+          </OmniCtaButton>
+          <OmniCtaButton as="link" href="/group" variant="neutral">
             Mental Coaching Group
-          </Link>
+          </OmniCtaButton>
         </div>
       </div>
     </main>

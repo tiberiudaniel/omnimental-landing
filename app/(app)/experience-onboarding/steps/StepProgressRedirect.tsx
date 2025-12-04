@@ -4,6 +4,7 @@ import Typewriter from "@/components/onboarding/Typewriter";
 import { useI18n } from "@/components/I18nProvider";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 export default function StepProgressRedirect({ onRedirect }: { onRedirect: () => void }) {
   const { lang } = useI18n();
@@ -29,12 +30,9 @@ export default function StepProgressRedirect({ onRedirect }: { onRedirect: () =>
       </div>
       <Typewriter text={lang === 'ro' ? "Te ducem în dashboard ca să vezi cum se actualizează progresul." : "We’ll take you to your dashboard to see progress update."} />
       <div className="mt-4">
-        <button
-          onClick={onRedirect}
-          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
-        >
-          {lang === 'ro' ? 'Continuă acum' : 'Continue now'}
-        </button>
+        <NeutralCtaButton onClick={onRedirect} size="sm" className="text-[11px]">
+          {lang === "ro" ? "Continuă acum" : "Continue now"}
+        </NeutralCtaButton>
       </div>
     </section>
   );

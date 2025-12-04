@@ -7,6 +7,7 @@ import { doc, setDoc, increment } from "firebase/firestore";
 import { recordPracticeSession } from "@/lib/progressFacts";
 import { useEffect, useRef } from "react";
 import { useI18n } from "@/components/I18nProvider";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 export default function StepBreathPractice({ userId, onDone, onSkip }: { userId?: string | null; onDone: () => void; onSkip: () => void }) {
   const { lang } = useI18n();
@@ -34,7 +35,7 @@ export default function StepBreathPractice({ userId, onDone, onSkip }: { userId?
       >
         <BreathAnimation seconds={120} />
         <div className="mt-4 flex items-center justify-center gap-2">
-          <button
+          <NeutralCtaButton
             onClick={async () => {
               try {
                 if (userId && !areWritesDisabled()) {
@@ -61,16 +62,14 @@ export default function StepBreathPractice({ userId, onDone, onSkip }: { userId?
               }
               onDone();
             }}
-            className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
+            size="sm"
+            className="text-[11px]"
           >
-            {lang === 'ro' ? 'Am terminat' : 'Done'}
-          </button>
-          <button
-            onClick={onSkip}
-            className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
-          >
-            {lang === 'ro' ? 'Sari peste' : 'Skip'}
-          </button>
+            {lang === "ro" ? "Am terminat" : "Done"}
+          </NeutralCtaButton>
+          <NeutralCtaButton onClick={onSkip} size="sm" className="text-[11px]">
+            {lang === "ro" ? "Sari peste" : "Skip"}
+          </NeutralCtaButton>
         </div>
       </div>
     </section>

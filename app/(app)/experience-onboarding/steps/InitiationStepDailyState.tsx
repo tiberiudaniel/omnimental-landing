@@ -8,6 +8,7 @@ import { recordPracticeSession, recordQuickAssessment } from "@/lib/progressFact
 import Image from "next/image";
 import GuideCard from "@/components/onboarding/GuideCard";
 import onboardingDailyState from "@/public/assets/onboarding-daily-state.jpg";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 type Key = "energy" | "stress" | "sleep" | "clarity" | "confidence" | "focus";
 
@@ -150,14 +151,15 @@ export default function InitiationStepDailyState({ onComplete }: { onComplete?: 
                 ))}
               </div>
               <div className="mt-3 flex justify-end">
-                <button
+                <NeutralCtaButton
                   disabled={busy || !allTouched}
                   onClick={submit}
-                  className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
+                  size="sm"
+                  className="text-[11px]"
                   data-testid="init-daily-continue"
                 >
-                  {lang === 'ro' ? 'Continuă' : 'Continue'}
-                </button>
+                  {lang === "ro" ? "Continuă" : "Continue"}
+                </NeutralCtaButton>
               </div>
             </GuideCard>
           </div>

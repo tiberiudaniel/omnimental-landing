@@ -5,6 +5,7 @@ import { useTStrings } from "./useTStrings";
 import { useI18n } from "./I18nProvider";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthProvider";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 
 interface JourneyIntroProps {
   onStart: () => void;
@@ -74,20 +75,16 @@ export default function JourneyIntro({ onStart }: JourneyIntroProps) {
             {microcopy}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <button
-              type="button"
-              onClick={onStart}
-              className="omni-btn-ghost w-full text-[11px] font-semibold uppercase tracking-[0.25em] sm:w-auto"
-            >
+            <OmniCtaButton type="button" onClick={onStart} variant="primary">
               {buttonLabel}
-            </button>
-            <button
+            </OmniCtaButton>
+            <OmniCtaButton
               type="button"
+              variant="neutral"
               onClick={() => router.push(user && !user.isAnonymous ? "/progress" : "/auth")}
-              className="omni-btn-ghost w-full text-[11px] font-semibold uppercase tracking-[0.25em] sm:w-auto"
             >
               {lang === "ro" ? "Am cont" : "I have an account"}
-            </button>
+            </OmniCtaButton>
           </div>
         </div>
       </div>

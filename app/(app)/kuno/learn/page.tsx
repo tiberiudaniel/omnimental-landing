@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import { AppShell } from '@/components/AppShell';
 import { OmniCard } from '@/components/OmniCard';
-import { PrimaryButton } from '@/components/PrimaryButton';
+import { KunoCtaButton } from "@/components/ui/cta/KunoCtaButton";
 import { listMicroLessons } from '@/data/lessons';
 import type { MicroLesson } from '@/lib/lessonTypes';
 
@@ -68,10 +68,10 @@ function LearnInner() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <CategoryPill label={catLabel(featuredLesson.taxonomy.domain)} />
-                <PrimaryButton
+                <KunoCtaButton
                   type="button"
                   data-testid="learn-start"
-                  className="rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em]"
+                  size="sm"
                   onClick={() => {
                     const params = new URLSearchParams(search?.toString() ?? '');
                     params.set('lang', locale);
@@ -84,7 +84,7 @@ function LearnInner() {
                   }}
                 >
                   {locale === 'ro' ? 'Începe' : 'Start'}
-                </PrimaryButton>
+                </KunoCtaButton>
               </div>
             </div>
           </OmniCard>

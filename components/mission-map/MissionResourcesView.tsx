@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { SecondaryButton } from "@/components/PrimaryButton";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 import { useI18n } from "@/components/I18nProvider";
 import type { ResourceMetric } from "@/lib/hooks/useMissionPerspective";
 import { formatListText } from "./utils";
@@ -84,9 +84,9 @@ export function MissionResourcesView({ missionTitle, resources = [], onSwitchVie
 
         {onSwitchView ? (
           <div className="flex flex-wrap gap-3">
-            <SecondaryButton onClick={onSwitchView} className="text-xs font-semibold uppercase tracking-[0.2em]">
+            <NeutralCtaButton onClick={onSwitchView} size="sm">
               {lang === "ro" ? "OK, vreau să văd progresul mental" : "Great, show me the mental progress"}
-            </SecondaryButton>
+            </NeutralCtaButton>
           </div>
         ) : null}
       </div>

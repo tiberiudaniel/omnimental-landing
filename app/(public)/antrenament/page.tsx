@@ -60,11 +60,10 @@ function AntrenamentPageInner() {
       >
         <div className="mx-auto max-w-5xl px-6 py-12">
           <div
-            className="mt-4 rounded-card border px-6 py-6 shadow-soft sm:px-8 sm:py-8"
+            className="mt-4 rounded-[28px] border px-6 py-6 shadow-[0_24px_60px_rgba(0,0,0,0.08)] sm:px-8 sm:py-8"
             style={{
-              backgroundColor: designTokens.ui.surface,
+              backgroundColor: "color-mix(in srgb, var(--omni-bg-paper) 94%, transparent)",
               borderColor: designTokens.ui.borderStrong,
-              boxShadow: designTokens.shadows.soft,
             }}
             role="tablist"
             aria-label={normalizedLang === "ro" ? "Module antrenament" : "Training modules"}

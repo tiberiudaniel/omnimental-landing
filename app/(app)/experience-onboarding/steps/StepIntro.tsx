@@ -4,6 +4,7 @@ import Typewriter from "@/components/onboarding/Typewriter";
 import { useI18n } from "@/components/I18nProvider";
 import IllustratedStep from "@/components/onboarding/IllustratedStep";
 import onboardingKunoSigns from "@/public/assets/onboarding-kuno-signs.jpg";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 export default function StepIntro({ onStart }: { onStart: () => void }) {
   const { lang } = useI18n();
@@ -33,13 +34,9 @@ export default function StepIntro({ onStart }: { onStart: () => void }) {
       }
     >
       <div className="flex justify-start">
-        <button
-          data-testid="eo-start"
-          onClick={onStart}
-          className="omni-btn-ghost text-[13px] font-semibold tracking-[0.18em]"
-        >
+        <NeutralCtaButton data-testid="eo-start" onClick={onStart} size="sm" className="text-[13px] tracking-[0.18em]">
           {isRo ? "Începe" : "Start"}
-        </button>
+        </NeutralCtaButton>
       </div>
     </IllustratedStep>
   );

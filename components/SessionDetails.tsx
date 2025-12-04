@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { useI18n } from "../components/I18nProvider";
 import TypewriterText from "./TypewriterText";
 import CTAButton from "./CTAButton";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 
 interface SessionDetailsProps {
   type: "individual" | "group";
@@ -396,17 +397,16 @@ export default function SessionDetails({ type }: SessionDetailsProps) {
             successMessage={ctaSuccessMessage}
             submitLabel={ctaSubmitLabel}
           />
-          <button
+          <OmniCtaButton
             type="button"
+            variant="neutral"
             onClick={() => {
               void recordRecommendationProgressFact({ badgeLabel: "auth_redirect" }).catch(() => undefined);
               router.push("/auth");
             }}
-            className="group inline-flex items-center gap-3 rounded-[10px] border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
           >
-            {typeof t('guestSpecialAccess') === 'string' ? (t('guestSpecialAccess') as string) : 'Acces Invitat Special'}
-            <span className="translate-y-[1px] text-sm text-[var(--omni-energy)] transition group-hover:translate-x-1 group-hover:text-[var(--omni-danger)]">→</span>
-          </button>
+            {typeof t("guestSpecialAccess") === "string" ? (t("guestSpecialAccess") as string) : "Acces Invitat Special"}
+          </OmniCtaButton>
         </div>
         {metaBadge}
       </div>

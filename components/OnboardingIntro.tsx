@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { useI18n } from "@/components/I18nProvider";
 import { getString } from "@/lib/i18nGetString";
 import { recordIntentProgressFact } from "@/lib/progressFacts";
@@ -93,15 +94,16 @@ export default function OnboardingIntro({ profileId, onDone }: { profileId: stri
           ))}
         </div>
         <div className="mt-4 flex justify-end">
-          <button
+          <OmniCtaButton
             type="button"
+            variant="primary"
             onClick={handleContinue}
             disabled={(!selected && !allowAutoContinue) || saving}
-            className="inline-flex items-center justify-center rounded-[10px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:bg-[var(--omni-energy)] hover:text-[var(--omni-bg-paper)] disabled:cursor-not-allowed disabled:opacity-60"
             data-testid="onboarding-continue"
+            size="sm"
           >
             {getString(t, "onboarding.intro.continue", lang === "ro" ? "Continuă" : "Continue")}
-          </button>
+          </OmniCtaButton>
         </div>
       </Card>
     </section>

@@ -8,6 +8,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { recordPracticeSession, recordRecentEntry } from "@/lib/progressFacts";
 import journalHero from "@/public/assets/onboarding-journal-hero.jpg";
 import IllustratedStep from "@/components/onboarding/IllustratedStep";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 export default function StepJournal({ userId, onSaved, onSkip }: { userId: string | null; onSaved: () => void; onSkip: () => void }) {
   const { lang } = useI18n();
@@ -72,21 +73,18 @@ export default function StepJournal({ userId, onSaved, onSkip }: { userId: strin
         placeholder={lang === 'ro' ? "Ce simți acum legat de tema ta în focus?" : "What do you feel right now about your focus theme?"}
       />
       <div className="mt-3 flex flex-wrap gap-2">
-        <button
+        <NeutralCtaButton
           disabled={!text || busy}
           onClick={save}
-          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em] disabled:cursor-not-allowed disabled:opacity-60"
+          size="sm"
+          className="text-[11px]"
           data-testid="eo-journal-save"
         >
-          {lang === 'ro' ? 'Salvează' : 'Save'}
-        </button>
-        <button
-          type="button"
-          onClick={onSkip}
-          className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em]"
-        >
-          {lang === 'ro' ? 'Sari peste' : 'Skip'}
-        </button>
+          {lang === "ro" ? "Salvează" : "Save"}
+        </NeutralCtaButton>
+        <NeutralCtaButton type="button" onClick={onSkip} size="sm" className="text-[11px]">
+          {lang === "ro" ? "Sari peste" : "Skip"}
+        </NeutralCtaButton>
       </div>
     </IllustratedStep>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PrimaryButton } from "@/components/PrimaryButton";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 import type { MissionSummary } from "@/lib/hooks/useMissionPerspective";
 
 type MissionPerspectiveCardProps = {
@@ -21,15 +21,15 @@ export function MissionPerspectiveCard({ mission }: MissionPerspectiveCardProps)
         Vezi dintr-o privire cum stai cu resursele interne și cu progresul mental pentru{" "}
         <span className="font-semibold">{mission.title || "misiunea ta principală"}</span>.
       </p>
-      <PrimaryButton
-        className="mt-5 text-xs font-semibold uppercase tracking-[0.25em]"
+      <NeutralCtaButton
+        className="mt-5"
         onClick={() => {
           const href = mission?.id ? `/mission-map?missionId=${encodeURIComponent(mission.id)}` : "/mission-map";
           router.push(href);
         }}
       >
         Deschide harta
-      </PrimaryButton>
+      </NeutralCtaButton>
     </div>
   );
 }

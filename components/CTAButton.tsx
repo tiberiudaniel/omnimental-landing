@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { getDb } from "../lib/firebase";
 
 const db = getDb();
@@ -70,15 +71,10 @@ export default function CTAButton({
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="group inline-flex items-center gap-3 rounded-full border border-[var(--omni-border-soft)] px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
-      >
+      <OmniCtaButton variant="neutral" onClick={() => setOpen(true)}>
         {text}
-        <span className="translate-y-[1px] text-sm text-[var(--omni-energy)] transition group-hover:translate-x-1 group-hover:text-[var(--omni-danger)]">
-          →
-        </span>
-      </button>
+        <span className="text-lg leading-none text-[var(--omni-energy)]">→</span>
+      </OmniCtaButton>
 
       <Dialog open={open} onClose={() => setOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -102,13 +98,9 @@ export default function CTAButton({
                 <p className="text-base leading-relaxed text-[var(--omni-ink)]">
                   {successMessage ?? "Înscriere trimisă. Te contactăm în scurt timp."}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="inline-flex items-center justify-center rounded-full border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)]"
-                >
+                <OmniCtaButton variant="neutral" onClick={() => setOpen(false)}>
                   OK
-                </button>
+                </OmniCtaButton>
               </div>
             ) : (
               <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-3">
@@ -128,13 +120,9 @@ export default function CTAButton({
                 {errors.email && (
                   <p className="text-sm text-[var(--omni-energy)]">{errors.email.message}</p>
                 )}
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="group w-full rounded-full border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] disabled:cursor-not-allowed disabled:opacity-60"
-                >
+                <OmniCtaButton type="submit" variant="primary" disabled={isSubmitting}>
                   {isSubmitting ? "Se trimite..." : submitLabel ?? "Trimite"}
-                </button>
+                </OmniCtaButton>
               </form>
             )}
           </DialogPanel>

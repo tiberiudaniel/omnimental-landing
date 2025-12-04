@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MultiTypewriter from "./MultiTypewriter";
 import { useI18n } from "../components/I18nProvider";
 import { getString } from "@/lib/i18nGetString";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 import {
   detectCategoryFromRawInput,
   getIntentExpressions,
@@ -220,25 +222,24 @@ export default function FirstScreen({ onNext, onSubmit, errorMessage = null, onA
                   className="w-full rounded-[8px] bg-transparent px-4 py-3 text-base text-[var(--omni-ink)] placeholder:text-[var(--omni-muted)] transition focus:outline-none"
                 />
               </div>
-              <button
+              <OmniCtaButton
+                type="button"
+                variant="primary"
+                size="sm"
                 onClick={() => handleSubmit()}
                 disabled={isSubmitting || !input.trim()}
-                className="inline-flex items-center justify-center rounded-[8px] border border-[var(--omni-border-soft)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] transition hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-energy)] disabled:cursor-not-allowed disabled:border-[var(--omni-ink)]/30 disabled:text-[var(--omni-ink)]/30"
+                className="min-w-[160px]"
               >
                 {typeof continueLabel === "string" ? continueLabel : ""}
-              </button>
+              </OmniCtaButton>
             </div>
             {errorMessage ? (
               <div className="flex items-center gap-3">
                 <p className="text-xs text-[var(--omni-danger)]">{errorMessage}</p>
                 {onAuthRequest && /conect|sign in/i.test(errorMessage) ? (
-                  <button
-                    type="button"
-                    onClick={onAuthRequest}
-                    className="rounded-[8px] border border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)] hover:border-[var(--omni-energy)] hover:text-[var(--omni-energy)]"
-                  >
+                  <NeutralCtaButton type="button" size="sm" onClick={onAuthRequest}>
                     {lang === "ro" ? "Autentifică-te" : "Sign in"}
-                  </button>
+                  </NeutralCtaButton>
                 ) : null}
               </div>
             ) : null}

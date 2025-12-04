@@ -280,63 +280,6 @@ body {
   color: var(--accent-main);
 }
 
-.omni-btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 44px;
-  padding: 0 24px;
-  border-radius: 20px;
-  font-weight: 600;
-  background-color: #6C3724;
-  color: #FFFFFF;
-  border: none;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  transition: background-color 150ms ease, color 150ms ease;
-}
-.omni-btn-primary:hover {
-  background-color: #7D3F2A;
-}
-.omni-btn-primary:active {
-  background-color: #5D2F1F;
-}
-
-.omni-btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-  padding: 0 20px;
-  border-radius: 16px;
-  font-weight: 500;
-  background-color: #F4ECE5;
-  color: #6C3724;
-  border: 1px solid rgba(108, 55, 36, 0.25);
-  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
-}
-.omni-btn-secondary:hover {
-  background-color: #EFE6DE;
-}
-
-.omni-btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 48px;
-  padding: 0 28px;
-  border-radius: 36px;
-  font-weight: 500;
-  background-color: rgba(255, 255, 255, 0.35);
-  color: #3A2A22;
-  border: 1.5px solid rgba(74, 58, 40, 0.35);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(8px);
-  transition: background-color 150ms ease, color 150ms ease;
-}
-.omni-btn-ghost:hover {
-  background-color: rgba(255, 255, 255, 0.45);
-}
-
 .omni-range {
   width: 100%;
   appearance: none;

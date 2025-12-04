@@ -6,6 +6,7 @@ import TypewriterText from "./TypewriterText";
 import { useI18n } from "./I18nProvider";
 import { recordActivityEvent, recordCbtSurvey, recordOnboardingEvent, recordLessonHint } from "@/lib/progressFacts";
 import { computeLessonHint } from "@/lib/lessonHints";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 
 type CheckProps = { label: string; checked: boolean; onChange: (next: boolean) => void };
 function CbtCheck({ label, checked, onChange }: CheckProps) {
@@ -162,15 +163,16 @@ export default function WizardSondajCBT({ userId, onContinue }: { userId: string
           </div>
         </div>
         <div className="mt-4 flex justify-end">
-          <button
+          <OmniCtaButton
             type="button"
+            variant="primary"
+            size="sm"
             disabled={busy}
             onClick={submit}
-            className="omni-btn-ghost text-[11px] font-semibold uppercase tracking-[0.25em] disabled:opacity-60"
             data-testid="cbt-continue"
           >
-            {D('btn','Continuă','Continue')}
-          </button>
+            {D("btn", "Continuă", "Continue")}
+          </OmniCtaButton>
         </div>
       </GuideCard>
     </section>

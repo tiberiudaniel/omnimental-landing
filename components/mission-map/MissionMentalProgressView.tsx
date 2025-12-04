@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { PrimaryButton } from "@/components/PrimaryButton";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 import { useI18n } from "@/components/I18nProvider";
 import type { MentalMetric } from "@/lib/hooks/useMissionPerspective";
 import { formatListText } from "./utils";
@@ -140,9 +140,9 @@ export function MissionMentalProgressView({ missionTitle, mental = [], onNextSte
         </div>
 
         {onNextStep ? (
-          <PrimaryButton onClick={onNextStep} className="text-xs font-semibold uppercase tracking-[0.2em]">
+          <NeutralCtaButton onClick={onNextStep} size="sm">
             {lang === "ro" ? "Continuă cu următorul pas →" : "Continue to the next step →"}
-          </PrimaryButton>
+          </NeutralCtaButton>
         ) : null}
       </div>
     </section>

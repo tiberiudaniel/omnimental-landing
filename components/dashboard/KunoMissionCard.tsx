@@ -9,7 +9,7 @@ import type { KunoPerformanceSnapshot } from "@/lib/omniKunoAdaptive";
 import { getModuleLabel, type OmniKunoModuleId } from "@/config/omniKunoModules";
 import { HoneyHex } from "@/components/mission-map/HoneyHex";
 import { designTokens } from "@/config/designTokens";
-import { KunoButton } from "@/components/ui/CTA/KunoButton";
+import { KunoCtaButton } from "@/components/ui/cta/KunoCtaButton";
 import { adjustLightness, withAlpha } from "@/lib/colorUtils";
 
 export type KunoMissionCardData = {
@@ -255,7 +255,7 @@ export default function KunoMissionCard({
 
         <div className="mt-4 flex">
           <div className="w-[88%] max-w-sm">
-            <KunoButton
+            <KunoCtaButton
               onClick={() => router.push(ctaHref)}
               style={{
                 backgroundImage: "none",
@@ -267,7 +267,7 @@ export default function KunoMissionCard({
               className="rounded-[32px] px-8 py-3 text-[14px] font-medium tracking-wide"
             >
               {ctaLabel}
-            </KunoButton>
+            </KunoCtaButton>
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ import { useProfile } from "@/components/ProfileProvider";
 import { useProgressFacts } from "@/components/useProgressFacts";
 import { CATEGORY_LABELS } from "@/lib/categoryLabels";
 import onboardingHero from "@/public/assets/onboarding-init-hero.jpg";
+import { NeutralCtaButton } from "@/components/ui/cta/NeutralCtaButton";
 
 const ROADMAP_MARKERS = [
   { label: "Omni-Scop", left: "74%", top: "105%", scale: 1.2, fade: 0.65 },
@@ -118,13 +119,9 @@ export default function InitiationStepWelcome({ onBegin }: { onBegin: () => void
               />
             </div>
             <div className="mt-6 flex flex-col items-center gap-4 md:flex-row md:justify-start">
-              <button
-                onClick={onBegin}
-                data-testid="init-welcome-begin"
-                className="omni-btn-ghost text-[12px] font-semibold uppercase tracking-[0.25em]"
-              >
+              <NeutralCtaButton onClick={onBegin} data-testid="init-welcome-begin" size="sm" className="text-[12px]">
                 {lang === "ro" ? "Intră în inițiere" : "Enter initiation"}
-              </button>
+              </NeutralCtaButton>
               <p
                 className="text-sm md:ml-4"
                 style={{ color: "var(--text-muted)" }}
