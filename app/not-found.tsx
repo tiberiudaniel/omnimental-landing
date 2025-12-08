@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 
 export default function NotFound() {

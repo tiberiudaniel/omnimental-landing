@@ -1,7 +1,6 @@
 "use client";
 
 import JourneyIntro from "./JourneyIntro";
-import Link from "next/link";
 import FirstScreen from "./FirstScreen";
 import WizardReflection from "./WizardReflection";
 import { useProfile } from "./ProfileProvider";
