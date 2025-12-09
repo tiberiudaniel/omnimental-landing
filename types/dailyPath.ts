@@ -3,7 +3,16 @@ export type AdaptiveCluster =
   | "emotional_flex_cluster"
   | "focus_energy_cluster";
 
-export type DailyNodeKind = "LEARN" | "ACTION" | "RESET";
+export type DailyNodeKind =
+  | "INTRO"
+  | "LEARN"
+  | "RESET"
+  | "ACTION"
+  | "SUMMARY"
+  | "ANCHOR"
+  | "QUIZ_SINGLE"
+  | "SIMULATOR"
+  | "REAL_WORLD";
 
 export type DailyNodeShape = "circle" | "star" | "hollow";
 
@@ -18,6 +27,9 @@ export interface DailyPathNodeConfig {
   softPathOnly?: boolean;
   linkType?: "none" | "kuno" | "abil";
   linkTarget?: string;
+  quizOptions?: { id: string; label: string }[];
+  correctOptionIds?: string[];
+  badge?: "simulator" | "viata_reala" | null;
 }
 
 export interface DailyPathConfig {

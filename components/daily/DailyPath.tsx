@@ -31,12 +31,19 @@ export default function DailyPath({ config }: DailyPathProps) {
     return Math.min(100, Math.round((completed / visibleNodes.length) * 100));
   }, [completedNodeIds, visibleNodes]);
 
+  const handleNodeAction = (node: DailyPathNodeConfig) => {
+    if (!config) return;
+    if (node.id !== activeNodeId) return;
+    if (node.id === config.autonomyNodeId) {
+      setPendingAutonomy(node);
+      return;
+    }
+    markNodeCompleted(node, true);
+  };
+
   const markNodeCompleted = (node: DailyPathNodeConfig, awardXp = true) => {
     setCompletedNodeIds((prev) => {
-      if (prev.includes(node.id)) {
-        advanceToNext(node.id, prev);
-        return prev;
-      }
+      if (prev.includes(node.id)) return prev;
       const updated = [...prev, node.id];
       if (awardXp) {
         setXp((prevXp) => prevXp + node.xp);
@@ -67,29 +74,20 @@ export default function DailyPath({ config }: DailyPathProps) {
     setPathFinished(true);
   };
 
-  const handleNodeAction = (node: DailyPathNodeConfig) => {
-    if (!config) return;
-    if (node.id === config.autonomyNodeId) {
-      setPendingAutonomy(node);
-      return;
-    }
-    markNodeCompleted(node, true);
-  };
-
   const handleAutonomyChoice = (choice: "soft" | "challenge") => {
     if (!pendingAutonomy || !config) return;
-    const updatedCompleted = completedNodeIds.includes(pendingAutonomy.id)
-      ? completedNodeIds
-      : [...completedNodeIds, pendingAutonomy.id];
     if (choice === "soft") {
+      const updated = completedNodeIds.includes(pendingAutonomy.id)
+        ? completedNodeIds
+        : [...completedNodeIds, pendingAutonomy.id];
       setSoftPathChosen(true);
-      setCompletedNodeIds(updatedCompleted);
-      const softNode = config.nodes.find((node) => node.softPathOnly);
+      setCompletedNodeIds(updated);
       setPendingAutonomy(null);
+      const softNode = config.nodes.find((node) => node.softPathOnly);
       if (softNode) {
         setActiveNodeId(softNode.id);
       } else {
-        advanceToNext(pendingAutonomy.id, updatedCompleted);
+        advanceToNext(pendingAutonomy.id, updated);
       }
       return;
     }
@@ -99,7 +97,7 @@ export default function DailyPath({ config }: DailyPathProps) {
 
   if (!config) {
     return (
-      <div className="rounded-[20px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-6 text-sm text-[var(--omni-muted)]">
+      <div className="rounded-[20px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-6 text-center text-sm text-[var(--omni-muted)]">
         Pregătim un traseu adaptiv pentru tine.
       </div>
     );
@@ -116,20 +114,23 @@ export default function DailyPath({ config }: DailyPathProps) {
           {currentProgress}% complet
         </span>
       </div>
-      <div className="space-y-3">
-        {visibleNodes.map((node) => {
+      <div className="space-y-2">
+        {visibleNodes.map((node, index) => {
           const isCompleted = completedNodeIds.includes(node.id);
           const status: "locked" | "active" | "completed" =
             isCompleted ? "completed" : node.id === activeNodeId ? "active" : "locked";
           return (
-            <DailyPathNode
-              key={node.id}
-              node={node}
-              status={status}
-              onSelect={() => handleNodeAction(node)}
-              isAutonomy={node.id === config.autonomyNodeId}
-              showSoftLabel={node.softPathOnly === true}
-            />
+            <div key={node.id} className="space-y-2">
+              <DailyPathNode
+                key={`${node.id}-${status}`}
+                node={node}
+                status={status}
+                onSelect={() => handleNodeAction(node)}
+                isAutonomy={node.id === config.autonomyNodeId}
+                showSoftLabel={node.softPathOnly === true}
+              />
+              {index < visibleNodes.length - 1 ? <PathConnector /> : null}
+            </div>
           );
         })}
       </div>
@@ -143,10 +144,7 @@ export default function DailyPath({ config }: DailyPathProps) {
       ) : null}
       {pendingAutonomy ? (
         <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-4 text-sm text-[var(--omni-ink)] shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
-          <p className="text-base font-semibold">Cum vrei să continui?</p>
-          <p className="text-sm text-[var(--omni-ink)]/80">
-            Poți exersa încă puțin sau poți trece direct la provocare.
-          </p>
+          <p className="text-base font-semibold">Cum simți? Mai exersezi puțin sau ești pregătit de provocare?</p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <OmniCtaButton size="sm" variant="neutral" onClick={() => handleAutonomyChoice("soft")}>
               Încă mai exersez
@@ -157,6 +155,14 @@ export default function DailyPath({ config }: DailyPathProps) {
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function PathConnector() {
+  return (
+    <div className="flex justify-center">
+      <div className="h-6 w-[2px] bg-[var(--omni-border-soft)]" />
     </div>
   );
 }

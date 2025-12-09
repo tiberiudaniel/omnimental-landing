@@ -7,7 +7,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { getCatProfile } from "@/lib/firebase/cat";
 import { logAdaptivePracticeSession } from "@/lib/firebase/adaptivePractice";
 import { CAT_AXES, type CatAxisId } from "@/config/catEngine";
-import type { AdaptiveCluster, BehaviorSuggestionType } from "@/types/adaptivePractice";
+import type { AdaptiveCluster } from "@/types/dailyPath";
+import type { BehaviorSuggestionType } from "@/types/adaptivePractice";
 import { deriveAdaptiveClusterFromCat } from "@/lib/dailyCluster";
 
 const CLARITY_FRAGMENTS = ["Am prea multe", "lucruri de făcut", "în același timp."];

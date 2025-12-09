@@ -2,7 +2,8 @@
 
 import { addDoc, collection, getDocs, limit, query, serverTimestamp } from "firebase/firestore";
 import { areWritesDisabled, getDb } from "@/lib/firebase";
-import type { AdaptiveCluster, BehaviorSuggestionType } from "@/types/adaptivePractice";
+import type { AdaptiveCluster } from "@/types/dailyPath";
+import type { BehaviorSuggestionType } from "@/types/adaptivePractice";
 import type { CatAxisId } from "@/config/catEngine";
 
 type SessionPayload = {
