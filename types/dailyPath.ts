@@ -29,11 +29,11 @@ export interface DailyPathNodeConfig {
   linkTarget?: string;
   quizOptions?: { id: string; label: string }[];
   correctOptionIds?: string[];
-  badge?: "simulator" | "viata_reala" | null;
+  badge?: "simulator" | "viata_reala";
 }
 
 export interface DailyPathConfig {
   cluster: AdaptiveCluster;
   nodes: DailyPathNodeConfig[];
-  autonomyNodeId: string;
+  autonomyNodeId?: string;
 }

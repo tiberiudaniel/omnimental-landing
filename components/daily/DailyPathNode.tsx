@@ -63,6 +63,7 @@ export default function DailyPathNode({
   const buttonLabel = getButtonLabel(node.kind, isAutonomy);
   const requiresSelection = node.kind === "QUIZ_SINGLE";
   const disabled = requiresSelection ? !quizChoice : false;
+  const hideXp = node.xp <= 0;
 
   return (
     <div className="flex gap-4 rounded-[18px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-5 shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
@@ -90,9 +91,11 @@ export default function DailyPathNode({
         </div>
         <NodeBody node={node} quizChoice={quizChoice} setQuizChoice={setQuizChoice} />
         <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-full bg-[var(--omni-bg-main)] px-2 py-[2px] text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)]">
-            +{node.xp} XP
-          </span>
+          {hideXp ? null : (
+            <span className="rounded-full bg-[var(--omni-bg-main)] px-2 py-[2px] text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-ink)]">
+              +{node.xp} XP
+            </span>
+          )}
           <div className="ml-auto">
             <OmniCtaButton size="sm" disabled={disabled} onClick={onSelect}>
               {buttonLabel}
@@ -113,46 +116,68 @@ function NodeBody({
   quizChoice: string | null;
   setQuizChoice: (value: string | null) => void;
 }) {
-  if (node.kind === "QUIZ_SINGLE" && node.quizOptions?.length) {
-    const hasCorrect = node.correctOptionIds?.length;
-    const isCorrect = quizChoice ? node.correctOptionIds?.includes(quizChoice) : null;
-    return (
-      <div className="space-y-3">
-        <p className="text-sm text-[var(--omni-ink)]/80">{node.description}</p>
-        <div className="space-y-2">
-          {node.quizOptions.map((option) => {
-            const selected = quizChoice === option.id;
-            return (
-              <label
-                key={option.id}
-                className={`flex cursor-pointer items-center gap-2 rounded-[10px] border px-3 py-2 text-sm transition ${
-                  selected
-                    ? "border-[var(--omni-energy)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
-                    : "border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={node.id}
-                  value={option.id}
-                  checked={selected}
-                  onChange={() => setQuizChoice(option.id)}
-                  className="sr-only"
-                />
-                <span>{option.label}</span>
-              </label>
-            );
-          })}
+  switch (node.kind) {
+    case "INTRO":
+      return <p className="text-sm text-[var(--omni-ink)]/80">{node.description}</p>;
+    case "SUMMARY":
+      return (
+        <div className="space-y-2 text-sm text-[var(--omni-ink)]/80">
+          {node.description.split("\n").map((line) => (
+            <p key={line} className="text-left">
+              • {line.trim()}
+            </p>
+          ))}
         </div>
-        {hasCorrect && quizChoice ? (
-          <p className={`text-xs ${isCorrect ? "text-[var(--omni-energy)]" : "text-[var(--omni-muted)]"}`}>
-            {isCorrect ? "Corect." : "Mai bună ar fi cealaltă opțiune – îți păstrează focusul."}
-          </p>
-        ) : null}
-      </div>
-    );
+      );
+    case "ANCHOR":
+      return (
+        <div className="rounded-[14px] bg-[var(--omni-bg-main)] px-4 py-4 text-center text-base font-semibold text-[var(--omni-ink)]">
+          {node.description}
+        </div>
+      );
+    case "QUIZ_SINGLE": {
+      const options = node.quizOptions ?? [];
+      const hasCorrect = node.correctOptionIds?.length;
+      const isCorrect = quizChoice ? node.correctOptionIds?.includes(quizChoice) : null;
+      return (
+        <div className="space-y-3">
+          <p className="text-sm text-[var(--omni-ink)]/80">{node.description}</p>
+          <div className="space-y-2">
+            {options.map((option) => {
+              const selected = quizChoice === option.id;
+              return (
+                <label
+                  key={option.id}
+                  className={`flex cursor-pointer items-center gap-2 rounded-[10px] border px-3 py-2 text-sm transition ${
+                    selected
+                      ? "border-[var(--omni-energy)] bg-[var(--omni-energy-soft)] text-[var(--omni-bg-paper)]"
+                      : "border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:border-[var(--omni-energy)]"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name={node.id}
+                    value={option.id}
+                    checked={selected}
+                    onChange={() => setQuizChoice(option.id)}
+                    className="sr-only"
+                  />
+                  <span>{option.label}</span>
+                </label>
+              );
+            })}
+          </div>
+          {hasCorrect && quizChoice ? (
+            <p className={`text-xs ${isCorrect ? "text-[var(--omni-energy)]" : "text-[var(--omni-muted)]"}`}>
+              {isCorrect ? "Corect." : "Mai bună ar fi cealaltă opțiune – păstrează energia și focusul."}
+            </p>
+          ) : null}
+        </div>
+      );
+    }
+    default:
+      return <p className="text-sm text-[var(--omni-ink)]/80">{node.description}</p>;
   }
-  return <p className="text-sm text-[var(--omni-ink)]/80">{node.description}</p>;
 }
 
 function getButtonLabel(kind: DailyPathNodeConfig["kind"], isAutonomy?: boolean) {
