@@ -1,7 +1,6 @@
 import type { FieldValue, Timestamp } from "firebase/firestore";
 import type { CatAxisId } from "@/config/catEngine";
-
-export type AdaptiveCluster = "clarity_cluster" | "emotional_flex_cluster" | "focus_energy_cluster";
+import type { AdaptiveCluster } from "@/types/dailyPath";
 
 export type BehaviorSuggestionType = "clarity_7_words" | "breath_before_react" | "two_min_no_phone";
 

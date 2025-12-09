@@ -8,6 +8,7 @@ import { getCatProfile } from "@/lib/firebase/cat";
 import { logAdaptivePracticeSession } from "@/lib/firebase/adaptivePractice";
 import { CAT_AXES, type CatAxisId } from "@/config/catEngine";
 import type { AdaptiveCluster, BehaviorSuggestionType } from "@/types/adaptivePractice";
+import { deriveAdaptiveClusterFromCat } from "@/lib/dailyCluster";
 
 const CLARITY_FRAGMENTS = ["Am prea multe", "lucruri de făcut", "în același timp."];
 const HOLD_DURATION_MS = 2500;
@@ -114,13 +115,7 @@ export default function AdaptivePracticeLitePage() {
     return map;
   }, []);
 
-  const { primaryAxis, cluster } = useMemo(() => {
-    if (!profile?.axisScores) return { primaryAxis: null, cluster: null };
-    const entries = Object.entries(profile.axisScores) as [CatAxisId, number][];
-    if (!entries.length) return { primaryAxis: null, cluster: null };
-    const weakest = entries.reduce((min, current) => (current[1] < min[1] ? current : min));
-    return { primaryAxis: weakest[0], cluster: mapAxisToCluster(weakest[0]) };
-  }, [profile]);
+  const { primaryAxis, cluster } = useMemo(() => deriveAdaptiveClusterFromCat(profile), [profile]);
 
   const axisLabel = primaryAxis ? axisMeta.get(primaryAxis)?.label : null;
   const axisShort = primaryAxis ? axisMeta.get(primaryAxis)?.shortLabel : null;
@@ -129,14 +124,6 @@ export default function AdaptivePracticeLitePage() {
   const microDescription = cluster ? MICRO_DESCRIPTIONS[cluster] : null;
 
   const showLoader = loading || loadingProfile || !authReady;
-
-  function mapAxisToCluster(axisId: CatAxisId): AdaptiveCluster {
-    if (axisId === "clarity") return "clarity_cluster";
-    if (axisId === "flex" || axisId === "emo_stab" || axisId === "recalib") {
-      return "emotional_flex_cluster";
-    }
-    return "focus_energy_cluster";
-  }
 
   const resetMicroStates = () => {
     setMicroExerciseCompleted(false);

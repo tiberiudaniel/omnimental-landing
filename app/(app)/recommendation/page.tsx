@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
@@ -35,6 +36,7 @@ import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { TodayGuidanceCard } from "@/components/dashboard/CenterColumnCards";
 import { PulseOfDayCard } from "@/components/today/PulseOfDayCard";
 import { computePillarProgress } from "@/lib/pillarProgress";
+import { CAT_AXES, type CatAxisId } from "@/config/catEngine";
 import { normalizeKunoFacts } from "@/lib/kunoFacts";
 import { buildOmniDailySnapshot } from "@/lib/omniState";
 import { getLastAxesEntries, type DailyAxesEntry } from "@/lib/dailyReset";
@@ -53,7 +55,14 @@ import KunoMissionCard, {
   type KunoMissionCardData,
   type KunoNextModuleSuggestion,
 } from "@/components/dashboard/KunoMissionCard";
-// useState already imported above
+import { getCatProfile } from "@/lib/firebase/cat";
+import type { CatProfileDoc } from "@/types/cat";
+import type { DailyPathConfig } from "@/types/dailyPath";
+import { deriveAdaptiveClusterFromCat } from "@/lib/dailyCluster";
+import DailyPath from "@/components/daily/DailyPath";
+import { getDailyPathForCluster } from "@/config/dailyPath";
+import type { AdaptiveCluster } from "@/types/dailyPath";
+import { getOnboardingStatus } from "@/lib/onboardingStatus";
 
 const STAGE_LABELS: Record<string, string> = {
   t0: "Start (0 săpt.)",
@@ -62,6 +71,171 @@ const STAGE_LABELS: Record<string, string> = {
   t3: "9 săpt.",
   t4: "12 săpt.",
 };
+
+const ADAPTIVE_NUDGES: Record<AdaptiveCluster, string> = {
+  clarity_cluster: "Alege azi un lucru important și exprimă-l în minte în 7 cuvinte.",
+  emotional_flex_cluster: "Dacă apare tensiune, respiră 1 dată profund înainte de răspuns.",
+  focus_energy_cluster: "Ia 2 minute fără telefon azi. Atât.",
+};
+
+const ABIL_NUDGES: Record<AdaptiveCluster, string> = {
+  clarity_cluster: "Scrie un task în 7 cuvinte max.",
+  emotional_flex_cluster: "Fă pauza de 2 secunde înainte de a răspunde azi.",
+  focus_energy_cluster: "Setează blocul tău de 2 minute fără telefon.",
+};
+
+const MICRO_LESSON_PLACEHOLDER = {
+  ro: "O idee scurtă pentru tine azi. Ți-am pregătit o lecție micro în Kuno.",
+  en: "A short thought for you today. Kuno has a micro-lesson ready.",
+};
+
+type DailyLoopDeckProps = {
+  cluster: AdaptiveCluster | null;
+  axisLabel: string | null;
+  adaptiveNudge: string | null;
+  abilNudge: string | null;
+  microLessonText: string;
+  onOpenKuno: () => void;
+  onOpenAbil: () => void;
+  onOpenJournal: () => void;
+  dailyPathConfig: DailyPathConfig | null;
+};
+
+function DailyLoopDeck({
+  cluster,
+  axisLabel,
+  adaptiveNudge,
+  abilNudge,
+  microLessonText,
+  onOpenKuno,
+  onOpenAbil,
+  onOpenJournal,
+  dailyPathConfig,
+}: DailyLoopDeckProps) {
+  return (
+    <section className="mx-auto mb-8 w-full max-w-5xl space-y-4">
+      <AdaptiveMissionCard cluster={cluster} axisLabel={axisLabel} nudge={adaptiveNudge} />
+      <DailyPath key={dailyPathConfig?.cluster ?? "none"} config={dailyPathConfig} />
+      <div className="grid gap-4 md:grid-cols-2">
+        <MicroLessonCard text={microLessonText} onClick={onOpenKuno} />
+        <AbilActionCard cluster={cluster} text={abilNudge} onClick={onOpenAbil} />
+        <JournalCard onClick={onOpenJournal} />
+        <ExploreCard onOpenKuno={onOpenKuno} onOpenAbil={onOpenAbil} onOpenJournal={onOpenJournal} />
+      </div>
+    </section>
+  );
+}
+
+function CardShell({ title, subtitle, children }: { title: string; subtitle?: string | null; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3 rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-5 shadow-[0_14px_32px_rgba(0,0,0,0.08)]">
+      <div>
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{title}</p>
+        {subtitle ? <p className="text-sm font-semibold text-[var(--omni-ink)]">{subtitle}</p> : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function AdaptiveMissionCard({
+  cluster,
+  axisLabel,
+  nudge,
+}: {
+  cluster: AdaptiveCluster | null;
+  axisLabel: string | null;
+  nudge: string | null;
+}) {
+  const disabled = !cluster;
+  return (
+    <CardShell title="Misiunea ta adaptivă de azi" subtitle={axisLabel ?? "Completează profilul pentru personalizare"}>
+      <p className="text-sm text-[var(--omni-ink)]/80">
+        {nudge ?? "Finalizează evaluarea CAT și adaptive practice pentru a primi o misiune precisă."}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <OmniCtaButton size="sm" disabled={disabled}>
+          Am făcut
+        </OmniCtaButton>
+        <OmniCtaButton size="sm" variant="neutral">
+          Revin mai târziu
+        </OmniCtaButton>
+      </div>
+    </CardShell>
+  );
+}
+
+function MicroLessonCard({ text, onClick }: { text: string; onClick: () => void }) {
+  return (
+    <CardShell title="Mică lecție pentru azi">
+      <p className="text-sm text-[var(--omni-ink)]/80">{text}</p>
+      <OmniCtaButton size="sm" onClick={onClick}>
+        Deschide Kuno
+      </OmniCtaButton>
+    </CardShell>
+  );
+}
+
+function AbilActionCard({
+  cluster,
+  text,
+  onClick,
+}: {
+  cluster: AdaptiveCluster | null;
+  text: string | null;
+  onClick: () => void;
+}) {
+  return (
+    <CardShell title="Acțiune mică pentru azi" subtitle={cluster ? "Piloni Abil" : null}>
+      <p className="text-sm text-[var(--omni-ink)]/80">
+        {text ?? "Completează Adaptive Practice pentru a primi acțiuni precise."}
+      </p>
+      <OmniCtaButton size="sm" onClick={onClick}>
+        Intră în Abil
+      </OmniCtaButton>
+    </CardShell>
+  );
+}
+
+function JournalCard({ onClick }: { onClick: () => void }) {
+  return (
+    <CardShell title="Notează un gând de azi (opțional)">
+      <p className="text-sm text-[var(--omni-ink)]/80">
+        Scrie 1-2 fraze pentru a fixa ce ai observat azi. Nu trebuie să fie perfect.
+      </p>
+      <OmniCtaButton size="sm" variant="neutral" onClick={onClick}>
+        Deschide jurnalul
+      </OmniCtaButton>
+    </CardShell>
+  );
+}
+
+function ExploreCard({
+  onOpenKuno,
+  onOpenAbil,
+  onOpenJournal,
+}: {
+  onOpenKuno: () => void;
+  onOpenAbil: () => void;
+  onOpenJournal: () => void;
+}) {
+  return (
+    <CardShell title="Explorează liber">
+      <p className="text-sm text-[var(--omni-ink)]/80">Ai chef de autonomie? Alege una dintre biblioteci.</p>
+      <div className="flex flex-wrap gap-2">
+        <OmniCtaButton size="sm" onClick={onOpenKuno}>
+          Lecții OmniKuno
+        </OmniCtaButton>
+        <OmniCtaButton size="sm" onClick={onOpenAbil}>
+          Acțiuni OmniAbil
+        </OmniCtaButton>
+        <OmniCtaButton size="sm" variant="neutral" onClick={onOpenJournal}>
+          Jurnal
+        </OmniCtaButton>
+      </div>
+    </CardShell>
+  );
+}
 
 // ------------------------------------------------------
 // Page shell + stacked recommendations
@@ -77,6 +251,8 @@ function RecommendationContent() {
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
   const [, setArrowY] = useState<number | null>(null);
+  const [catProfile, setCatProfile] = useState<CatProfileDoc | null>(null);
+  const [onboardingReady, setOnboardingReady] = useState(!user?.uid);
   const allowGuest = Boolean(search?.get("demo") || search?.get("e2e") === "1");
   const hasFullAccount = Boolean(user && !user.isAnonymous);
   const needsAccount = !hasFullAccount && !allowGuest;
@@ -92,6 +268,66 @@ function RecommendationContent() {
     () => Boolean(profile?.id && (profile.selection ?? "none") === "none"),
     [profile?.id, profile?.selection],
   );
+
+  useEffect(() => {
+    if (allowGuest) {
+      setOnboardingReady(true);
+      return;
+    }
+    if (!user?.uid) {
+      setCatProfile(null);
+      setOnboardingReady(true);
+      return;
+    }
+    let cancelled = false;
+    setOnboardingReady(false);
+    (async () => {
+      try {
+        const [status, profileDoc] = await Promise.all([
+          getOnboardingStatus(user.uid),
+          getCatProfile(user.uid),
+        ]);
+        if (cancelled) return;
+        setCatProfile(profileDoc);
+        if (!status.hasCatProfile) {
+          router.replace("/onboarding/cat-baseline");
+          return;
+        }
+        if (!status.pillarsIntroCompleted) {
+          router.replace("/onboarding/pillars");
+          return;
+        }
+        if (!status.hasAdaptivePracticeSession) {
+          router.replace("/onboarding/adaptive-practice");
+          return;
+        }
+      } catch (err) {
+        console.warn("getOnboardingStatus failed", err);
+      } finally {
+        if (!cancelled) {
+          setOnboardingReady(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [allowGuest, router, user?.uid]);
+
+  const axisMeta = useMemo(() => {
+    const map = new Map<CatAxisId, { label: string; shortLabel: string }>();
+    for (const axis of CAT_AXES) {
+      map.set(axis.id, { label: axis.label, shortLabel: axis.shortLabel });
+    }
+    return map;
+  }, []);
+
+  const { primaryAxis, cluster } = useMemo(() => deriveAdaptiveClusterFromCat(catProfile), [catProfile]);
+  const axisLabel = primaryAxis ? axisMeta.get(primaryAxis)?.label ?? null : null;
+  const adaptiveNudge = cluster ? ADAPTIVE_NUDGES[cluster] : null;
+  const abilNudge = cluster ? ABIL_NUDGES[cluster] : null;
+  const microLessonText = lang === "ro" ? MICRO_LESSON_PLACEHOLDER.ro : MICRO_LESSON_PLACEHOLDER.en;
+  const dailyPathConfig = useMemo(() => (cluster ? getDailyPathForCluster(cluster) : null), [cluster]);
 
 const tier = profile?.accessTier ?? "public";
 const { data: progress, loading, error } = useProgressFacts(profile?.id);
@@ -557,6 +793,19 @@ const [pulseEntries, setPulseEntries] = useState<DailyAxesEntry[]>([]);
     />
   );
 
+  if (!onboardingReady) {
+    return (
+      <>
+        <AppShell header={header}>
+          <div className="px-4 py-16 text-center text-sm text-[var(--omni-muted)]">
+            Calibrăm traseul tău adaptiv…
+          </div>
+        </AppShell>
+        <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+      </>
+    );
+  }
+
   return (
     <>
       <AppShell header={header}>
@@ -623,6 +872,19 @@ const [pulseEntries, setPulseEntries] = useState<DailyAxesEntry[]>([]);
               </OmniCtaButton>
             </div>
           </div>
+        ) : null}
+        {!needsAccount ? (
+          <DailyLoopDeck
+            cluster={cluster}
+            axisLabel={axisLabel}
+            adaptiveNudge={adaptiveNudge}
+            abilNudge={abilNudge}
+            microLessonText={microLessonText}
+            onOpenKuno={() => router.push("/kuno")}
+            onOpenAbil={() => router.push("/abil")}
+            onOpenJournal={() => router.push("/journal")}
+            dailyPathConfig={dailyPathConfig}
+          />
         ) : null}
         <div className="w-full max-w-5xl mx-auto px-4 mb-8">
           <div className="panel-canvas panel-canvas--hero panel-canvas--brain-right rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)]/95 px-4 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.08)] backdrop-blur-[2px] md:px-6 md:py-6">
@@ -1110,10 +1372,6 @@ function MemberRecommendationView({
       </section>
     </div>
   );
-
-  // ------------------------------------------------------
-  // Default export
-  // ------------------------------------------------------
 }
 
 // ------------------------------------------------------
