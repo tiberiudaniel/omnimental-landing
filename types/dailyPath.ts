@@ -29,12 +29,25 @@ export interface DailyPathNodeConfig {
   linkTarget?: string;
   quizOptions?: { id: string; label: string }[];
   correctOptionIds?: string[];
+  quizFeedback?: {
+    correct: string;
+    incorrect: string;
+  };
   badge?: "simulator" | "viata_reala";
   anchorDescription?: string;
   simulatorConfig?: {
     inhaleSeconds?: number;
     exhaleSeconds?: number;
   };
+  fields?: Array<{
+    id: string;
+    label: string;
+    placeholder?: string;
+    prefix?: string;
+    suffix?: string;
+  }>;
+  bullets?: string[];
+  ctaLabel?: string;
 }
 
 export interface DailyPathConfig {

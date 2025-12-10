@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const RADIUS = 42;
+const RADIUS = 60;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 type SimulatorTimerProps = {
@@ -56,8 +56,14 @@ export default function SimulatorTimer({
 
   useEffect(() => {
     if (!autoStart) return;
-    const frame = requestAnimationFrame(() => startCycle());
-    return () => cancelAnimationFrame(frame);
+    const timeout = setTimeout(() => {
+      const frame = requestAnimationFrame(() => startCycle());
+      animationRef.current = frame;
+    }, 650);
+    return () => {
+      clearTimeout(timeout);
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
   }, [autoStart, startCycle]);
 
   const dashOffset = CIRCUMFERENCE * (1 - progress);
@@ -75,10 +81,10 @@ export default function SimulatorTimer({
         onClick={startCycle}
         className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--omni-energy)]"
       >
-        <svg width="110" height="110" viewBox="0 0 110 110" aria-hidden="true" role="presentation">
+        <svg width="136" height="136" viewBox="0 0 136 136" aria-hidden="true" role="presentation">
           <circle
-            cx="55"
-            cy="55"
+            cx="68"
+            cy="68"
             r={RADIUS}
             fill="none"
             stroke="#ece7e1"
@@ -86,8 +92,8 @@ export default function SimulatorTimer({
             strokeLinecap="round"
           />
           <circle
-            cx="55"
-            cy="55"
+            cx="68"
+            cy="68"
             r={RADIUS}
             fill="none"
             stroke={inspirationStroke}

@@ -361,7 +361,10 @@ function RecommendationContent() {
   const adaptiveNudge = cluster ? ADAPTIVE_NUDGES[cluster] : null;
   const abilNudge = cluster ? ABIL_NUDGES[cluster] : null;
   const microLessonText = lang === "ro" ? MICRO_LESSON_PLACEHOLDER.ro : MICRO_LESSON_PLACEHOLDER.en;
-  const dailyPathConfig = useMemo(() => (cluster ? getDailyPathForCluster(cluster) : null), [cluster]);
+  const dailyPathConfig = useMemo(
+    () => (cluster ? getDailyPathForCluster(cluster, lang === "en" ? "en" : "ro") : null),
+    [cluster, lang],
+  );
   const canShowDailyLoop = hasCompletedOnboarding || allowGuest;
   const showGuestBanner = needsAccount && canShowDailyLoop;
 

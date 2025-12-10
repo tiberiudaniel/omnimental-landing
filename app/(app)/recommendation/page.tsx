@@ -89,8 +89,12 @@ function RecommendationContent() {
   }, []);
 
   const { cluster, primaryAxis } = useMemo(() => deriveAdaptiveClusterFromCat(catProfile), [catProfile]);
+  const lang: "ro" | "en" = "ro";
   const axisLabel = primaryAxis ? axisMeta.get(primaryAxis)?.label ?? null : null;
-  const dailyPathConfig = useMemo(() => (cluster ? getDailyPathForCluster(cluster) : null), [cluster]);
+  const dailyPathConfig = useMemo(
+    () => (cluster ? getDailyPathForCluster(cluster, lang) : null),
+    [cluster, lang],
+  );
 
   const showLoader = !onboardingReady;
   const showGuestBanner = Boolean(user?.isAnonymous);
@@ -114,8 +118,12 @@ function RecommendationContent() {
             </div>
           ) : hasCompletedOnboarding ? (
             <div className="space-y-6">
-              <AdaptiveMissionCard axisLabel={axisLabel} nudge={missionText} />
-              <DailyPath key={dailyPathConfig?.cluster ?? "none"} config={dailyPathConfig} />
+              <div className="mx-auto w-full max-w-[440px] px-4 pt-4 md:max-w-none md:px-0 md:pt-0">
+                <div className="space-y-6">
+                  <AdaptiveMissionCard axisLabel={axisLabel} nudge={missionText} />
+                  <DailyPath key={dailyPathConfig?.cluster ?? "none"} config={dailyPathConfig} />
+                </div>
+              </div>
               {showGuestBanner ? (
                 <GuestBanner onCreateAccount={() => router.push("/auth?returnTo=%2Frecommendation")} />
               ) : null}
