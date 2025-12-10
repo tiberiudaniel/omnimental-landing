@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useEffect, forwardRef } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import type { DailyPathConfig, DailyPathNodeConfig } from "@/types/dailyPath";
 import DailyPathNode from "./DailyPathNode";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
@@ -16,23 +16,47 @@ export default function DailyPath({ config }: DailyPathProps) {
   const [completedNodeIds, setCompletedNodeIds] = useState<string[]>([]);
   const [softPathChosen, setSoftPathChosen] = useState(false);
   const [xp, setXp] = useState(0);
-  const [pendingAutonomy, setPendingAutonomy] = useState<DailyPathNodeConfig | null>(null);
   const [pathFinished, setPathFinished] = useState(false);
   const [bonusGranted, setBonusGranted] = useState(false);
-  const autonomyDialogRef = useRef<HTMLDivElement | null>(null);
+  const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const processedNodes = useMemo(() => {
+    if (!config) return [];
+    const merged: DailyPathNodeConfig[] = [];
+    for (let i = 0; i < config.nodes.length; i += 1) {
+      const node = config.nodes[i];
+      if (node.kind === "SUMMARY") {
+        const maybeAnchor = config.nodes[i + 1];
+        if (maybeAnchor?.kind === "ANCHOR") {
+          merged.push({ ...node, anchorDescription: maybeAnchor.description });
+          i += 1;
+          continue;
+        }
+      }
+      merged.push(node);
+    }
+    return merged;
+  }, [config]);
+
+  const currentActiveId = useMemo(() => {
+    if (!processedNodes.length) return null;
+    if (activeNodeId && processedNodes.some((node) => node.id === activeNodeId)) {
+      return activeNodeId;
+    }
+    return processedNodes[0]?.id ?? null;
+  }, [processedNodes, activeNodeId]);
 
   useEffect(() => {
-    if (pendingAutonomy) {
+    if (currentActiveId) {
       queueMicrotask(() => {
-        autonomyDialogRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        nodeRefs.current[currentActiveId]?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     }
-  }, [pendingAutonomy]);
+  }, [currentActiveId]);
 
   const visibleNodes = useMemo(() => {
-    if (!config) return [];
-    return config.nodes.filter((node) => !node.softPathOnly || softPathChosen);
-  }, [config, softPathChosen]);
+    return processedNodes.filter((node) => !node.softPathOnly || softPathChosen);
+  }, [processedNodes, softPathChosen]);
 
   const currentProgress = useMemo(() => {
     if (!visibleNodes.length) return 0;
@@ -42,11 +66,7 @@ export default function DailyPath({ config }: DailyPathProps) {
 
   const handleNodeAction = (node: DailyPathNodeConfig) => {
     if (!config) return;
-    if (node.id !== activeNodeId) return;
-    if (node.id === config.autonomyNodeId) {
-      setPendingAutonomy(node);
-      return;
-    }
+    if (node.id !== currentActiveId) return;
     markNodeCompleted(node, true);
   };
 
@@ -84,24 +104,24 @@ export default function DailyPath({ config }: DailyPathProps) {
   };
 
   const handleAutonomyChoice = (choice: "soft" | "challenge") => {
-    if (!pendingAutonomy || !config) return;
+    if (!config || !processedNodes.length) return;
+    const autonomyNode = processedNodes.find((node) => node.id === config.autonomyNodeId);
+    if (!autonomyNode) return;
     if (choice === "soft") {
-      const updated = completedNodeIds.includes(pendingAutonomy.id)
+      const updated = completedNodeIds.includes(autonomyNode.id)
         ? completedNodeIds
-        : [...completedNodeIds, pendingAutonomy.id];
+        : [...completedNodeIds, autonomyNode.id];
       setSoftPathChosen(true);
       setCompletedNodeIds(updated);
-      setPendingAutonomy(null);
-      const softNode = config.nodes.find((node) => node.softPathOnly);
+      const softNode = processedNodes.find((node) => node.softPathOnly);
       if (softNode) {
         setActiveNodeId(softNode.id);
-      } else {
-        advanceToNext(pendingAutonomy.id, updated);
+        return;
       }
+      advanceToNext(autonomyNode.id, updated);
       return;
     }
-    markNodeCompleted(pendingAutonomy, true);
-    setPendingAutonomy(null);
+    markNodeCompleted(autonomyNode, true);
   };
 
   if (!config) {
@@ -113,7 +133,7 @@ export default function DailyPath({ config }: DailyPathProps) {
   }
 
   return (
-    <div className="space-y-4 rounded-[24px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.08)]">
+    <div className="mt-8 w-full space-y-4 rounded-[24px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-2 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.08)] sm:mt-10 sm:px-4">
       <div className="flex flex-wrap items-center gap-3">
         <h3 className="text-lg font-semibold text-[var(--omni-ink)]">Path-ul tău de azi</h3>
         <span className="rounded-full bg-[var(--omni-bg-main)] px-3 py-[4px] text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-ink)]">
@@ -123,25 +143,27 @@ export default function DailyPath({ config }: DailyPathProps) {
           {currentProgress}% complet
         </span>
       </div>
-      <div className="space-y-2 lg:max-h-[calc(100vh-230px)] lg:overflow-y-auto lg:pr-2">
+      <div className="space-y-3 lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto lg:px-4">
         {visibleNodes.map((node, index) => {
           const isCompleted = completedNodeIds.includes(node.id);
           const status: "locked" | "active" | "completed" =
-            isCompleted ? "completed" : node.id === activeNodeId ? "active" : "locked";
+            isCompleted ? "completed" : node.id === currentActiveId ? "active" : "locked";
           return (
-            <div key={`${node.id}-${status}`} className="flex flex-col items-center gap-2">
-              <div className="w-full max-w-xl">
-                <DailyPathNode
-                  node={node}
-                  status={status}
-                  onSelect={() => handleNodeAction(node)}
-                  isAutonomy={node.id === config.autonomyNodeId}
-                  showSoftLabel={node.softPathOnly === true}
-                />
-              </div>
-              {node.id === config.autonomyNodeId && pendingAutonomy ? (
-                <AutonomyDialog ref={autonomyDialogRef} onChoice={handleAutonomyChoice} />
-              ) : null}
+            <div
+              key={`${node.id}-${status}`}
+              ref={(el) => {
+                nodeRefs.current[node.id] = el;
+              }}
+              className="flex w-full flex-col items-center gap-2 scroll-mt-32 lg:scroll-mt-48"
+            >
+              <DailyPathNode
+                node={node}
+                status={status}
+                onSelect={() => handleNodeAction(node)}
+                isAutonomy={node.id === config.autonomyNodeId}
+                showSoftLabel={node.softPathOnly === true}
+                onAutonomyChoice={handleAutonomyChoice}
+              />
               {index < visibleNodes.length - 1 ? <PathConnector /> : null}
             </div>
           );
@@ -159,31 +181,10 @@ export default function DailyPath({ config }: DailyPathProps) {
   );
 }
 
-const AutonomyDialog = forwardRef<HTMLDivElement, { onChoice: (choice: "soft" | "challenge") => void }>(
-  ({ onChoice }, ref) => (
-    <div
-      ref={ref}
-      className="w-full max-w-xl rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-4 py-4 text-sm text-[var(--omni-ink)] shadow-[0_12px_30px_rgba(0,0,0,0.08)]"
-    >
-      <p className="text-base font-semibold">Cum simți? Mai exersezi puțin sau ești pregătit de provocare?</p>
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-        <OmniCtaButton size="sm" variant="neutral" onClick={() => onChoice("soft")}>
-          Încă mai exersez
-        </OmniCtaButton>
-        <OmniCtaButton size="sm" onClick={() => onChoice("challenge")}>
-          Sunt pregătit
-        </OmniCtaButton>
-      </div>
-    </div>
-  ),
-);
-
-AutonomyDialog.displayName = "AutonomyDialog";
-
 function PathConnector() {
   return (
     <div className="flex justify-center py-1">
-      <div className="h-5 w-[2px] bg-[var(--omni-border-soft)]" />
+      <div className="h-4 w-px bg-[var(--omni-border-soft)]/70" />
     </div>
   );
 }

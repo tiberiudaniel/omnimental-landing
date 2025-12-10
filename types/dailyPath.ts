@@ -30,6 +30,11 @@ export interface DailyPathNodeConfig {
   quizOptions?: { id: string; label: string }[];
   correctOptionIds?: string[];
   badge?: "simulator" | "viata_reala";
+  anchorDescription?: string;
+  simulatorConfig?: {
+    inhaleSeconds?: number;
+    exhaleSeconds?: number;
+  };
 }
 
 export interface DailyPathConfig {

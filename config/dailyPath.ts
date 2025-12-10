@@ -76,6 +76,7 @@ export const DAILY_PATHS: DailyPathConfig[] = [
         title: "Simulator: Reset 4–4",
         description: "Inspiră 4 secunde… expiră 4 secunde. Mintea învață un nou reflex energetic.",
         xp: 15,
+        simulatorConfig: { inhaleSeconds: 4, exhaleSeconds: 4 },
       },
       {
         id: "focus_a1",
@@ -94,6 +95,16 @@ export const DAILY_PATHS: DailyPathConfig[] = [
         title: "Extra training",
         description: "Încă 30 sec de reset. Construiești stabilitate energetică.",
         xp: 5,
+        simulatorConfig: { inhaleSeconds: 4, exhaleSeconds: 4 },
+      },
+      {
+        id: "energy_context_learn",
+        kind: "LEARN",
+        shape: "circle",
+        title: "Ce înseamnă schimbul de context",
+        description:
+          "Treci de la telefon → lucru, de la lucru → pauză, de la pauză → email, de la un task → alt task. Ori de câte ori schimbi universul mental, poți pierde energie dacă intri impulsiv.",
+        xp: 0,
       },
       {
         id: "focus_real1",
@@ -288,7 +299,7 @@ export const DAILY_PATHS: DailyPathConfig[] = [
         kind: "LEARN",
         shape: "circle",
         title: "Cum recâștigi controlul",
-        description: "Flexibilitatea emoțională nu înseamnă să nu simți — ci să ai timp să alegi ce faci cu ce simți.",
+        description: "Flexibilitatea emoțională nu înseamnă să nu simți — ci să ai timp să alegi ce faci cu ceea ce simți.",
         xp: 5,
       },
       {
@@ -296,7 +307,7 @@ export const DAILY_PATHS: DailyPathConfig[] = [
         kind: "QUIZ_SINGLE",
         shape: "circle",
         title: "Tu ce alegi?",
-        description: "Primești o critică nedreaptă. Care e răspunsul cu flexibilitate emoțională?",
+        description: "Primești o critică nedreaptă. Care e răspunsul folosind flexibilitatea emoțională?",
         quizOptions: [
           { id: "A", label: "Explodez imediat" },
           { id: "B", label: "Inspir 2 secunde și răspund calm" },
@@ -311,8 +322,9 @@ export const DAILY_PATHS: DailyPathConfig[] = [
         shape: "circle",
         badge: "simulator",
         title: "Simulator: Pauza de 2 secunde",
-        description: "Imaginează-ți un stimul recent. Inspiră 2 secunde — îngheață scena — apoi expiră. Asta este libertatea ta.",
+        description: "Pauza de 2 secunde. Încetinești ritmul mental și reduci agitația din tranzițiile dintre activități. Inspiră 2 secunde… expiră 2 secunde.",
         xp: 15,
+        simulatorConfig: { inhaleSeconds: 2, exhaleSeconds: 2 },
       },
       {
         id: "emoflex_a1",
@@ -329,8 +341,9 @@ export const DAILY_PATHS: DailyPathConfig[] = [
         badge: "simulator",
         softPathOnly: true,
         title: "Simulator extra",
-        description: "Un alt stimul, aceeași pauză de 2 secunde. Repetiția construiește reflexul emoțional.",
+        description: "Pauza de 2 secunde. Încetinești ritmul mental și reduci agitația din tranzițiile dintre activități. Inspiră 2 secunde… expiră 2 secunde.",
         xp: 5,
+        simulatorConfig: { inhaleSeconds: 2, exhaleSeconds: 2 },
       },
       {
         id: "emoflex_real1",
@@ -391,6 +404,7 @@ export const DAILY_PATHS_SHORT: Record<AdaptiveCluster, DailyPathConfig> = {
         title: "Simulator",
         description: "Inspir 4 secunde, expir 4 secunde. Repet de 2 ori.",
         xp: 10,
+        simulatorConfig: { inhaleSeconds: 4, exhaleSeconds: 4 },
       },
       {
         id: "focus_short_quiz",
@@ -516,8 +530,9 @@ export const DAILY_PATHS_SHORT: Record<AdaptiveCluster, DailyPathConfig> = {
         shape: "circle",
         badge: "simulator",
         title: "Simulator",
-        description: "Repetă mental: stimul → inspir 2 secunde → răspund calm.",
+        description: "Pauza de 2 secunde. Încetinești ritmul mental și reduci agitația din tranzițiile dintre activități. Inspiră 2 secunde… expiră 2 secunde.",
         xp: 10,
+        simulatorConfig: { inhaleSeconds: 2, exhaleSeconds: 2 },
       },
       {
         id: "emoflex_short_real",

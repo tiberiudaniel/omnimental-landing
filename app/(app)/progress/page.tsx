@@ -522,6 +522,7 @@ function ProgressContent() {
             hideOmniIntel
           />
         </section>
+        <ExploreAutonomyStrip lang={lang} />
       </div>
       </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
@@ -636,6 +637,30 @@ function ProgressHeroBand({ lang, facts }: { lang: string; facts: HeroFacts }) {
         <p className="text-sm italic text-[var(--omni-ink-soft)]">{quote}</p>
       </div>
     </div>
+  );
+}
+
+function ExploreAutonomyStrip({ lang }: { lang: string }) {
+  return (
+    <section className="mx-auto mt-10 flex max-w-[680px] flex-col items-center gap-4 px-4 py-8 text-center sm:items-start">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.4em] text-[var(--omni-muted)]">
+        {lang === "ro" ? "Explorează în ritmul tău" : "Explore at your pace"}
+      </p>
+      <div className="flex flex-wrap justify-center gap-3 sm:justify-start">
+        <Link
+          href="/library/kuno"
+          className="inline-flex items-center rounded-full border border-[var(--omni-border-soft)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-ink)] hover:border-[var(--omni-ink)]/40"
+        >
+          {lang === "ro" ? "Lecții OmniKuno" : "OmniKuno Lessons"}
+        </Link>
+        <Link
+          href="/abil"
+          className="inline-flex items-center rounded-full border border-[var(--omni-border-soft)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-ink)] hover:border-[var(--omni-ink)]/40"
+        >
+          {lang === "ro" ? "Acțiuni OmniAbil" : "OmniAbil Actions"}
+        </Link>
+      </div>
+    </section>
   );
 }
 

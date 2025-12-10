@@ -116,7 +116,6 @@ function RecommendationContent() {
             <div className="space-y-6">
               <AdaptiveMissionCard axisLabel={axisLabel} nudge={missionText} />
               <DailyPath key={dailyPathConfig?.cluster ?? "none"} config={dailyPathConfig} />
-              <ExploreCard onOpenKuno={() => router.push("/kuno")} onOpenAbil={() => router.push("/abil")} />
               {showGuestBanner ? (
                 <GuestBanner onCreateAccount={() => router.push("/auth?returnTo=%2Frecommendation")} />
               ) : null}
@@ -139,25 +138,6 @@ function AdaptiveMissionCard({ axisLabel, nudge }: { axisLabel: string | null; n
       <p className="text-sm text-[var(--omni-ink)]/80">
         {nudge ?? "Finalizează CAT Baseline și Adaptive Practice pentru a primi o misiune adaptată profilului tău."}
       </p>
-    </section>
-  );
-}
-
-function ExploreCard({ onOpenKuno, onOpenAbil }: { onOpenKuno: () => void; onOpenAbil: () => void }) {
-  return (
-    <section className="space-y-4 rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-5 py-5 shadow-[0_16px_32px_rgba(0,0,0,0.08)]">
-      <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Explorează liber</p>
-      <p className="text-sm text-[var(--omni-ink)]/80">
-        Ai chef de autonomie? Intră în biblioteca OmniKuno sau în hub-ul OmniAbil pentru a continua în ritmul tău.
-      </p>
-      <div className="flex flex-wrap gap-3">
-        <OmniCtaButton size="sm" onClick={onOpenKuno}>
-          Lecții OmniKuno
-        </OmniCtaButton>
-        <OmniCtaButton size="sm" variant="neutral" onClick={onOpenAbil}>
-          Acțiuni OmniAbil
-        </OmniCtaButton>
-      </div>
     </section>
   );
 }
