@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import type {
   AdaptiveCluster,
   DailyPathConfig,
@@ -12,8 +12,10 @@ import DailyPathNode from "./DailyPathNode";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { recordDailyPathEvent } from "@/lib/dailyPathEvents";
 import { applyDailyPracticeCompletion } from "@/lib/arcMetrics";
+import { CLUSTER_REGISTRY } from "@/config/clusterRegistry";
 
 const COMPLETION_BONUS = 15;
+const IS_DEV = process.env.NODE_ENV !== "production";
 const DAILY_PATH_COPY: Record<
   DailyPathLanguage,
   {
@@ -79,18 +81,38 @@ type DailyPathProps = {
   currentArcId?: string | null;
 };
 
+const TIME_OPTIONS = [
+  { value: 10, label: { ro: "5–10 min", en: "5–10 min" } },
+  { value: 20, label: { ro: "15–25 min", en: "15–25 min" } },
+  { value: 30, label: { ro: "30+ min", en: "30+ min" } },
+] as const;
+
+const validModes: DailyPathMode[] = ["short", "deep"];
+
 export default function DailyPath({ config, userId = null, currentArcId = null }: DailyPathProps) {
-  const [activeNodeId, setActiveNodeId] = useState<string | null>(config?.nodes[0]?.id ?? null);
+  const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [completedNodeIds, setCompletedNodeIds] = useState<string[]>([]);
   const [softPathChosen, setSoftPathChosen] = useState(false);
   const [xp, setXp] = useState(0);
   const [pathFinished, setPathFinished] = useState(false);
   const [bonusGranted, setBonusGranted] = useState(false);
+  const [pathVariant, setPathVariant] = useState<"soft" | "challenge">("challenge");
+  const [timeAvailableMin, setTimeAvailableMin] = useState<number | null>(null);
+  const [timeSelectionLocked, setTimeSelectionLocked] = useState(false);
   const startLoggedRef = useRef(false);
   const completionLoggedRef = useRef(false);
+  const startTimestampRef = useRef<number | null>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const activeLang: DailyPathLanguage = config?.lang ?? "ro";
   const copy = DAILY_PATH_COPY[activeLang] ?? DAILY_PATH_COPY.ro;
+  const localizedTimeOptions = useMemo(
+    () =>
+      TIME_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: opt.label[activeLang] ?? opt.label.ro,
+      })),
+    [activeLang],
+  );
   const processedNodes = useMemo(() => {
     if (!config) return [];
     const merged: DailyPathNodeConfig[] = [];
@@ -134,27 +156,89 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
   const displayStep =
     currentStepNumber > 0 ? currentStepNumber : totalVisibleNodes > 0 ? totalVisibleNodes : 0;
 
-  useEffect(() => {
+  const resetState = useCallback(() => {
+    setActiveNodeId(config?.nodes?.[0]?.id ?? null);
+    setCompletedNodeIds([]);
+    setSoftPathChosen(false);
+    setPathVariant("challenge");
+    setXp(0);
+    setPathFinished(false);
+    setBonusGranted(false);
     startLoggedRef.current = false;
     completionLoggedRef.current = false;
-  }, [config?.id]);
+    startTimestampRef.current = null;
+    setTimeAvailableMin(null);
+    setTimeSelectionLocked(false);
+  }, [config]);
 
   useEffect(() => {
-    if (!config || startLoggedRef.current) return;
-    startLoggedRef.current = true;
-    void recordDailyPathEvent(userId, {
-      configId: config.id,
-      cluster: config.cluster,
-      mode: config.mode,
-      lang: config.lang,
-      event: "start",
-    });
-  }, [config, userId]);
+    if (!config) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting derived state on config change
+    resetState();
+  }, [config, resetState]);
+
+  const logDebug = useCallback((...args: unknown[]) => {
+    if (!IS_DEV) return;
+    console.debug("[DailyPath]", ...args);
+  }, []);
+
+  if (IS_DEV && config) {
+    if (!config.id) {
+      throw new Error("DailyPath config missing id");
+    }
+    if (!config.nodes || config.nodes.length === 0) {
+      throw new Error(`DailyPath config ${config.id} has no nodes`);
+    }
+    if (!validModes.includes(config.mode)) {
+      throw new Error(`DailyPath config ${config.id} has invalid mode ${config.mode}`);
+    }
+    if (!CLUSTER_REGISTRY[config.cluster]) {
+      throw new Error(`DailyPath config ${config.id} has unknown cluster ${config.cluster}`);
+    }
+  }
+
+  const handleTimeSelect = useCallback(
+    (selected: number) => {
+      if (!config || timeSelectionLocked) return;
+      setTimeAvailableMin(selected);
+      if (startLoggedRef.current) return;
+      startLoggedRef.current = true;
+      setTimeSelectionLocked(true);
+      startTimestampRef.current = Date.now();
+      logDebug("start", {
+        configId: config.id,
+        cluster: config.cluster,
+        mode: config.mode,
+        timeAvailableMin: selected,
+      });
+      void recordDailyPathEvent(userId, {
+        configId: config.id,
+        cluster: config.cluster,
+        mode: config.mode,
+        lang: config.lang,
+        event: "start",
+        timeAvailableMin: selected,
+      });
+    },
+    [config, logDebug, timeSelectionLocked, userId],
+  );
 
   useEffect(() => {
     if (!config || !pathFinished || completionLoggedRef.current) return;
     completionLoggedRef.current = true;
     const completionDate = new Date();
+    const nodesCompletedCount = completedNodeIds.length;
+    const durationSeconds =
+      startTimestampRef.current != null
+        ? Math.max(0, Math.round((Date.now() - startTimestampRef.current) / 1000))
+        : null;
+    logDebug("completed", {
+      configId: config.id,
+      xp,
+      nodesCompletedCount,
+      pathVariant,
+      durationSeconds,
+    });
     void (async () => {
       await recordDailyPathEvent(userId, {
         configId: config.id,
@@ -163,6 +247,9 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
         lang: config.lang,
         event: "completed",
         xpDelta: xp,
+        nodesCompletedCount,
+        pathVariant,
+        durationSeconds,
       });
       if (userId && currentArcId) {
         try {
@@ -172,23 +259,35 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
         }
       }
     })();
-  }, [config, pathFinished, userId, xp, currentArcId]);
+  }, [config, pathFinished, userId, xp, currentArcId, completedNodeIds.length, pathVariant, logDebug]);
 
   const handleNodeAction = (node: DailyPathNodeConfig) => {
     if (!config) return;
     if (node.id !== currentActiveId) return;
-    markNodeCompleted(node, true);
+    markNodeCompleted(node);
   };
 
-  const markNodeCompleted = (node: DailyPathNodeConfig, awardXp = true) => {
+  const markNodeCompleted = (
+    node: DailyPathNodeConfig,
+    xpOverride?: number,
+    options?: { skipAdvance?: boolean; customCompletedList?: string[] },
+  ) => {
     if (!config) return;
-    if (completedNodeIds.includes(node.id)) return;
-    const updated = [...completedNodeIds, node.id];
-    setCompletedNodeIds(updated);
-    if (awardXp) {
-      setXp((prevXp) => prevXp + node.xp);
+    const alreadyCompleted = completedNodeIds.includes(node.id);
+    const updated =
+      options?.customCompletedList ?? (alreadyCompleted ? completedNodeIds : [...completedNodeIds, node.id]);
+    if (!alreadyCompleted || options?.customCompletedList) {
+      setCompletedNodeIds(updated);
     }
-    advanceToNext(node.id, updated);
+    if (alreadyCompleted && !options?.customCompletedList) return;
+    const xpDelta = typeof xpOverride === "number" ? Math.max(0, xpOverride) : node.xp;
+    if (xpDelta > 0) {
+      setXp((prevXp) => prevXp + xpDelta);
+    }
+    logDebug("node_completed", { nodeId: node.id, xpDelta, skipAdvance: options?.skipAdvance });
+    if (!options?.skipAdvance) {
+      advanceToNext(node.id, updated);
+    }
     void recordDailyPathEvent(userId, {
       configId: config.id,
       cluster: config.cluster,
@@ -196,7 +295,7 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
       lang: config.lang,
       event: "node_completed",
       nodeId: node.id,
-      xpDelta: awardXp ? node.xp : 0,
+      xpDelta,
     });
   };
 
@@ -226,11 +325,12 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
     const autonomyNode = processedNodes.find((node) => node.id === config.autonomyNodeId);
     if (!autonomyNode) return;
     if (choice === "soft") {
-      const updated = completedNodeIds.includes(autonomyNode.id)
-        ? completedNodeIds
-        : [...completedNodeIds, autonomyNode.id];
       setSoftPathChosen(true);
-      setCompletedNodeIds(updated);
+      setPathVariant("soft");
+      const updated = completedNodeIds.includes(autonomyNode.id)
+        ? [...completedNodeIds]
+        : [...completedNodeIds, autonomyNode.id];
+      markNodeCompleted(autonomyNode, 0, { skipAdvance: true, customCompletedList: updated });
       const softNode = processedNodes.find((node) => node.softPathOnly);
       if (softNode) {
         setActiveNodeId(softNode.id);
@@ -239,7 +339,8 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
       advanceToNext(autonomyNode.id, updated);
       return;
     }
-    markNodeCompleted(autonomyNode, true);
+    setPathVariant("challenge");
+    markNodeCompleted(autonomyNode);
   };
 
   if (!config) {
@@ -273,6 +374,48 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
           <span>
             {copy.durationLabel}: {copy.durations[config.mode]}
           </span>
+        </div>
+        <div className="mt-2 space-y-2 rounded-[16px] bg-[var(--omni-bg-main)] px-4 py-3">
+          <p className="text-sm font-medium text-[var(--omni-ink)]">
+            {activeLang === "ro" ? "Cât timp ai azi?" : "How much time do you have?"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {localizedTimeOptions.map((option) => {
+              const isSelected = timeAvailableMin === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  disabled={timeSelectionLocked}
+                  onClick={() => handleTimeSelect(option.value)}
+                  className={`rounded-full border px-3 py-1 text-sm transition ${
+                    isSelected
+                      ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white"
+                      : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]"
+                  } ${timeSelectionLocked ? "opacity-60" : "hover:border-[var(--omni-ink)]"}`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+          {timeAvailableMin == null ? (
+            <p className="text-xs text-[var(--omni-muted)]">
+              {activeLang === "ro"
+                ? "Selectează timpul pentru a adapta traseul de azi."
+                : "Select your time window to tailor today’s path."}
+            </p>
+          ) : (
+            <p className="text-xs text-[var(--omni-muted)]">
+              {timeSelectionLocked
+                ? activeLang === "ro"
+                  ? "Am notat timpul – poți continua traseul."
+                  : "Time saved – you can continue the path."
+                : activeLang === "ro"
+                ? "Poți ajusta timpul înainte să începem."
+                : "You can adjust the time before we start."}
+            </p>
+          )}
         </div>
         <div className="space-y-3 lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto">
           {visibleNodes.map((node, index) => {

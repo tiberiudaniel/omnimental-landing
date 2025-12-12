@@ -1,68 +1,43 @@
 import type { DailyPathConfig, DailyPathLanguage, DailyPathMode } from "@/types/dailyPath";
 import type { CatProfileDoc } from "@/types/cat";
-import { deriveAdaptiveClusterFromCat, mapAxisToCluster } from "@/lib/dailyCluster";
+import { deriveAdaptiveClusterFromCat } from "@/lib/dailyCluster";
 import { getDailyPathForCluster } from "@/config/dailyPath";
 import type { AdaptiveCluster } from "@/types/dailyPath";
-import type { CatAxisId } from "@/config/catEngine";
-import { getDailyPracticeHistory } from "@/lib/dailyPracticeStore";
+import { getDailyPracticeHistory, getCurrentDateKey } from "@/lib/dailyPracticeStore";
+import { CLUSTER_ROTATION, getClusterMeta } from "@/config/clusterRegistry";
+import {
+  countConsecutiveDaysOnCluster,
+  daysBetween,
+  sortEntriesByDayDesc,
+  normalizeDailyEntries,
+} from "@/lib/dailyPathHistory";
+import { computeAbandonRate } from "@/lib/abandonmentRate";
+import {
+  applyDecisionPolicyV2,
+  type DecisionBaseline,
+  type PolicySignals,
+  type PolicyDecision,
+  type DailyVariant,
+} from "@/lib/decisionPolicyV2";
+// NOTE: Policy signals should prefer per-cluster reliability to avoid penalizing today's cluster for other clusters' abandonments.
 import type { DailyPracticeDoc } from "@/types/dailyPractice";
 
-const FALLBACK_CLUSTER: AdaptiveCluster = "clarity_cluster";
+const FALLBACK_CLUSTER: AdaptiveCluster = CLUSTER_ROTATION[0];
 const FALLBACK_MODE: DailyPathMode = "short";
-const CLUSTER_ROTATION: AdaptiveCluster[] = [
-  "clarity_cluster",
-  "emotional_flex_cluster",
-  "focus_energy_cluster",
-];
+const IS_DEV = process.env.NODE_ENV !== "production";
 
 export interface NextDayDecision {
   config: DailyPathConfig;
   cluster: AdaptiveCluster;
   mode: DailyPathMode;
   reason: string;
-}
-
-function getAxisOrder(profile: CatProfileDoc | null | undefined): Array<[CatAxisId, number]> {
-  if (!profile?.axisScores) return [];
-  return Object.entries(profile.axisScores)
-    .map(([axisId, score]) => [axisId as CatAxisId, score] as [CatAxisId, number])
-    .sort((a, b) => a[1] - b[1]);
-}
-
-function pickAlternateCluster(
-  axisOrder: Array<[CatAxisId, number]>,
-  current: AdaptiveCluster,
-): AdaptiveCluster {
-  for (const [axisId] of axisOrder) {
-    const candidate = mapAxisToCluster(axisId);
-    if (candidate !== current) {
-      return candidate;
-    }
-  }
-  const index = CLUSTER_ROTATION.indexOf(current);
-  if (index === -1) return current;
-  return CLUSTER_ROTATION[(index + 1) % CLUSTER_ROTATION.length];
+  variant?: DailyVariant;
+  policyApplied?: boolean;
+  policyReason?: string;
 }
 
 function clusterLabel(cluster: AdaptiveCluster): string {
-  switch (cluster) {
-    case "clarity_cluster":
-      return "clarity";
-    case "emotional_flex_cluster":
-      return "emotional_flex";
-    default:
-      return "focus_energy";
-  }
-}
-
-function countConsecutiveDaysOnCluster(history: DailyPracticeDoc[], cluster: AdaptiveCluster): number {
-  let counter = 0;
-  for (const entry of history) {
-    if (entry.cluster !== cluster) break;
-    if (!entry.completed) break;
-    counter += 1;
-  }
-  return counter;
+  return getClusterMeta(cluster).label;
 }
 
 function fallbackDecision(lang: DailyPathLanguage, reason: string): NextDayDecision {
@@ -79,6 +54,73 @@ function fallbackDecision(lang: DailyPathLanguage, reason: string): NextDayDecis
   };
 }
 
+export interface NextDayHistoryContext {
+  catProfile: CatProfileDoc | null;
+  lang: DailyPathLanguage;
+  history: DailyPracticeDoc[];
+  todayKey?: string;
+}
+
+export function decideNextDailyPathFromHistory(context: NextDayHistoryContext): NextDayDecision {
+  const { catProfile, lang, history, todayKey = getCurrentDateKey() } = context;
+  if (!catProfile) {
+    return fallbackDecision(lang, "fallback: missing CAT profile");
+  }
+  const derived = deriveAdaptiveClusterFromCat(catProfile);
+  const chosenCluster: AdaptiveCluster = derived.cluster ?? FALLBACK_CLUSTER;
+  const reasonParts: string[] = [`weakest axis: ${derived.primaryAxis ?? "n/a"}`];
+
+  const sortedHistory = sortEntriesByDayDesc(history);
+  const clusterHistory = sortedHistory.filter((entry) => entry.cluster === chosenCluster);
+  const consecutiveOnWeakest = countConsecutiveDaysOnCluster(clusterHistory);
+  reasonParts.push(`${clusterLabel(chosenCluster)} consecutive completions=${consecutiveOnWeakest}`);
+
+  const normalizedClusterEntries = normalizeDailyEntries(clusterHistory);
+  const mostRecentForCluster = normalizedClusterEntries[0] ?? null;
+  const lastCompletedEntries = normalizedClusterEntries
+    .filter(({ entry }) => entry.completed)
+    .slice(0, 3);
+
+  let chosenMode: DailyPathMode = FALLBACK_MODE;
+  if (mostRecentForCluster) {
+    const diffFromToday = Math.abs(daysBetween(todayKey, mostRecentForCluster.dayKey));
+    if (diffFromToday === 0) {
+      reasonParts.push("cluster attempted today already → short");
+      chosenMode = "short";
+    } else if (diffFromToday === 1 && mostRecentForCluster.entry.completed) {
+      if (lastCompletedEntries.length === 3) {
+        reasonParts.push("last 3 completions on cluster → deep");
+        chosenMode = "deep";
+      } else {
+        reasonParts.push(
+          `cluster completed ieri dar streak=${lastCompletedEntries.length} < 3 → short`,
+        );
+      }
+    } else {
+      reasonParts.push("cluster nu a fost completat ieri → short");
+    }
+  } else {
+    reasonParts.push("cluster fără istoric → short");
+  }
+
+  const config = getDailyPathForCluster({ cluster: chosenCluster, mode: chosenMode, lang });
+  const reason = `${reasonParts.join(" | ")} | selected ${clusterLabel(chosenCluster)} / ${chosenMode} / ${lang}`;
+  if (IS_DEV) {
+    console.debug("[NextDayEngine]", {
+      cluster: chosenCluster,
+      mode: chosenMode,
+      historyCount: history.length,
+      reason,
+    });
+  }
+  return {
+    config,
+    cluster: chosenCluster,
+    mode: chosenMode,
+    reason,
+  };
+}
+
 export async function decideNextDailyPath(params: {
   userId: string | null;
   catProfile: CatProfileDoc | null;
@@ -88,47 +130,63 @@ export async function decideNextDailyPath(params: {
   if (!userId || !catProfile) {
     return fallbackDecision(lang, "fallback: missing userId or CAT profile");
   }
-
-  const axisOrder = getAxisOrder(catProfile);
-  const derived = deriveAdaptiveClusterFromCat(catProfile);
-  let chosenCluster: AdaptiveCluster = derived.cluster ?? FALLBACK_CLUSTER;
-  const reasonParts: string[] = [`weakest axis: ${derived.primaryAxis ?? "n/a"}`];
-
   const history = await getDailyPracticeHistory(userId, 14);
-  const consecutiveOnWeakest = countConsecutiveDaysOnCluster(history, chosenCluster);
-  reasonParts.push(`consecutive on ${clusterLabel(chosenCluster)}=${consecutiveOnWeakest}`);
+  const baselineDecision = decideNextDailyPathFromHistory({
+    catProfile,
+    lang,
+    history,
+    todayKey: getCurrentDateKey(),
+  });
 
-  if (consecutiveOnWeakest >= 3) {
-    const alternateCluster = pickAlternateCluster(axisOrder, chosenCluster);
-    if (alternateCluster !== chosenCluster) {
-      reasonParts.push(
-        `switching cluster after ${consecutiveOnWeakest} days → ${clusterLabel(alternateCluster)}`,
-      );
-      chosenCluster = alternateCluster;
-    }
-  }
+  const normalizedEntries = normalizeDailyEntries(history);
+  const clusterAbandonmentEntries = normalizedEntries
+    .filter(({ entry }) => entry.cluster === baselineDecision.cluster)
+    .map(({ dayKey, entry }) => ({
+      dayKey,
+      completed: Boolean(entry.completed),
+      mode: entry.mode,
+    }));
+  const deepAbandonRate =
+    computeAbandonRate(clusterAbandonmentEntries, { mode: "deep", lastNDays: 14 }) ?? undefined;
+  const overallAbandonRate =
+    computeAbandonRate(clusterAbandonmentEntries, { lastNDays: 14 }) ?? undefined;
 
-  const yesterday = history[0];
-  let chosenMode: DailyPathMode = FALLBACK_MODE;
-  if (yesterday && yesterday.cluster === chosenCluster) {
-    if (!yesterday.completed) {
-      reasonParts.push("yesterday incomplete → short mode");
-    } else {
-      const lastOnCluster = history.filter((entry) => entry.cluster === chosenCluster).slice(0, 3);
-      const allCompleted = lastOnCluster.length === 3 && lastOnCluster.every((entry) => entry.completed);
-      chosenMode = allCompleted ? "deep" : "short";
-      reasonParts.push(allCompleted ? "3 completions on cluster → deep" : "insufficient streak → short");
-    }
-  } else {
-    reasonParts.push("new cluster today → short");
-  }
-
-  const config = getDailyPathForCluster({ cluster: chosenCluster, mode: chosenMode, lang });
-  reasonParts.push(`selected ${clusterLabel(chosenCluster)} / ${chosenMode} / ${lang}`);
-  return {
-    config,
-    cluster: chosenCluster,
-    mode: chosenMode,
-    reason: reasonParts.join(" | "),
+  const baseline: DecisionBaseline = {
+    cluster: baselineDecision.cluster,
+    mode: baselineDecision.mode,
+    lang,
+    reason: baselineDecision.reason,
+    historyCount: history.length,
+    configId: baselineDecision.config.id,
   };
+  const signals: PolicySignals = {
+    deepAbandonRate,
+    overallAbandonRate,
+  };
+
+  const policyDecision: PolicyDecision = applyDecisionPolicyV2(baseline, signals);
+  const finalReason = policyDecision.policyApplied
+    ? `${baselineDecision.reason} | policy: ${policyDecision.policyReason}`
+    : baselineDecision.reason;
+
+  const finalDecision: NextDayDecision = {
+    ...baselineDecision,
+    mode: policyDecision.mode,
+    reason: finalReason,
+    policyApplied: policyDecision.policyApplied,
+    policyReason: policyDecision.policyReason,
+  };
+  if (policyDecision.variant) {
+    finalDecision.variant = policyDecision.variant;
+  }
+  if (IS_DEV) {
+    console.debug("[DecisionPolicyV2]", {
+      signals,
+      policyApplied: policyDecision.policyApplied,
+      policyReason: policyDecision.policyReason,
+      finalMode: policyDecision.mode,
+      variant: policyDecision.variant ?? "challenge",
+    });
+  }
+  return finalDecision;
 }

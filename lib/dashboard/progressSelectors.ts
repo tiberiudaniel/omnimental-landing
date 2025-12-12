@@ -14,7 +14,7 @@ export function toMsLocal(ts: unknown): number {
   return 0;
 }
 
-const FOCUS_MAP: Record<string, OmniKunoModuleId> = {
+export const FOCUS_KEYWORD_MODULE_MAP: Record<string, OmniKunoModuleId> = {
   relatii: "relationships_communication",
   relatie: "relationships_communication",
   calm: "emotional_balance",
@@ -57,9 +57,9 @@ export function getCurrentFocusTag(facts: ProgressFact | null | undefined): Omni
     if (!top?.category) return undefined;
     const normalized = resolveModuleId(top.category);
     if (normalized) return normalized;
-    const lower = top.category.toLowerCase();
-    const matchKey = Object.keys(FOCUS_MAP).find((key) => lower.includes(key));
-    return matchKey ? FOCUS_MAP[matchKey] : undefined;
+  const lower = top.category.toLowerCase();
+  const matchKey = Object.keys(FOCUS_KEYWORD_MODULE_MAP).find((key) => lower.includes(key));
+  return matchKey ? FOCUS_KEYWORD_MODULE_MAP[matchKey] : undefined;
   } catch {
     return undefined;
   }

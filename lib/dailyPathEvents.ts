@@ -11,6 +11,10 @@ export interface DailyPathEventPayload {
   event: DailyPathEventType;
   nodeId?: string;
   xpDelta?: number;
+  nodesCompletedCount?: number;
+  pathVariant?: "soft" | "challenge" | null;
+  durationSeconds?: number | null;
+  timeAvailableMin?: number | null;
 }
 
 const SHOULD_DEBUG_EVENTS = (() => {
@@ -32,6 +36,7 @@ export async function recordDailyPathEvent(userId: string | null, payload: Daily
       mode: payload.mode,
       lang: payload.lang,
       date: dateKey,
+      timeAvailableMin: payload.timeAvailableMin ?? null,
     });
     return;
   }
@@ -43,6 +48,9 @@ export async function recordDailyPathEvent(userId: string | null, payload: Daily
       mode: payload.mode,
       lang: payload.lang,
       xpEarned: payload.xpDelta ?? 0,
+      nodesCompletedCount: payload.nodesCompletedCount ?? 0,
+      pathVariant: payload.pathVariant ?? null,
+      durationSeconds: payload.durationSeconds ?? null,
       date: dateKey,
     });
   }

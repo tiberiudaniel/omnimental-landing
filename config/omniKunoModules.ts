@@ -110,6 +110,9 @@ export const OMNIKUNO_MODULES = [
 
 export type OmniKunoModuleId = (typeof OMNIKUNO_MODULES)[number]["id"];
 export type OmniAreaKey = OmniKunoModuleId;
+export const OMNIKUNO_MODULE_IDS: readonly OmniKunoModuleId[] = OMNIKUNO_MODULES.map(
+  (meta) => meta.id as OmniKunoModuleId,
+);
 
 const MODULE_BY_ID: Record<OmniKunoModuleId, ModuleMeta> = OMNIKUNO_MODULES.reduce(
   (acc, meta) => {
