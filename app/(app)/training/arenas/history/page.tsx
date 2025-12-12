@@ -1,26 +1,32 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { ArenaId } from "@/config/arenaModules/v1/types";
 import { ArenaHistorySparkline } from "@/components/arenas/ArenaHistorySparkline";
-import { getArenaRuns, type ArenaRunRecord } from "@/lib/arenaRunStore";
+import { getArenaRuns } from "@/lib/arenaRunStore";
 
 export default function ArenaHistoryPage() {
+  return (
+    <Suspense fallback={<HistorySkeleton />}>
+      <ArenaHistoryClient />
+    </Suspense>
+  );
+}
+
+function ArenaHistoryClient() {
   const searchParams = useSearchParams();
   const arenaIdParam = searchParams.get("arenaId") as ArenaId | null;
   const moduleIdParam = searchParams.get("moduleId");
   const drillIdParam = searchParams.get("drillId");
-  const [runs, setRuns] = useState<ArenaRunRecord[]>([]);
-
-  useEffect(() => {
+  const runs = useMemo(() => {
     const filters = {
       arenaId: arenaIdParam ?? undefined,
       moduleId: moduleIdParam ?? undefined,
       drillId: drillIdParam ?? undefined,
     };
-    setRuns(getArenaRuns(filters));
+    return getArenaRuns(filters);
   }, [arenaIdParam, moduleIdParam, drillIdParam]);
 
   const chartRuns = useMemo(() => runs.slice().reverse(), [runs]);
@@ -91,6 +97,19 @@ export default function ArenaHistoryPage() {
             Înapoi la arene
           </Link>
         </div>
+      </div>
+    </main>
+  );
+}
+
+function HistorySkeleton() {
+  return (
+    <main className="min-h-screen bg-[#05060a] text-white p-6">
+      <div className="max-w-5xl mx-auto space-y-4 animate-pulse">
+        <div className="h-6 w-32 bg-white/10 rounded" />
+        <div className="h-10 w-64 bg-white/10 rounded" />
+        <div className="h-32 bg-white/5 rounded-2xl" />
+        <div className="h-48 bg-white/5 rounded-2xl" />
       </div>
     </main>
   );

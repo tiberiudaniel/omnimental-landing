@@ -193,7 +193,7 @@ function computeSummary(results: TrialResult[]): SummaryStats {
 
 export function StroopRun({ module, lang, duration }: StroopRunProps) {
   const preset = STROOP_PRESETS[duration];
-  const [trials, setTrials] = useState<Stimulus[]>([]);
+  const [trials, setTrials] = useState<Stimulus[]>(() => generateTrials(preset));
   const [trialIndex, setTrialIndex] = useState(0);
   const [phase, setPhase] = useState<"running" | "summary">("running");
   const [timeLeftMs, setTimeLeftMs] = useState(preset.totalMs);
@@ -205,19 +205,16 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const resultsRef = useRef<TrialResult[]>([]);
   const finishedRef = useRef(false);
-  const [recentRuns, setRecentRuns] = useState<ArenaRunRecord[]>([]);
+  const [recentRuns, setRecentRuns] = useState<ArenaRunRecord[]>(() =>
+    getArenaRuns({ arenaId: module.arena, moduleId: module.id }),
+  );
 
   const historyLink = useMemo(
     () => `/training/arenas/history?arenaId=${module.arena}&moduleId=${module.id}`,
     [module.arena, module.id],
   );
 
-  const todayKey = useMemo(() => toDayKeyLocal(Date.now()), []);
-
-  const refreshHistory = useCallback(() => {
-    const runs = getArenaRuns({ arenaId: module.arena, moduleId: module.id });
-    setRecentRuns(runs);
-  }, [module.arena, module.id]);
+  const [todayKey] = useState(() => toDayKeyLocal(Date.now()));
 
   const bestToday = useMemo(() => {
     const todays = recentRuns.filter((run) => run.dayKey === todayKey);
@@ -270,6 +267,7 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
       interpretation: computed.interpretation,
     };
     saveArenaRun(record);
+    setRecentRuns(getArenaRuns({ arenaId: module.arena, moduleId: module.id }));
   }, [duration, module.arena, module.id, resetTimers]);
 
   const startRun = useCallback(() => {
@@ -288,16 +286,6 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
   useEffect(() => {
     return () => resetTimers();
   }, [resetTimers]);
-
-  useEffect(() => {
-    startRun();
-  }, [startRun]);
-
-  useEffect(() => {
-    if (phase === "summary") {
-      refreshHistory();
-    }
-  }, [phase, refreshHistory]);
 
   useEffect(() => {
     if (phase !== "running") return;

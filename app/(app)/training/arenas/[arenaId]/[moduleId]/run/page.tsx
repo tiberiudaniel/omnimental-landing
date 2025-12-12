@@ -29,7 +29,14 @@ export default async function ArenaRunPage(props: Props) {
     arenaModule.arena === "executive_control" &&
     arenaModule.id === "executive_metacognition_v1"
   ) {
-    return <StroopRun module={arenaModule} lang={lang} duration={duration} />;
+    return (
+      <StroopRun
+        key={`${arenaModule.id}-${duration}`}
+        module={arenaModule}
+        lang={lang}
+        duration={duration}
+      />
+    );
   }
 
   const drills = arenaModule.drills[lang] ?? [];
