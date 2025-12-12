@@ -20,7 +20,6 @@ const SHOULD_DEBUG_EVENTS = (() => {
 
 export async function recordDailyPathEvent(userId: string | null, payload: DailyPathEventPayload) {
   if (SHOULD_DEBUG_EVENTS) {
-    // eslint-disable-next-line no-console
     console.log("[dailyPath event]", { userId, ...payload });
   }
   if (!userId) return;

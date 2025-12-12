@@ -55,7 +55,7 @@ export function getUserOverallLevel(competence: UserCompetence): CompetenceLevel
     mastery: 0,
   };
   values.forEach((level) => {
-    counts[level] += 1;
+    counts[level as CompetenceLevel] += 1;
   });
   if (counts.mastery >= 3) return "mastery";
   if (counts.operational >= 3) return "operational";

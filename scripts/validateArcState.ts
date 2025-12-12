@@ -5,7 +5,7 @@ import type { ArcState } from "@/types/arcState";
 import type { UserMetrics } from "@/types/userMetrics";
 import { arcs } from "@/config/arcs/arcs";
 
-const userId = process.env.TEST_USER_ID;
+const userId = process.env.TEST_USER_ID ?? "";
 
 if (!userId) {
   console.error("Missing TEST_USER_ID in env.");
