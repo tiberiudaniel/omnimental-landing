@@ -1,4 +1,9 @@
-import { DAILY_PATHS_DEEP, DAILY_PATHS_SHORT } from "../config/dailyPath";
+import {
+  DAILY_PATHS_DEEP_RO,
+  DAILY_PATHS_DEEP_EN,
+  DAILY_PATHS_SHORT_RO,
+  DAILY_PATHS_SHORT_EN,
+} from "../config/dailyPaths";
 import type { DailyPathConfig, DailyPathNodeConfig } from "../types/dailyPath";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -87,11 +92,11 @@ function validatePathConfig(pathName: string, config: DailyPathConfig) {
 }
 
 function main() {
-  const collections: Array<[string, Partial<Record<string, DailyPathConfig>>]> = [
-    ["DAILY_PATHS_DEEP.ro", DAILY_PATHS_DEEP.ro],
-    ["DAILY_PATHS_DEEP.en", DAILY_PATHS_DEEP.en],
-    ["DAILY_PATHS_SHORT.ro", DAILY_PATHS_SHORT.ro],
-    ["DAILY_PATHS_SHORT.en", DAILY_PATHS_SHORT.en],
+  const collections: Array<[string, Record<string, DailyPathConfig>]> = [
+    ["DAILY_PATHS_DEEP.ro", DAILY_PATHS_DEEP_RO],
+    ["DAILY_PATHS_DEEP.en", DAILY_PATHS_DEEP_EN],
+    ["DAILY_PATHS_SHORT.ro", DAILY_PATHS_SHORT_RO],
+    ["DAILY_PATHS_SHORT.en", DAILY_PATHS_SHORT_EN],
   ];
 
   let hasErrors = false;

@@ -1,0 +1,172 @@
+import type { DailyPathConfig } from "@/types/dailyPath";
+
+export const CLARITY_DEEP_EN: DailyPathConfig = {
+  id: "clarity_v1_deep_en",
+  cluster: "clarity_cluster",
+  mode: "deep",
+  lang: "en",
+  version: 1,
+  skillLabel: "Clarity: full mental architecture",
+  autonomyNodeId: "clarity_a1",
+  nodes: [
+    {
+      id: "clarity_intro",
+      kind: "INTRO",
+      shape: "circle",
+      title: "Mental Clarity & Direction",
+      description:
+        "Today you’ll train a simple but rare skill: saying in ONE sentence what you’re about to do. The faster you clarify your intent, the less time and energy you waste.",
+      xp: 0,
+      ctaLabel: "Start training",
+    },
+    {
+      id: "clarity_l1",
+      kind: "LEARN",
+      shape: "circle",
+      title: "What is mental clarity?",
+      description:
+        "Mental clarity means you can answer: “What am I doing now and why?”\nIt’s not perfectionism and not “knowing everything”. It’s the ability to state:\n– the outcome you want,\n– the question you’re answering,\n– the next concrete step.",
+      xp: 5,
+    },
+    {
+      id: "clarity_example1",
+      kind: "LEARN",
+      shape: "circle",
+      title: "A busy day with no direction",
+      description:
+        "Maria opens her laptop: “I have a lot to handle today.” She answers random emails, jumps into a doc, checks WhatsApp, touches a presentation, Googles something, opens two more tabs.\nAt night she’s tired but can’t say: “This is what I was aiming for. This is what I finished.” That’s not lack of willpower, it’s lack of clarity.",
+      xp: 5,
+    },
+    {
+      id: "clarity_quiz1",
+      kind: "QUIZ_SINGLE",
+      shape: "circle",
+      title: "Spot the clarity",
+      description: "Which situation shows the most mental clarity?",
+      quizOptions: [
+        { id: "A", label: "I sit down and think: I have a full day, let’s see what I can do." },
+        { id: "B", label: "For the next 40 minutes I write the first draft of report X." },
+        { id: "C", label: "I open email, WhatsApp, and docs to see what inspires me." },
+      ],
+      correctOptionIds: ["B"],
+      quizFeedback: {
+        correct: "Correct. Clarity means naming exactly what you want to happen in the next minutes.",
+        incorrect: "Not quite. Clarity isn’t “let’s see what appears”, it’s explicitly stating the outcome you want now.",
+      },
+      xp: 10,
+    },
+    {
+      id: "clarity_l2",
+      kind: "LEARN",
+      shape: "circle",
+      title: "The one-sentence rule",
+      description:
+        "A simple clarity test: “Can I say in ONE sentence what I’ll do in the next 20–40 minutes?”\nIf the sentence is vague or packs 4–5 goals, you don’t have clarity.",
+      xp: 5,
+    },
+    {
+      id: "clarity_quiz2",
+      kind: "QUIZ_SINGLE",
+      shape: "circle",
+      title: "Apply it",
+      description: "You want to work on tomorrow’s presentation. Which sentence is clearest?",
+      quizOptions: [
+        { id: "A", label: "I really need to deal with that presentation and many other things." },
+        { id: "B", label: "For the next 30 minutes I finalize the structure for slides 1–5." },
+        { id: "C", label: "I’ll start the presentation and see how it goes." },
+      ],
+      correctOptionIds: ["B"],
+      quizFeedback: {
+        correct: "Exactly. A clear sentence has a time frame, a concrete result, and one objective.",
+        incorrect: "Almost. A clarity sentence isn’t “we’ll see”, it’s time + clear result + one goal.",
+      },
+      xp: 10,
+    },
+    {
+      id: "clarity_sim1",
+      kind: "SIMULATOR",
+      shape: "circle",
+      badge: "simulator",
+      title: "Simulator: One sentence, nothing else",
+      description:
+        "Pick a real small task you’ll do after this. While the circle runs, repeat ONE clear sentence about that task. If your mind jumps to other goals, return to the sentence.",
+      xp: 15,
+      ctaLabel: "Exercise done",
+    },
+    {
+      id: "clarity_a1",
+      kind: "ACTION",
+      shape: "star",
+      title: "How does it feel after the drill?",
+      description: "You tested the one-sentence rule. What do you need next?",
+      xp: 0,
+    },
+    {
+      id: "clarity_sim2",
+      kind: "SIMULATOR",
+      shape: "hollow",
+      badge: "simulator",
+      softPathOnly: true,
+      title: "Extra drill: another sentence",
+      description:
+        "Pick another real micro-task (a call, a message, a tiny step). Hold ONE clear sentence in mind while the timer runs. If more goals show up, reduce them to one.",
+      xp: 5,
+      ctaLabel: "Exercise done",
+    },
+    {
+      id: "clarity_fog",
+      kind: "LEARN",
+      shape: "circle",
+      title: "Mental fog vs. clarity",
+      description:
+        "Mental fog often means: too many mixed intentions, none clearly stated, no immediate next step chosen. Clarity comes when you pick one intention, put it into words, and start with that step only.",
+      xp: 5,
+    },
+    {
+      id: "clarity_real1",
+      kind: "REAL_WORLD",
+      shape: "star",
+      badge: "viata_reala",
+      title: "Today’s real challenge",
+      description: "Pick a real scenario where you’ll use the one-sentence rule before starting.",
+      fields: [
+        {
+          id: "context",
+          label: "Today I’ll pause and clarify before starting when:",
+          placeholder: "e.g., I open my laptop after lunch",
+        },
+        {
+          id: "rule",
+          label: "My sentence will be:",
+          placeholder: "In the next 30 minutes I finalize slides 1–5.",
+        },
+      ],
+      xp: 25,
+      ctaLabel: "I commit",
+    },
+    {
+      id: "clarity_summary",
+      kind: "SUMMARY",
+      shape: "circle",
+      title: "Great job — today’s clarity training is complete.",
+      description: "",
+      bullets: [
+        "Lack of clarity is often lack of explicit decision, not lack of willpower.",
+        "You can test clarity with the one-sentence rule.",
+        "Linking the sentence to real situations increases energy and visible progress.",
+      ],
+      anchorDescription: "Before I start, I say clearly what I’ll do.",
+      xp: 0,
+      ctaLabel: "See your progress",
+    },
+    {
+      id: "clarity_anchor",
+      kind: "ANCHOR",
+      shape: "circle",
+      title: "Daily motto",
+      description: "Before I start, I say clearly what I’ll do.",
+      xp: 0,
+      ctaLabel: "Done for today",
+    },
+  ],
+};

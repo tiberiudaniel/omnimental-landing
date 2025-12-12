@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import SimulatorTimer from "./SimulatorTimer";
-import type { DailyPathNodeConfig } from "@/types/dailyPath";
+import type { DailyPathLanguage, DailyPathNodeConfig } from "@/types/dailyPath";
 
 export type DailyNodeStatus = "locked" | "active" | "completed";
 
@@ -15,6 +15,7 @@ interface DailyPathNodeProps {
   isAutonomy?: boolean;
   showSoftLabel?: boolean;
   onAutonomyChoice?: (choice: "soft" | "challenge") => void;
+  lang: DailyPathLanguage;
 }
 
 type QuizState = {
@@ -29,9 +30,9 @@ type RealWorldState = {
   setRule: (value: string) => void;
 };
 
-const CARD_WRAPPER = "w-full";
+const CARD_WRAPPER = "w-full px-4 sm:px-0";
 const CARD_BASE =
-  "rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-6 shadow-[0_18px_46px_rgba(0,0,0,0.08)] sm:px-6";
+  "w-full max-w-[380px] mx-auto rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] py-5 px-4 shadow-lg sm:max-w-xl sm:py-6 sm:px-6 md:py-8 md:px-8 md:shadow-[0_18px_46px_rgba(0,0,0,0.08)]";
 
 const SHAPE_ICON: Record<DailyPathNodeConfig["shape"], string> = {
   circle: "●",
@@ -39,9 +40,27 @@ const SHAPE_ICON: Record<DailyPathNodeConfig["shape"], string> = {
   hollow: "○",
 };
 
-const BADGE_LABELS: Record<NonNullable<DailyPathNodeConfig["badge"]>, string> = {
-  simulator: "Simulator",
-  viata_reala: "Viața reală",
+const NODE_LABELS: Record<
+  DailyPathLanguage,
+  {
+    softPath: string;
+    badges: Record<NonNullable<DailyPathNodeConfig["badge"]>, string>;
+  }
+> = {
+  ro: {
+    softPath: "Soft path",
+    badges: {
+      simulator: "Simulator",
+      viata_reala: "Viața reală",
+    },
+  },
+  en: {
+    softPath: "Soft path",
+    badges: {
+      simulator: "Simulator",
+      viata_reala: "Real world",
+    },
+  },
 };
 
 export default function DailyPathNode({
@@ -51,26 +70,29 @@ export default function DailyPathNode({
   isAutonomy,
   showSoftLabel,
   onAutonomyChoice,
+  lang = "ro",
 }: DailyPathNodeProps) {
   const router = useRouter();
   const [quizState, setQuizState] = useState<QuizState>({ choice: null, feedback: null });
   const [realContext, setRealContext] = useState("");
   const [realRule, setRealRule] = useState("");
   const simulatorAutoStart = node.softPathOnly === true;
-  const realWorldInputRef = useRef<HTMLInputElement | null>(null);
+  const realWorldContextInputRef = useRef<HTMLInputElement | null>(null);
+  const realWorldRuleInputRef = useRef<HTMLTextAreaElement | null>(null);
   const icon = SHAPE_ICON[node.shape];
-  const badgeLabel = node.badge ? BADGE_LABELS[node.badge] : null;
+  const labels = NODE_LABELS[lang] ?? NODE_LABELS.ro;
+  const badgeLabel = node.badge ? labels.badges[node.badge] : null;
   const shouldAutofocusRealWorld = node.kind === "REAL_WORLD";
 
   useEffect(() => {
     if (!shouldAutofocusRealWorld) return;
-    queueMicrotask(() => realWorldInputRef.current?.focus());
+    queueMicrotask(() => realWorldContextInputRef.current?.focus());
   }, [shouldAutofocusRealWorld]);
 
   if (status === "locked") {
     return (
       <div className={CARD_WRAPPER}>
-        <div className="flex h-14 w-full items-center justify-center rounded-[32px] border border-dashed border-[var(--omni-border-soft)] text-2xl text-[var(--omni-muted)]">
+        <div className="mx-auto flex h-14 w-full max-w-[380px] items-center justify-center rounded-[32px] border border-dashed border-[var(--omni-border-soft)] text-2xl text-[var(--omni-muted)] sm:max-w-xl">
           {icon}
         </div>
       </div>
@@ -80,7 +102,7 @@ export default function DailyPathNode({
   if (status === "completed") {
     return (
       <div className={CARD_WRAPPER}>
-        <div className="flex w-full items-center gap-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-5 py-5 shadow-[0_6px_18px_rgba(0,0,0,0.06)] sm:px-6">
+        <div className="mx-auto flex w-full max-w-[380px] items-center gap-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-5 py-5 shadow-[0_6px_18px_rgba(0,0,0,0.06)] sm:max-w-xl sm:px-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--omni-energy-soft)] text-lg font-semibold text-[var(--omni-energy-dark)] sm:h-12 sm:w-12">
             {icon}
           </div>
@@ -175,7 +197,9 @@ export default function DailyPathNode({
         setRule: setRealRule,
       }}
       simulatorAutoStart={simulatorAutoStart}
-      realWorldInputRef={realWorldInputRef}
+      realWorldContextInputRef={realWorldContextInputRef}
+      realWorldRuleInputRef={realWorldRuleInputRef}
+      labels={labels}
     />
   );
 }
@@ -184,10 +208,12 @@ function IntroCard({ node, onStart }: { node: DailyPathNodeConfig; onStart?: () 
   return (
     <div className={CARD_WRAPPER}>
       <div className={`${CARD_BASE} pt-10`}>
-        <h2 className="mt-3 text-3xl font-semibold text-[var(--omni-ink)]">{node.title}</h2>
-        <p className="mt-4 text-base text-[var(--omni-ink)]/80">{node.description}</p>
-        <div className="mt-6">
-          <OmniCtaButton size="md" onClick={onStart}>
+        <h2 className="mt-3 font-semibold leading-tight text-[22px] text-[var(--omni-ink)] sm:text-[26px] md:text-[30px]">
+          {node.title}
+        </h2>
+        <p className="mt-4 text-base leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>
+        <div className="mt-4">
+          <OmniCtaButton size="md" onClick={onStart} className="h-11 px-6 text-sm font-medium tracking-[0.2em]">
             {node.ctaLabel ?? "Încep"}
           </OmniCtaButton>
         </div>
@@ -207,7 +233,9 @@ function StandardCard({
   primaryDisabled,
   realWorld,
   simulatorAutoStart,
-  realWorldInputRef,
+  realWorldContextInputRef,
+  realWorldRuleInputRef,
+  labels,
 }: {
   node: DailyPathNodeConfig;
   icon: string;
@@ -219,7 +247,9 @@ function StandardCard({
   primaryDisabled?: boolean;
   realWorld?: RealWorldState;
   simulatorAutoStart?: boolean;
-  realWorldInputRef?: React.RefObject<HTMLInputElement>;
+  realWorldContextInputRef?: React.RefObject<HTMLInputElement>;
+  realWorldRuleInputRef?: React.RefObject<HTMLTextAreaElement>;
+  labels: (typeof NODE_LABELS)[DailyPathLanguage];
 }) {
   const isQuiz = node.kind === "QUIZ_SINGLE";
   const showButton = true;
@@ -230,59 +260,62 @@ function StandardCard({
   return (
     <div className={CARD_WRAPPER}>
       <div className={CARD_BASE}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--omni-energy)] text-lg font-semibold text-[var(--omni-bg-paper)] sm:h-12 sm:w-12">
-              {icon}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--omni-energy)] text-lg font-semibold text-[var(--omni-bg-paper)] sm:h-12 sm:w-12">
+                {icon}
+              </div>
+              <div>
+                <h3 className="font-semibold leading-tight text-[18px] text-[var(--omni-ink)] sm:text-[22px] md:text-[26px]">
+                  {node.title}
+                </h3>
+                {node.isBonus ? (
+                  <span className="text-xs uppercase tracking-[0.4em] text-[var(--omni-energy-dark)]">Bonus</span>
+                ) : null}
+              </div>
             </div>
-            <div>
-              <p className="text-lg font-semibold text-[var(--omni-ink)]">{node.title}</p>
-              {node.isBonus ? (
-                <span className="text-xs uppercase tracking-[0.4em] text-[var(--omni-energy-dark)]">Bonus</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {showSoftLabel ? (
+                <span className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[10px] uppercase tracking-[0.4em] text-[var(--omni-muted)]">
+                  {labels.softPath}
+                </span>
+              ) : null}
+              {badgeLabel ? (
+                <span className="rounded-full border border-[var(--omni-energy)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] text-[var(--omni-energy)]">
+                  {badgeLabel}
+                </span>
               ) : null}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {showSoftLabel ? (
-              <span className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[10px] uppercase tracking-[0.4em] text-[var(--omni-muted)]">
-                Soft path
-              </span>
-            ) : null}
-            {badgeLabel ? (
-              <span className="rounded-full border border-[var(--omni-energy)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] text-[var(--omni-energy)]">
-                {badgeLabel}
-              </span>
-            ) : null}
-          </div>
-        </div>
-        <div className="mt-5">
           <NodeBody
             node={node}
             quizState={quizState}
             onQuizSelect={onQuizSelect}
             realWorld={realWorld}
             simulatorAutoStart={simulatorAutoStart}
-            realWorldInputRef={realWorldInputRef}
+            realWorldContextInputRef={realWorldContextInputRef}
+            realWorldRuleInputRef={realWorldRuleInputRef}
           />
-        </div>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          {showXp ? (
-            <span className="rounded-full bg-[var(--omni-bg-main)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-ink)]">
-              +{node.xp} XP
-            </span>
-          ) : null}
-          {showButton ? (
-            <div className="ml-auto w-full sm:w-auto">
-              <OmniCtaButton
-                size="sm"
-                onClick={onPrimaryAction}
-                disabled={primaryDisabled || disableQuizButton}
-                className="w-full sm:w-auto"
-              >
-                {buttonLabel}
-              </OmniCtaButton>
-            </div>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-3">
+            {showXp ? (
+              <span className="rounded-full bg-[var(--omni-bg-main)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-ink)]">
+                +{node.xp} XP
+              </span>
+            ) : null}
+            {showButton ? (
+              <div className="ml-auto w-full sm:w-auto">
+                <OmniCtaButton
+                  size="sm"
+                  onClick={onPrimaryAction}
+                  disabled={primaryDisabled || disableQuizButton}
+                  className="w-full sm:w-auto"
+                >
+                  {buttonLabel}
+                </OmniCtaButton>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
@@ -295,14 +328,16 @@ function NodeBody({
   onQuizSelect,
   realWorld,
   simulatorAutoStart,
-  realWorldInputRef,
+  realWorldContextInputRef,
+  realWorldRuleInputRef,
 }: {
   node: DailyPathNodeConfig;
   quizState: QuizState;
   onQuizSelect: (optionId: string) => void;
   realWorld?: RealWorldState;
   simulatorAutoStart?: boolean;
-  realWorldInputRef?: React.RefObject<HTMLInputElement>;
+  realWorldContextInputRef?: React.RefObject<HTMLInputElement>;
+  realWorldRuleInputRef?: React.RefObject<HTMLTextAreaElement>;
 }) {
   switch (node.kind) {
     case "SIMULATOR":
@@ -314,11 +349,11 @@ function NodeBody({
               inhaleSeconds={node.simulatorConfig.inhaleSeconds}
               exhaleSeconds={node.simulatorConfig.exhaleSeconds}
             />
-            <p className="text-sm text-[var(--omni-ink)]/80">{node.description}</p>
+            <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>
           </div>
         );
       }
-      return <p className="text-sm text-[var(--omni-ink)]/80">{node.description}</p>;
+      return <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>;
     case "REAL_WORLD":
       if (node.fields && node.fields.length >= 2) {
         const [contextField, ruleField] = node.fields;
@@ -326,7 +361,7 @@ function NodeBody({
           <div className="space-y-4 rounded-[20px] border border-[var(--omni-border-soft)] bg-white/60 px-4 py-4">
             <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--omni-muted)]">{node.title}</p>
             {node.description ? (
-              <p className="text-sm text-[var(--omni-ink)]/80">{node.description}</p>
+              <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>
             ) : null}
             {contextField ? (
               <div className="space-y-2">
@@ -337,27 +372,33 @@ function NodeBody({
                   onChange={(event) => realWorld?.setContext(event.target.value)}
                   placeholder={contextField.placeholder ?? ""}
                   className="w-full rounded-[14px] border border-[var(--omni-border-soft)] bg-transparent px-3 py-2 text-sm text-[var(--omni-ink)] outline-none focus:border-[var(--omni-ink)]"
-                  ref={realWorldInputRef}
+                  ref={realWorldContextInputRef}
                 />
               </div>
             ) : null}
             {ruleField ? (
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-[var(--omni-ink)]">{ruleField.label}</p>
-                <div className="flex flex-wrap items-center gap-2 rounded-[18px] border border-[var(--omni-border-soft)] px-3 py-2">
-                  {ruleField.prefix ? (
-                    <span className="text-sm text-[var(--omni-muted)]">{ruleField.prefix}</span>
-                  ) : null}
-                  <textarea
-                    rows={2}
-                    value={realWorld?.rule ?? ""}
-                    onChange={(event) => realWorld?.setRule(event.target.value)}
-                    placeholder={ruleField.placeholder ?? ""}
-                    className="min-h-[48px] flex-1 resize-none rounded-md bg-transparent text-sm text-[var(--omni-ink)] outline-none placeholder:text-[var(--omni-muted)]"
-                  />
-                  {ruleField.suffix ? (
-                    <span className="text-sm font-semibold text-[var(--omni-ink)]">{ruleField.suffix}</span>
-                  ) : null}
+                <div
+                  className="rounded-[18px] border border-[var(--omni-border-soft)] bg-white/70 px-3 py-3"
+                  onClick={() => realWorldRuleInputRef?.current?.focus()}
+                >
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--omni-ink)]">
+                    {ruleField.prefix ? (
+                      <span className="pointer-events-none font-semibold whitespace-nowrap">{ruleField.prefix}</span>
+                    ) : null}
+                    <textarea
+                      rows={2}
+                      value={realWorld?.rule ?? ""}
+                      onChange={(event) => realWorld?.setRule(event.target.value)}
+                      placeholder={ruleField.placeholder ?? ""}
+                      className="min-h-[48px] flex-1 resize-none border-none bg-transparent text-sm text-[var(--omni-ink)] outline-none placeholder:text-[var(--omni-muted)]"
+                      ref={realWorldRuleInputRef}
+                    />
+                    {ruleField.suffix ? (
+                      <span className="pointer-events-none font-semibold whitespace-nowrap">{ruleField.suffix}</span>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -367,7 +408,7 @@ function NodeBody({
       return (
         <div className="space-y-4 rounded-[20px] border border-[var(--omni-border-soft)] bg-white/60 px-4 py-4">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--omni-muted)]">{node.title}</p>
-          <p className="text-sm text-[var(--omni-ink)]/80">{node.description}</p>
+          <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>
         </div>
       );
     case "QUIZ_SINGLE": {
@@ -380,7 +421,7 @@ function NodeBody({
           : node.quizFeedback?.incorrect ?? "Mai există o variantă mai utilă.";
       return (
         <div className="space-y-3">
-          <p className="text-sm text-[var(--omni-ink)]/80">{node.description}</p>
+          <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>
           <div className="space-y-2">
             {options.map((option) => {
               const selected = quizState.choice === option.id;
@@ -424,14 +465,14 @@ function NodeBody({
               >
                 {feedbackLabel}
               </p>
-              <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{feedbackCopy}</p>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--omni-ink)]/80">{feedbackCopy}</p>
             </div>
           ) : null}
         </div>
       );
     }
     default:
-      return <p className="text-base text-[var(--omni-ink)]/80">{node.description}</p>;
+      return <p className="text-base leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>;
   }
 }
 

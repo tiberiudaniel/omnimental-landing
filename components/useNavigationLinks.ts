@@ -14,7 +14,6 @@ const NAV_LINK_CONFIG: NavLinkConfig[] = [
   { href: "/individual", labelKey: "navSessions", descriptionKey: "navSessionsDesc" },
   { href: "/antrenament", labelKey: "navEvaluation", descriptionKey: "navEvaluationDesc" },
   { href: "/recommendation", labelKey: "navRecommendation", descriptionKey: "navRecommendationDesc" },
-  { href: "/experience-onboarding?flow=initiation&step=welcome", labelKey: "navOnboarding" },
   { href: "/progress", labelKey: "navProgress", descriptionKey: "navProgressDesc" },
   // Omni Sensei moved from header tabs into menu
   { href: "/antrenament?tab=ose", labelKey: "senseiTitle" },

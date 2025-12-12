@@ -36,6 +36,12 @@ Open http://localhost:3000 to view the app.
 2. Complete the flow and check `localStorage.getItem("omnimental_wizard_state_v1")` is `null`.
 3. Submit the recap CTA and verify the new entry in Firestore.
 
+### DailyPath QA Links
+
+- Add `NEXT_PUBLIC_SHOW_QA_LINKS=true` to `.env.local` (restart dev server) to display a QA helper panel on `/recommendation`.
+- The panel lists shortcut links for every cluster (energy, clarity, emotional_flex), mode (deep, short), and language (RO, EN). Each link simply opens `/recommendation` with the appropriate query (`?cluster=energy&mode=short&lang=en`, etc.).
+- You can also hit those URLs directly without the panel; removing the env var hides the QA controls for production builds.
+
 ## Scripts
 
 - `npm run dev` — start development

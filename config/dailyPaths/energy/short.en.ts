@@ -1,0 +1,108 @@
+import type { DailyPathConfig } from "@/types/dailyPath";
+
+export const ENERGY_SHORT_EN: DailyPathConfig = {
+  id: "focus_energy_v1_short_en",
+  cluster: "focus_energy_cluster",
+  mode: "short",
+  lang: "en",
+  version: 1,
+  skillLabel: "Energy: one concrete action",
+  nodes: [
+    {
+      id: "focus_short_intro",
+      kind: "INTRO",
+      shape: "circle",
+      title: "Mental Energy & Recovery (Quick)",
+      description:
+        "Today you’ll do a short version of this training. You’ll learn where energy leaks and practice the 2-second pause.",
+      xp: 0,
+      ctaLabel: "Start training",
+    },
+    {
+      id: "focus_short_learn",
+      kind: "LEARN",
+      shape: "circle",
+      title: "Your mental battery",
+      description:
+        "You don’t get tired only from work — constant micro-switching drains you.\nA 2-second pause reduces this hidden energy loss.",
+      xp: 5,
+    },
+    {
+      id: "focus_short_sim",
+      kind: "SIMULATOR",
+      shape: "circle",
+      badge: "simulator",
+      title: "Simulator: 2-second reset",
+      description: "Inhale when the circle fills. Exhale when it empties. Repeat a few cycles.",
+      xp: 10,
+      simulatorConfig: { inhaleSeconds: 2, exhaleSeconds: 2 },
+      ctaLabel: "Exercise done",
+    },
+    {
+      id: "focus_short_quiz",
+      kind: "QUIZ_SINGLE",
+      shape: "circle",
+      title: "Quick quiz",
+      description: "What drains your mental energy the most?",
+      quizOptions: [
+        { id: "A", label: "40 minutes of focused work." },
+        { id: "B", label: "Frequent checking: phone → email → chat." },
+        { id: "C", label: "A short break without your phone." },
+      ],
+      correctOptionIds: ["B"],
+      quizFeedback: {
+        correct: "Correct. Frequent micro-switching is the hidden drain.",
+        incorrect: "Almost. Focused work is not the problem — constant switching is.",
+      },
+      xp: 10,
+    },
+    {
+      id: "focus_short_real",
+      kind: "REAL_WORLD",
+      shape: "star",
+      badge: "viata_reala",
+      title: "Your quick challenge",
+      description: "Write your situation and rule.",
+      fields: [
+        {
+          id: "context",
+          label: "A situation today:",
+          placeholder: "e.g., I close my phone and start work",
+        },
+        {
+          id: "rule",
+          label: "My rule:",
+          prefix: "When",
+          suffix: "→ I pause for 2 seconds.",
+          placeholder: "e.g., I switch tabs intentionally",
+        },
+      ],
+      xp: 20,
+      ctaLabel: "I commit",
+    },
+    {
+      id: "focus_short_summary",
+      kind: "SUMMARY",
+      shape: "circle",
+      title: "Quick training complete",
+      description: "",
+      bullets: [
+        "Switching drains energy.",
+        "A 2-second pause protects you.",
+        "Writing the rule brings it into real life.",
+      ],
+      anchorDescription: "A small pause. A clearer day.",
+      xp: 0,
+      ctaLabel: "See your progress",
+    },
+    {
+      id: "focus_short_anchor",
+      kind: "ANCHOR",
+      shape: "circle",
+      title: "Daily motto",
+      description: "A small pause. A clearer day.",
+      xp: 0,
+      ctaLabel: "Done for today",
+    },
+  ],
+};

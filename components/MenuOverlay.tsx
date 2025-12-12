@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useI18n } from "./I18nProvider";
+import { useAuth } from "./AuthProvider";
+import clsx from "clsx";
 
 export type NavLink = {
   label: string;
@@ -22,7 +25,9 @@ const defaultNavigationText = {
 };
 
 export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) {
-  const { t } = useI18n();
+  const { t, lang, setLang } = useI18n();
+  const { user, signOutUser } = useAuth();
+  const router = useRouter();
   const getLabel = (key: string, fallback: string): string => {
     const value = t(key);
     return typeof value === "string" ? value : fallback;
@@ -33,6 +38,10 @@ export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) 
   const navigationLabel = getLabel("navHeading", defaultNavigationText.heading);
   const closeLabel = getLabel("navClose", defaultNavigationText.close);
   const ctaLabel = getLabel("menuCtaLabel", defaultNavigationText.cta);
+  const signOutText = getLabel("headerSignOut", "Deconectare");
+  const signInText = getLabel("headerSignIn", "Conectează-te");
+  const changeLangLabel = lang === "ro" ? "Schimbă limba" : "Change language";
+  const isLoggedIn = Boolean(user && !user.isAnonymous);
 
   const isWizard = (() => {
     try { return typeof window !== 'undefined' && window.location.pathname.startsWith('/wizard'); } catch { return false; }
@@ -77,7 +86,57 @@ export default function MenuOverlay({ open, onClose, links }: MenuOverlayProps) 
             </li>
           ))}
         </ul>
-        <div className="mt-6 border-t border-[var(--omni-bg-paper)] pt-4">
+        <div className="mt-6 border-t border-[var(--omni-border-soft)] pt-4 space-y-4">
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              if (isLoggedIn) {
+                void signOutUser?.();
+              } else {
+                router.push("/auth");
+              }
+            }}
+            className="w-full rounded-[12px] border px-4 py-2 text-sm font-semibold transition hover:bg-[var(--omni-bg-paper)]"
+            style={{ borderColor: "var(--omni-border-soft)", color: "var(--omni-ink)" }}
+          >
+            {isLoggedIn ? signOutText : signInText}
+          </button>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">{changeLangLabel}</p>
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setLang("ro");
+                  onClose();
+                }}
+                className={clsx(
+                  "flex-1 rounded-[10px] border px-3 py-2 text-sm font-medium transition",
+                  lang === "ro" ? "bg-[var(--omni-bg-paper)] text-[var(--omni-ink)]" : "text-[var(--omni-muted)]",
+                )}
+                style={{ borderColor: "var(--omni-border-soft)" }}
+              >
+                RO
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLang("en");
+                  onClose();
+                }}
+                className={clsx(
+                  "flex-1 rounded-[10px] border px-3 py-2 text-sm font-medium transition",
+                  lang === "en" ? "bg-[var(--omni-bg-paper)] text-[var(--omni-ink)]" : "text-[var(--omni-muted)]",
+                )}
+                style={{ borderColor: "var(--omni-border-soft)" }}
+              >
+                EN
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 border-t border-[var(--omni-bg-paper)] pt-4">
           <button
             type="button"
             onClick={() => {

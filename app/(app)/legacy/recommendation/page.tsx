@@ -99,6 +99,7 @@ type DailyLoopDeckProps = {
   onOpenAbil: () => void;
   onOpenJournal: () => void;
   dailyPathConfig: DailyPathConfig | null;
+  userId: string | null;
 };
 
 function DailyLoopDeck({
@@ -111,11 +112,12 @@ function DailyLoopDeck({
   onOpenAbil,
   onOpenJournal,
   dailyPathConfig,
+  userId,
 }: DailyLoopDeckProps) {
   return (
     <section className="mx-auto mb-8 w-full max-w-5xl space-y-4">
       <AdaptiveMissionCard cluster={cluster} axisLabel={axisLabel} nudge={adaptiveNudge} />
-      <DailyPath key={dailyPathConfig?.cluster ?? "none"} config={dailyPathConfig} />
+      <DailyPath key={dailyPathConfig?.id ?? "none"} config={dailyPathConfig} userId={userId} currentArcId={null} />
       <div className="grid gap-4 md:grid-cols-2">
         <MicroLessonCard text={microLessonText} onClick={onOpenKuno} />
         <AbilActionCard cluster={cluster} text={abilNudge} onClick={onOpenAbil} />
@@ -362,7 +364,14 @@ function RecommendationContent() {
   const abilNudge = cluster ? ABIL_NUDGES[cluster] : null;
   const microLessonText = lang === "ro" ? MICRO_LESSON_PLACEHOLDER.ro : MICRO_LESSON_PLACEHOLDER.en;
   const dailyPathConfig = useMemo(
-    () => (cluster ? getDailyPathForCluster(cluster, lang === "en" ? "en" : "ro") : null),
+    () =>
+      cluster
+        ? getDailyPathForCluster({
+            cluster,
+            lang: lang === "en" ? "en" : "ro",
+            mode: "deep",
+          })
+        : null,
     [cluster, lang],
   );
   const canShowDailyLoop = hasCompletedOnboarding || allowGuest;
@@ -873,6 +882,7 @@ const [pulseEntries, setPulseEntries] = useState<DailyAxesEntry[]>([]);
               onOpenAbil={() => router.push("/abil")}
               onOpenJournal={() => router.push("/journal")}
               dailyPathConfig={dailyPathConfig}
+              userId={user?.uid ?? null}
             />
             {showGuestBanner ? (
               <GuestAccountBanner onCreateAccount={redirectToAuth} onResume={() => router.push("/?step=cards")} />

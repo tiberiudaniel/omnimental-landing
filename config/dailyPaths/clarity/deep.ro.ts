@@ -1,0 +1,172 @@
+import type { DailyPathConfig } from "@/types/dailyPath";
+
+export const CLARITY_DEEP_RO: DailyPathConfig = {
+  id: "clarity_v1_deep_ro",
+  cluster: "clarity_cluster",
+  mode: "deep",
+  lang: "ro",
+  version: 1,
+  skillLabel: "Claritate: arhitectura mentală completă",
+  autonomyNodeId: "clarity_a1",
+  nodes: [
+    {
+      id: "clarity_intro",
+      kind: "INTRO",
+      shape: "circle",
+      title: "Claritate mentală & direcție",
+      description:
+        "Astăzi lucrezi la o abilitate simplă, dar rar folosită: să spui în O propoziție ce vrei să faci. Cu cât îți clarifici mai repede intenția, cu atât risipești mai puțin timp, energie și stres.",
+      xp: 0,
+      ctaLabel: "Încep",
+    },
+    {
+      id: "clarity_l1",
+      kind: "LEARN",
+      shape: "circle",
+      title: "Ce este, de fapt, claritatea mentală?",
+      description:
+        "Claritate mentală înseamnă să poți răspunde simplu la întrebarea: „Ce fac acum și de ce?”\nNu e perfecționism, nu e „să știi tot”. Este abilitatea de a formula în cuvinte:\n– care e rezultatul pe care îl vrei,\n– care este întrebarea la care răspunzi,\n– care este următorul pas concret.",
+      xp: 5,
+    },
+    {
+      id: "clarity_example1",
+      kind: "LEARN",
+      shape: "circle",
+      title: "O zi „plină”, dar fără direcție",
+      description:
+        "Maria își deschide laptopul și zice: „Trebuie să rezolv o grămadă de lucruri.” Răspunde la câteva mailuri fără prioritate clară, intră într-un document, sare pe WhatsApp, se apucă de prezentare, se oprește, caută ceva pe Google, mai deschide două tab-uri.\nSeara e obosită și are senzația că „a fost ocupată toată ziua”, dar nu poate spune clar: „Asta am urmărit. Asta am terminat.” Asta e lipsa de claritate, nu lipsa de voință.",
+      xp: 5,
+    },
+    {
+      id: "clarity_quiz1",
+      kind: "QUIZ_SINGLE",
+      shape: "circle",
+      title: "Recunoaște claritatea",
+      description: "În care dintre situațiile de mai jos există cea mai multă claritate mentală?",
+      quizOptions: [
+        { id: "A", label: "Mă așez la birou și zic: am o zi plină, vedem ce apuc." },
+        { id: "B", label: "Îmi spun: în următoarele 40 de minute scriu primul draft pentru raportul X." },
+        { id: "C", label: "Deschid mailul, WhatsApp-ul și documentele, ca să văd ce mă inspiră." },
+      ],
+      correctOptionIds: ["B"],
+      quizFeedback: {
+        correct: "Exact. Claritatea înseamnă să numești în mod concret ce vrei să se întâmple în următoarele minute.",
+        incorrect: "Nu chiar. Claritatea nu înseamnă să „vezi ce apare”, ci să numești explicit ce rezultat urmărești acum.",
+      },
+      xp: 10,
+    },
+    {
+      id: "clarity_l2",
+      kind: "LEARN",
+      shape: "circle",
+      title: "Regula unei singure propoziții",
+      description:
+        "Un mod simplu de a testa claritatea este: „Pot să spun în O propoziție clară ce fac în următoarele 20–40 de minute?”\nExemple:\n– „Scriu introducerea pentru raport.”\n– „Răspund la 3 mailuri importante, nu la toate.”\n– „Clarific structura prezentării, fără să o finisez.”\nDacă propoziția e vagă, confuză sau conține 4-5 obiective deodată, nu este claritate.",
+      xp: 5,
+    },
+    {
+      id: "clarity_quiz2",
+      kind: "QUIZ_SINGLE",
+      shape: "circle",
+      title: "Aplică regula",
+      description: "Vrei să lucrezi la prezentarea de mâine. Care formulare este cea mai clară?",
+      quizOptions: [
+        { id: "A", label: "Trebuie să mă ocup și de prezentarea aia, plus multe altele." },
+        { id: "B", label: "În următoarele 30 de minute definitivez structura slide-urilor 1–5." },
+        { id: "C", label: "Mă apuc de prezentare și văd eu cum merge." },
+      ],
+      correctOptionIds: ["B"],
+      quizFeedback: {
+        correct: "Da. O propoziție clară are un interval de timp, un rezultat concret și un obiectiv singular.",
+        incorrect: "Aproape. O propoziție de claritate nu este „vedem”, ci: timp limitat + rezultat clar + un singur obiectiv.",
+      },
+      xp: 10,
+    },
+    {
+      id: "clarity_sim1",
+      kind: "SIMULATOR",
+      shape: "circle",
+      badge: "simulator",
+      title: "Simulator: O propoziție, nimic altceva",
+      description:
+        "Alege un mic lucru real pe care vrei să-l faci imediat după acest exercițiu. Pentru următoarele 20 de secunde repetă în minte o singură propoziție clară despre ce vei face. Dacă apar alte gânduri („și aia, și cealaltă”), revino la propoziție.",
+      xp: 15,
+      ctaLabel: "Am făcut exercițiul",
+    },
+    {
+      id: "clarity_a1",
+      kind: "ACTION",
+      shape: "star",
+      title: "Cum simți după primul exercițiu?",
+      description: "Ai testat regula unei singure propoziții. Ce simți că ai nevoie acum?",
+      xp: 0,
+    },
+    {
+      id: "clarity_sim2",
+      kind: "SIMULATOR",
+      shape: "hollow",
+      badge: "simulator",
+      softPathOnly: true,
+      title: "Extra training: o altă propoziție",
+      description:
+        "Alege un alt mic task real (nu imaginar): un telefon, un mesaj, un micro-task de azi. Repetă același lucru: 20 de secunde în care ții mintea pe O propoziție clară despre ce vei face. Dacă apar 3–4 obiective deodată, redu-le la unul singur.",
+      xp: 5,
+      ctaLabel: "Am făcut exercițiul",
+    },
+    {
+      id: "clarity_fog",
+      kind: "LEARN",
+      shape: "circle",
+      title: "Ceață mentală vs. claritate",
+      description:
+        "Ceața mentală nu înseamnă că ești „slab” sau „leneș”. De cele mai multe ori, înseamnă:\n– prea multe intenții amestecate,\n– niciuna formulată clar,\n– niciun pas imediat stabilit.\nClaritatea apare când:\n– alegi o singură intenție pentru următoarele minute,\n– o formulezi în cuvinte,\n– începi doar cu acel pas.",
+      xp: 5,
+    },
+    {
+      id: "clarity_real1",
+      kind: "REAL_WORLD",
+      shape: "star",
+      badge: "viata_reala",
+      title: "Provocarea ta reală de azi",
+      description: "Alege o situație reală în care vei folosi regula unei singure propoziții înainte să începi.",
+      fields: [
+        {
+          id: "context",
+          label: "Azi, mă voi opri și voi clarifica înainte să încep când:",
+          placeholder: "ex: deschid laptopul după pauza de prânz",
+        },
+        {
+          id: "rule",
+          label: "Propoziția mea clară va suna așa:",
+          placeholder: "În următoarele 30 de minute scriu draftul pentru slide-urile 1–5.",
+        },
+      ],
+      xp: 25,
+      ctaLabel: "Îmi iau angajamentul",
+    },
+    {
+      id: "clarity_summary",
+      kind: "SUMMARY",
+      shape: "circle",
+      title: "Felicitări, ai terminat antrenamentul de claritate de azi.",
+      description: "",
+      bullets: [
+        "Lipsa de claritate nu e lipsă de voință, e lipsă de decizie explicită.",
+        "Poți testa claritatea cu regula unei singure propoziții.",
+        "Dacă legi această propoziție de momente concrete, simți energie și progres real.",
+      ],
+      anchorDescription: "Înainte să încep, spun clar ce fac.",
+      xp: 0,
+      ctaLabel: "Vezi progresul tău",
+    },
+    {
+      id: "clarity_anchor",
+      kind: "ANCHOR",
+      shape: "circle",
+      title: "Ancora zilei",
+      description: "Înainte să încep, spun clar ce fac.",
+      xp: 0,
+      ctaLabel: "Gata pe azi",
+    },
+  ],
+};

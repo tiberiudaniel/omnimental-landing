@@ -16,6 +16,9 @@ export type DailyNodeKind =
 
 export type DailyNodeShape = "circle" | "star" | "hollow";
 
+export type DailyPathMode = "deep" | "short";
+export type DailyPathLanguage = "ro" | "en";
+
 export interface DailyPathNodeConfig {
   id: string;
   kind: DailyNodeKind;
@@ -51,7 +54,12 @@ export interface DailyPathNodeConfig {
 }
 
 export interface DailyPathConfig {
+  id: string;
   cluster: AdaptiveCluster;
+  mode: DailyPathMode;
+  lang: DailyPathLanguage;
+  version?: number;
+  skillLabel?: string;
   nodes: DailyPathNodeConfig[];
   autonomyNodeId?: string;
 }

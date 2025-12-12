@@ -11,12 +11,6 @@ import { useProfile } from "./ProfileProvider";
 import Toast from "./Toast";
 import { JournalTrigger } from "./journal/JournalTrigger";
 
-const INIT_VISIT_KEY = "omnimental_init_visits";
-const INIT_TIME_KEY = "omnimental_init_time_ms";
-const INIT_SESSION_KEY = "omnimental_init_session";
-
-type InitiationEngagement = { visits: number; timeMs: number };
-
 interface SiteHeaderProps {
   showMenu?: boolean;
   onMenuToggle?: () => void;
@@ -91,67 +85,17 @@ export default function SiteHeader({
     return pathname.startsWith(path);
   };
 
-  // Decide if we should show the Onboarding entry in the header.
-  // Rule of thumb: keep it visible for new/authenticated users and hide it after a generous grace window.
-  const showOnboardingNav = (() => {
-    // Always show for guests or in wizardMode (header has minimal chrome)
-    if (!isLoggedIn || wizardMode) return true;
-    // Allow forcing via query or localStorage when testing
-    try {
-      const search = typeof window !== 'undefined' ? window.location.search : '';
-      if (search.includes('e2e=1') || search.includes('demo=1')) return true;
-      const force = typeof window !== 'undefined' ? window.localStorage.getItem('omnimental_show_onboarding') : null;
-      if (force === '1' || force === 'true') return true;
-    } catch {}
-    // Cycles rule: hide after N cycles (default 1). Use profile field or localStorage counter.
-    let minCycles = 1;
-    try {
-      const envMin = Number(process.env.NEXT_PUBLIC_ONBOARDING_HIDE_MIN_CYCLES ?? '');
-      if (Number.isFinite(envMin) && envMin > 0) minCycles = Math.floor(envMin);
-      if (typeof window !== 'undefined') {
-        const override = Number(window.localStorage.getItem('omnimental_onboarding_required_cycles') ?? '');
-        if (Number.isFinite(override) && override > 0) minCycles = Math.floor(override);
-      }
-    } catch {}
-    try {
-      const cyclesProfile = (profile as { experienceOnboardingCycles?: number } | null)?.experienceOnboardingCycles ?? 0;
-      const cyclesLocal = typeof window !== 'undefined' ? Number(window.localStorage.getItem('omnimental_exp_onb_cycles') ?? '0') : 0;
-      const cycles = Number.isFinite(cyclesProfile) && cyclesProfile > 0 ? cyclesProfile : cyclesLocal;
-      if (cycles >= minCycles) return false; // hide after reaching the threshold
-    } catch {}
-    // Compute account age (fallback to show if missing)
-    const createdAt = (profile as { createdAt?: { toMillis?: () => number } } | null)?.createdAt;
-    const createdMs = typeof createdAt?.toMillis === 'function' ? createdAt.toMillis() : null;
-    if (!createdMs) return true;
-    // Threshold (generous by default for current testing): env override (days or hours), else 30 days
-    let thresholdMs = 30 * 24 * 60 * 60 * 1000; // 30 days
-    try {
-      const daysEnv = Number(process.env.NEXT_PUBLIC_ONBOARDING_HIDE_DAYS ?? '');
-      const hoursEnv = Number(process.env.NEXT_PUBLIC_ONBOARDING_HIDE_HOURS ?? '');
-      if (Number.isFinite(daysEnv) && daysEnv > 0) {
-        thresholdMs = daysEnv * 24 * 60 * 60 * 1000;
-      } else if (Number.isFinite(hoursEnv) && hoursEnv > 0) {
-        thresholdMs = hoursEnv * 60 * 60 * 1000;
-      }
-    } catch {}
-    const age = Date.now() - createdMs;
-    return age < thresholdMs;
-  })();
   const navButtonBaseClasses =
     "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] leading-none transition";
   const navButtonInactiveClasses =
     "border border-transparent text-[color-mix(in_srgb,var(--omni-ink-soft)_82%,var(--omni-ink)_18%)] hover:text-[var(--omni-energy)] hover:border-[color-mix(in_srgb,var(--omni-energy)_55%,var(--omni-border-soft)_45%)] hover:bg-[color-mix(in_srgb,var(--omni-energy)_8%,transparent)]";
 
-  const headerPad = "px-3 py-2";
+const headerPad = "px-3 py-2 md:py-4";
   const bottomMarginTop = "mt-1";
   const titleSize = "text-lg";
   const headerButtonBase =
     "rounded-full px-2 py-1 text-[var(--omni-ink-soft)] transition-colors border border-transparent hover:bg-[color-mix(in_srgb,var(--omni-energy-tint)_70%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--omni-energy-tint)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--omni-header-bg)]";
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [initiationEngagement, setInitiationEngagement] = useState<InitiationEngagement>({
-    visits: 0,
-    timeMs: 0,
-  });
   const actionsRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -163,37 +107,6 @@ export default function SiteHeader({
     return () => document.removeEventListener('mousedown', onDoc);
   }, [actionsOpen]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let visits = Number(window.localStorage.getItem(INIT_VISIT_KEY) ?? "0");
-    if (!Number.isFinite(visits) || visits < 0) visits = 0;
-    if (!window.sessionStorage.getItem(INIT_SESSION_KEY)) {
-      visits += 1;
-      window.localStorage.setItem(INIT_VISIT_KEY, String(visits));
-      window.sessionStorage.setItem(INIT_SESSION_KEY, "1");
-    }
-
-    let timeMs = Number(window.localStorage.getItem(INIT_TIME_KEY) ?? "0");
-    if (!Number.isFinite(timeMs) || timeMs < 0) timeMs = 0;
-    setInitiationEngagement({ visits, timeMs });
-
-    let lastTick = Date.now();
-    const interval = window.setInterval(() => {
-      const now = Date.now();
-      const delta = now - lastTick;
-      lastTick = now;
-      timeMs += delta;
-      window.localStorage.setItem(INIT_TIME_KEY, String(timeMs));
-      setInitiationEngagement({ visits, timeMs });
-    }, 5000);
-
-    return () => {
-      window.clearInterval(interval);
-    };
-  }, []);
-
-  const shouldDimInitiere = initiationEngagement.visits >= 5 || initiationEngagement.timeMs >= 60 * 60 * 1000;
-
   return (
     <header
       className={clsx("sticky top-0 z-40 border-b", headerPad)}
@@ -204,8 +117,8 @@ export default function SiteHeader({
       }}
     >
       <div className="relative z-10">
-      {/* Top row: Auth | Guest | RO EN (slightly shifted left, tighter) */}
-      <div className="flex items-center justify-end gap-1.5 text-[10px] text-[var(--omni-ink-soft)]">
+      {/* Top row: Auth | Guest | RO EN (desktop only) */}
+      <div className="hidden items-center justify-end gap-1.5 text-[10px] text-[var(--omni-ink-soft)] md:flex">
         <button
           type="button"
           onClick={
@@ -265,30 +178,47 @@ export default function SiteHeader({
       </div>
 
       {/* Bottom row layout: logo | centered nav | journal + menu on right */}
-      <div className={`${bottomMarginTop} grid grid-cols-[auto_1fr_auto] items-center gap-3`}>
+      <div
+        className={`${bottomMarginTop} grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,auto)_1fr_minmax(0,auto)] sm:items-center sm:gap-3`}
+        style={{ columnGap: "0.6rem" }}
+      >
         {wizardMode ? (
-          <Link href="/intro" className="flex items-center gap-3 shrink-0" aria-label="OmniMental">
-            <Image src="/assets/logo.jpg" alt="OmniMental logo" width={60} height={28} priority style={{ height: "auto", width: "auto" }} />
-            <span className="flex flex-col leading-tight text-neutral-dark">
-              <span className={`${titleSize} font-semibold tracking-wide`}>OmniMental</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-[var(--omni-muted)]">
+          <Link href="/intro" className="flex items-center gap-2 sm:gap-3 shrink-0" aria-label="OmniMental">
+            <Image
+              src="/assets/logo.jpg"
+              alt="OmniMental logo"
+              width={60}
+              height={28}
+              priority
+              className="h-8 w-auto md:h-10"
+            />
+            <span className="flex flex-col gap-[1px] leading-tight text-neutral-dark">
+              <span className={`${titleSize} font-semibold tracking-wide whitespace-nowrap`}>OmniMental</span>
+              <span className="text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.15em] text-[var(--omni-muted)] leading-tight">
                 {lang === "ro" ? "Dezvoltă-ți inteligența adaptativă" : "Develop your adaptive intelligence"}
               </span>
             </span>
           </Link>
         ) : (
-          <Link href="/intro" className="flex items-center gap-3 shrink-0">
-            <Image src="/assets/logo.jpg" alt="OmniMental logo" width={60} height={28} priority style={{ height: "auto", width: "auto" }} />
-            <span className="flex flex-col leading-tight text-neutral-dark">
-              <span className={`${titleSize} font-semibold tracking-wide`}>OmniMental</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-[var(--omni-muted)]">
+          <Link href="/intro" className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <Image
+              src="/assets/logo.jpg"
+              alt="OmniMental logo"
+              width={60}
+              height={28}
+              priority
+              className="h-8 w-auto md:h-10"
+            />
+            <span className="flex flex-col gap-[1px] leading-tight text-neutral-dark">
+              <span className={`${titleSize} font-semibold tracking-wide whitespace-nowrap`}>OmniMental</span>
+              <span className="text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.15em] text-[var(--omni-muted)] leading-tight">
                 {lang === "ro" ? "Dezvoltă-ți inteligența adaptativă" : "Develop your adaptive intelligence"}
               </span>
             </span>
           </Link>
         )}
         {!wizardMode && (
-          <nav className="flex items-center gap-x-4 md:gap-x-6 mt-0 md:mt-[2px] justify-center">
+          <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm md:gap-x-6 md:text-base">
           <Link
             href="/recommendation"
             className={clsx(
@@ -319,23 +249,9 @@ export default function SiteHeader({
           >
             {typeof t("navProgres") === "string" ? (t("navProgres") as string) : progressLabel}
           </Link>
-          {/* Sensei tab removed */}
-          {showOnboardingNav ? (
-            <Link
-              href={{ pathname: "/experience-onboarding", query: { flow: "initiation", step: "welcome" } }}
-              className={clsx(
-                navButtonBaseClasses,
-                shouldDimInitiere ? "opacity-5 hover:opacity-15" : null,
-                isActive("/experience-onboarding") ? "omni-tab-active" : navButtonInactiveClasses,
-              )}
-              aria-current={isActive("/experience-onboarding") ? "page" : undefined}
-            >
-              {typeof t("navOnboarding") === "string" ? (t("navOnboarding") as string) : (lang === "ro" ? "Onboarding" : "Onboarding")}
-            </Link>
-          ) : null}
           </nav>
         )}
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-1 sm:gap-2">
           {!wizardMode && profile?.id && (
             <JournalTrigger
               userId={profile.id}
@@ -351,7 +267,7 @@ export default function SiteHeader({
             <button
               onClick={onMenuToggle}
               aria-label={lang === "ro" ? "Deschide meniul" : "Open menu"}
-              className="mt-[-2px] flex h-10 w-10 items-center justify-center rounded-full border transition hover:bg-[color-mix(in_oklab,var(--omni-ink)_10%,transparent)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-border-soft)]"
+              className="mt-[-2px] flex h-9 w-9 items-center justify-center rounded-full border transition hover:bg-[color-mix(in_oklab,var(--omni-ink)_10%,transparent)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-border-soft)] md:h-10 md:w-10"
               style={{ borderColor: "var(--omni-ink)", color: "var(--omni-ink)" }}
             >
               <span className="space-y-1">

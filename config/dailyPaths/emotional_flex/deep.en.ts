@@ -1,0 +1,176 @@
+import type { DailyPathConfig } from "@/types/dailyPath";
+
+export const EMOTIONAL_FLEX_DEEP_EN: DailyPathConfig = {
+  id: "emotional_flex_v1_deep_en",
+  cluster: "emotional_flex_cluster",
+  mode: "deep",
+  lang: "en",
+  version: 1,
+  skillLabel: "Flexibility: full emotional reset",
+  autonomyNodeId: "emoflex_a1",
+  nodes: [
+    {
+      id: "emoflex_intro",
+      kind: "INTRO",
+      shape: "circle",
+      title: "Emotional Flexibility",
+      description:
+        "Today you’ll train the skill that decides whether your day collapses under pressure or bends and recovers: emotional flexibility.\nYou’ll learn how emotions arise, how to create mental space, and how to respond—not react.",
+      xp: 0,
+      ctaLabel: "Start training",
+    },
+    {
+      id: "emoflex_learn1",
+      kind: "LEARN",
+      shape: "circle",
+      title: "Why emotions hijack action",
+      description:
+        "When your attention fuses with an emotion, you stop seeing options.\nFlexibility begins when you notice the emotion instead of becoming it.",
+      xp: 5,
+    },
+    {
+      id: "emoflex_example1",
+      kind: "LEARN",
+      shape: "circle",
+      title: "A real example",
+      description:
+        "Imagine a message that triggers irritation.\nFor 2–3 seconds, nothing else exists.\nIn that moment, your brain prepares to defend—not to choose.\nFlexibility interrupts this micro-hijack.",
+      xp: 5,
+    },
+    {
+      id: "emoflex_quiz1",
+      kind: "QUIZ_SINGLE",
+      shape: "circle",
+      title: "Recognition check",
+      description: "What is the FIRST sign that emotional hijack is happening?",
+      quizOptions: [
+        { id: "A", label: "Strong emotion + narrow focus" },
+        { id: "B", label: "When you already start acting" },
+        { id: "C", label: "When the feeling disappears" },
+      ],
+      correctOptionIds: ["A"],
+      quizFeedback: {
+        correct: "Exactly. Narrowed attention is the earliest sign that flexibility is needed.",
+        incorrect: "If you already acted, you missed the window. Catch the moment when attention narrows.",
+      },
+      xp: 10,
+    },
+    {
+      id: "emoflex_learn2",
+      kind: "LEARN",
+      shape: "circle",
+      title: "The 2-second window",
+      description:
+        "There is always a micro-space between what you feel and what you choose.\nFlexibility means:\n\nNotice the feeling.\n\nCreate 2 seconds of space.\n\nChoose the next move.",
+      xp: 5,
+    },
+    {
+      id: "emoflex_quiz2",
+      kind: "QUIZ_SINGLE",
+      shape: "circle",
+      title: "Application check",
+      description: "What keeps you flexible in a difficult moment?",
+      quizOptions: [
+        { id: "A", label: "Waiting for calmness" },
+        { id: "B", label: "Creating 2 seconds of space" },
+        { id: "C", label: "Suppressing emotions" },
+      ],
+      correctOptionIds: ["B"],
+      quizFeedback: {
+        correct: "Correct. Flexibility starts with space, not suppression.",
+        incorrect: "You don’t need to suppress the emotion. Create space, then respond.",
+      },
+      xp: 10,
+    },
+    {
+      id: "emoflex_sim1",
+      kind: "SIMULATOR",
+      shape: "circle",
+      badge: "simulator",
+      title: "Flexibility Drill",
+      description:
+        "For the next 20 seconds, practice the micro-pause:\n\nInhale gently\n\nHold awareness\n\nExhale slowly\nLet your mind notice → pause → choose.",
+      simulatorConfig: { inhaleSeconds: 2, exhaleSeconds: 2 },
+      xp: 15,
+      ctaLabel: "Exercise done",
+    },
+    {
+      id: "emoflex_a1",
+      kind: "ACTION",
+      shape: "star",
+      title: "How do you feel now?",
+      description: "Do you want one more round of safe practice, or are you ready to test this in real life?",
+      xp: 0,
+    },
+    {
+      id: "emoflex_sim2",
+      kind: "SIMULATOR",
+      shape: "hollow",
+      badge: "simulator",
+      softPathOnly: true,
+      title: "Second flexibility drill",
+      description:
+        "Repeat the micro-pause in a slightly harder version:\nNotice → Name the emotion → Slow exhale.\nYou’re solidifying the flexibility reflex.",
+      simulatorConfig: { inhaleSeconds: 2, exhaleSeconds: 2 },
+      xp: 5,
+      ctaLabel: "Exercise done",
+    },
+    {
+      id: "emoflex_learn3",
+      kind: "LEARN",
+      shape: "circle",
+      title: "The power of naming",
+      description:
+        "Naming the emotion (“I feel tension”, “I feel irritation”) reduces reactivity by 30–40%.\nYou're preparing for real-world application.",
+      xp: 0,
+    },
+    {
+      id: "emoflex_real1",
+      kind: "REAL_WORLD",
+      shape: "star",
+      badge: "viata_reala",
+      title: "Real-world flexibility",
+      description:
+        "Choose a situation today where emotional tension usually appears.\nDefine it, then choose your 2-second response.",
+      fields: [
+        {
+          id: "context",
+          label: "When I usually get tense…",
+          placeholder: "e.g., before replying to a tense message",
+        },
+        {
+          id: "rule",
+          label: "My 2-second action:",
+          prefix: "In that moment → I create 2 seconds of space and",
+          placeholder: "e.g., inhale, name the feeling, then respond.",
+        },
+      ],
+      xp: 25,
+      ctaLabel: "I commit",
+    },
+    {
+      id: "emoflex_summary",
+      kind: "SUMMARY",
+      shape: "circle",
+      title: "Today’s transformation",
+      description: "",
+      bullets: [
+        "You recognized the early signs of emotional hijack.",
+        "You practiced the 2-second space drill.",
+        "You prepared a real-world flexibility action.",
+      ],
+      anchorDescription: "Space creates choice. Choice creates freedom.",
+      xp: 0,
+      ctaLabel: "View progress",
+    },
+    {
+      id: "emoflex_anchor",
+      kind: "ANCHOR",
+      shape: "circle",
+      title: "Daily motto",
+      description: "Space creates choice. Choice creates freedom.",
+      xp: 0,
+      ctaLabel: "Done for today",
+    },
+  ],
+};

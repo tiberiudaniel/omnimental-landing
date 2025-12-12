@@ -15,7 +15,7 @@ service cloud.firestore {
     // User profile remains owner-scoped even in dev.
     match /userProfiles/{userId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && isValidSelection(request.resource.data.selection);
+      allow create, update: if isOwner(userId);
     }
 
     // Progress facts attached to a user id.
@@ -137,6 +137,12 @@ service cloud.firestore {
     match /userDailyCheckins/{docId} {
       allow read: if signedIn() && docId.matches(request.auth.uid + "_.*");
       allow create, update: if signedIn() && docId.matches(request.auth.uid + "_.*");
+    }
+
+    match /dailyPractice/{docId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.userId == request.auth.uid;
     }
 
     function journalEntryOwnerMatches(data) {
