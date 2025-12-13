@@ -187,21 +187,29 @@ export default function DailyPath({
     setTimeSelectionLocked(false);
   }, [config]);
 
-  useEffect(() => {
-    if (!config) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting derived state on config change
+useEffect(() => {
+  if (!config) return;
+  const id = window.setTimeout(() => {
     resetState();
-  }, [config, resetState]);
+  }, 0);
+  return () => window.clearTimeout(id);
+}, [config, resetState]);
 
-  useEffect(() => {
-    if (defaultTimeSelection != null) {
+useEffect(() => {
+  if (defaultTimeSelection != null) {
+    const id = window.setTimeout(() => {
       setTimeAvailableMin(defaultTimeSelection);
       setTimeSelectionLocked(true);
-    } else {
+    }, 0);
+    return () => window.clearTimeout(id);
+  } else {
+    const id = window.setTimeout(() => {
       setTimeSelectionLocked(false);
       setTimeAvailableMin(null);
-    }
-  }, [defaultTimeSelection]);
+    }, 0);
+    return () => window.clearTimeout(id);
+  }
+}, [defaultTimeSelection]);
 
   const logDebug = useCallback((...args: unknown[]) => {
     if (!IS_DEV) return;

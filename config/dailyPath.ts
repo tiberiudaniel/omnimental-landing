@@ -8,4 +8,4 @@ export {
   getModuleKeyForConfigId,
   getModuleSequenceForCluster,
   getNextModuleKey,
-} from "./dailyPaths/index.ts";
+} from "./dailyPaths";

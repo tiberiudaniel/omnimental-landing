@@ -4,7 +4,7 @@ import {
   DAILY_PATHS_SHORT_RO,
   DAILY_PATHS_SHORT_EN,
   getModuleSequenceForCluster,
-} from "../config/dailyPath.ts";
+} from "../config/dailyPath";
 import type { AdaptiveCluster, DailyPathConfig, DailyPathLanguage, DailyPathMode, DailyPathNodeConfig } from "../types/dailyPath";
 
 function assert(condition: unknown, message: string): asserts condition {

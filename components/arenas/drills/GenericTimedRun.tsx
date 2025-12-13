@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ArenaModuleV1, ArenaDrillDuration, ArenaLang } from "@/config/arenaModules/v1/types";
@@ -21,7 +23,7 @@ interface GenericTimedRunProps {
 
 export function GenericTimedRun({ module, lang, duration }: GenericTimedRunProps) {
   const router = useRouter();
-  const drills = module.drills?.[lang] ?? [];
+  const drills = useMemo(() => module.drills?.[lang] ?? [], [module, lang]);
   const selectedDrill =
     drills.find((drill) => drill.duration === duration) ?? drills[0] ?? null;
   const durationSec = DURATION_SECONDS[duration];

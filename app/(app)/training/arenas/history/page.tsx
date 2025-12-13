@@ -54,7 +54,7 @@ function ArenaHistoryClient() {
                 <div>
                   <p className="text-xs uppercase tracking-wide text-white/60">Ultimul run</p>
                   <p className="text-2xl font-semibold">
-                    {latest ? `${Math.round(latest.score)} puncte` : "-"}
+                    {latest?.score != null ? `${Math.round(latest.score)} puncte` : "-"}
                   </p>
                   {latest ? (
                     <p className="text-sm text-white/60">{formatTs(latest.completedAt)}</p>
@@ -74,11 +74,14 @@ function ArenaHistoryClient() {
                     <div>
                       <p className="text-sm font-semibold">{formatTs(run.completedAt)}</p>
                       <p className="text-xs text-white/60">
-                        Durată: {run.duration} · Acuratețe: {(run.accuracy * 100).toFixed(1)}% · Mean RT:{" "}
+                        Durată: {run.duration} · Acuratețe:{" "}
+                        {run.accuracy != null ? `${(run.accuracy * 100).toFixed(1)}%` : "-"} · Mean RT:{" "}
                         {run.meanRTms ? `${Math.round(run.meanRTms)} ms` : "-"}
                       </p>
                     </div>
-                    <div className="text-xl font-bold">{Math.round(run.score)}</div>
+                    <div className="text-xl font-bold">
+                      {run.score != null ? Math.round(run.score) : "-"}
+                    </div>
                   </div>
                 ))}
               </div>

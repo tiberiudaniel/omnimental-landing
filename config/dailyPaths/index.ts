@@ -4,30 +4,30 @@ import type {
   DailyPathLanguage,
   DailyPathMode,
 } from "@/types/dailyPath";
-import { ENERGY_DEEP_RO } from "./energy/deep.ro.ts";
-import { ENERGY_DEEP_EN } from "./energy/deep.en.ts";
-import { ENERGY_SHORT_RO } from "./energy/short.ro.ts";
-import { ENERGY_SHORT_EN } from "./energy/short.en.ts";
-import { ENERGY_CONGRUENCE_DEEP_RO } from "./energy/congruence/deep.ro.ts";
-import { ENERGY_CONGRUENCE_DEEP_EN } from "./energy/congruence/deep.en.ts";
-import { ENERGY_CONGRUENCE_SHORT_RO } from "./energy/congruence/short.ro.ts";
-import { ENERGY_CONGRUENCE_SHORT_EN } from "./energy/congruence/short.en.ts";
-import { CLARITY_DEEP_RO } from "./clarity/deep.ro.ts";
-import { CLARITY_DEEP_EN } from "./clarity/deep.en.ts";
-import { CLARITY_SHORT_RO } from "./clarity/short.ro.ts";
-import { CLARITY_SHORT_EN } from "./clarity/short.en.ts";
-import { CLARITY_ONE_THING_DEEP_RO } from "./clarity/one_important_thing/deep.ro.ts";
-import { CLARITY_ONE_THING_DEEP_EN } from "./clarity/one_important_thing/deep.en.ts";
-import { CLARITY_ONE_THING_SHORT_RO } from "./clarity/one_important_thing/short.ro.ts";
-import { CLARITY_ONE_THING_SHORT_EN } from "./clarity/one_important_thing/short.en.ts";
-import { EMOTIONAL_FLEX_DEEP_RO } from "./emotional_flex/deep.ro.ts";
-import { EMOTIONAL_FLEX_DEEP_EN } from "./emotional_flex/deep.en.ts";
-import { EMOTIONAL_FLEX_SHORT_RO } from "./emotional_flex/short.ro.ts";
-import { EMOTIONAL_FLEX_SHORT_EN } from "./emotional_flex/short.en.ts";
-import { EMO_FLEX_NAMING_DEEP_RO } from "./emotional_flex/naming/deep.ro.ts";
-import { EMO_FLEX_NAMING_DEEP_EN } from "./emotional_flex/naming/deep.en.ts";
-import { EMO_FLEX_NAMING_SHORT_RO } from "./emotional_flex/naming/short.ro.ts";
-import { EMO_FLEX_NAMING_SHORT_EN } from "./emotional_flex/naming/short.en.ts";
+import { ENERGY_DEEP_RO } from "./energy/deep.ro";
+import { ENERGY_DEEP_EN } from "./energy/deep.en";
+import { ENERGY_SHORT_RO } from "./energy/short.ro";
+import { ENERGY_SHORT_EN } from "./energy/short.en";
+import { ENERGY_CONGRUENCE_DEEP_RO } from "./energy/congruence/deep.ro";
+import { ENERGY_CONGRUENCE_DEEP_EN } from "./energy/congruence/deep.en";
+import { ENERGY_CONGRUENCE_SHORT_RO } from "./energy/congruence/short.ro";
+import { ENERGY_CONGRUENCE_SHORT_EN } from "./energy/congruence/short.en";
+import { CLARITY_DEEP_RO } from "./clarity/deep.ro";
+import { CLARITY_DEEP_EN } from "./clarity/deep.en";
+import { CLARITY_SHORT_RO } from "./clarity/short.ro";
+import { CLARITY_SHORT_EN } from "./clarity/short.en";
+import { CLARITY_ONE_THING_DEEP_RO } from "./clarity/one_important_thing/deep.ro";
+import { CLARITY_ONE_THING_DEEP_EN } from "./clarity/one_important_thing/deep.en";
+import { CLARITY_ONE_THING_SHORT_RO } from "./clarity/one_important_thing/short.ro";
+import { CLARITY_ONE_THING_SHORT_EN } from "./clarity/one_important_thing/short.en";
+import { EMOTIONAL_FLEX_DEEP_RO } from "./emotional_flex/deep.ro";
+import { EMOTIONAL_FLEX_DEEP_EN } from "./emotional_flex/deep.en";
+import { EMOTIONAL_FLEX_SHORT_RO } from "./emotional_flex/short.ro";
+import { EMOTIONAL_FLEX_SHORT_EN } from "./emotional_flex/short.en";
+import { EMO_FLEX_NAMING_DEEP_RO } from "./emotional_flex/naming/deep.ro";
+import { EMO_FLEX_NAMING_DEEP_EN } from "./emotional_flex/naming/deep.en";
+import { EMO_FLEX_NAMING_SHORT_RO } from "./emotional_flex/naming/short.ro";
+import { EMO_FLEX_NAMING_SHORT_EN } from "./emotional_flex/naming/short.en";
 
 type ClusterCollections = Record<AdaptiveCluster, DailyPathConfig[]>;
 type ModuleVariantCollections = {

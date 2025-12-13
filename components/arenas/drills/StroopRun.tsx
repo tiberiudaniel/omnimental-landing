@@ -43,7 +43,7 @@ const STROOP_PRESETS: Record<"30s" | "90s" | "3m", StroopPreset> = {
   "90s": { totalMs: 90_000, targetTrials: 50, incongruentRatio: 0.75, timeoutMs: 1600 },
   "3m": { totalMs: 180_000, targetTrials: 100, incongruentRatio: 0.8, timeoutMs: 1400 },
 };
-const AVAILABLE_DURATIONS = ["30s", "90s", "3m"] as const;
+const AVAILABLE_DURATIONS: ("30s" | "90s" | "3m")[] = ["30s", "90s", "3m"];
 
 interface Stimulus {
   word: ColorKey;
@@ -226,7 +226,7 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
   const bestToday = useMemo(() => {
     const todays = recentRuns.filter((run) => run.dayKey === todayKey);
     if (!todays.length) return null;
-    return Math.max(...todays.map((run) => run.score));
+    return Math.max(...todays.map((run) => run.score ?? 0));
   }, [recentRuns, todayKey]);
 
   const sparklineSource = useMemo(() => recentRuns.slice(0, 7).reverse(), [recentRuns]);

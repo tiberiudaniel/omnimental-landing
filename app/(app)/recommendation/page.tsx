@@ -180,11 +180,11 @@ function RecommendationContent() {
     };
   }, [user?.uid]);
 
-  useEffect(() => {
-    if (!user?.uid || !dailyDecision || qaOverrideActive) {
-      setDailyCompletedToday(false);
-      return;
-    }
+useEffect(() => {
+  if (!user?.uid || !dailyDecision || qaOverrideActive) {
+    setDailyCompletedToday(false);
+    return;
+  }
     let cancelled = false;
     const todayLocalKey = formatLocalDateKey(new Date());
     const checkHistory = async () => {
@@ -214,7 +214,7 @@ function RecommendationContent() {
     return () => {
       cancelled = true;
     };
-  }, [user?.uid, dailyDecision?.cluster, dailyDecision?.mode, qaOverrideActive]);
+}, [user?.uid, dailyDecision, qaOverrideActive]);
 
   const axisMeta = useMemo(() => {
     const map = new Map<CatAxisId, { label: string }>();
@@ -347,7 +347,7 @@ function RecommendationContent() {
         policyDecision.mode === baseDailyPathConfig.mode ? null : policyDecision.mode,
       );
     },
-    [baseDailyPathConfig, dailyDecision?.reason, qaOverrideActive],
+    [baseDailyPathConfig, dailyDecision, qaOverrideActive],
   );
 
   const decisionReason = useMemo(() => {
