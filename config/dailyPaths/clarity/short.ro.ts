@@ -6,6 +6,7 @@ export const CLARITY_SHORT_RO: DailyPathConfig = {
   mode: "short",
   lang: "ro",
   version: 1,
+  moduleKey: "clarity_single_intent",
   skillLabel: "Claritate: o singură intenție clară",
   nodes: [
     {

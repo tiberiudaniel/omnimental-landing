@@ -6,6 +6,7 @@ export const ENERGY_SHORT_RO: DailyPathConfig = {
   mode: "short",
   lang: "ro",
   version: 1,
+  moduleKey: "energy_recovery",
   skillLabel: "Energie: o acțiune concretă",
   nodes: [
     {

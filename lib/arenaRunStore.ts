@@ -9,17 +9,19 @@ export type ArenaRunRecord = {
   moduleId: string;
   drillId: string;
   duration: "30s" | "90s" | "3m";
+  durationSec?: number;
   startedAt: number;
   completedAt: number;
   dayKey: string;
-  totalTrials: number;
-  correctCount: number;
-  incorrectCount: number;
-  timeoutCount: number;
-  accuracy: number;
-  meanRTms: number | null;
-  score: number;
-  interpretation: string;
+  selfReport?: number | null;
+  totalTrials?: number;
+  correctCount?: number;
+  incorrectCount?: number;
+  timeoutCount?: number;
+  accuracy?: number;
+  meanRTms?: number | null;
+  score?: number;
+  interpretation?: string;
 };
 
 export interface ArenaRunFilters {
@@ -59,6 +61,15 @@ export function saveArenaRun(record: ArenaRunRecord) {
   if (!isBrowser()) return;
   const existing = readRecords();
   const updated = [record, ...existing].slice(0, MAX_RECORDS);
+  writeRecords(updated);
+}
+
+export function updateArenaRun(recordId: string, patch: Partial<ArenaRunRecord>) {
+  if (!isBrowser()) return;
+  const records = readRecords();
+  const updated = records.map((record) =>
+    record.id === recordId ? { ...record, ...patch } : record,
+  );
   writeRecords(updated);
 }
 

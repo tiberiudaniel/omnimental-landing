@@ -6,6 +6,7 @@ export const EMOTIONAL_FLEX_SHORT_RO: DailyPathConfig = {
   mode: "short",
   lang: "ro",
   version: 1,
+  moduleKey: "emotional_flex_pause",
   skillLabel: "Flexibilitate: micro-pauză înainte de reacție",
   nodes: [
     {

@@ -6,6 +6,7 @@ export const ENERGY_DEEP_EN: DailyPathConfig = {
   mode: "deep",
   lang: "en",
   version: 1,
+  moduleKey: "energy_recovery",
   skillLabel: "Energy: full reset",
   autonomyNodeId: "focus_a1",
   nodes: [

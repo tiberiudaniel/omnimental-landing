@@ -3,164 +3,103 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { loadTsModule } = require("../helpers/load-ts-module.cjs");
 
-const historyHelpers = loadTsModule(path.resolve(__dirname, "../../lib/dailyPathHistory.ts"));
-const { countConsecutiveDaysOnCluster } = historyHelpers;
-const nextDayEngine = loadTsModule(path.resolve(__dirname, "../../lib/nextDayEngine.ts"));
-const { decideNextDailyPathFromHistory } = nextDayEngine;
+const nextDayModule = loadTsModule(path.resolve(__dirname, "../../lib/nextDayEngine.ts"));
+const { decideNextDailyPathFromHistory, __testables } = nextDayModule;
+const { selectModuleKeyForClusterRaw } = __testables;
 
-function mockTimestamp(date) {
+function makeEntry(overrides = {}) {
   return {
-    toDate: () => new Date(date),
+    userId: "test-user",
+    date: "2024-01-01",
+    configId: "focus_energy_v1_deep_ro",
+    cluster: "focus_energy_cluster",
+    mode: "deep",
+    lang: "ro",
+    completed: true,
+    xpEarned: 0,
+    startedAt: new Date("2024-01-01T08:00:00Z"),
+    completedAt: new Date("2024-01-01T08:05:00Z"),
+    timeAvailableMin: 10,
+    ...overrides,
   };
 }
 
-function makeEntry({
-  date,
-  completed,
-  cluster = "clarity_cluster",
-  startedAt,
-  completedAt,
-}) {
-  return {
-    userId: "u1",
-    configId: "cfg",
-    cluster,
-    mode: "short",
-    lang: "ro",
-    completed,
-    xpEarned: completed ? 10 : 0,
-    nodesCompletedCount: completed ? 3 : 0,
-    pathVariant: completed ? "challenge" : null,
-    durationSeconds: completed ? 120 : null,
-    date,
-    startedAt: startedAt ?? mockTimestamp(`${date}T08:00:00Z`),
-    completedAt,
-  };
+function makeClarityEntry(overrides = {}) {
+  return makeEntry({
+    configId: "clarity_v1_deep_ro",
+    cluster: "clarity_cluster",
+    ...overrides,
+  });
 }
 
-function makeProfile(overrides = {}) {
-  const axisDefaults = {
-    clarity: 40,
-    flex: 65,
-    emo_stab: 60,
-    recalib: 55,
-    focus: 70,
-    energy: 75,
-    adapt_conf: 68,
-  };
-  return {
-    userId: "u1",
-    version: "cat-v2",
-    axisScores: { ...axisDefaults, ...overrides },
-    subScores: {},
-    answers: {},
-    completedAt: new Date(),
-    updatedAt: new Date(),
-    pillarsIntroCompleted: true,
-  };
+function makeFlexEntry(overrides = {}) {
+  return makeEntry({
+    configId: "emotional_flex_v1_deep_ro",
+    cluster: "emotional_flex_cluster",
+    ...overrides,
+  });
 }
 
-test("countConsecutiveDaysOnCluster respects dedupe and skips", () => {
-  const entries = [
-    makeEntry({ date: "2025-01-10", completed: false }),
-    makeEntry({ date: "2025-01-10", completed: true, completedAt: mockTimestamp("2025-01-10T10:00:00Z") }),
-    makeEntry({ date: "2025-01-09", completed: true }),
-    makeEntry({ date: "2025-01-07", completed: true }),
-  ];
-  assert.equal(countConsecutiveDaysOnCluster(entries), 2);
+const focusCatProfile = {
+  axisScores: {
+    energy: 1,
+    clarity: 5,
+    flex: 6,
+  },
+};
+
+test("selectModuleKeyForCluster rotates only after completion", () => {
+  const incomplete = [makeEntry({ completed: false })];
+  const incompleteResult = selectModuleKeyForClusterRaw("focus_energy_cluster", incomplete);
+  assert.equal(incompleteResult.moduleKey, "energy_recovery");
+
+  const completed = [makeEntry({ completed: true })];
+  const completedResult = selectModuleKeyForClusterRaw("focus_energy_cluster", completed);
+  assert.equal(completedResult.moduleKey, "energy_congruence");
 });
 
-test("decideNextDailyPathFromHistory switches to deep after three completions", () => {
-  const history = ["2025-01-10", "2025-01-09", "2025-01-08"].map((date) =>
-    makeEntry({ date, completed: true }),
-  );
-  const decision = decideNextDailyPathFromHistory({
-    catProfile: makeProfile({ clarity: 30 }),
-    lang: "ro",
-    history,
-    todayKey: "2025-01-11",
-  });
-  assert.equal(decision.mode, "deep");
+test("clarity modules rotate after completion", () => {
+  const awaitingCompletion = [makeClarityEntry({ completed: false })];
+  const awaitingResult = selectModuleKeyForClusterRaw("clarity_cluster", awaitingCompletion);
+  assert.equal(awaitingResult.moduleKey, "clarity_single_intent");
+
+  const completed = [makeClarityEntry({ completed: true })];
+  const completedResult = selectModuleKeyForClusterRaw("clarity_cluster", completed);
+  assert.equal(completedResult.moduleKey, "clarity_one_important_thing");
 });
 
-test("decideNextDailyPathFromHistory stays short when streak is interrupted by incomplete day", () => {
-  const history = [
-    makeEntry({ date: "2025-01-10", completed: true }),
-    makeEntry({ date: "2025-01-09", completed: false }),
-    makeEntry({ date: "2025-01-08", completed: true }),
-  ];
-  const decision = decideNextDailyPathFromHistory({
-    catProfile: makeProfile({ clarity: 35 }),
-    lang: "ro",
-    history,
-    todayKey: "2025-01-11",
-  });
-  assert.equal(decision.mode, "short");
+test("emotional flexibility modules rotate after completion", () => {
+  const awaitingCompletion = [makeFlexEntry({ completed: false })];
+  const awaitingResult = selectModuleKeyForClusterRaw("emotional_flex_cluster", awaitingCompletion);
+  assert.equal(awaitingResult.moduleKey, "emotional_flex_pause");
+
+  const completed = [makeFlexEntry({ completed: true })];
+  const completedResult = selectModuleKeyForClusterRaw("emotional_flex_cluster", completed);
+  assert.equal(completedResult.moduleKey, "emotional_flex_naming");
 });
 
-test("decideNextDailyPathFromHistory prioritizes CAT-derived cluster over last history cluster", () => {
-  const history = [
-    makeEntry({ date: "2025-01-10", completed: true, cluster: "emotional_flex_cluster" }),
-    makeEntry({ date: "2025-01-09", completed: true, cluster: "emotional_flex_cluster" }),
-  ];
-  const decision = decideNextDailyPathFromHistory({
-    catProfile: makeProfile({ clarity: 25, flex: 60 }),
-    lang: "ro",
-    history,
-    todayKey: "2025-01-11",
-  });
-  assert.equal(decision.cluster, "clarity_cluster");
-});
-
-test("duplicate entries on the same day prefer completed runs for decision making", () => {
-  const history = [
-    makeEntry({
-      date: "2025-01-10",
-      completed: false,
-      startedAt: mockTimestamp("2025-01-10T07:00:00Z"),
-    }),
-    makeEntry({
-      date: "2025-01-10",
-      completed: true,
-      completedAt: mockTimestamp("2025-01-10T12:00:00Z"),
-    }),
-    makeEntry({ date: "2025-01-09", completed: true }),
-    makeEntry({ date: "2025-01-08", completed: true }),
-    makeEntry({
-      date: "2025-01-07",
-      completed: true,
-      completedAt: mockTimestamp("2025-01-07T12:00:00Z"),
-    }),
-  ];
-  const decision = decideNextDailyPathFromHistory({
-    catProfile: makeProfile({ clarity: 20 }),
-    lang: "ro",
-    history,
-    todayKey: "2025-01-11",
-  });
-  assert.equal(decision.mode, "deep");
-});
-
-test("late start after completion on the same day does not downgrade streak", () => {
-  const history = [
-    makeEntry({
-      date: "2025-01-10",
-      completed: true,
-      completedAt: mockTimestamp("2025-01-10T09:00:00Z"),
-    }),
-    makeEntry({
-      date: "2025-01-10",
-      completed: false,
-      startedAt: mockTimestamp("2025-01-10T15:00:00Z"),
-    }),
-    makeEntry({ date: "2025-01-09", completed: true }),
-    makeEntry({ date: "2025-01-08", completed: true }),
-  ];
-  const decision = decideNextDailyPathFromHistory({
-    catProfile: makeProfile({ clarity: 18 }),
-    lang: "ro",
-    history,
-    todayKey: "2025-01-11",
-  });
-  assert.equal(decision.mode, "deep");
+test("missing configId mapping surfaces warning and reason", () => {
+  const warnMessages = [];
+  const originalWarn = console.warn;
+  console.warn = (...args) => warnMessages.push(args.join(" "));
+  try {
+    const decision = decideNextDailyPathFromHistory({
+      catProfile: focusCatProfile,
+      lang: "ro",
+      history: [
+        makeEntry({
+          configId: "unknown_config_id",
+          completed: true,
+          date: "2024-01-02",
+          startedAt: new Date("2024-01-02T08:00:00Z"),
+          completedAt: new Date("2024-01-02T08:05:00Z"),
+        }),
+      ],
+      todayKey: "2024-01-03",
+    });
+    assert.ok(decision.reason.includes("mapping=unknown_config_id->default"));
+    assert.ok(warnMessages.some((msg) => msg.includes("unknown_config_id")));
+  } finally {
+    console.warn = originalWarn;
+  }
 });

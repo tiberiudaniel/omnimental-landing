@@ -79,9 +79,14 @@ type DailyPathProps = {
   config: DailyPathConfig | null;
   userId?: string | null;
   currentArcId?: string | null;
+  disablePersistence?: boolean;
+  defaultTimeSelection?: number | null;
+  modeHint?: DailyPathMode | null;
+  onTimeSelection?: (minutes: number) => void;
 };
 
 const TIME_OPTIONS = [
+  { value: 5, label: { ro: "4–5 min", en: "4–5 min" } },
   { value: 10, label: { ro: "5–10 min", en: "5–10 min" } },
   { value: 20, label: { ro: "15–25 min", en: "15–25 min" } },
   { value: 30, label: { ro: "30+ min", en: "30+ min" } },
@@ -89,7 +94,15 @@ const TIME_OPTIONS = [
 
 const validModes: DailyPathMode[] = ["short", "deep"];
 
-export default function DailyPath({ config, userId = null, currentArcId = null }: DailyPathProps) {
+export default function DailyPath({
+  config,
+  userId = null,
+  currentArcId = null,
+  disablePersistence = false,
+  defaultTimeSelection = null,
+  modeHint = null,
+  onTimeSelection,
+}: DailyPathProps) {
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [completedNodeIds, setCompletedNodeIds] = useState<string[]>([]);
   const [softPathChosen, setSoftPathChosen] = useState(false);
@@ -97,13 +110,15 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
   const [pathFinished, setPathFinished] = useState(false);
   const [bonusGranted, setBonusGranted] = useState(false);
   const [pathVariant, setPathVariant] = useState<"soft" | "challenge">("challenge");
-  const [timeAvailableMin, setTimeAvailableMin] = useState<number | null>(null);
-  const [timeSelectionLocked, setTimeSelectionLocked] = useState(false);
+  const [timeAvailableMin, setTimeAvailableMin] = useState<number | null>(defaultTimeSelection);
+  const [timeSelectionLocked, setTimeSelectionLocked] = useState(Boolean(defaultTimeSelection != null));
   const startLoggedRef = useRef(false);
   const completionLoggedRef = useRef(false);
   const startTimestampRef = useRef<number | null>(null);
+  const pendingStartMinutesRef = useRef<number | null>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const activeLang: DailyPathLanguage = config?.lang ?? "ro";
+  const persistenceEnabled = !disablePersistence;
   const copy = DAILY_PATH_COPY[activeLang] ?? DAILY_PATH_COPY.ro;
   const localizedTimeOptions = useMemo(
     () =>
@@ -167,6 +182,7 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
     startLoggedRef.current = false;
     completionLoggedRef.current = false;
     startTimestampRef.current = null;
+    pendingStartMinutesRef.current = null;
     setTimeAvailableMin(null);
     setTimeSelectionLocked(false);
   }, [config]);
@@ -176,6 +192,16 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting derived state on config change
     resetState();
   }, [config, resetState]);
+
+  useEffect(() => {
+    if (defaultTimeSelection != null) {
+      setTimeAvailableMin(defaultTimeSelection);
+      setTimeSelectionLocked(true);
+    } else {
+      setTimeSelectionLocked(false);
+      setTimeAvailableMin(null);
+    }
+  }, [defaultTimeSelection]);
 
   const logDebug = useCallback((...args: unknown[]) => {
     if (!IS_DEV) return;
@@ -201,9 +227,17 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
     (selected: number) => {
       if (!config || timeSelectionLocked) return;
       setTimeAvailableMin(selected);
-      if (startLoggedRef.current) return;
-      startLoggedRef.current = true;
+      onTimeSelection?.(selected);
+      pendingStartMinutesRef.current = selected;
       setTimeSelectionLocked(true);
+    },
+    [config, onTimeSelection, timeSelectionLocked],
+  );
+
+  const logPathStart = useCallback(
+    (selected: number) => {
+      if (!config || startLoggedRef.current) return;
+      startLoggedRef.current = true;
       startTimestampRef.current = Date.now();
       logDebug("start", {
         configId: config.id,
@@ -211,21 +245,34 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
         mode: config.mode,
         timeAvailableMin: selected,
       });
-      void recordDailyPathEvent(userId, {
-        configId: config.id,
-        cluster: config.cluster,
-        mode: config.mode,
-        lang: config.lang,
-        event: "start",
-        timeAvailableMin: selected,
-      });
+      if (persistenceEnabled) {
+        void recordDailyPathEvent(userId, {
+          configId: config.id,
+          cluster: config.cluster,
+          mode: config.mode,
+          lang: config.lang,
+          event: "start",
+          timeAvailableMin: selected,
+        });
+      }
     },
-    [config, logDebug, timeSelectionLocked, userId],
+    [config, logDebug, persistenceEnabled, userId],
   );
+
+  useEffect(() => {
+    if (!config) return;
+    if (startLoggedRef.current) return;
+    if (pendingStartMinutesRef.current == null) return;
+    if (modeHint && config.mode !== modeHint) return;
+    const selected = pendingStartMinutesRef.current;
+    pendingStartMinutesRef.current = null;
+    logPathStart(selected);
+  }, [config, modeHint, logPathStart, timeAvailableMin]);
 
   useEffect(() => {
     if (!config || !pathFinished || completionLoggedRef.current) return;
     completionLoggedRef.current = true;
+    if (!persistenceEnabled) return;
     const completionDate = new Date();
     const nodesCompletedCount = completedNodeIds.length;
     const durationSeconds =
@@ -259,7 +306,17 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
         }
       }
     })();
-  }, [config, pathFinished, userId, xp, currentArcId, completedNodeIds.length, pathVariant, logDebug]);
+  }, [
+    config,
+    pathFinished,
+    userId,
+    xp,
+    currentArcId,
+    completedNodeIds.length,
+    pathVariant,
+    logDebug,
+    persistenceEnabled,
+  ]);
 
   const handleNodeAction = (node: DailyPathNodeConfig) => {
     if (!config) return;
@@ -288,15 +345,17 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
     if (!options?.skipAdvance) {
       advanceToNext(node.id, updated);
     }
-    void recordDailyPathEvent(userId, {
-      configId: config.id,
-      cluster: config.cluster,
-      mode: config.mode,
-      lang: config.lang,
-      event: "node_completed",
-      nodeId: node.id,
-      xpDelta,
-    });
+    if (persistenceEnabled) {
+      void recordDailyPathEvent(userId, {
+        configId: config.id,
+        cluster: config.cluster,
+        mode: config.mode,
+        lang: config.lang,
+        event: "node_completed",
+        nodeId: node.id,
+        xpDelta,
+      });
+    }
   };
 
   const advanceToNext = (currentId: string | null, completedList: string[] = completedNodeIds) => {
@@ -406,15 +465,22 @@ export default function DailyPath({ config, userId = null, currentArcId = null }
                 : "Select your time window to tailor today’s path."}
             </p>
           ) : (
-            <p className="text-xs text-[var(--omni-muted)]">
-              {timeSelectionLocked
-                ? activeLang === "ro"
-                  ? "Am notat timpul – poți continua traseul."
-                  : "Time saved – you can continue the path."
-                : activeLang === "ro"
-                ? "Poți ajusta timpul înainte să începem."
-                : "You can adjust the time before we start."}
-            </p>
+            <div className="text-xs text-[var(--omni-muted)] space-y-1">
+              <p>
+                {timeSelectionLocked
+                  ? activeLang === "ro"
+                    ? "Am notat timpul – poți continua traseul."
+                    : "Time saved – you can continue the path."
+                  : activeLang === "ro"
+                  ? "Poți ajusta timpul înainte să începem."
+                  : "You can adjust the time before we start."}
+              </p>
+              <p>
+                {activeLang === "ro"
+                  ? `Debug: ${timeAvailableMin} min → mod ${modeHint ?? config.mode}`
+                  : `Debug: ${timeAvailableMin} min → mode ${modeHint ?? config.mode}`}
+              </p>
+            </div>
           )}
         </div>
         <div className="space-y-3 lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto">

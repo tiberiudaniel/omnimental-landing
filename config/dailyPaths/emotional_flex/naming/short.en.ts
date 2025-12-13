@@ -1,0 +1,108 @@
+import type { DailyPathConfig } from "@/types/dailyPath";
+
+export const EMO_FLEX_NAMING_SHORT_EN: DailyPathConfig = {
+  id: "flexibility_naming_emotion_short_en",
+  cluster: "emotional_flex_cluster",
+  mode: "short",
+  lang: "en",
+  version: 1,
+  moduleKey: "emotional_flex_naming",
+  skillLabel: "Emotional Flex: naming (quick)",
+  nodes: [
+    {
+      id: "emo_flex_naming_short_intro_en",
+      kind: "INTRO",
+      shape: "circle",
+      title: "Naming the emotion (quick)",
+      description: "Today you’ll do a short flexibility exercise: naming what you feel.",
+      xp: 0,
+      ctaLabel: "Start training",
+    },
+    {
+      id: "emo_flex_naming_short_learn_en",
+      kind: "LEARN",
+      shape: "circle",
+      title: "The observed emotion",
+      description:
+        "When you name an emotion, it no longer automatically controls the reaction.\nA small space appears for choice.",
+      xp: 5,
+    },
+    {
+      id: "emo_flex_naming_short_quiz_en",
+      kind: "QUIZ_SINGLE",
+      shape: "circle",
+      title: "Quick check",
+      description: "What helps the most?",
+      quizOptions: [
+        { id: "A", label: "Ignoring the emotion." },
+        { id: "B", label: "Naming it." },
+        { id: "C", label: "Reacting quickly." },
+      ],
+      correctOptionIds: ["B"],
+      quizFeedback: {
+        correct: "Exactly. One word creates space.",
+        incorrect: "Not quite. Clarity comes from naming it.",
+      },
+      xp: 10,
+    },
+    {
+      id: "emo_flex_naming_short_sim_en",
+      kind: "SIMULATOR",
+      shape: "circle",
+      badge: "simulator",
+      title: "Simulator: one word",
+      description:
+        "Bring to mind a current emotion.\nSay mentally: “I notice that I feel ___.”",
+      xp: 10,
+      ctaLabel: "Exercise done",
+    },
+    {
+      id: "emo_flex_naming_short_real_en",
+      kind: "REAL_WORLD",
+      shape: "star",
+      badge: "viata_reala",
+      title: "Your choice today",
+      description: "Describe the context and your sentence.",
+      fields: [
+        {
+          id: "context",
+          label: "Context:",
+          placeholder: "e.g., in a difficult conversation",
+        },
+        {
+          id: "sentence",
+          label: "My sentence:",
+          prefix: "I notice that I feel ",
+          suffix: ".",
+          placeholder: "describe the emotion",
+        },
+      ],
+      xp: 20,
+      ctaLabel: "I commit",
+    },
+    {
+      id: "emo_flex_naming_short_summary_en",
+      kind: "SUMMARY",
+      shape: "circle",
+      title: "Quick training complete.",
+      description: "",
+      bullets: [
+        "Observed emotions lose control.",
+        "One word creates space.",
+        "Space allows choice.",
+      ],
+      anchorDescription: "One word. One step back.",
+      xp: 0,
+      ctaLabel: "See your progress",
+    },
+    {
+      id: "emo_flex_naming_short_anchor_en",
+      kind: "ANCHOR",
+      shape: "circle",
+      title: "Daily motto",
+      description: "One word. One step back.",
+      xp: 0,
+      ctaLabel: "Done for today",
+    },
+  ],
+};

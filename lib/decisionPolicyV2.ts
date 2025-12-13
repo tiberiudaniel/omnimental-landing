@@ -34,7 +34,7 @@ export type PolicyDecision = DecisionBaseline & {
 };
 
 const DEFAULT_CFG: PolicyConfig = {
-  minMinutesForDeep: 15,
+  minMinutesForDeep: 10,
   lowEnergyDowngrade: true,
   maxDeepAbandonRate: 0.5,
   enableSoftVariant: true,
@@ -45,7 +45,7 @@ function sanitizeTime(value: number | undefined): number | null {
   if (typeof value !== "number") return null;
   if (!Number.isFinite(value)) return null;
   if (value <= 0) return null;
-  return value;
+  return Math.round(value);
 }
 
 function clampRate(value: number | undefined): number | null {
@@ -68,11 +68,17 @@ export function applyDecisionPolicyV2(
   const deepAbandonRate = clampRate(signals.deepAbandonRate);
   const overallAbandonRate = clampRate(signals.overallAbandonRate);
 
-  if (baseline.mode === "deep") {
-    if (timeAvailable !== null && timeAvailable < config.minMinutesForDeep) {
+  if (timeAvailable !== null) {
+    if (timeAvailable >= config.minMinutesForDeep && mode === "short") {
+      mode = "deep";
+      reasons.push(`timeAvailable=${timeAvailable}>=${config.minMinutesForDeep} → deep`);
+    } else if (timeAvailable < config.minMinutesForDeep && mode === "deep") {
       mode = "short";
       reasons.push(`timeAvailable=${timeAvailable}<${config.minMinutesForDeep} → short`);
     }
+  }
+
+  if (mode === "deep") {
     if (config.lowEnergyDowngrade && signals.energyLevel === "low") {
       mode = "short";
       reasons.push("energy=low → short");

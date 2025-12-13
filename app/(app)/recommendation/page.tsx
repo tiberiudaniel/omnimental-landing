@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
@@ -24,10 +24,12 @@ import { CAT_AXES, type CatAxisId } from "@/config/catEngine";
 import type { AdaptiveCluster, DailyPathLanguage, DailyPathMode } from "@/types/dailyPath";
 import type { NextDayDecision } from "@/lib/nextDayEngine";
 import { decideNextDailyPath } from "@/lib/nextDayEngine";
+import { applyDecisionPolicyV2, type DecisionBaseline } from "@/lib/decisionPolicyV2";
 import { getUserCompetence, getUserOverallLevel } from "@/lib/competenceStore";
 import { selectArcForUser } from "@/lib/arcs";
 import { ensureCurrentArcForUser } from "@/lib/arcStateStore";
 import { CAT_BASELINE_URL, PILLARS_URL, ADAPTIVE_PRACTICE_URL } from "@/config/routes";
+import { getDailyPracticeHistory } from "@/lib/dailyPracticeStore";
 
 const ADAPTIVE_NUDGES: Record<AdaptiveCluster, string> = {
   clarity_cluster: "Alege azi un lucru important și exprimă-l în minte în 7 cuvinte.",
@@ -68,6 +70,14 @@ const QA_LANG_OPTIONS: Array<{ value: DailyPathLanguage; label: string }> = [
   { value: "en", label: "EN" },
 ];
 
+function formatLocalDateKey(input: Date | number | string): string {
+  const date = input instanceof Date ? input : new Date(input);
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function RecommendationPage() {
   return (
     <Suspense fallback={null}>
@@ -90,6 +100,10 @@ function RecommendationContent() {
   const [decisionLoading, setDecisionLoading] = useState(false);
   const [competence, setCompetence] = useState<UserCompetence | null>(null);
   const [currentArc, setCurrentArc] = useState<ArcDefinition | null>(null);
+  const [dailyCompletedToday, setDailyCompletedToday] = useState(false);
+  const [timeModeOverride, setTimeModeOverride] = useState<DailyPathMode | null>(null);
+  const [timeModeHint, setTimeModeHint] = useState<DailyPathMode | null>(null);
+  const [timeSelectionMinutes, setTimeSelectionMinutes] = useState<number | null>(null);
   const rawClusterParam = searchParams?.get("cluster")?.toLowerCase() ?? null;
   const clusterOverride =
     rawClusterParam && rawClusterParam in CLUSTER_PARAM_MAP
@@ -102,9 +116,12 @@ function RecommendationContent() {
   const rawModeParam = searchParams?.get("mode")?.toLowerCase() ?? null;
   const modeOverride = rawModeParam === "short" ? "short" : rawModeParam === "deep" ? "deep" : null;
 
+  const rawModuleParam = searchParams?.get("module")?.toLowerCase() ?? null;
+  const moduleOverride = rawModuleParam && rawModuleParam.length > 0 ? rawModuleParam : null;
+
   const decisionLang: DailyPathLanguage = langOverride ?? "ro";
   const hasQaOverrideParams =
-    Boolean(clusterOverride || langOverride || modeOverride) ||
+    Boolean(clusterOverride || langOverride || modeOverride || moduleOverride) ||
     Boolean(searchParams?.get("qa"));
   const qaOverrideActive = QA_PANEL_ENABLED && hasQaOverrideParams;
   const skipOnboardingParam = searchParams?.get("skipOnboarding") === "1";
@@ -163,6 +180,42 @@ function RecommendationContent() {
     };
   }, [user?.uid]);
 
+  useEffect(() => {
+    if (!user?.uid || !dailyDecision || qaOverrideActive) {
+      setDailyCompletedToday(false);
+      return;
+    }
+    let cancelled = false;
+    const todayLocalKey = formatLocalDateKey(new Date());
+    const checkHistory = async () => {
+      try {
+        const history = await getDailyPracticeHistory(user.uid, 14);
+        if (cancelled) return;
+        const completedEntry = history.find((entry) => {
+          const completedAt =
+            (entry.completedAt && typeof entry.completedAt === "object" && "toDate" in entry.completedAt)
+              ? entry.completedAt.toDate()
+              : new Date(entry.date);
+          const entryLocalKey = formatLocalDateKey(completedAt);
+          return (
+            entry.completed &&
+            entry.cluster === dailyDecision.cluster &&
+            entry.mode === dailyDecision.mode &&
+            entryLocalKey === todayLocalKey
+          );
+        });
+        setDailyCompletedToday(Boolean(completedEntry));
+      } catch (error) {
+        console.warn("Failed to check daily practice history", error);
+        if (!cancelled) setDailyCompletedToday(false);
+      }
+    };
+    void checkHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid, dailyDecision?.cluster, dailyDecision?.mode, qaOverrideActive]);
+
   const axisMeta = useMemo(() => {
     const map = new Map<CatAxisId, { label: string }>();
     for (const axis of CAT_AXES) {
@@ -218,17 +271,19 @@ function RecommendationContent() {
     };
   }, [onboardingReady, user?.uid, catProfile, decisionLang, qaOverrideActive]);
 
-  const dailyPathConfig = useMemo(() => {
+  const baseDailyPathConfig = useMemo(() => {
     if (qaOverrideActive) {
       const overrideCluster = clusterOverride ?? cluster ?? null;
       const overrideMode = modeOverride ?? "deep";
       const overrideLang = langOverride ?? "ro";
+      const overrideModuleKey = moduleOverride ?? null;
       if (!overrideCluster) return null;
       try {
         return getDailyPathForCluster({
           cluster: overrideCluster,
           mode: overrideMode,
           lang: overrideLang,
+          moduleKey: overrideModuleKey ?? undefined,
         });
       } catch (error) {
         console.warn("Failed to load QA override daily path", error);
@@ -236,28 +291,14 @@ function RecommendationContent() {
       }
     }
     if (!dailyDecision) return null;
-    const baseConfig = dailyDecision.config;
-    const finalCluster = clusterOverride ?? baseConfig.cluster;
-    const finalMode = modeOverride ?? baseConfig.mode;
-    const finalLang = langOverride ?? baseConfig.lang;
-    if (
-      finalCluster === baseConfig.cluster &&
-      finalMode === baseConfig.mode &&
-      finalLang === baseConfig.lang
-    ) {
-      return baseConfig;
-    }
-    try {
-      return getDailyPathForCluster({
-        cluster: finalCluster,
-        mode: finalMode,
-        lang: finalLang,
-      });
-    } catch (error) {
-      console.warn("Failed to load override daily path", error);
-      return baseConfig;
-    }
-  }, [qaOverrideActive, clusterOverride, cluster, modeOverride, langOverride, dailyDecision]);
+    return dailyDecision.config;
+  }, [qaOverrideActive, clusterOverride, cluster, modeOverride, langOverride, moduleOverride, dailyDecision]);
+
+  useEffect(() => {
+    setTimeModeOverride(null);
+    setTimeModeHint(null);
+    setTimeSelectionMinutes(null);
+  }, [baseDailyPathConfig?.id]);
 
   const userOverallLevel: CompetenceLevel = useMemo(() => {
     return competence ? getUserOverallLevel(competence) : "foundation";
@@ -288,6 +329,27 @@ function RecommendationContent() {
     };
   }, [competence, userOverallLevel, user?.uid]);
 
+  const handleTimeSelection = useCallback(
+    (minutes: number) => {
+      if (!baseDailyPathConfig) return;
+      setTimeSelectionMinutes(minutes);
+      const baseline: DecisionBaseline = {
+        cluster: baseDailyPathConfig.cluster,
+        mode: baseDailyPathConfig.mode,
+        lang: baseDailyPathConfig.lang,
+        reason: dailyDecision?.reason ?? (qaOverrideActive ? "qa_override" : "time_selection"),
+        historyCount: dailyDecision ? 1 : 0,
+        configId: baseDailyPathConfig.id,
+      };
+      const policyDecision = applyDecisionPolicyV2(baseline, { timeAvailableMin: minutes });
+      setTimeModeHint(policyDecision.mode);
+      setTimeModeOverride(
+        policyDecision.mode === baseDailyPathConfig.mode ? null : policyDecision.mode,
+      );
+    },
+    [baseDailyPathConfig, dailyDecision?.reason, qaOverrideActive],
+  );
+
   const decisionReason = useMemo(() => {
     if (qaOverrideActive) {
       return "QA override active";
@@ -301,15 +363,42 @@ function RecommendationContent() {
     return `${dailyDecision.reason} | override ${overrides.join(", ")}`;
   }, [dailyDecision, clusterOverride, modeOverride, langOverride, qaOverrideActive]);
 
-  const finalCluster = dailyPathConfig?.cluster ?? clusterOverride ?? cluster ?? null;
-  const axisLabel = dailyPathConfig
-    ? CLUSTER_FRIENDLY_LABELS[dailyPathConfig.cluster]
+  const moduleKeyForSelection = useMemo(() => {
+    if (qaOverrideActive) {
+      return moduleOverride ?? null;
+    }
+    return dailyDecision?.moduleKey ?? null;
+  }, [qaOverrideActive, moduleOverride, dailyDecision?.moduleKey]);
+
+  const resolvedDailyPathConfig = useMemo(() => {
+    if (!baseDailyPathConfig) return null;
+    if (!timeModeOverride || timeModeOverride === baseDailyPathConfig.mode) {
+      return baseDailyPathConfig;
+    }
+    try {
+      return getDailyPathForCluster({
+        cluster: baseDailyPathConfig.cluster,
+        mode: timeModeOverride,
+        lang: baseDailyPathConfig.lang,
+        moduleKey: moduleKeyForSelection ?? undefined,
+      });
+    } catch (error) {
+      console.warn("Failed to load mode override daily path", error);
+      return baseDailyPathConfig;
+    }
+  }, [baseDailyPathConfig, timeModeOverride, moduleKeyForSelection]);
+
+  const finalCluster = resolvedDailyPathConfig?.cluster ?? clusterOverride ?? cluster ?? null;
+  const axisLabel = resolvedDailyPathConfig
+    ? CLUSTER_FRIENDLY_LABELS[resolvedDailyPathConfig.cluster]
     : axisLabelFallback;
   const dailyLoopReady = hasCompletedOnboarding || qaOverrideActive;
-  const showLoader = !onboardingReady || (!qaOverrideActive && decisionLoading) || !dailyPathConfig;
+  const showLoader =
+    !onboardingReady || (!qaOverrideActive && decisionLoading) || !resolvedDailyPathConfig;
   const showGuestBanner = Boolean(user?.isAnonymous);
   const missionText = finalCluster ? ADAPTIVE_NUDGES[finalCluster] : null;
   const showQaPanel = QA_PANEL_ENABLED;
+  const showDailyCompletedState = dailyCompletedToday && !qaOverrideActive;
 
   const header = (
     <SiteHeader
@@ -335,12 +424,20 @@ function RecommendationContent() {
                 <div className="space-y-6">
                   <AdaptiveMissionCard axisLabel={axisLabel} nudge={missionText} />
                   {currentArc ? <CurrentArcCard arc={currentArc} /> : null}
-                  <DailyPath
-                    key={dailyPathConfig?.id ?? "none"}
-                    config={dailyPathConfig}
-                    userId={user?.uid ?? null}
-                    currentArcId={currentArc?.id ?? null}
-                  />
+                  {showDailyCompletedState ? (
+                    <DailyPathCompletedCard lang={resolvedDailyPathConfig?.lang ?? decisionLang} />
+                  ) : (
+                    <DailyPath
+                      key={resolvedDailyPathConfig?.id ?? "none"}
+                      config={resolvedDailyPathConfig}
+                      userId={user?.uid ?? null}
+                      currentArcId={currentArc?.id ?? null}
+                      disablePersistence={qaOverrideActive}
+                      defaultTimeSelection={timeSelectionMinutes}
+                      modeHint={timeModeHint ?? resolvedDailyPathConfig?.mode ?? null}
+                      onTimeSelection={handleTimeSelection}
+                    />
+                  )}
                 </div>
               </div>
               {showGuestBanner ? (
@@ -409,6 +506,9 @@ function DailyPathQaPanel({ reason }: { reason?: string | null }) {
           );
         })}
       </div>
+      <p className="mt-3 text-[11px] text-[var(--omni-muted)]">
+        Tip: add <code className="px-1">module=energy_congruence</code> (energy_recovery / clarity_single_intent / clarity_one_important_thing / emotional_flex_pause / emotional_flex_naming) to the URL to load a specific module.
+      </p>
       {reason ? (
         <p className="mt-3 text-[12px] text-[var(--omni-muted)]">Reason: {reason}</p>
       ) : null}
@@ -493,5 +593,39 @@ function GuestBanner({ onCreateAccount }: { onCreateAccount: () => void }) {
         </OmniCtaButton>
       </div>
     </div>
+  );
+}
+
+function DailyPathCompletedCard({ lang }: { lang: DailyPathLanguage }) {
+  const copy =
+    lang === "ro"
+      ? {
+          title: "Ai terminat Daily Path-ul de azi",
+          body: "Păstrează progresul: vezi ce ai deblocat și testează nivelul 2 în Arene.",
+          arenas: "Antrenează 90s în Arene",
+          progress: "Vezi progresul",
+        }
+      : {
+          title: "Today's Daily Path is complete",
+          body: "Keep the momentum: review your progress and test Level 2 in Arenas.",
+          arenas: "Train 90s in Arenas",
+          progress: "View progress",
+        };
+  return (
+    <section className="space-y-4 rounded-[18px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-6 text-center shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+      <h2 className="text-xl font-semibold text-[var(--omni-ink)]">{copy.title}</h2>
+      <p className="text-sm text-[var(--omni-ink)]/80">{copy.body}</p>
+      <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <OmniCtaButton as="link" href="/training/arenas">
+          {copy.arenas}
+        </OmniCtaButton>
+        <Link
+          href="/progress"
+          className="inline-flex items-center justify-center rounded-full border border-[var(--omni-border-soft)] px-5 py-2 text-sm font-semibold text-[var(--omni-ink)] hover:bg-[var(--omni-ink)]/5"
+        >
+          {copy.progress}
+        </Link>
+      </div>
+    </section>
   );
 }

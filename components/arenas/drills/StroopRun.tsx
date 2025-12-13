@@ -2,14 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ArenaModuleV1, ArenaLang } from "@/config/arenaModules/v1/types";
 import { ArenaHistorySparkline } from "@/components/arenas/ArenaHistorySparkline";
 import {
   getArenaRuns,
   saveArenaRun,
   toDayKeyLocal,
+  updateArenaRun,
   type ArenaRunRecord,
 } from "@/lib/arenaRunStore";
+import { ArenaFinishScreen } from "@/components/arenas/ArenaFinishScreen";
 
 const COLOR_KEYS = ["red", "green", "blue", "yellow"] as const;
 
@@ -40,6 +43,7 @@ const STROOP_PRESETS: Record<"30s" | "90s" | "3m", StroopPreset> = {
   "90s": { totalMs: 90_000, targetTrials: 50, incongruentRatio: 0.75, timeoutMs: 1600 },
   "3m": { totalMs: 180_000, targetTrials: 100, incongruentRatio: 0.8, timeoutMs: 1400 },
 };
+const AVAILABLE_DURATIONS = ["30s", "90s", "3m"] as const;
 
 interface Stimulus {
   word: ColorKey;
@@ -192,6 +196,7 @@ function computeSummary(results: TrialResult[]): SummaryStats {
 }
 
 export function StroopRun({ module, lang, duration }: StroopRunProps) {
+  const router = useRouter();
   const preset = STROOP_PRESETS[duration];
   const [trials, setTrials] = useState<Stimulus[]>(() => generateTrials(preset));
   const [trialIndex, setTrialIndex] = useState(0);
@@ -205,6 +210,8 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const resultsRef = useRef<TrialResult[]>([]);
   const finishedRef = useRef(false);
+  const completionRef = useRef<number | null>(null);
+  const runRecordIdRef = useRef<string | null>(null);
   const [recentRuns, setRecentRuns] = useState<ArenaRunRecord[]>(() =>
     getArenaRuns({ arenaId: module.arena, moduleId: module.id }),
   );
@@ -244,31 +251,8 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
     const computed = computeSummary(finalResults);
     setPhase("summary");
     setSummary(computed);
-    const completedAt = Date.now();
-    const record: ArenaRunRecord = {
-      id:
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${completedAt}-${Math.random()}`,
-      arenaId: module.arena,
-      moduleId: module.id,
-      drillId: duration,
-      duration,
-      startedAt: runStartRef.current || completedAt,
-      completedAt,
-      dayKey: toDayKeyLocal(completedAt),
-      totalTrials: computed.totalTrials,
-      correctCount: computed.correctCount,
-      incorrectCount: computed.incorrectCount,
-      timeoutCount: computed.timeoutCount,
-      accuracy: computed.accuracy,
-      meanRTms: computed.meanRTms,
-      score: computed.score,
-      interpretation: computed.interpretation,
-    };
-    saveArenaRun(record);
-    setRecentRuns(getArenaRuns({ arenaId: module.arena, moduleId: module.id }));
-  }, [duration, module.arena, module.id, resetTimers]);
+    completionRef.current = Date.now();
+  }, [resetTimers]);
 
   const startRun = useCallback(() => {
     resetTimers();
@@ -281,7 +265,44 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
     setPhase("running");
     setTimeLeftMs(preset.totalMs);
     runStartRef.current = Date.now();
+    completionRef.current = null;
+    runRecordIdRef.current = null;
   }, [preset, resetTimers]);
+
+  const persistSummary = useCallback(
+    (selfReport: number | null) => {
+      if (!summary) return;
+      const completedAt = completionRef.current ?? Date.now();
+      const recordId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${completedAt}-${Math.random()}`;
+      const record: ArenaRunRecord = {
+        id: recordId,
+        arenaId: module.arena,
+        moduleId: module.id,
+        drillId: duration,
+        duration,
+        durationSec: preset.totalMs / 1000,
+        startedAt: runStartRef.current || completedAt - preset.totalMs,
+        completedAt,
+        dayKey: toDayKeyLocal(completedAt),
+        selfReport,
+        totalTrials: summary.totalTrials,
+        correctCount: summary.correctCount,
+        incorrectCount: summary.incorrectCount,
+        timeoutCount: summary.timeoutCount,
+        accuracy: summary.accuracy,
+        meanRTms: summary.meanRTms,
+        score: summary.score,
+        interpretation: summary.interpretation,
+      };
+      saveArenaRun(record);
+      runRecordIdRef.current = recordId;
+      setRecentRuns(getArenaRuns({ arenaId: module.arena, moduleId: module.id }));
+    },
+    [duration, module.arena, module.id, preset.totalMs, summary],
+  );
 
   useEffect(() => {
     return () => resetTimers();
@@ -334,7 +355,7 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
   );
 
   useEffect(() => {
-    if (phase !== "running" || !currentStimulus) return;
+  if (phase !== "running" || !currentStimulus) return;
     trialStartRef.current = Date.now();
     if (trialTimeoutRef.current) {
       clearTimeout(trialTimeoutRef.current);
@@ -353,100 +374,100 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
   const timeDisplay = useMemo(() => `${Math.ceil(timeLeftMs / 1000)}s`, [timeLeftMs]);
 
   if (phase === "summary" && summary) {
-    return (
-      <div className="min-h-screen bg-[#05060a] text-white flex flex-col">
-        <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-            <p className="text-xs uppercase tracking-wide text-white/60">Rezultat</p>
-            <h1 className="text-3xl font-semibold">Score: {Math.round(summary.score)}</h1>
-            <p className="text-sm text-white/70 mt-2">{summary.interpretation}</p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <h3 className="text-sm font-semibold text-white/70 flex items-center gap-1">
-                {METRIC_INFO.accuracy.label}
-                <span className="text-white/50 cursor-help" title={METRIC_INFO.accuracy.description}>
-                  ⓘ
-                </span>
-              </h3>
-              <p className="text-2xl font-bold text-white">{(summary.accuracy * 100).toFixed(1)}%</p>
+    const summaryPanel = (
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-white/60">Rezultat</p>
+              <h1 className="text-3xl font-semibold">Score: {Math.round(summary.score ?? 0)}</h1>
+              <p className="text-sm text-white/70 mt-2">{summary.interpretation}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <h3 className="text-sm font-semibold text-white/70 flex items-center gap-1">
-                {METRIC_INFO.meanRT.label}
-                <span className="text-white/50 cursor-help" title={METRIC_INFO.meanRT.description}>
-                  ⓘ
-                </span>
-              </h3>
-              <p className="text-2xl font-bold text-white">
-                {summary.meanRTms ? `${Math.round(summary.meanRTms)} ms` : "-"}
-              </p>
+            <div className="text-sm text-white/60">
+              <p>Ultimul run: {lastRun ? `${Math.round(lastRun.score ?? 0)} pts` : "-"}</p>
+              <p>Cel mai bun azi: {bestToday ? `${Math.round(bestToday)} pts` : "-"}</p>
+              <Link href={historyLink} className="underline text-white/80 text-xs mt-1 inline-block">
+                Vezi istoricul complet →
+              </Link>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <h3 className="text-sm font-semibold text-white/70 flex items-center gap-1">
-                {METRIC_INFO.interference.label}
-                <span className="text-white/50 cursor-help" title={METRIC_INFO.interference.description}>
-                  ⓘ
-                </span>
-              </h3>
-              <p className="text-2xl font-bold text-white">
-                {summary.interferenceCost ? `${Math.round(summary.interferenceCost)} ms` : "-"}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <h3 className="text-sm font-semibold text-white/70 flex items-center gap-1">
-                {METRIC_INFO.timeouts.label}
-                <span className="text-white/50 cursor-help" title={METRIC_INFO.timeouts.description}>
-                  ⓘ
-                </span>
-              </h3>
-              <p className="text-2xl font-bold text-white">{summary.timeoutCount}</p>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-white/60">Cel mai bun scor azi</p>
-                <p className="text-3xl font-semibold">
-                  {bestToday !== null ? Math.round(bestToday) : "—"}
-                </p>
-                <p className="text-sm text-white/60">
-                  Ultimul run:{" "}
-                  {lastRun ? new Date(lastRun.completedAt).toLocaleTimeString() : "—"}
-                </p>
-              </div>
-              <ArenaHistorySparkline runs={sparklineSource} />
-            </div>
-            <Link
-              href={historyLink}
-              className="inline-flex items-center gap-2 rounded-full border border-white/40 text-white text-sm font-semibold px-5 py-2"
-            >
-              Vezi istoricul
-            </Link>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={startRun}
-              className="rounded-full bg-white text-black text-sm font-semibold px-5 py-2"
-            >
-              Repeat
-            </button>
-            <Link
-              href={`/training/arenas/${module.arena}/${module.id}`}
-              className="rounded-full border border-white/40 text-white text-sm font-semibold px-5 py-2"
-            >
-              Change duration
-            </Link>
-            <Link
-              href={`/training/arenas/${module.arena}`}
-              className="rounded-full border border-white/40 text-white text-sm font-semibold px-5 py-2"
-            >
-              Back to arena
-            </Link>
           </div>
         </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {(["accuracy", "meanRT", "interference", "timeouts"] as const).map((metricKey) => (
+            <div key={metricKey} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <h3 className="text-sm font-semibold text-white/70 flex items-center gap-1">
+                {METRIC_INFO[metricKey].label}
+                <span className="text-white/50 cursor-help" title={METRIC_INFO[metricKey].description}>
+                  ⓘ
+                </span>
+              </h3>
+              <p className="text-2xl font-bold text-white">
+                {metricKey === "accuracy"
+                  ? `${(summary.accuracy * 100).toFixed(1)}%`
+                  : metricKey === "meanRT"
+                    ? summary.meanRTms
+                      ? `${Math.round(summary.meanRTms)} ms`
+                      : "-"
+                    : metricKey === "interference"
+                      ? summary.interferenceCost
+                        ? `${Math.round(summary.interferenceCost)} ms`
+                        : "-"
+                      : summary.timeoutCount}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-white/60">Cel mai bun scor azi</p>
+              <p className="text-3xl font-semibold">
+                {bestToday !== null ? Math.round(bestToday) : "—"}
+              </p>
+              <p className="text-sm text-white/60">
+                Ultimul run: {lastRun ? new Date(lastRun.completedAt).toLocaleTimeString() : "—"}
+              </p>
+            </div>
+            <ArenaHistorySparkline runs={sparklineSource} />
+          </div>
+          <Link
+            href={historyLink}
+            className="inline-flex items-center gap-2 rounded-full border border-white/40 text-white text-sm font-semibold px-5 py-2"
+          >
+            Vezi istoricul
+          </Link>
+        </div>
       </div>
+    );
+    return (
+      <ArenaFinishScreen
+        module={module}
+        lang={lang}
+        duration={duration}
+        availableDurations={AVAILABLE_DURATIONS}
+        successMetric={module.realWorldChallenge?.[lang]?.successMetric}
+        extraContent={summaryPanel}
+        onReplay={() => {
+          if (!runRecordIdRef.current) {
+            persistSummary(null);
+          }
+          startRun();
+        }}
+        onSelectDuration={(value) =>
+          router.replace(
+            `/training/arenas/${module.arena}/${module.id}/run?duration=${value}&lang=${lang}`,
+          )
+        }
+        onBackToArena={() => router.push(`/training/arenas/${module.arena}`)}
+        onSubmit={(value) => {
+          if (runRecordIdRef.current) {
+            updateArenaRun(runRecordIdRef.current, { selfReport: value });
+            setRecentRuns(getArenaRuns({ arenaId: module.arena, moduleId: module.id }));
+          } else {
+            persistSummary(value);
+          }
+        }}
+      />
     );
   }
 

@@ -1,0 +1,108 @@
+import type { DailyPathConfig } from "@/types/dailyPath";
+
+export const EMO_FLEX_NAMING_SHORT_RO: DailyPathConfig = {
+  id: "flexibility_naming_emotion_short_ro",
+  cluster: "emotional_flex_cluster",
+  mode: "short",
+  lang: "ro",
+  version: 1,
+  moduleKey: "emotional_flex_naming",
+  skillLabel: "Flexibilitate: numește emoția (rapid)",
+  nodes: [
+    {
+      id: "emo_flex_naming_short_intro_ro",
+      kind: "INTRO",
+      shape: "circle",
+      title: "Naming the emotion (rapid)",
+      description: "Astăzi faci o versiune scurtă de flexibilitate: înveți să numești ce simți.",
+      xp: 0,
+      ctaLabel: "Încep",
+    },
+    {
+      id: "emo_flex_naming_short_learn_ro",
+      kind: "LEARN",
+      shape: "circle",
+      title: "Emoția observată",
+      description:
+        "Când numești emoția, ea nu mai conduce automat reacția.\nApare un mic spațiu pentru alegere.",
+      xp: 5,
+    },
+    {
+      id: "emo_flex_naming_short_quiz_ro",
+      kind: "QUIZ_SINGLE",
+      shape: "circle",
+      title: "Verificare scurtă",
+      description: "Ce ajută cel mai mult?",
+      quizOptions: [
+        { id: "A", label: "Să ignori emoția." },
+        { id: "B", label: "Să o numești." },
+        { id: "C", label: "Să reacționezi rapid." },
+      ],
+      correctOptionIds: ["B"],
+      quizFeedback: {
+        correct: "Exact. Un cuvânt creează spațiu.",
+        incorrect: "Nu chiar. Flexibilitatea vine din a o numi.",
+      },
+      xp: 10,
+    },
+    {
+      id: "emo_flex_naming_short_sim_ro",
+      kind: "SIMULATOR",
+      shape: "circle",
+      badge: "simulator",
+      title: "Simulator: un cuvânt",
+      description:
+        "Adu în minte o emoție prezentă.\nSpune mental: „Observ că simt ___.”",
+      xp: 10,
+      ctaLabel: "Exercițiul e gata",
+    },
+    {
+      id: "emo_flex_naming_short_real_ro",
+      kind: "REAL_WORLD",
+      shape: "star",
+      badge: "viata_reala",
+      title: "Alegerea ta de azi",
+      description: "Descrie contextul și propoziția ta.",
+      fields: [
+        {
+          id: "context",
+          label: "Context:",
+          placeholder: "ex: într-o conversație dificilă",
+        },
+        {
+          id: "sentence",
+          label: "Propoziția mea:",
+          prefix: "Observ că simt ",
+          suffix: ".",
+          placeholder: "descrie emoția",
+        },
+      ],
+      xp: 20,
+      ctaLabel: "Mă angajez",
+    },
+    {
+      id: "emo_flex_naming_short_summary_ro",
+      kind: "SUMMARY",
+      shape: "circle",
+      title: "Antrenamentul rapid e gata.",
+      description: "",
+      bullets: [
+        "Emoția observată nu mai controlează.",
+        "Un cuvânt creează spațiu.",
+        "Spațiul permite alegerea.",
+      ],
+      anchorDescription: "Un cuvânt. Un pas înapoi.",
+      xp: 0,
+      ctaLabel: "Vezi progresul",
+    },
+    {
+      id: "emo_flex_naming_short_anchor_ro",
+      kind: "ANCHOR",
+      shape: "circle",
+      title: "Motto zilnic",
+      description: "Un cuvânt. Un pas înapoi.",
+      xp: 0,
+      ctaLabel: "Gata pe azi",
+    },
+  ],
+};

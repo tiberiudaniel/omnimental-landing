@@ -24,6 +24,6 @@ export interface ArenaModuleV1 {
   explain: Record<ArenaLang, string>;
   drills: Record<ArenaLang, ArenaDrill[]>;
   realWorldChallenge: Record<ArenaLang, ArenaRealWorldChallenge>;
-  bridges: Array<{ toL1: L1Bridge; because: Record<ArenaLang, string> }>;
+  bridges: Array<{ toL1: L1Bridge; because: Record<ArenaLang, string>; cta?: Record<ArenaLang, string> }>;
   tags?: string[];
 }

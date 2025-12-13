@@ -1,7 +1,12 @@
 import type { DailyPathConfig, DailyPathLanguage, DailyPathMode } from "@/types/dailyPath";
 import type { CatProfileDoc } from "@/types/cat";
 import { deriveAdaptiveClusterFromCat } from "@/lib/dailyCluster";
-import { getDailyPathForCluster } from "@/config/dailyPath";
+import {
+  getDailyPathForCluster,
+  getDefaultModuleKey,
+  getModuleKeyForConfigId,
+  getNextModuleKey,
+} from "@/config/dailyPath";
 import type { AdaptiveCluster } from "@/types/dailyPath";
 import { getDailyPracticeHistory, getCurrentDateKey } from "@/lib/dailyPracticeStore";
 import { CLUSTER_ROTATION, getClusterMeta } from "@/config/clusterRegistry";
@@ -31,6 +36,7 @@ export interface NextDayDecision {
   cluster: AdaptiveCluster;
   mode: DailyPathMode;
   reason: string;
+  moduleKey?: string | null;
   variant?: DailyVariant;
   policyApplied?: boolean;
   policyReason?: string;
@@ -41,16 +47,19 @@ function clusterLabel(cluster: AdaptiveCluster): string {
 }
 
 function fallbackDecision(lang: DailyPathLanguage, reason: string): NextDayDecision {
+  const moduleKey = getDefaultModuleKey(FALLBACK_CLUSTER);
   const config = getDailyPathForCluster({
     cluster: FALLBACK_CLUSTER,
     mode: FALLBACK_MODE,
     lang,
+    moduleKey,
   });
   return {
     config,
     cluster: FALLBACK_CLUSTER,
     mode: FALLBACK_MODE,
     reason,
+    moduleKey,
   };
 }
 
@@ -93,19 +102,34 @@ export function decideNextDailyPathFromHistory(context: NextDayHistoryContext): 
         chosenMode = "deep";
       } else {
         reasonParts.push(
-          `cluster completed ieri dar streak=${lastCompletedEntries.length} < 3 → short`,
+          `cluster completed previous_day but streak=${lastCompletedEntries.length} < 3 → short`,
         );
       }
     } else {
-      reasonParts.push("cluster nu a fost completat ieri → short");
+      reasonParts.push("cluster not completed previous_day → short");
     }
   } else {
-    reasonParts.push("cluster fără istoric → short");
+    reasonParts.push("cluster has_no_history → short");
   }
 
-  const config = getDailyPathForCluster({ cluster: chosenCluster, mode: chosenMode, lang });
+  const moduleSelection = selectModuleKeyForCluster(chosenCluster, clusterHistory);
+  const moduleKey = moduleSelection.moduleKey;
+  if (moduleSelection.mappingMissingConfigId) {
+    console.warn(
+      `[NextDayEngine] Missing moduleKey mapping for configId=${moduleSelection.mappingMissingConfigId}`,
+    );
+    reasonParts.push(`mapping=${moduleSelection.mappingMissingConfigId}->default`);
+    reasonParts.push(`fallback_key=${moduleSelection.fallbackKey ?? "default"}`);
+  }
+  reasonParts.push(`module=${moduleKey ?? "default"}`);
+  const config = getDailyPathForCluster({
+    cluster: chosenCluster,
+    mode: chosenMode,
+    lang,
+    moduleKey: moduleKey ?? undefined,
+  });
   const reason = `${reasonParts.join(" | ")} | selected ${clusterLabel(chosenCluster)} / ${chosenMode} / ${lang}`;
-  if (IS_DEV) {
+  if (IS_DEV && (process.env.DEBUG_NEXTDAY === "1" || process.env.NODE_ENV !== "test")) {
     console.debug("[NextDayEngine]", {
       cluster: chosenCluster,
       mode: chosenMode,
@@ -118,7 +142,40 @@ export function decideNextDailyPathFromHistory(context: NextDayHistoryContext): 
     cluster: chosenCluster,
     mode: chosenMode,
     reason,
+    moduleKey,
   };
+}
+
+interface ModuleSelectionResult {
+  moduleKey: string | null;
+  mappingMissingConfigId: string | null;
+  fallbackKey: string | null;
+}
+
+function selectModuleKeyForCluster(
+  cluster: AdaptiveCluster,
+  clusterHistory: DailyPracticeDoc[],
+): ModuleSelectionResult {
+  const defaultKey = getDefaultModuleKey(cluster);
+  const normalizedEntries = normalizeDailyEntries(clusterHistory);
+  const latestEntry = normalizedEntries[0]?.entry ?? null;
+  if (!latestEntry) {
+    return { moduleKey: defaultKey, mappingMissingConfigId: null, fallbackKey: defaultKey };
+  }
+  const mappedKey =
+    (latestEntry.configId ? getModuleKeyForConfigId(latestEntry.configId) : null) ?? null;
+  if (!mappedKey) {
+    return {
+      moduleKey: defaultKey,
+      mappingMissingConfigId: latestEntry.configId ?? null,
+      fallbackKey: defaultKey,
+    };
+  }
+  if (!latestEntry.completed) {
+    return { moduleKey: mappedKey, mappingMissingConfigId: null, fallbackKey: defaultKey };
+  }
+  const nextKey = getNextModuleKey(cluster, mappedKey) ?? mappedKey ?? defaultKey;
+  return { moduleKey: nextKey, mappingMissingConfigId: null, fallbackKey: defaultKey };
 }
 
 export async function decideNextDailyPath(params: {
@@ -179,7 +236,7 @@ export async function decideNextDailyPath(params: {
   if (policyDecision.variant) {
     finalDecision.variant = policyDecision.variant;
   }
-  if (IS_DEV) {
+  if (IS_DEV && (process.env.DEBUG_NEXTDAY === "1" || process.env.NODE_ENV !== "test")) {
     console.debug("[DecisionPolicyV2]", {
       signals,
       policyApplied: policyDecision.policyApplied,
@@ -190,3 +247,8 @@ export async function decideNextDailyPath(params: {
   }
   return finalDecision;
 }
+
+export const __testables = {
+  selectModuleKeyForClusterRaw: (cluster: AdaptiveCluster, history: DailyPracticeDoc[]) =>
+    selectModuleKeyForCluster(cluster, history),
+};

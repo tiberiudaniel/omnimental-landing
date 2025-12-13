@@ -6,6 +6,7 @@ export const EMOTIONAL_FLEX_DEEP_EN: DailyPathConfig = {
   mode: "deep",
   lang: "en",
   version: 1,
+  moduleKey: "emotional_flex_pause",
   skillLabel: "Flexibility: full emotional reset",
   autonomyNodeId: "emoflex_a1",
   nodes: [

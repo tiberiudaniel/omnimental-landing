@@ -59,6 +59,7 @@ export interface DailyPathConfig {
   mode: DailyPathMode;
   lang: DailyPathLanguage;
   version?: number;
+  moduleKey?: string;
   skillLabel?: string;
   nodes: DailyPathNodeConfig[];
   autonomyNodeId?: string;

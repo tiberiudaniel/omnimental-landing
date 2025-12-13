@@ -21,7 +21,7 @@ export function ArenaHistorySparkline({
     const ordered = [...runs]
       .sort((a, b) => a.completedAt - b.completedAt)
       .slice(-7);
-    const scores = ordered.map((run) => run.score || 0);
+    const scores = ordered.map((run) => (typeof run.score === "number" ? run.score : 0));
     const minScore = Math.min(...scores, 0);
     const maxScore = Math.max(...scores, 100);
     const span = maxScore - minScore || 1;
@@ -29,8 +29,9 @@ export function ArenaHistorySparkline({
     const usableHeight = height - 16;
     const coords = ordered.map((run, index) => {
       const x = (index / Math.max(ordered.length - 1, 1)) * usableWidth + 8;
-      const y = height - 8 - ((run.score - minScore) / span) * usableHeight;
-      return { x, y, id: run.id, score: run.score };
+      const runScore = typeof run.score === "number" ? run.score : 0;
+      const y = height - 8 - ((runScore - minScore) / span) * usableHeight;
+      return { x, y, id: run.id, score: runScore };
     });
     return { coords, minScore, maxScore };
   }, [runs, width, height]);

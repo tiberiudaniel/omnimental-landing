@@ -16,8 +16,15 @@ const baseline = {
 };
 
 test("downgrades to short when time available below threshold", () => {
-  const decision = applyDecisionPolicyV2(baseline, { timeAvailableMin: 10 });
+  const decision = applyDecisionPolicyV2(baseline, { timeAvailableMin: 5 });
   assert.equal(decision.mode, "short");
+  assert.equal(decision.policyApplied, true);
+  assert.ok(decision.policyReason.includes("timeAvailable"));
+});
+
+test("upgrades to deep when baseline short but enough time available", () => {
+  const decision = applyDecisionPolicyV2({ ...baseline, mode: "short" }, { timeAvailableMin: 12 });
+  assert.equal(decision.mode, "deep");
   assert.equal(decision.policyApplied, true);
   assert.ok(decision.policyReason.includes("timeAvailable"));
 });

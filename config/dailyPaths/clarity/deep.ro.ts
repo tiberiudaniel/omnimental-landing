@@ -6,6 +6,7 @@ export const CLARITY_DEEP_RO: DailyPathConfig = {
   mode: "deep",
   lang: "ro",
   version: 1,
+  moduleKey: "clarity_single_intent",
   skillLabel: "Claritate: arhitectura mentală completă",
   autonomyNodeId: "clarity_a1",
   nodes: [

@@ -107,6 +107,65 @@ const headerPad = "px-3 py-2 md:py-4";
     return () => document.removeEventListener('mousedown', onDoc);
   }, [actionsOpen]);
 
+  const handleUserChipClick = () => {
+    if (isLoggedIn) {
+      router.push("/progress");
+      return;
+    }
+    if (onAuthRequest) {
+      onAuthRequest();
+    } else {
+      router.push("/auth?returnTo=%2Frecommendation");
+    }
+  };
+
+  const MobileLangToggle = () => (
+    <div className="flex items-center gap-1 text-[11px] text-[var(--omni-ink)]/90">
+      <button
+        type="button"
+        onClick={() => setLang("ro")}
+        className={clsx(
+          "rounded-full border px-2 py-1 text-[10px] font-semibold transition",
+          lang === "ro"
+            ? "border-[var(--omni-ink)] text-[var(--omni-ink)] bg-[var(--omni-ink)]/10"
+            : "border-[var(--omni-border-soft)] text-[var(--omni-ink-soft)]",
+        )}
+        aria-pressed={lang === "ro"}
+      >
+        RO
+      </button>
+      <button
+        type="button"
+        onClick={() => setLang("en")}
+        className={clsx(
+          "rounded-full border px-2 py-1 text-[10px] font-semibold transition",
+          lang === "en"
+            ? "border-[var(--omni-ink)] text-[var(--omni-ink)] bg-[var(--omni-ink)]/10"
+            : "border-[var(--omni-border-soft)] text-[var(--omni-ink-soft)]",
+        )}
+        aria-pressed={lang === "en"}
+      >
+        EN
+      </button>
+    </div>
+  );
+
+  const MobileUserChip = () => (
+    <button
+      type="button"
+      onClick={handleUserChipClick}
+      className="flex items-center gap-1 rounded-full border border-[var(--omni-border-soft)] bg-white px-3 py-1 text-xs font-semibold text-[var(--omni-ink)] transition hover:border-[var(--omni-ink)]"
+    >
+      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--omni-ink)]/10 text-sm font-bold text-[var(--omni-ink)]">
+        {(shortUser?.[0] ?? "G").toUpperCase()}
+      </span>
+      <span className="text-[11px] text-[var(--omni-ink)]">{shortUser}</span>
+      <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden className="text-[var(--omni-ink-soft)]">
+        <path d="M2 3.5 5 6.5 8 3.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      </svg>
+    </button>
+  );
+
   return (
     <header
       className={clsx("sticky top-0 z-40 border-b", headerPad)}
@@ -117,6 +176,25 @@ const headerPad = "px-3 py-2 md:py-4";
       }}
     >
       <div className="relative z-10">
+      <div className="flex items-center justify-between gap-3 pb-3 sm:hidden">
+        <MobileLangToggle />
+        <div className="flex items-center gap-2">
+          <MobileUserChip />
+          {showMenu && !wizardMode ? (
+            <button
+              onClick={onMenuToggle}
+              aria-label={lang === "ro" ? "Deschide meniul" : "Open menu"}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/40 text-white"
+            >
+              <span className="space-y-1">
+                <span className="block h-[2px] w-4 bg-current" />
+                <span className="block h-[2px] w-4 bg-current" />
+                <span className="block h-[2px] w-4 bg-current" />
+              </span>
+            </button>
+          ) : null}
+        </div>
+      </div>
       {/* Top row: Auth | Guest | RO EN (desktop only) */}
       <div className="hidden items-center justify-end gap-1.5 text-[10px] text-[var(--omni-ink-soft)] md:flex">
         <button
@@ -267,7 +345,7 @@ const headerPad = "px-3 py-2 md:py-4";
             <button
               onClick={onMenuToggle}
               aria-label={lang === "ro" ? "Deschide meniul" : "Open menu"}
-              className="mt-[-2px] flex h-9 w-9 items-center justify-center rounded-full border transition hover:bg-[color-mix(in_oklab,var(--omni-ink)_10%,transparent)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-border-soft)] md:h-10 md:w-10"
+              className="mt-[-2px] hidden h-9 w-9 items-center justify-center rounded-full border transition hover:bg-[color-mix(in_oklab,var(--omni-ink)_10%,transparent)] focus:outline-none focus:ring-1 focus:ring-[var(--omni-border-soft)] sm:flex md:h-10 md:w-10"
               style={{ borderColor: "var(--omni-ink)", color: "var(--omni-ink)" }}
             >
               <span className="space-y-1">
