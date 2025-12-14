@@ -4,19 +4,17 @@ import { useEffect, useRef } from "react";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { track } from "@/lib/telemetry/track";
 import { getExploreMapViewed, setExploreMapViewed } from "@/lib/intro/exploreState";
+import { useI18n } from "@/components/I18nProvider";
+import { INTRO_COPY } from "./introCopy";
 
 interface ExploreMapProps {
   onContinue?: () => void;
 }
 
-const AXES = [
-  { id: "clarity", title: "Claritate", description: "Gânduri structurate, capacitate de prioritizare lucidă sub presiune." },
-  { id: "energy", title: "Energie", description: "Reglajul micro-pauzelor și al atenției pentru stabilitate între task-uri." },
-  { id: "adaptability", title: "Adaptabilitate", description: "Schimbarea rapidă a strategiilor și reframing strategic." },
-  { id: "resilience", title: "Reziliență", description: "Protecție emoțională și cognitivă când contextul devine ostil." },
-];
-
 export function ExploreMap({ onContinue }: ExploreMapProps) {
+  const { lang } = useI18n();
+  const locale = lang === "en" ? "en" : "ro";
+  const copy = INTRO_COPY.exploreMap[locale];
   const cardRef = useRef<HTMLDivElement | null>(null);
   const trackedRef = useRef(getExploreMapViewed());
 
@@ -45,15 +43,10 @@ export function ExploreMap({ onContinue }: ExploreMapProps) {
     >
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
         <div className="flex-1 space-y-4">
-          <h2 className="text-2xl font-semibold tracking-tight text-[var(--omni-ink)] sm:text-3xl">
-            Harta sistemului OmniMental
-          </h2>
-          <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80 sm:text-base">
-            Patru axe care se influențează reciproc. Observă cum Claritatea, Energia, Adaptabilitatea și Reziliența se conectează
-            într-un singur sistem de reglaj.
-          </p>
+          <h2 className="text-2xl font-semibold tracking-tight text-[var(--omni-ink)] sm:text-3xl">{copy.title}</h2>
+          <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80 sm:text-base">{copy.subtitle}</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            {AXES.map((axis) => (
+            {copy.axes.map((axis) => (
               <div key={axis.id} className="rounded-2xl border border-[var(--omni-border-soft)]/60 px-4 py-3">
                 <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{axis.title}</p>
                 <p className="mt-2 text-sm text-[var(--omni-ink)]/85">{axis.description}</p>
@@ -61,13 +54,13 @@ export function ExploreMap({ onContinue }: ExploreMapProps) {
             ))}
           </div>
           <OmniCtaButton onClick={onContinue} className="w-full sm:w-auto" variant="primary">
-            Continuă spre testare
+            {copy.cta}
           </OmniCtaButton>
         </div>
         <div className="mx-auto flex h-64 w-64 flex-none items-center justify-center rounded-full border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)]">
           <div className="relative h-48 w-48">
-            {AXES.map((axis, index) => {
-              const angle = (index / AXES.length) * Math.PI * 2;
+            {copy.axes.map((axis, index) => {
+              const angle = (index / copy.axes.length) * Math.PI * 2;
               const radius = 90;
               const cx = radius * Math.cos(angle);
               const cy = radius * Math.sin(angle);

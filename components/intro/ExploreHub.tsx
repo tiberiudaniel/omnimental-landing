@@ -19,6 +19,7 @@ import { track } from "@/lib/telemetry/track";
 import { PaywallSoftModal } from "./PaywallSoftModal";
 import { useI18n } from "@/components/I18nProvider";
 import { UPGRADE_URL } from "@/lib/constants/routes";
+import { INTRO_COPY } from "./introCopy";
 
 export default function ExploreHub() {
   const router = useRouter();
@@ -32,7 +33,6 @@ export default function ExploreHub() {
   const [actionsCount, setActionsCount] = useState(0);
   const [offerOpen, setOfferOpen] = useState(false);
   const [offerShown, setOfferShown] = useState(() => getExploreOfferShown());
-  const contractTrackedRef = useRef(false);
   const testsCardRef = useRef<HTMLDivElement | null>(null);
   const intervalRef = useRef<number | null>(null);
   const startedAtRef = useRef<number | null>(null);
@@ -82,26 +82,22 @@ export default function ExploreHub() {
   }, [testsCompleted]);
 
   useEffect(() => {
-    if (contractVisible && !contractTrackedRef.current) {
-      contractTrackedRef.current = true;
-      track("contract_shown");
-    }
-  }, [contractVisible]);
-
-  useEffect(() => {
     if (offerShown || offerOpen) return;
-    if (testsCompleted >= 2) {
+    const enoughActions = actionsCount >= 3;
+    const testsCondition = testsCompleted >= 2 && elapsedMs >= 6 * 60 * 1000 && enoughActions;
+    const timeCondition = elapsedMs >= 12 * 60 * 1000 && enoughActions;
+    if (testsCondition) {
       setOfferOpen(true);
       setOfferShown(true);
       setExploreOfferShown(true);
-      track("offer_shown", { flow: "explore", reason: "tests" });
+      track("offer_shown", { flow: "explore", reason: "tests+actions" });
       return;
     }
-    if (elapsedMs >= 12 * 60 * 1000 && actionsCount >= 3) {
+    if (timeCondition) {
       setOfferOpen(true);
       setOfferShown(true);
       setExploreOfferShown(true);
-      track("offer_shown", { flow: "explore", reason: "time" });
+      track("offer_shown", { flow: "explore", reason: "time+actions" });
     }
   }, [actionsCount, elapsedMs, offerOpen, offerShown, testsCompleted]);
 
@@ -110,16 +106,14 @@ export default function ExploreHub() {
     setActionsCount((prev) => prev + 1);
   }, []);
 
-  const handleTestComplete = useCallback(
-    () => {
-      setTestsCompletedState((prev) => {
-        const next = prev + 1;
-        setTestsCompleted(next);
-        return next;
-      });
-    },
-    [],
-  );
+  const handleTestComplete = useCallback(() => {
+    setTestsCompletedState((prev) => {
+      const next = prev + 1;
+      setTestsCompleted(next);
+      return next;
+    });
+    setActionsCount((prev) => prev + 1);
+  }, []);
 
   const handleTestStarted = useCallback(() => {
     setActionsCount((prev) => prev + 1);
@@ -144,6 +138,14 @@ export default function ExploreHub() {
     router.push(UPGRADE_URL);
   }, [router]);
 
+  const handleFeedbackAction = useCallback(() => {
+    setActionsCount((prev) => prev + 1);
+  }, []);
+
+  const handleContractAction = useCallback(() => {
+    setActionsCount((prev) => prev + 1);
+  }, []);
+
   const heroCopy = useMemo(() => {
     if (locale === "en") {
       return {
@@ -159,20 +161,7 @@ export default function ExploreHub() {
     };
   }, [locale]);
 
-  const offerCopy =
-    locale === "en"
-      ? {
-          title: "Want daily structure?",
-          body: "Exploration helps. Real progress comes from 5–7 minutes every day.",
-          primary: "Activate plan",
-          secondary: "Keep exploring",
-        }
-      : {
-          title: "Vrei structură zilnică?",
-          body: "Explorarea e utilă. Progresul real vine din frecvență. 5–7 minute/zi.",
-          primary: "Activează planul",
-          secondary: "Mai explorez",
-        };
+  const offerCopy = INTRO_COPY.offer[locale];
 
   return (
     <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-8">
@@ -192,6 +181,7 @@ export default function ExploreHub() {
             onTestComplete={handleTestComplete}
             onUnlockMedium={handleUnlockMedium}
             onTestStarted={handleTestStarted}
+            onFeedback={handleFeedbackAction}
           />
         </div>
         {contractVisible ? (
@@ -199,6 +189,7 @@ export default function ExploreHub() {
             onExploreMore={() => {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
+            onAction={handleContractAction}
           />
         ) : null}
       </div>

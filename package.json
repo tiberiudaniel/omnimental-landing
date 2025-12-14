@@ -40,6 +40,7 @@
     "react-simple-typewriter": "^5.0.1",
     "recharts": "^3.4.1",
     "resend": "^6.5.2",
+    "stripe": "^14.22.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {

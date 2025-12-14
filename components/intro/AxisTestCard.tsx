@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { track } from "@/lib/telemetry/track";
+import { useI18n } from "@/components/I18nProvider";
+import { INTRO_COPY } from "./introCopy";
+
 type TestDuration = "short" | "medium";
 
 interface AxisTestCardProps {
@@ -10,6 +13,7 @@ interface AxisTestCardProps {
   onTestComplete: (axisId: string, duration: TestDuration) => void;
   onUnlockMedium: () => void;
   onTestStarted?: (axisId: string, duration: TestDuration) => void;
+  onFeedback?: (axisId: string, value: string) => void;
 }
 
 interface ActiveTest {
@@ -17,29 +21,6 @@ interface ActiveTest {
   duration: TestDuration;
   secondsLeft: number;
 }
-
-const AXES = [
-  {
-    id: "clarity",
-    title: "Claritate",
-    description: "Gândești rapid, dar îți scapă ordinea corectă. Testul evaluează focusul sub presiune.",
-  },
-  {
-    id: "energy",
-    title: "Energie",
-    description: "Măsoară cât de repede îți revii între task-uri și dacă respiri la timp.",
-  },
-  {
-    id: "adaptability",
-    title: "Adaptabilitate",
-    description: "Verifică flexibilitatea cognitivă și cât de ușor schimbi strategiile.",
-  },
-  {
-    id: "resilience",
-    title: "Reziliență",
-    description: "Cât rezistă atenția când apare tensiunea emoțională.",
-  },
-];
 
 const TEST_SECONDS: Record<TestDuration, number> = {
   short: 45,
@@ -51,16 +32,23 @@ export function AxisTestCard({
   onTestComplete,
   onUnlockMedium,
   onTestStarted,
+  onFeedback,
 }: AxisTestCardProps) {
+  const { lang } = useI18n();
+  const locale = lang === "en" ? "en" : "ro";
+  const copy = INTRO_COPY.axisTest[locale];
   const [activeTest, setActiveTest] = useState<ActiveTest | null>(null);
   const [completed, setCompleted] = useState<Record<string, Partial<Record<TestDuration, boolean>>>>({});
   const [feedback, setFeedback] = useState<Record<string, string>>({});
 
+  const axes = copy.axes;
+
   const modalTitle = useMemo(() => {
     if (!activeTest) return "";
-    const axis = AXES.find((a) => a.id === activeTest.axisId);
-    return axis ? `${axis.title} · ${activeTest.duration === "short" ? "Test scurt" : "Test mediu"}` : "Test";
-  }, [activeTest]);
+    const axis = axes.find((a) => a.id === activeTest.axisId);
+    const durationLabel = activeTest?.duration === "short" ? copy.buttons.short : copy.buttons.medium;
+    return axis ? `${axis.title} · ${durationLabel}` : "Test";
+  }, [activeTest, axes, copy.buttons]);
 
   const updateCompletion = useCallback(
     (axisId: string, duration: TestDuration) => {
@@ -80,9 +68,7 @@ export function AxisTestCard({
 
   useEffect(() => {
     if (!activeTest) return;
-    if (activeTest.secondsLeft <= 0) {
-      return;
-    }
+    if (activeTest.secondsLeft <= 0) return;
     const timer = window.setTimeout(() => {
       setActiveTest((prev) =>
         prev ? { ...prev, secondsLeft: Math.max(prev.secondsLeft - 1, 0) } : null,
@@ -123,25 +109,31 @@ export function AxisTestCard({
 
   const handleFeedback = (axisId: string, value: string) => {
     setFeedback((prev) => ({ ...prev, [axisId]: value }));
+    track("axis_test_feedback", { axis: axisId, value });
+    onFeedback?.(axisId, value);
   };
 
   return (
-    <section id="axis-tests" className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 shadow-[0_20px_60px_rgba(0,0,0,0.08)] sm:px-8">
+    <section
+      id="axis-tests"
+      className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 shadow-[0_20px_60px_rgba(0,0,0,0.08)] sm:px-8"
+    >
       <div className="space-y-3">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Card 2</p>
         <h2 className="text-2xl font-semibold tracking-tight text-[var(--omni-ink)] sm:text-3xl">
-          Testează o axă
+          {copy.title}
         </h2>
-        <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80 sm:text-base">
-          Alege o axă, rulează un test scurt și vezi ce simți. După primul test scurt se deblochează și testele medii.
-        </p>
+        <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80 sm:text-base">{copy.description}</p>
       </div>
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {AXES.map((axis) => {
+        {axes.map((axis) => {
           const axisCompleted = completed[axis.id] ?? {};
           const anyCompleted = Boolean(axisCompleted.short || axisCompleted.medium);
           return (
-            <div key={axis.id} className="flex h-full flex-col rounded-[24px] border border-[var(--omni-border-soft)]/70 bg-[var(--omni-bg-main)] px-4 py-5">
+            <div
+              key={axis.id}
+              className="flex h-full flex-col rounded-[24px] border border-[var(--omni-border-soft)]/70 bg-[var(--omni-bg-main)] px-4 py-5"
+            >
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{axis.title}</p>
@@ -149,7 +141,7 @@ export function AxisTestCard({
                 </div>
                 {anyCompleted ? (
                   <span className="rounded-full bg-[var(--omni-energy)]/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-energy)]">
-                    Completat
+                    {locale === "ro" ? "Completat" : "Done"}
                   </span>
                 ) : null}
               </div>
@@ -165,7 +157,7 @@ export function AxisTestCard({
                   disabled={Boolean(activeTest) || Boolean(axisCompleted.short)}
                   onClick={() => startTest(axis.id, "short")}
                 >
-                  Test scurt
+                  {copy.buttons.short}
                 </button>
                 <button
                   type="button"
@@ -174,33 +166,35 @@ export function AxisTestCard({
                     mediumUnlocked && !axisCompleted.medium
                       ? "border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:border-[var(--omni-ink)]/70"
                       : "border-dashed border-[var(--omni-border-soft)] text-[var(--omni-muted)]",
-                    axisCompleted.medium ? "border-[var(--omni-energy)] bg-[var(--omni-energy)]/10 text-[var(--omni-energy)]" : "",
+                    axisCompleted.medium
+                      ? "border-[var(--omni-energy)] bg-[var(--omni-energy)]/10 text-[var(--omni-energy)]"
+                      : "",
                   )}
                   disabled={!mediumUnlocked || Boolean(activeTest) || Boolean(axisCompleted.medium)}
                   onClick={() => startTest(axis.id, "medium")}
                 >
-                  Test mediu
+                  {copy.buttons.medium}
                 </button>
               </div>
               {anyCompleted ? (
                 <div className="mt-4 space-y-2 rounded-2xl bg-white/60 p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-                    A fost util?
+                    {copy.feedbackPrompt}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {["Da", "Meh", "Nu"].map((label) => (
+                    {copy.feedbackOptions.map((option) => (
                       <button
-                        key={label}
+                        key={option.id}
                         type="button"
-                        onClick={() => handleFeedback(axis.id, label)}
+                        onClick={() => handleFeedback(axis.id, option.id)}
                         className={clsx(
                           "rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]",
-                          feedback[axis.id] === label
+                          feedback[axis.id] === option.id
                             ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white"
                             : "border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:border-[var(--omni-ink)]/70",
                         )}
                       >
-                        {label}
+                        {option.label}
                       </button>
                     ))}
                   </div>
@@ -213,13 +207,22 @@ export function AxisTestCard({
       {activeTest ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-[24px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-6 text-center shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
-            <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Test în desfășurare</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+              {locale === "ro" ? "Test în desfășurare" : "Test running"}
+            </p>
             <h3 className="mt-3 text-xl font-semibold text-[var(--omni-ink)]">{modalTitle}</h3>
-            <p className="mt-4 text-4xl font-semibold tracking-tight text-[var(--omni-ink)]">{formatCountdown(activeTest.secondsLeft)}</p>
-            <p className="mt-2 text-sm text-[var(--omni-ink)]/70">Stai cu exercițiul până la final. Ulterior notăm impresia.</p>
+            <p className="mt-4 text-4xl font-semibold tracking-tight text-[var(--omni-ink)]">
+              {formatCountdown(activeTest.secondsLeft)}
+            </p>
+            <p className="mt-2 text-sm text-[var(--omni-ink)]/70">
+              {locale === "ro"
+                ? "Stai cu exercițiul până la final. Ulterior notăm impresia."
+                : "Stay with the exercise until the end. Capture the impression afterwards."}
+            </p>
           </div>
         </div>
       ) : null}
     </section>
   );
 }
+
