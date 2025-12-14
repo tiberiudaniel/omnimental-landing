@@ -10,11 +10,25 @@ import { track } from "@/lib/telemetry/track";
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization") || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
+    const match = authHeader.match(/^Bearer\s+(.+)$/i);
+    if (!match) {
+      return NextResponse.json(
+        {
+          error: "missing_authorization",
+          message: "Authorization header with Bearer token required.",
+        },
+        { status: 401 },
+      );
+    }
+    const token = match[1]?.trim();
     if (!token) {
-      return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+      return NextResponse.json(
+        { error: "missing_authorization", message: "Authorization header with Bearer token required." },
+        { status: 401 },
+      );
     }
 
+    const issuerFromToken = readIssuerFromToken(token);
     let uid: string | null = null;
     try {
       const adminAuth = getAdminAuth();
@@ -22,11 +36,16 @@ export async function POST(req: NextRequest) {
       uid = decoded.uid ?? null;
     } catch (error) {
       console.warn("checkout verifyIdToken failed", error);
-      return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+      const hint = issuerHint(issuerFromToken);
+      const message = error instanceof Error ? error.message : "Failed to verify Firebase ID token.";
+      return NextResponse.json({ error: "verifyIdToken_failed", message, hint }, { status: 401 });
     }
 
     if (!uid) {
-      return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+      return NextResponse.json(
+        { error: "verifyIdToken_failed", message: "Token verified but uid missing." },
+        { status: 401 },
+      );
     }
 
     const body = await req.json().catch(() => ({}));
@@ -59,4 +78,27 @@ export async function POST(req: NextRequest) {
     console.error("create-checkout error", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
+}
+
+function readIssuerFromToken(token: string): string | null {
+  const segments = token.split(".");
+  if (segments.length < 2) return null;
+  try {
+    const normalized = segments[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(Buffer.from(normalized, "base64").toString("utf-8")) as { iss?: unknown } | null;
+    return typeof payload?.iss === "string" ? payload.iss : null;
+  } catch {
+    return null;
+  }
+}
+
+function issuerHint(issuer: string | null): string | undefined {
+  if (!issuer) return undefined;
+  if (issuer.includes("accounts.google.com")) {
+    return "Google ID token received; use firebase.auth().currentUser.getIdToken().";
+  }
+  if (!issuer.includes("securetoken.google.com")) {
+    return `Unexpected token issuer: ${issuer}`;
+  }
+  return undefined;
 }

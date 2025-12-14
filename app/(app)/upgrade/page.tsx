@@ -9,6 +9,7 @@ import { track } from "@/lib/telemetry/track";
 import { useProfile } from "@/components/ProfileProvider";
 import { useAuth } from "@/components/AuthProvider";
 import type { Plan } from "@/lib/stripe/prices";
+import { ensureAuth, getFirebaseAuth } from "@/lib/firebase";
 
 const PLAN_OPTIONS: Plan[] = ["monthly", "annual"];
 
@@ -31,6 +32,8 @@ const COPY = {
       auth: "Ai nevoie de cont pentru a activa planul.",
       generic: "A apărut o eroare. Reîncearcă.",
       setup: "Payment setup indisponibil momentan. Încearcă mai târziu.",
+      authNotReady: "Autentificarea nu e gata. Reîncarcă și încearcă din nou.",
+      signInRequired: "Trebuie să fii autentificat pentru a activa planul.",
     },
   },
   en: {
@@ -51,6 +54,8 @@ const COPY = {
       auth: "You need an account to activate a plan.",
       generic: "Something went wrong. Please try again.",
       setup: "Payment setup is unavailable. Try again later.",
+      authNotReady: "Auth not ready. Refresh and try again.",
+      signInRequired: "You must sign in before activating a plan.",
     },
   },
 } as const;
@@ -74,23 +79,29 @@ export default function UpgradePage() {
 
   const handlePrimary = async () => {
     if (submitting) return;
-    if (!profile?.id || !user) {
-      setErrorMessage(copy.errors.auth);
-      return;
-    }
-    const idToken = await user.getIdToken().catch((error) => {
-      console.warn("failed to acquire id token", error);
-      return null;
-    });
-    if (!idToken) {
-      setErrorMessage(copy.errors.auth);
-      setSubmitting(false);
+    if (!profile?.id) {
+      setErrorMessage(copy.errors.signInRequired);
       return;
     }
     setSubmitting(true);
     setErrorMessage(null);
-    track("upgrade_primary_clicked", { plan: selectedPlan });
     try {
+      await ensureAuth();
+      const auth = getFirebaseAuth();
+      const currentUser = auth.currentUser ?? user ?? null;
+      if (!currentUser) {
+        setErrorMessage(copy.errors.authNotReady);
+        return;
+      }
+      const idToken = await currentUser.getIdToken(true).catch((error) => {
+        console.warn("failed to acquire id token", error);
+        return null;
+      });
+      if (!idToken) {
+        setErrorMessage(copy.errors.authNotReady);
+        return;
+      }
+      track("upgrade_primary_clicked", { plan: selectedPlan });
       const response = await fetch("/api/stripe/create-checkout", {
         method: "POST",
         headers: {
@@ -100,8 +111,23 @@ export default function UpgradePage() {
         body: JSON.stringify({ plan: selectedPlan }),
       });
       if (!response.ok) {
-        const message = response.status === 500 ? copy.errors.setup : copy.errors.generic;
-        setErrorMessage(message);
+        let detail = "";
+        const textPayload = await response.text().catch(() => "");
+        if (textPayload) {
+          try {
+            const parsed = JSON.parse(textPayload) as { error?: string; message?: string; hint?: string };
+            detail = parsed.message ?? parsed.error ?? "";
+            if (parsed.hint) {
+              detail = detail ? `${detail} (${parsed.hint})` : parsed.hint;
+            }
+          } catch {
+            detail = textPayload;
+          }
+        }
+        if (!detail) {
+          detail = response.status >= 500 ? copy.errors.setup : copy.errors.generic;
+        }
+        setErrorMessage(`Checkout failed (${response.status}): ${detail}`);
         return;
       }
       const payload = (await response.json().catch(() => null)) as { url?: string } | null;
@@ -113,7 +139,9 @@ export default function UpgradePage() {
       window.location.href = payload.url;
     } catch (error) {
       console.error("upgrade checkout failed", error);
-      setErrorMessage(copy.errors.generic);
+      const fallback =
+        error instanceof Error && error.message ? `${copy.errors.generic} (${error.message})` : copy.errors.generic;
+      setErrorMessage(fallback);
     } finally {
       setSubmitting(false);
     }
