@@ -83,6 +83,7 @@ type DailyPathProps = {
   defaultTimeSelection?: number | null;
   modeHint?: DailyPathMode | null;
   onTimeSelection?: (minutes: number) => void;
+  onCompleted?: () => void;
 };
 
 const TIME_OPTIONS = [
@@ -102,6 +103,7 @@ export default function DailyPath({
   defaultTimeSelection = null,
   modeHint = null,
   onTimeSelection,
+  onCompleted,
 }: DailyPathProps) {
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [completedNodeIds, setCompletedNodeIds] = useState<string[]>([]);
@@ -114,6 +116,7 @@ export default function DailyPath({
   const [timeSelectionLocked, setTimeSelectionLocked] = useState(Boolean(defaultTimeSelection != null));
   const startLoggedRef = useRef(false);
   const completionLoggedRef = useRef(false);
+  const completionNotifiedRef = useRef(false);
   const startTimestampRef = useRef<number | null>(null);
   const pendingStartMinutesRef = useRef<number | null>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -181,6 +184,7 @@ export default function DailyPath({
     setBonusGranted(false);
     startLoggedRef.current = false;
     completionLoggedRef.current = false;
+    completionNotifiedRef.current = false;
     startTimestampRef.current = null;
     pendingStartMinutesRef.current = null;
     setTimeAvailableMin(null);
@@ -277,8 +281,8 @@ useEffect(() => {
     logPathStart(selected);
   }, [config, modeHint, logPathStart, timeAvailableMin]);
 
-  useEffect(() => {
-    if (!config || !pathFinished || completionLoggedRef.current) return;
+useEffect(() => {
+  if (!config || !pathFinished || completionLoggedRef.current) return;
     completionLoggedRef.current = true;
     if (!persistenceEnabled) return;
     const completionDate = new Date();
@@ -325,6 +329,12 @@ useEffect(() => {
     logDebug,
     persistenceEnabled,
   ]);
+
+  useEffect(() => {
+    if (!config || !pathFinished || completionNotifiedRef.current) return;
+    completionNotifiedRef.current = true;
+    onCompleted?.();
+  }, [config, onCompleted, pathFinished]);
 
   const handleNodeAction = (node: DailyPathNodeConfig) => {
     if (!config) return;

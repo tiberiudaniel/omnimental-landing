@@ -1,7 +1,7 @@
 "use client";
 
-import TodayExperience from "@/components/today/TodayExperience";
+import ExploreHub from "@/components/intro/ExploreHub";
 
 export default function RecommendationPage() {
-  return <TodayExperience entryPoint="recommendation" />;
+  return <ExploreHub />;
 }

@@ -1,7 +1,12 @@
 "use client";
 
-import TodayExperience from "@/components/today/TodayExperience";
+import { Suspense } from "react";
+import TodayOrchestrator from "@/components/today/TodayOrchestrator";
 
 export default function TodayPage() {
-  return <TodayExperience entryPoint="today" />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--omni-bg-main)]" />}>
+      <TodayOrchestrator />
+    </Suspense>
+  );
 }

@@ -79,29 +79,28 @@ function formatLocalDateKey(input: Date | number | string): string {
   return `${year}-${month}-${day}`;
 }
 
-type TodayExperienceProps = {
-  entryPoint: "today" | "recommendation";
+type DailyPathRunnerProps = {
+  onCompleted?: (configId?: string | null, moduleKey?: string | null) => void;
 };
 
-export default function TodayExperience({ entryPoint }: TodayExperienceProps) {
-  // NOTE: Today and Recommendation currently share this orchestrator intentionally while Today remains the primary entry.
-  // Keep this shared implementation until Recommendation introduces a distinct exploration experience.
-  const entryPath = entryPoint === "today" ? "/today" : "/recommendation";
+export default function DailyPathRunner({ onCompleted }: DailyPathRunnerProps) {
+  const entryPath = "/today/run";
   const authReturnTo = encodeURIComponent(entryPath);
 
   return (
     <Suspense fallback={null}>
-      <RecommendationContent entryPath={entryPath} authReturnTo={authReturnTo} />
+      <RunnerContent entryPath={entryPath} authReturnTo={authReturnTo} onCompleted={onCompleted} />
     </Suspense>
   );
 }
 
-type RecommendationContentProps = {
+type RunnerContentProps = {
   entryPath: string;
   authReturnTo: string;
+  onCompleted?: (configId?: string | null, moduleKey?: string | null) => void;
 };
 
-function RecommendationContent({ entryPath, authReturnTo }: RecommendationContentProps) {
+function RunnerContent({ entryPath, authReturnTo, onCompleted }: RunnerContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -476,6 +475,9 @@ useEffect(() => {
                       defaultTimeSelection={timeSelectionMinutes}
                       modeHint={timeModeHint ?? resolvedDailyPathConfig?.mode ?? null}
                       onTimeSelection={handleTimeSelection}
+                      onCompleted={() =>
+                        onCompleted?.(resolvedDailyPathConfig?.id ?? null, resolvedDailyPathConfig?.moduleKey ?? null)
+                      }
                     />
                   )}
                 </div>
