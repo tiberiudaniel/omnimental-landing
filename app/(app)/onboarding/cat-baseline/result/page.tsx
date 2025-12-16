@@ -277,19 +277,23 @@ export default function CatBaselineResultPage() {
 
             <section className="flex flex-col gap-4 rounded-2xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-6 text-center shadow-[0_12px_30px_rgba(0,0,0,0.06)]">
               <p className="text-base text-[var(--omni-ink)]/85">
-                Urmează Pilonii OmniMental: Intel → Flex → Kuno → Abil → Scop. De aici pornim adaptarea practică.
+                Ai deblocat Foundation Cycle (15 zile ghidate). De aici începem să stabilizăm claritatea, energia și flexibilitatea mentală.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
+                <OmniCtaButton as="link" href="/today">
+                  Începe Foundation Cycle
+                </OmniCtaButton>
                 <OmniCtaButton
                   as="link"
                   href={hasCompletedPillars ? "/onboarding/adaptive-practice" : "/onboarding/pillars"}
+                  variant="neutral"
                 >
-                  {hasCompletedPillars ? "Intră în practica adaptivă" : "Continuă către Piloni"}
-                </OmniCtaButton>
-                <OmniCtaButton as="link" href="/experience-onboarding" variant="neutral">
-                  Înapoi la hub
+                  {hasCompletedPillars ? "Continuă cu Adaptive Practice" : "Opțional: Pilonii OmniMental"}
                 </OmniCtaButton>
               </div>
+              <p className="text-xs text-[var(--omni-muted)]">
+                Pilonii sunt resurse de orientare și pot fi parcurși oricând. Foundation Cycle rămâne prioritatea urgență (15 zile).
+              </p>
             </section>
           </div>
         )}

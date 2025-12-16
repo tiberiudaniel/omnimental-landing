@@ -4,6 +4,7 @@ export {
   DAILY_PATHS_SHORT_RO,
   DAILY_PATHS_SHORT_EN,
   getDailyPathForCluster,
+  getDailyPathConfigById,
   getDefaultModuleKey,
   getModuleKeyForConfigId,
   getModuleSequenceForCluster,

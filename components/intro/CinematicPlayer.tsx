@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  MutableRefObject,
-  ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { IntroSlide } from "./IntroSlide";
 import { IntroCTA } from "./IntroCTA";
@@ -840,275 +832,24 @@ function getTimelineStage(ms: number): TimelineStage {
   return "calm";
 }
 
-type AudioLayerConfig = {
-  type: OscillatorType;
-  frequency: number;
-  tremoloHz?: number;
-  tremoloDepth?: number;
-};
-
-type ManagedLayer = AudioLayerConfig & {
-  ctx: AudioContext;
-  gain: GainNode;
-  osc: OscillatorNode | null;
-  tremoloGain: GainNode;
-  tremolo?: {
-    osc: OscillatorNode;
-    depth: GainNode;
-  };
-};
-
-type CinematicAudioEngine = {
-  ctx: AudioContext;
-  masterGain: GainNode;
-  layers: {
-    bed: ManagedLayer;
-    chaos: ManagedLayer;
-    stable: ManagedLayer;
-  };
-};
-
-let sharedAudioEngine: CinematicAudioEngine | null = null;
-let audioPrimed = false;
+let introAudioPrimed = false;
 
 export async function primeIntroAudio(): Promise<boolean> {
   if (typeof window === "undefined") return false;
-  const attemptResume = async () => {
-    if (!sharedAudioEngine) {
-      sharedAudioEngine = createAudioEngine();
-    }
-    if (!sharedAudioEngine) {
-      (window as unknown as { __introAudioState?: string }).__introAudioState = "no-engine";
-      return false;
-    }
-    try {
-      await sharedAudioEngine.ctx.resume();
-      const state = sharedAudioEngine.ctx.state;
-      (window as unknown as { __introAudioState?: string }).__introAudioState = state;
-      return state === "running";
-    } catch (err) {
-      console.error("[intro-audio] AudioContext resume failed", err);
-      (window as unknown as { __introAudioState?: string }).__introAudioState = "resume-error";
-      return false;
-    }
-  };
-
-  let ok = await attemptResume();
-  if (!ok) {
-    if (sharedAudioEngine) {
-      try {
-        sharedAudioEngine.ctx.close();
-      } catch {}
-    }
-    sharedAudioEngine = createAudioEngine();
-    ok = await attemptResume();
+  if (introAudioPrimed) return true;
+  const tester = new Audio("/audio/intro/v1/bed_drone.mp3");
+  tester.volume = 0;
+  tester.currentTime = 0;
+  tester.loop = false;
+  try {
+    await tester.play();
+    tester.pause();
+    tester.currentTime = 0;
+    introAudioPrimed = true;
+    return true;
+  } catch (error) {
+    console.warn("[intro-audio] prime failed", error);
+    introAudioPrimed = false;
+    return false;
   }
-
-  audioPrimed = ok;
-  if (ok && sharedAudioEngine) {
-    playPrimedPing(sharedAudioEngine);
-  }
-  return ok;
-}
-
-function useCinematicAudio(enabled: boolean, progressMs: number) {
-  const engineRef = useRef<CinematicAudioEngine | null>(null);
-  const pivotTriggeredRef = useRef(false);
-
-  useEffect(() => {
-    return () => {
-      if (engineRef.current) {
-        stopCinematicAudio(engineRef.current);
-        engineRef.current = null;
-      }
-      sharedAudioEngine = null;
-      audioPrimed = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!enabled || !audioPrimed) {
-      pivotTriggeredRef.current = false;
-      if (engineRef.current) {
-        stopCinematicAudio(engineRef.current);
-        engineRef.current = null;
-        sharedAudioEngine = null;
-        audioPrimed = false;
-      }
-      return;
-    }
-    if (!engineRef.current) {
-      engineRef.current = sharedAudioEngine ?? createAudioEngine();
-      sharedAudioEngine = engineRef.current;
-    }
-    const engine = engineRef.current;
-    if (!engine) return;
-    engine.ctx.resume().catch(() => undefined);
-    applyAudioTimeline(engine, progressMs, pivotTriggeredRef);
-  }, [enabled, progressMs]);
-}
-
-function createAudioEngine(): CinematicAudioEngine | null {
-  if (typeof window === "undefined") return null;
-  const AudioContextCtor =
-    window.AudioContext ||
-    (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AudioContextCtor) return null;
-  const ctx = new AudioContextCtor();
-  const masterGain = ctx.createGain();
-  masterGain.gain.value = 0.9;
-  masterGain.connect(ctx.destination);
-  return {
-    ctx,
-    masterGain,
-    layers: {
-      bed: createLayer(ctx, masterGain, { type: "sine", frequency: 110 }),
-      chaos: createLayer(ctx, masterGain, { type: "triangle", frequency: 140, tremoloHz: 7 }),
-      stable: createLayer(ctx, masterGain, { type: "sine", frequency: 220 }),
-    },
-  };
-}
-
-function stopCinematicAudio(engine: CinematicAudioEngine) {
-  deactivateLayer(engine.layers.bed, 240);
-  deactivateLayer(engine.layers.chaos, 240);
-  deactivateLayer(engine.layers.stable, 240);
-  engine.ctx.close().catch(() => undefined);
-}
-
-function applyAudioTimeline(
-  engine: CinematicAudioEngine,
-  progressMs: number,
-  pivotTriggeredRef: MutableRefObject<boolean>,
-) {
-  const { bed, chaos, stable } = engine.layers;
-  // Bed hum windows
-  if ((progressMs >= 0 && progressMs < 7200) || (progressMs >= 11000 && progressMs < 15300)) {
-    setLayerLevel(bed, 0.22, 320);
-  } else if (progressMs >= 15300) {
-    deactivateLayer(bed, 420);
-  } else {
-    deactivateLayer(bed, 260);
-  }
-
-  // Chaos pulses
-  if (progressMs >= 3600 && progressMs < 7200) {
-    setLayerLevel(chaos, 0.08, 220);
-  } else {
-    deactivateLayer(chaos, 220);
-  }
-
-  // Stable tone during pivot recovery
-  if (progressMs >= 7500 && progressMs < 11000) {
-    setLayerLevel(stable, 0.18, 320);
-  } else {
-    deactivateLayer(stable, 260);
-  }
-
-  // Pivot hit
-  if (progressMs >= 7500 && !pivotTriggeredRef.current) {
-    pivotTriggeredRef.current = true;
-    playPivotHit(engine);
-  }
-}
-
-function createLayer(
-  ctx: AudioContext,
-  masterGain: GainNode,
-  config: AudioLayerConfig,
-): ManagedLayer {
-  const gain = ctx.createGain();
-  gain.gain.value = 0;
-  gain.connect(masterGain);
-
-  const tremoloGain = ctx.createGain();
-  tremoloGain.gain.value = 1;
-  tremoloGain.connect(gain);
-
-  return { ctx, gain, osc: null, tremoloGain, ...config };
-}
-
-function ensureLayerRunning(layer: ManagedLayer) {
-  if (layer.osc) return;
-  const osc = layer.ctx.createOscillator();
-  osc.type = layer.type;
-  osc.frequency.value = layer.frequency;
-  osc.connect(layer.tremoloGain);
-  osc.start();
-  if (layer.tremoloHz && !layer.tremolo) {
-    const lfo = layer.ctx.createOscillator();
-    lfo.type = "sine";
-    lfo.frequency.value = layer.tremoloHz;
-    const depth = layer.ctx.createGain();
-    depth.gain.value = layer.tremoloDepth ?? 0.25;
-    lfo.connect(depth);
-    depth.connect(layer.tremoloGain.gain);
-    lfo.start();
-    layer.tremolo = { osc: lfo, depth };
-  }
-  layer.osc = osc;
-}
-
-function setLayerLevel(layer: ManagedLayer, volume: number, fadeMs: number) {
-  ensureLayerRunning(layer);
-  const now = layer.ctx.currentTime;
-  const fadeSec = fadeMs / 1000;
-  layer.gain.gain.cancelScheduledValues(now);
-  layer.gain.gain.linearRampToValueAtTime(volume, now + fadeSec);
-}
-
-function deactivateLayer(layer: ManagedLayer, fadeMs: number) {
-  if (!layer.osc && layer.gain.gain.value === 0) return;
-  const now = layer.ctx.currentTime;
-  const fadeSec = fadeMs / 1000;
-  layer.gain.gain.cancelScheduledValues(now);
-  layer.gain.gain.linearRampToValueAtTime(0, now + fadeSec);
-  if (layer.osc) {
-    const osc = layer.osc;
-    layer.osc = null;
-    osc.stop(now + fadeSec + 0.05);
-    osc.onended = () => {
-      osc.disconnect();
-    };
-  }
-}
-
-function playPivotHit(engine: CinematicAudioEngine) {
-  const { ctx, masterGain } = engine;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = "triangle";
-  osc.frequency.value = 180;
-  gain.gain.value = 0;
-  gain.connect(masterGain);
-  osc.connect(gain);
-  const now = ctx.currentTime;
-  gain.gain.linearRampToValueAtTime(0.18, now + 0.04);
-  gain.gain.linearRampToValueAtTime(0, now + 0.35);
-  osc.start();
-  osc.stop(now + 0.45);
-  osc.onended = () => {
-    osc.disconnect();
-    gain.disconnect();
-  };
-}
-
-function playPrimedPing(engine: CinematicAudioEngine) {
-  const { ctx, masterGain } = engine;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = "sine";
-  osc.frequency.value = 660;
-  gain.gain.value = 0;
-  gain.connect(masterGain);
-  osc.connect(gain);
-  const now = ctx.currentTime;
-  gain.gain.linearRampToValueAtTime(0.15, now + 0.03);
-  gain.gain.linearRampToValueAtTime(0, now + 0.15);
-  osc.start();
-  osc.stop(now + 0.2);
-  osc.onended = () => {
-    osc.disconnect();
-    gain.disconnect();
-  };
 }

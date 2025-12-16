@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { track } from "@/lib/telemetry/track";
 import { useProfile } from "@/components/ProfileProvider";
 import DailyPathRunner from "@/components/today/DailyPathRunner";
-import { hasCompletedToday, markDailyCompletion, setTriedExtraToday } from "@/lib/dailyCompletion";
+import { getTodayModuleKey, hasCompletedToday, markDailyCompletion, setTriedExtraToday } from "@/lib/dailyCompletion";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
@@ -18,6 +18,7 @@ export default function TodayRunPage() {
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
   const [completedToday, setCompletedToday] = useState(false);
+  const [todayModuleKey, setTodayModuleKey] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export default function TodayRunPage() {
     const timeout = window.setTimeout(() => {
       if (!alive) return;
       setCompletedToday(hasCompletedToday());
+      setTodayModuleKey(getTodayModuleKey());
       setInitialized(true);
     }, 0);
     return () => {
@@ -92,5 +94,5 @@ export default function TodayRunPage() {
     );
   }
 
-  return <DailyPathRunner onCompleted={handleCompleted} />;
+  return <DailyPathRunner onCompleted={handleCompleted} todayModuleKey={todayModuleKey} />;
 }

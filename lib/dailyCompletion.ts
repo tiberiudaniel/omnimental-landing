@@ -1,6 +1,9 @@
+import { getWowDayIndex } from "@/config/dailyPaths/wow";
+
 const COMPLETION_PREFIX = "OMNI_DAILY_COMPLETED_";
 const LAST_COMPLETION_KEY = "OMNI_DAILY_LAST_COMPLETION";
 const TRIED_EXTRA_PREFIX = "OMNI_DAILY_TRIED_EXTRA_";
+const FOUNDATION_DONE_KEY = "OMNI_FOUNDATION_DONE";
 
 export type DailyCompletionRecord = {
   completedAt: string;
@@ -27,6 +30,9 @@ export function markDailyCompletion(moduleKey: string | null = null, date: Date 
   try {
     window.localStorage.setItem(`${COMPLETION_PREFIX}${getTodayKey(date)}`, JSON.stringify(record));
     window.localStorage.setItem(LAST_COMPLETION_KEY, JSON.stringify(record));
+    if (moduleKey && getWowDayIndex(moduleKey) === 15) {
+      window.localStorage.setItem(FOUNDATION_DONE_KEY, "1");
+    }
   } catch (error) {
     console.warn("Failed to persist local daily completion", error);
   }
@@ -43,6 +49,18 @@ export function readLastCompletion(): DailyCompletionRecord | null {
   try {
     const payload = window.localStorage.getItem(LAST_COMPLETION_KEY);
     return payload ? (JSON.parse(payload) as DailyCompletionRecord) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getTodayModuleKey(date: Date = new Date()): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const payload = window.localStorage.getItem(`${COMPLETION_PREFIX}${getTodayKey(date)}`);
+    if (!payload) return null;
+    const record = JSON.parse(payload) as DailyCompletionRecord;
+    return record?.moduleKey ?? null;
   } catch {
     return null;
   }
@@ -74,4 +92,9 @@ export function setTriedExtraToday(value: boolean, date: Date = new Date()): voi
   } catch (error) {
     console.warn("Failed to persist tried extra flag", error);
   }
+}
+
+export function hasFoundationCycleCompleted(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(FOUNDATION_DONE_KEY) === "1";
 }

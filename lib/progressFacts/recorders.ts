@@ -992,6 +992,55 @@ export async function recordOnboardingEvent(payload: {
   }
 }
 
+type DailyRunnerEventType =
+  | "mission_brief_view"
+  | "mission_brief_select"
+  | "mission_brief_bounce"
+  | "soft_gate_preview"
+  | "quest_map_view"
+  | "quest_complete";
+
+type DailyRunnerEventPayload = {
+  type: DailyRunnerEventType;
+  configId?: string | null;
+  cluster?: string | null;
+  mode?: string | null;
+  dwellMs?: number | null;
+  ttfaMs?: number | null;
+  optionValue?: number | null;
+  optionId?: string | null;
+  label?: string | null;
+  context?: string | null;
+};
+
+export async function recordDailyRunnerEvent(payload: DailyRunnerEventPayload, ownerId?: string | null) {
+  try {
+    const entry: Record<string, unknown> = {
+      type: payload.type,
+      at: new Date(),
+    };
+    if (payload.configId) entry.configId = payload.configId;
+    if (payload.cluster) entry.cluster = payload.cluster;
+    if (payload.mode) entry.mode = payload.mode;
+    if (typeof payload.optionValue === "number" && Number.isFinite(payload.optionValue)) {
+      entry.optionValue = Math.round(payload.optionValue);
+    }
+    if (payload.optionId) entry.optionId = payload.optionId;
+    if (payload.label) entry.label = payload.label;
+    if (payload.context) entry.context = payload.context;
+    if (typeof payload.dwellMs === "number" && payload.dwellMs >= 0) {
+      entry.dwellMs = Math.round(payload.dwellMs);
+    }
+    if (typeof payload.ttfaMs === "number" && payload.ttfaMs >= 0) {
+      entry.ttfaMs = Math.round(payload.ttfaMs);
+    }
+    return mergeProgressFact({ dailyRunner: { events: arrayUnion(entry) } }, ownerId);
+  } catch (error) {
+    console.warn("recordDailyRunnerEvent failed", error);
+    return null;
+  }
+}
+
 // CBT survey: store answers under onboarding.cbtSurvey
 export async function recordCbtSurvey(payload: {
   emotion?: string;

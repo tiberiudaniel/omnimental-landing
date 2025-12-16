@@ -3,6 +3,7 @@ import type { CatProfileDoc } from "@/types/cat";
 import { deriveAdaptiveClusterFromCat } from "@/lib/dailyCluster";
 import {
   getDailyPathForCluster,
+  getDailyPathConfigById,
   getDefaultModuleKey,
   getModuleKeyForConfigId,
   getNextModuleKey,
@@ -24,12 +25,17 @@ import {
   type PolicyDecision,
   type DailyVariant,
 } from "@/lib/decisionPolicyV2";
+import { WOW_DAY_SEQUENCE, isWowModuleKey as isWowModuleKeyFromConfig } from "@/config/dailyPaths/wow";
 // NOTE: Policy signals should prefer per-cluster reliability to avoid penalizing today's cluster for other clusters' abandonments.
 import type { DailyPracticeDoc } from "@/types/dailyPractice";
 
 const FALLBACK_CLUSTER: AdaptiveCluster = CLUSTER_ROTATION[0];
 const FALLBACK_MODE: DailyPathMode = "short";
 const IS_DEV = process.env.NODE_ENV !== "production";
+const WOW_MODULE_KEYS = new Set(WOW_DAY_SEQUENCE.map((entry) => entry.moduleKey));
+const isWowModuleKey = (value: string | null | undefined): boolean => isWowModuleKeyFromConfig(value);
+const HISTORY_LOOKBACK_DAYS = Math.max(30, WOW_DAY_SEQUENCE.length + 10);
+type NormalizedDailyEntry = ReturnType<typeof normalizeDailyEntries>[number];
 
 export interface NextDayDecision {
   config: DailyPathConfig;
@@ -40,6 +46,102 @@ export interface NextDayDecision {
   variant?: DailyVariant;
   policyApplied?: boolean;
   policyReason?: string;
+  skipPolicy?: boolean;
+}
+
+function resolveModuleKeyFromEntry(entry: DailyPracticeDoc | null | undefined): string | null {
+  if (!entry?.configId) return null;
+  return getModuleKeyForConfigId(entry.configId) ?? null;
+}
+
+function resolveConfigForEntry(
+  entry: DailyPracticeDoc | null | undefined,
+  fallbackLang: DailyPathLanguage,
+): { config: DailyPathConfig; moduleKey: string | null } | null {
+  if (!entry) return null;
+  if (entry.configId) {
+    const config = getDailyPathConfigById(entry.configId);
+    if (config) {
+      return { config, moduleKey: config.moduleKey ?? resolveModuleKeyFromEntry(entry) };
+    }
+  }
+  const moduleKey = resolveModuleKeyFromEntry(entry);
+  if (!moduleKey) return null;
+  const config = getDailyPathForCluster({
+    cluster: entry.cluster,
+    mode: entry.mode,
+    lang: entry.lang ?? fallbackLang,
+    moduleKey,
+  });
+  return { config, moduleKey };
+}
+
+function createWowDecision(
+  target: { cluster: AdaptiveCluster; moduleKey: string },
+  lang: DailyPathLanguage,
+  reason: string,
+): NextDayDecision {
+  const config = getDailyPathForCluster({
+    cluster: target.cluster,
+    mode: "deep",
+    lang,
+    moduleKey: target.moduleKey,
+  });
+  return {
+    config,
+    cluster: target.cluster,
+    mode: "deep",
+    reason,
+    moduleKey: target.moduleKey,
+    skipPolicy: true,
+  };
+}
+
+function pickWowDecision(
+  normalizedEntries: NormalizedDailyEntry[],
+  lang: DailyPathLanguage,
+): NextDayDecision | null {
+  const completedKeys = new Set<string>();
+  normalizedEntries.forEach(({ entry }) => {
+    if (!entry.completed) return;
+    const moduleKey = resolveModuleKeyFromEntry(entry);
+    if (moduleKey && WOW_MODULE_KEYS.has(moduleKey)) {
+      completedKeys.add(moduleKey);
+    }
+  });
+
+  const nextIndex = WOW_DAY_SEQUENCE.findIndex(
+    (entry) => !completedKeys.has(entry.moduleKey),
+  );
+  if (nextIndex === -1) {
+    return null;
+  }
+  const target = WOW_DAY_SEQUENCE[nextIndex];
+  return createWowDecision(
+    target,
+    lang,
+    `wow_sequence_day=${nextIndex + 1} module=${target.moduleKey}`,
+  );
+}
+
+function pickRepeatDecisionForToday(
+  normalizedEntries: NormalizedDailyEntry[],
+  fallbackLang: DailyPathLanguage,
+  todayKey: string,
+): NextDayDecision | null {
+  const todaysEntry = normalizedEntries.find((row) => row.dayKey === todayKey)?.entry ?? null;
+  if (!todaysEntry) return null;
+  const resolved = resolveConfigForEntry(todaysEntry, fallbackLang);
+  if (!resolved) return null;
+  const { config, moduleKey } = resolved;
+  return {
+    config,
+    cluster: config.cluster,
+    mode: config.mode,
+    reason: `repeat_day=${todayKey} config=${todaysEntry.configId}`,
+    moduleKey: moduleKey ?? config.moduleKey ?? null,
+    skipPolicy: true,
+  };
 }
 
 function clusterLabel(cluster: AdaptiveCluster): string {
@@ -72,6 +174,15 @@ export interface NextDayHistoryContext {
 
 export function decideNextDailyPathFromHistory(context: NextDayHistoryContext): NextDayDecision {
   const { catProfile, lang, history, todayKey = getCurrentDateKey() } = context;
+  const normalizedEntries = normalizeDailyEntries(history);
+  const repeatDecision = pickRepeatDecisionForToday(normalizedEntries, lang, todayKey);
+  if (repeatDecision) {
+    return repeatDecision;
+  }
+  const wowDecision = pickWowDecision(normalizedEntries, lang);
+  if (wowDecision) {
+    return wowDecision;
+  }
   if (!catProfile) {
     return fallbackDecision(lang, "fallback: missing CAT profile");
   }
@@ -187,13 +298,16 @@ export async function decideNextDailyPath(params: {
   if (!userId || !catProfile) {
     return fallbackDecision(lang, "fallback: missing userId or CAT profile");
   }
-  const history = await getDailyPracticeHistory(userId, 14);
+  const history = await getDailyPracticeHistory(userId, HISTORY_LOOKBACK_DAYS);
   const baselineDecision = decideNextDailyPathFromHistory({
     catProfile,
     lang,
     history,
     todayKey: getCurrentDateKey(),
   });
+  if (baselineDecision.skipPolicy || isWowModuleKey(baselineDecision.moduleKey)) {
+    return baselineDecision;
+  }
 
   const normalizedEntries = normalizeDailyEntries(history);
   const clusterAbandonmentEntries = normalizedEntries

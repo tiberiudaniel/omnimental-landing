@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
@@ -23,6 +23,7 @@ import type { OnboardingStatus } from "@/lib/onboardingStatus";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { CAT_AXES, type CatAxisId } from "@/config/catEngine";
 import type { AdaptiveCluster, DailyPathLanguage, DailyPathMode } from "@/types/dailyPath";
+import type { DailyPracticeDoc } from "@/types/dailyPractice";
 import type { NextDayDecision } from "@/lib/nextDayEngine";
 import { decideNextDailyPath } from "@/lib/nextDayEngine";
 import { applyDecisionPolicyV2, type DecisionBaseline } from "@/lib/decisionPolicyV2";
@@ -31,6 +32,10 @@ import { selectArcForUser } from "@/lib/arcs";
 import { ensureCurrentArcForUser } from "@/lib/arcStateStore";
 import { CAT_BASELINE_URL, PILLARS_URL, ADAPTIVE_PRACTICE_URL } from "@/config/routes";
 import { getDailyPracticeHistory } from "@/lib/dailyPracticeStore";
+import { getWowDayIndex } from "@/config/dailyPaths/wow";
+import { hasFoundationCycleCompleted } from "@/lib/dailyCompletion";
+import { recordDailyRunnerEvent } from "@/lib/progressFacts/recorders";
+import { daysBetween } from "@/lib/dailyPathHistory";
 
 const ADAPTIVE_NUDGES: Record<AdaptiveCluster, string> = {
   clarity_cluster: "Alege azi un lucru important și exprimă-l în minte în 7 cuvinte.",
@@ -79,17 +84,75 @@ function formatLocalDateKey(input: Date | number | string): string {
   return `${year}-${month}-${day}`;
 }
 
+function resolveTimestampDate(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "toDate" in value &&
+    typeof (value as { toDate?: () => Date }).toDate === "function"
+  ) {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  return null;
+}
+
+function getEntryLocalKey(entry: DailyPracticeDoc): string | null {
+  const completionDate = resolveTimestampDate(entry.completedAt);
+  const startedDate = resolveTimestampDate(entry.startedAt);
+  const fallback = entry.date ? new Date(entry.date) : null;
+  const candidate = completionDate ?? startedDate ?? fallback;
+  if (!candidate || Number.isNaN(candidate.getTime())) {
+    return null;
+  }
+  return formatLocalDateKey(candidate);
+}
+
+function computeLocalStreakStats(completionKeys: Set<string>): { current: number; best: number } {
+  const sorted = Array.from(completionKeys).sort((a, b) => (a > b ? 1 : -1));
+  if (!sorted.length) return { current: 0, best: 0 };
+  let best = 1;
+  let current = 1;
+  for (let i = 1; i < sorted.length; i += 1) {
+    const diff = Math.abs(daysBetween(sorted[i], sorted[i - 1]));
+    if (diff === 1) {
+      current += 1;
+    } else if (diff > 1) {
+      if (current > best) best = current;
+      current = 1;
+    }
+  }
+  if (current > best) best = current;
+  // compute streak ending today
+  let todayStreak = 0;
+  const cursor = new Date();
+  while (todayStreak < 60) {
+    const key = formatLocalDateKey(cursor);
+    if (!completionKeys.has(key)) break;
+    todayStreak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return { current: todayStreak, best };
+}
+
 type DailyPathRunnerProps = {
   onCompleted?: (configId?: string | null, moduleKey?: string | null) => void;
+  todayModuleKey?: string | null;
 };
 
-export default function DailyPathRunner({ onCompleted }: DailyPathRunnerProps) {
+export default function DailyPathRunner({ onCompleted, todayModuleKey = null }: DailyPathRunnerProps) {
   const entryPath = "/today/run";
   const authReturnTo = encodeURIComponent(entryPath);
 
   return (
     <Suspense fallback={null}>
-      <RunnerContent entryPath={entryPath} authReturnTo={authReturnTo} onCompleted={onCompleted} />
+      <RunnerContent
+        entryPath={entryPath}
+        authReturnTo={authReturnTo}
+        onCompleted={onCompleted}
+        todayModuleKey={todayModuleKey}
+      />
     </Suspense>
   );
 }
@@ -98,9 +161,10 @@ type RunnerContentProps = {
   entryPath: string;
   authReturnTo: string;
   onCompleted?: (configId?: string | null, moduleKey?: string | null) => void;
+  todayModuleKey?: string | null;
 };
 
-function RunnerContent({ entryPath, authReturnTo, onCompleted }: RunnerContentProps) {
+function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = null }: RunnerContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -119,9 +183,14 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted }: RunnerContentPr
   const [competence, setCompetence] = useState<UserCompetence | null>(null);
   const [currentArc, setCurrentArc] = useState<ArcDefinition | null>(null);
   const [dailyCompletedToday, setDailyCompletedToday] = useState(false);
+  const [dailyStreak, setDailyStreak] = useState({ current: 0, best: 0 });
+  const [weeklyStats, setWeeklyStats] = useState({ completed: 0, total: 7 });
+  const [foundationDone, setFoundationDone] = useState(false);
   const [timeModeOverride, setTimeModeOverride] = useState<DailyPathMode | null>(null);
   const [timeModeHint, setTimeModeHint] = useState<DailyPathMode | null>(null);
   const [timeSelectionMinutes, setTimeSelectionMinutes] = useState<number | null>(null);
+  const [softGatePreview, setSoftGatePreview] = useState(false);
+  const gatingStartRef = useRef<number | null>(null);
   const rawSourceParam = searchParams?.get("source")?.toLowerCase() ?? "";
   const cameFromUpgradeSuccess = rawSourceParam === "upgrade_success";
   const rawClusterParam = searchParams?.get("cluster")?.toLowerCase() ?? null;
@@ -204,37 +273,57 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted }: RunnerContentPr
 useEffect(() => {
   if (!user?.uid || !dailyDecision || qaOverrideActive) {
     setDailyCompletedToday(false);
+    setDailyStreak({ current: 0, best: 0 });
+    setWeeklyStats({ completed: 0, total: 7 });
     return;
   }
-    let cancelled = false;
-    const todayLocalKey = formatLocalDateKey(new Date());
-    const checkHistory = async () => {
-      try {
-        const history = await getDailyPracticeHistory(user.uid, 14);
-        if (cancelled) return;
-        const completedEntry = history.find((entry) => {
-          const completedAt =
-            (entry.completedAt && typeof entry.completedAt === "object" && "toDate" in entry.completedAt)
-              ? entry.completedAt.toDate()
-              : new Date(entry.date);
-          const entryLocalKey = formatLocalDateKey(completedAt);
-          return (
-            entry.completed &&
-            entry.cluster === dailyDecision.cluster &&
-            entry.mode === dailyDecision.mode &&
-            entryLocalKey === todayLocalKey
-          );
-        });
-        setDailyCompletedToday(Boolean(completedEntry));
-      } catch (error) {
-        console.warn("Failed to check daily practice history", error);
-        if (!cancelled) setDailyCompletedToday(false);
+  let cancelled = false;
+  const todayLocalKey = formatLocalDateKey(new Date());
+  const checkHistory = async () => {
+    try {
+      const history = await getDailyPracticeHistory(user.uid, 30);
+      if (cancelled) return;
+      const completionKeys = new Set<string>();
+      const completedEntry = history.find((entry) => {
+        const entryLocalKey = getEntryLocalKey(entry);
+        if (entry.completed && entryLocalKey) {
+          completionKeys.add(entryLocalKey);
+        }
+        if (
+          entry.completed &&
+          entry.cluster === dailyDecision.cluster &&
+          entry.mode === dailyDecision.mode &&
+          entryLocalKey === todayLocalKey
+        ) {
+          return true;
+        }
+        return false;
+      });
+      setDailyCompletedToday(Boolean(completedEntry));
+      setDailyStreak(computeLocalStreakStats(completionKeys));
+      let completedCount = 0;
+      const cursor = new Date();
+      for (let i = 0; i < 7; i += 1) {
+        const key = formatLocalDateKey(cursor);
+        if (completionKeys.has(key)) {
+          completedCount += 1;
+        }
+        cursor.setDate(cursor.getDate() - 1);
       }
-    };
-    void checkHistory();
-    return () => {
-      cancelled = true;
-    };
+      setWeeklyStats({ completed: completedCount, total: 7 });
+    } catch (error) {
+      console.warn("Failed to check daily practice history", error);
+      if (!cancelled) {
+        setDailyCompletedToday(false);
+        setDailyStreak({ current: 0, best: 0 });
+        setWeeklyStats({ completed: 0, total: 7 });
+      }
+    }
+  };
+  void checkHistory();
+  return () => {
+    cancelled = true;
+  };
 }, [user?.uid, dailyDecision, qaOverrideActive]);
 
   const axisMeta = useMemo(() => {
@@ -319,6 +408,7 @@ useEffect(() => {
     setTimeModeOverride(null);
     setTimeModeHint(null);
     setTimeSelectionMinutes(null);
+    setSoftGatePreview(false);
   }, [baseDailyPathConfig?.id]);
 
   const userOverallLevel: CompetenceLevel = useMemo(() => {
@@ -388,8 +478,8 @@ useEffect(() => {
     if (qaOverrideActive) {
       return moduleOverride ?? null;
     }
-    return dailyDecision?.moduleKey ?? null;
-  }, [qaOverrideActive, moduleOverride, dailyDecision?.moduleKey]);
+    return dailyDecision?.moduleKey ?? todayModuleKey ?? null;
+  }, [qaOverrideActive, moduleOverride, dailyDecision?.moduleKey, todayModuleKey]);
 
   const resolvedDailyPathConfig = useMemo(() => {
     if (!baseDailyPathConfig) return null;
@@ -409,11 +499,23 @@ useEffect(() => {
     }
   }, [baseDailyPathConfig, timeModeOverride, moduleKeyForSelection]);
 
+  const wowDayIndex = useMemo(() => {
+    const key = moduleKeyForSelection ?? resolvedDailyPathConfig?.moduleKey ?? null;
+    return getWowDayIndex(key ?? null);
+  }, [moduleKeyForSelection, resolvedDailyPathConfig?.moduleKey]);
+  const isWowActive = Boolean(wowDayIndex);
+  const catUnlocked = onboardingStatusState?.catBaselineDone ?? false;
+
+  useEffect(() => {
+    setFoundationDone(hasFoundationCycleCompleted());
+  }, [dailyCompletedToday, moduleKeyForSelection]);
+
   const finalCluster = resolvedDailyPathConfig?.cluster ?? clusterOverride ?? cluster ?? null;
   const axisLabel = resolvedDailyPathConfig
     ? CLUSTER_FRIENDLY_LABELS[resolvedDailyPathConfig.cluster]
     : axisLabelFallback;
-  const dailyLoopReady = hasCompletedOnboarding || qaOverrideActive;
+  const dailyLoopReady = hasCompletedOnboarding || qaOverrideActive || Boolean(onboardingStatusState?.catBaselineDone);
+  const canRunDailyPath = dailyLoopReady || softGatePreview;
   const showLoader =
     !onboardingReady || (!qaOverrideActive && decisionLoading) || !resolvedDailyPathConfig;
   const showGuestBanner = Boolean(user?.isAnonymous);
@@ -428,6 +530,34 @@ useEffect(() => {
   const missionText = finalCluster ? ADAPTIVE_NUDGES[finalCluster] : null;
   const showQaPanel = QA_PANEL_ENABLED;
   const showDailyCompletedState = dailyCompletedToday && !qaOverrideActive;
+
+  useEffect(() => {
+    if (!qaOverrideActive && !dailyLoopReady) {
+      gatingStartRef.current = Date.now();
+      return () => {
+        gatingStartRef.current = null;
+      };
+    }
+    gatingStartRef.current = null;
+    return undefined;
+  }, [dailyLoopReady, qaOverrideActive]);
+
+  useEffect(() => {
+    if (dailyLoopReady) {
+      setSoftGatePreview(false);
+    }
+  }, [dailyLoopReady]);
+
+  const handleSoftPreviewRequest = useCallback(() => {
+    setSoftGatePreview(true);
+    if (qaOverrideActive) return;
+    const dwell = gatingStartRef.current != null ? Math.max(0, Date.now() - gatingStartRef.current) : null;
+    void recordDailyRunnerEvent({
+      type: "soft_gate_preview",
+      dwellMs: dwell ?? undefined,
+      context: "calibration_gate",
+    });
+  }, [qaOverrideActive]);
 
   const header = (
     <SiteHeader
@@ -447,10 +577,52 @@ useEffect(() => {
             <div className="rounded-[18px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-12 text-center text-sm text-[var(--omni-muted)] shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
               Calibrăm traseul tău adaptiv…
             </div>
-          ) : dailyLoopReady ? (
+          ) : canRunDailyPath ? (
             <div className="space-y-6">
               <div className="mx-auto w-full max-w-[440px] px-4 pt-4 md:max-w-none md:px-0 md:pt-0">
                 <div className="space-y-6">
+                  {!dailyLoopReady ? (
+                    <DailyLoopFallback
+                      status={onboardingStatusState}
+                      showDebugLinks={process.env.NODE_ENV !== "production"}
+                      lang={decisionLang}
+                      variant="inline"
+                    />
+                  ) : null}
+                  {isWowActive && wowDayIndex ? (
+                    <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-xs font-semibold text-[var(--omni-muted)]">
+                      Foundation Cycle · {wowDayIndex}/15
+                    </div>
+                  ) : null}
+                  {dailyLoopReady ? (
+                    <div className="space-y-3">
+                      {dailyStreak.current > 0 || dailyStreak.best > 0 ? (
+                        <DailyStreakCallout lang={decisionLang} streak={dailyStreak.current} best={dailyStreak.best} />
+                      ) : null}
+                      <WeeklyCheckpointCard lang={decisionLang} stats={weeklyStats} />
+                    </div>
+                  ) : null}
+                  {isWowActive && wowDayIndex ? (
+                    <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-xs font-semibold text-[var(--omni-muted)]">
+                      Foundation Cycle · {wowDayIndex}/15
+                    </div>
+                  ) : null}
+                  {isWowActive && wowDayIndex ? (
+                    <div className="rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-4 shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
+                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+                        <span>Foundation Cycle</span>
+                        <span className="font-semibold text-[var(--omni-ink)]/70">WOW · Day {wowDayIndex}/15</span>
+                      </div>
+                      <p className="mt-3 text-sm font-semibold text-[var(--omni-ink)]">
+                        {catUnlocked
+                          ? "Diagnosticul CAT este complet. Ai deblocat Foundation Cycle (15 zile ghidate)."
+                          : "Ai intrat în Foundation Cycle (15 zile ghidate)."}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--omni-ink)]/70">
+                        Respira adânc, fixează intenția și intră în ziua {wowDayIndex}. După aceste 15 zile intri în modul adaptativ complet.
+                      </p>
+                    </div>
+                  ) : null}
                   <AdaptiveMissionCard axisLabel={axisLabel} nudge={missionText} />
                   {cameFromUpgradeSuccess ? (
                     <div className="rounded-[18px] border border-[var(--omni-energy)]/40 bg-[var(--omni-energy)]/10 px-4 py-3 text-sm text-[var(--omni-ink)]">
@@ -464,7 +636,10 @@ useEffect(() => {
                   ) : null}
                   {currentArc ? <CurrentArcCard arc={currentArc} /> : null}
                   {showDailyCompletedState ? (
-                    <DailyPathCompletedCard lang={resolvedDailyPathConfig?.lang ?? decisionLang} />
+                      <DailyPathCompletedCard
+                        lang={resolvedDailyPathConfig?.lang ?? decisionLang}
+                        showArenasCta={foundationDone}
+                      />
                   ) : (
                     <DailyPath
                       key={resolvedDailyPathConfig?.id ?? "none"}
@@ -478,6 +653,10 @@ useEffect(() => {
                       onCompleted={() =>
                         onCompleted?.(resolvedDailyPathConfig?.id ?? null, resolvedDailyPathConfig?.moduleKey ?? null)
                       }
+                      streakDays={dailyStreak.current}
+                      bestStreakDays={dailyStreak.best}
+                      decisionReason={decisionReason}
+                      policyReason={dailyDecision?.policyReason ?? null}
                     />
                   )}
                 </div>
@@ -489,6 +668,9 @@ useEffect(() => {
             <DailyLoopFallback
               status={onboardingStatusState}
               showDebugLinks={process.env.NODE_ENV !== "production"}
+              lang={decisionLang}
+              variant="full"
+              onPreviewRequest={handleSoftPreviewRequest}
             />
           )}
         </div>
@@ -568,49 +750,244 @@ function AdaptiveMissionCard({ axisLabel, nudge }: { axisLabel: string | null; n
   );
 }
 
+type CalibrationStepId = "cat" | "pillars" | "adaptive";
+
+type CalibrationStep = {
+  id: CalibrationStepId;
+  title: string;
+  subtitle: string;
+  duration: string;
+  domains: string[];
+  kpis: string[];
+  actionLabel: string;
+  href: string;
+};
+
+const CALIBRATION_STEP_COPY: Record<DailyPathLanguage, CalibrationStep[]> = {
+  ro: [
+    {
+      id: "cat",
+      title: "CAT Baseline",
+      subtitle: "Diagnoză digitală pentru control executiv + claritate decizională.",
+      duration: "8–10 min",
+      domains: ["Control executiv", "Claritate decizională"],
+      kpis: ["Error rate sub interferență", "Latență decizie"],
+      actionLabel: "Pornește CAT",
+      href: CAT_BASELINE_URL,
+    },
+    {
+      id: "pillars",
+      title: "Pilonii OmniMental",
+      subtitle: "Stabilești rutină pentru reglare emoțională + energie funcțională.",
+      duration: "5–7 min",
+      domains: ["Reglare emoțională", "Energie funcțională"],
+      kpis: ["Timp de recuperare", "Curba de oboseală cognitivă"],
+      actionLabel: "Deschide Pilonii",
+      href: PILLARS_URL,
+    },
+    {
+      id: "adaptive",
+      title: "Adaptive Practice",
+      subtitle: "Testăm transferul real și calibrăm provocările zilnice.",
+      duration: "10+ min",
+      domains: ["Control executiv", "Reglare emoțională"],
+      kpis: ["Finalizare", "Degradare sub presiune"],
+      actionLabel: "Pornește Adaptive Practice",
+      href: ADAPTIVE_PRACTICE_URL,
+    },
+  ],
+  en: [
+    {
+      id: "cat",
+      title: "CAT Baseline",
+      subtitle: "Digital diagnosis for executive control + decision clarity.",
+      duration: "8–10 min",
+      domains: ["Executive control", "Decision clarity"],
+      kpis: ["Error rate under interference", "Decision latency"],
+      actionLabel: "Start CAT",
+      href: CAT_BASELINE_URL,
+    },
+    {
+      id: "pillars",
+      title: "OmniMental Pillars",
+      subtitle: "Stabilizes routines for emotional regulation + functional energy.",
+      duration: "5–7 min",
+      domains: ["Emotional regulation", "Functional energy"],
+      kpis: ["Recovery time", "Cognitive fatigue curve"],
+      actionLabel: "Open Pillars",
+      href: PILLARS_URL,
+    },
+    {
+      id: "adaptive",
+      title: "Adaptive Practice",
+      subtitle: "Measures real-world transfer and calibrates the daily challenges.",
+      duration: "10+ min",
+      domains: ["Executive control", "Emotional regulation"],
+      kpis: ["Completion", "Drop-off under pressure"],
+      actionLabel: "Start Adaptive Practice",
+      href: ADAPTIVE_PRACTICE_URL,
+    },
+  ],
+};
+
+const CALIBRATION_COPY: Record<
+  DailyPathLanguage,
+  {
+    badge: string;
+    title: string;
+    description: string;
+    progressLabel: string;
+    domainLabel: string;
+    kpiLabel: string;
+    doneLabel: string;
+    pendingLabel: string;
+    primaryCta: string;
+    previewCta: string;
+    previewHelper: string;
+    inlineNotice: string;
+    inlineReminder: string;
+  }
+> = {
+  ro: {
+    badge: "Calibration Mission",
+    title: "Conectăm backbone-ul științific și cel de produs",
+    description:
+      "Completează calibrările ca să măsurăm control executiv, claritate decizională, reglare emoțională și energie funcțională.",
+    progressLabel: "calibrări",
+    domainLabel: "Domenii",
+    kpiLabel: "KPI urmăriți",
+    doneLabel: "gata",
+    pendingLabel: "în lucru",
+    primaryCta: "Finalizează calibrările",
+    previewCta: "Vezi misiunea demo (5–7 min)",
+    previewHelper: "Modul demo îți arată structura fără scoruri complete și fără istoricul complet.",
+    inlineNotice: "Ești în modul demo. Datele științifice sunt limitate până finalizezi calibrările.",
+    inlineReminder: "Finalizează calibrările ca să deblocăm recomandările și scorurile exacte.",
+  },
+  en: {
+    badge: "Calibration Mission",
+    title: "Sync the scientific backbone with the product backbone",
+    description:
+      "Finish the three calibrations so we can measure executive control, decision clarity, emotional regulation, and functional energy.",
+    progressLabel: "calibrations",
+    domainLabel: "Domains",
+    kpiLabel: "Tracked KPIs",
+    doneLabel: "done",
+    pendingLabel: "pending",
+    primaryCta: "Finish calibrations",
+    previewCta: "Preview mission (5–7 min)",
+    previewHelper: "The demo mode shows structure only—no full scores or history until calibrations are done.",
+    inlineNotice: "You’re in demo mode. Scientific data stays limited until calibrations are complete.",
+    inlineReminder: "Complete the calibrations to unlock precise recommendations and scoring.",
+  },
+};
+
 function DailyLoopFallback({
   status,
   showDebugLinks,
+  lang,
+  variant = "full",
+  onPreviewRequest,
 }: {
   status: OnboardingStatus | null;
   showDebugLinks: boolean;
+  lang: DailyPathLanguage;
+  variant?: "inline" | "full";
+  onPreviewRequest?: () => void;
 }) {
-  const checklist = [
-    { label: "CAT Baseline", done: status?.catBaselineDone },
-    { label: "Pilonii OmniMental", done: status?.pillarsDone },
-    { label: "Adaptive Practice", done: status?.adaptivePracticeDone },
-  ];
+  const copy = CALIBRATION_COPY[lang] ?? CALIBRATION_COPY.ro;
+  const stepCopy = CALIBRATION_STEP_COPY[lang] ?? CALIBRATION_STEP_COPY.ro;
+  const steps = stepCopy.map((step) => {
+    const done =
+      step.id === "cat"
+        ? status?.catBaselineDone
+        : step.id === "pillars"
+        ? status?.pillarsDone
+        : status?.adaptivePracticeDone;
+    return { ...step, done: Boolean(done) };
+  });
+  const completedCount = steps.filter((step) => step.done).length;
+  const firstPending = steps.find((step) => !step.done);
+  const isInline = variant === "inline";
+  const containerClasses = isInline
+    ? "space-y-3 rounded-[18px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-4 py-4 text-[var(--omni-ink)]"
+    : "space-y-5 rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 text-[var(--omni-ink)] shadow-[0_16px_40px_rgba(0,0,0,0.08)]";
+
   return (
-    <section className="space-y-4 rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-10 text-center shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
-      <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">Finalizează calibrările</h2>
-      <p className="text-sm text-[var(--omni-ink)]/80">
-        Completează CAT Baseline, Pilonii OmniMental și Adaptive Practice ca să primești Daily Path-ul adaptiv.
-      </p>
-      <div className="flex flex-col gap-1 text-left text-sm text-[var(--omni-ink)]/80 sm:flex-row sm:justify-center sm:gap-4">
-        {checklist.map((item) => (
-          <div key={item.label} className="flex items-center gap-2">
-            <span
-              className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold ${
-                item.done ? "bg-[var(--omni-energy)] text-white" : "border border-[var(--omni-border-soft)] text-[var(--omni-muted)]"
-              }`}
+    <section className={containerClasses}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">{copy.badge}</p>
+          <h2 className={isInline ? "text-lg font-semibold" : "text-2xl font-semibold"}>{copy.title}</h2>
+          <p className="text-sm text-[var(--omni-ink)]/80">{copy.description}</p>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-[14px] border border-[var(--omni-border-soft)] px-3 py-2 text-sm font-semibold text-[var(--omni-ink)]">
+          <span className="text-xl">{completedCount}/3</span>
+          <span className="text-[11px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">{copy.progressLabel}</span>
+        </div>
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {steps.map((step) => (
+          <div
+            key={step.id}
+            className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4 text-left"
+          >
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+              <span>{step.duration}</span>
+              <span
+                className={`rounded-full px-2 py-[2px] text-[10px] font-semibold ${
+                  step.done ? "bg-[var(--omni-ink)] text-white" : "bg-[var(--omni-border-soft)] text-[var(--omni-muted)]"
+                }`}
+              >
+                {step.done ? copy.doneLabel : copy.pendingLabel}
+              </span>
+            </div>
+            <h3 className="mt-2 text-base font-semibold text-[var(--omni-ink)]">{step.title}</h3>
+            <p className="mt-1 text-sm text-[var(--omni-ink)]/80">{step.subtitle}</p>
+            <p className="mt-3 text-[11px] text-[var(--omni-muted)]">
+              <span className="font-semibold text-[var(--omni-ink)]/70">{copy.domainLabel}:</span>{" "}
+              {step.domains.join(" · ")}
+            </p>
+            <p className="text-[11px] text-[var(--omni-muted)]">
+              <span className="font-semibold text-[var(--omni-ink)]/70">{copy.kpiLabel}:</span>{" "}
+              {step.kpis.join(" · ")}
+            </p>
+            <Link
+              href={step.href}
+              className="mt-3 inline-flex items-center text-[12px] font-semibold text-[var(--omni-ink)] hover:underline"
             >
-              {item.done ? "✓" : "·"}
-            </span>
-            <span>{item.label}</span>
+              {step.actionLabel}
+            </Link>
           </div>
         ))}
       </div>
-      <div className="flex flex-wrap justify-center gap-3">
-        <OmniCtaButton as="link" href={CAT_BASELINE_URL}>
-          CAT Baseline
-        </OmniCtaButton>
-        <OmniCtaButton as="link" href={PILLARS_URL}>
-          Pilonii OmniMental
-        </OmniCtaButton>
-        <OmniCtaButton as="link" href={ADAPTIVE_PRACTICE_URL}>
-          Adaptive Practice
-        </OmniCtaButton>
-      </div>
+      {isInline ? (
+        <div className="rounded-[14px] border border-dashed border-[var(--omni-border-soft)] bg-white/70 px-4 py-3 text-xs text-[var(--omni-ink)]/80">
+          <p>{copy.inlineNotice}</p>
+          <p className="mt-1 text-[var(--omni-muted)]">{copy.inlineReminder}</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+            <OmniCtaButton as="link" href={firstPending?.href ?? CAT_BASELINE_URL}>
+              {copy.primaryCta}
+            </OmniCtaButton>
+            <button
+              type="button"
+              onClick={onPreviewRequest}
+              disabled={!onPreviewRequest}
+              className={`inline-flex items-center justify-center rounded-full border border-[var(--omni-border-soft)] px-4 py-2 text-sm font-semibold transition ${
+                onPreviewRequest
+                  ? "text-[var(--omni-ink)] hover:bg-[var(--omni-ink)]/5"
+                  : "cursor-not-allowed text-[var(--omni-muted)]"
+              }`}
+            >
+              {copy.previewCta}
+            </button>
+          </div>
+          <p className="text-xs text-[var(--omni-muted)]">{copy.previewHelper}</p>
+        </>
+      )}
       {showDebugLinks ? (
         <div className="space-x-4 text-center text-xs text-[var(--omni-muted)]">
           <Link href={CAT_BASELINE_URL}>Open CAT Baseline</Link>
@@ -636,18 +1013,109 @@ function GuestBanner({ onCreateAccount }: { onCreateAccount: () => void }) {
   );
 }
 
-function DailyPathCompletedCard({ lang }: { lang: DailyPathLanguage }) {
+function DailyStreakCallout({ lang, streak, best }: { lang: DailyPathLanguage; streak: number; best: number }) {
+  const copy =
+    lang === "ro"
+      ? {
+          title: "Seria ta activă",
+          body:
+            streak > 0
+              ? `Ai antrenat ${streak} ${streak === 1 ? "zi" : "zile"} la rând. Record: ${best} zile.`
+              : `Record actual: ${best} ${best === 1 ? "zi" : "zile"}.`,
+          cta: "Vezi ritmul",
+        }
+      : {
+          title: "Active streak",
+          body:
+            streak > 0
+              ? `You've trained ${streak} day${streak === 1 ? "" : "s"} in a row. Best streak: ${best} days.`
+              : `Best streak so far: ${best} day${best === 1 ? "" : "s"}.`,
+          cta: "View rhythm",
+        };
+  return (
+    <div className="rounded-[18px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-4 py-3 text-sm text-[var(--omni-ink)] shadow-[0_8px_24px_rgba(0,0,0,0.06)]">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{copy.title}</p>
+          <p className="font-semibold text-[var(--omni-ink)]">{copy.body}</p>
+        </div>
+        <Link
+          href="/progress"
+          className="inline-flex items-center justify-center rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold text-[var(--omni-ink)] hover:bg-[var(--omni-ink)]/5"
+        >
+          {copy.cta}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function WeeklyCheckpointCard({
+  lang,
+  stats,
+}: {
+  lang: DailyPathLanguage;
+  stats: { completed: number; total: number };
+}) {
+  const copy =
+    lang === "ro"
+      ? {
+          title: "Checkpoint săptămânal",
+          body: `Din ultimele ${stats.total} zile, ai închis ${stats.completed}.`,
+          cta: "Checklist detaliat",
+        }
+      : {
+          title: "Weekly checkpoint",
+          body: `Out of the last ${stats.total} days you closed ${stats.completed}.`,
+          cta: "Open details",
+        };
+  const ratio = stats.total > 0 ? Math.min(1, stats.completed / stats.total) : 0;
+  return (
+    <div className="rounded-[18px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-4 py-3 text-sm text-[var(--omni-ink)]">
+      <div className="flex flex-col gap-2">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{copy.title}</p>
+          <p className="font-semibold text-[var(--omni-ink)]">{copy.body}</p>
+        </div>
+        <div className="h-2 w-full rounded-full bg-white/50">
+          <div
+            className="h-full rounded-full bg-[var(--omni-energy)] transition-all"
+            style={{ width: `${Math.max(6, ratio * 100)}%` }}
+          />
+        </div>
+        <Link
+          href="/progress"
+          className="inline-flex items-center justify-center rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold text-[var(--omni-ink)] hover:bg-[var(--omni-ink)]/5"
+        >
+          {copy.cta}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function DailyPathCompletedCard({
+  lang,
+  showArenasCta,
+}: {
+  lang: DailyPathLanguage;
+  showArenasCta: boolean;
+}) {
   const copy =
     lang === "ro"
       ? {
           title: "Ai terminat Daily Path-ul de azi",
-          body: "Păstrează progresul: vezi ce ai deblocat și testează nivelul 2 în Arene.",
+          body: showArenasCta
+            ? "Păstrează progresul: vezi ce ai deblocat și testează nivelul 2 în Arene."
+            : "Foundation Cycle continuă. Revino mâine pentru următoarea zi.",
           arenas: "Antrenează 90s în Arene",
           progress: "Vezi progresul",
         }
       : {
           title: "Today's Daily Path is complete",
-          body: "Keep the momentum: review your progress and test Level 2 in Arenas.",
+          body: showArenasCta
+            ? "Keep the momentum: review your progress and test Level 2 in Arenas."
+            : "Foundation Cycle is still in progress. Come back tomorrow for the next day.",
           arenas: "Train 90s in Arenas",
           progress: "View progress",
         };
@@ -656,9 +1124,11 @@ function DailyPathCompletedCard({ lang }: { lang: DailyPathLanguage }) {
       <h2 className="text-xl font-semibold text-[var(--omni-ink)]">{copy.title}</h2>
       <p className="text-sm text-[var(--omni-ink)]/80">{copy.body}</p>
       <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-        <OmniCtaButton as="link" href="/training/arenas">
-          {copy.arenas}
-        </OmniCtaButton>
+        {showArenasCta ? (
+          <OmniCtaButton as="link" href="/training/arenas">
+            {copy.arenas}
+          </OmniCtaButton>
+        ) : null}
         <Link
           href="/progress"
           className="inline-flex items-center justify-center rounded-full border border-[var(--omni-border-soft)] px-5 py-2 text-sm font-semibold text-[var(--omni-ink)] hover:bg-[var(--omni-ink)]/5"

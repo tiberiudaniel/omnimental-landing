@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import type {
   AdaptiveCluster,
@@ -11,6 +12,7 @@ import type {
 import DailyPathNode from "./DailyPathNode";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { recordDailyPathEvent } from "@/lib/dailyPathEvents";
+import { recordDailyRunnerEvent } from "@/lib/progressFacts/recorders";
 import { applyDailyPracticeCompletion } from "@/lib/arcMetrics";
 import { CLUSTER_REGISTRY } from "@/config/clusterRegistry";
 
@@ -84,13 +86,111 @@ type DailyPathProps = {
   modeHint?: DailyPathMode | null;
   onTimeSelection?: (minutes: number) => void;
   onCompleted?: () => void;
+  streakDays?: number | null;
+  bestStreakDays?: number | null;
+  decisionReason?: string | null;
+  policyReason?: string | null;
 };
 
-const TIME_OPTIONS = [
-  { value: 5, label: { ro: "4–5 min", en: "4–5 min" } },
-  { value: 10, label: { ro: "5–10 min", en: "5–10 min" } },
-  { value: 20, label: { ro: "15–25 min", en: "15–25 min" } },
-  { value: 30, label: { ro: "30+ min", en: "30+ min" } },
+type MissionBriefCopy = {
+  title: string;
+  description: string;
+  recommendation: string;
+  scienceTag: string;
+  productTag: string;
+  domains: string[];
+  kpis: string[];
+};
+
+type MissionTimeOption = {
+  id: string;
+  value: number;
+  label: Record<DailyPathLanguage, string>;
+  copy: Record<DailyPathLanguage, MissionBriefCopy>;
+};
+
+const MISSION_TIME_OPTIONS: MissionTimeOption[] = [
+  {
+    id: "rapid_reset",
+    value: 7,
+    label: { ro: "5–7 min", en: "5–7 min" },
+    copy: {
+      ro: {
+        title: "Micro-reset · Energie funcțională",
+        description:
+          "Anchorezi respirația și focusul pentru a ridica inițierea task-urilor și a reduce zgomotul mental.",
+        recommendation: "Folosește acest sprint când ai fereastră scurtă sau energie scăzută.",
+        scienceTag: "Backbone științific · Energie funcțională",
+        productTag: "Backbone produs · Sprint rapid",
+        domains: ["Energie funcțională", "Reglare emoțională"],
+        kpis: ["Inițiere task", "Timp de recuperare"],
+      },
+      en: {
+        title: "Micro reset · Functional energy",
+        description:
+          "Guided breathing and focus anchors to boost task initiation and quiet noisy thoughts.",
+        recommendation: "Use this sprint when the window is short or energy feels low.",
+        scienceTag: "Scientific backbone · Functional energy",
+        productTag: "Product backbone · Rapid sprint",
+        domains: ["Functional energy", "Emotional regulation"],
+        kpis: ["Task initiation", "Recovery time"],
+      },
+    },
+  },
+  {
+    id: "stability_core",
+    value: 15,
+    label: { ro: "10–15 min", en: "10–15 min" },
+    copy: {
+      ro: {
+        title: "Stabilizare decizională",
+        description:
+          "Combină exerciții de claritate și control executiv. Obții intenție clară și scenarii de decizie.",
+        recommendation: "Ideal pentru o zi standard sau când vrei intenție fermă înainte de lucru.",
+        scienceTag: "Backbone științific · Control executiv",
+        productTag: "Backbone produs · Misiune standard",
+        domains: ["Control executiv", "Claritate decizională"],
+        kpis: ["Latență decizie", "Consistență răspuns"],
+      },
+      en: {
+        title: "Decision stabilizer",
+        description:
+          "Pairs clarity drills with executive control so you exit with one firm intention and scenarios.",
+        recommendation: "Best for standard days or when you need a confident pre-work briefing.",
+        scienceTag: "Scientific backbone · Executive control",
+        productTag: "Product backbone · Core mission",
+        domains: ["Executive control", "Decision clarity"],
+        kpis: ["Decision latency", "Response consistency"],
+      },
+    },
+  },
+  {
+    id: "deep_adaptive",
+    value: 20,
+    label: { ro: "20+ min", en: "20+ min" },
+    copy: {
+      ro: {
+        title: "Sprint profund adaptiv",
+        description:
+          "Intri în modul Deep: parcurgi întregul arc cu autonomie, provocări și recap energetic.",
+        recommendation: "Alege-l când vrei upgrade real al indicatorilor și timp dedicat.",
+        scienceTag: "Backbone științific · Control executiv+",
+        productTag: "Backbone produs · Quest complet",
+        domains: ["Control executiv", "Claritate decizională", "Reglare emoțională"],
+        kpis: ["Error rate sub interferență", "Degradare sub presiune", "Curba de oboseală cognitivă"],
+      },
+      en: {
+        title: "Deep adaptive sprint",
+        description:
+          "Enter full Deep mode with autonomy choices, challenge branch and energy recap.",
+        recommendation: "Pick this when you want measurable KPI upgrades and dedicated focus.",
+        scienceTag: "Scientific backbone · Executive+",
+        productTag: "Product backbone · Full quest",
+        domains: ["Executive control", "Decision clarity", "Emotional regulation"],
+        kpis: ["Error rate under interference", "Drop-off under pressure", "Cognitive fatigue curve"],
+      },
+    },
+  },
 ] as const;
 
 const validModes: DailyPathMode[] = ["short", "deep"];
@@ -104,6 +204,10 @@ export default function DailyPath({
   modeHint = null,
   onTimeSelection,
   onCompleted,
+  streakDays = null,
+  bestStreakDays = null,
+  decisionReason = null,
+  policyReason = null,
 }: DailyPathProps) {
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [completedNodeIds, setCompletedNodeIds] = useState<string[]>([]);
@@ -120,17 +224,85 @@ export default function DailyPath({
   const startTimestampRef = useRef<number | null>(null);
   const pendingStartMinutesRef = useRef<number | null>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const missionBriefStartRef = useRef<number | null>(null);
+  const missionBriefSelectionLoggedRef = useRef(false);
+  const questMapLoggedRef = useRef<string | null>(null);
+  const questCompletionLoggedRef = useRef<string | null>(null);
   const activeLang: DailyPathLanguage = config?.lang ?? "ro";
   const persistenceEnabled = !disablePersistence;
   const copy = DAILY_PATH_COPY[activeLang] ?? DAILY_PATH_COPY.ro;
-  const localizedTimeOptions = useMemo(
+  const localizedMissionOptions = useMemo(
     () =>
-      TIME_OPTIONS.map((opt) => ({
+      MISSION_TIME_OPTIONS.map((opt) => ({
+        id: opt.id,
         value: opt.value,
         label: opt.label[activeLang] ?? opt.label.ro,
+        copy: opt.copy[activeLang] ?? opt.copy.ro,
       })),
     [activeLang],
   );
+  const missionCardCopy = useMemo(() => {
+    if (activeLang === "en") {
+      return {
+        heading: "Mission brief (time & load)",
+        helper: "Pick the brief that matches your real window so we can align the scientific backbone with today's product path.",
+        helperSelectedLocked: "Time saved – mode is calibrated. Continue the path.",
+        helperSelectedUnlocked: "You can still adjust the brief before we start.",
+        domainLabel: "Domains",
+        kpiLabel: "KPIs",
+        debugLabel: "Debug",
+      };
+    }
+    return {
+      heading: "Brieful de misiune (timp & încărcare)",
+      helper: "Alege brieful care se potrivește ferestrei reale ca să aliniem backbone-ul științific cu traseul.",
+      helperSelectedLocked: "Am salvat timpul – modul este calibrat. Continuă traseul.",
+      helperSelectedUnlocked: "Poți ajusta brieful înainte să începem.",
+      domainLabel: "Domenii urmărite",
+      kpiLabel: "Indicatori (KPI)",
+      debugLabel: "Debug",
+    };
+  }, [activeLang]);
+  const questMapCopy = useMemo(() => {
+    if (activeLang === "en") {
+      return {
+        badge: "Quest map",
+        subline: "Every node unlocks XP on today's arc.",
+        streakLabel: "streak",
+        activeLabel: "Now playing",
+        lockedLabel: "Locked",
+        completedLabel: "Cleared",
+        celebrationTitle: "Daily quest complete",
+        celebrationBody: (streak: number, best: number) => {
+          if (streak > 1 && streak >= best) {
+            return `New best streak: ${streak} days. XP added to Foundation Cycle.`;
+          }
+          if (streak > 1) {
+            return `You kept the streak alive (${streak} days). XP added to Foundation Cycle.`;
+          }
+          return "You unlocked today's adaptive mission. XP saved to your arc.";
+        },
+      };
+    }
+    return {
+      badge: "Quest map",
+      subline: "Fiecare nod adaugă XP pe arcul de azi.",
+      streakLabel: "serie",
+      activeLabel: "În progres",
+      lockedLabel: "Blocat",
+      completedLabel: "Finalizat",
+      celebrationTitle: "Ai închis quest-ul de azi",
+      celebrationBody: (streak: number, best: number) => {
+        if (streak > 1 && streak >= best) {
+          return `Ai depășit recordul: ${streak} zile în serie. XP-ul merge în Foundation Cycle.`;
+        }
+        if (streak > 1) {
+          return `Serie activă: ${streak} zile. XP-ul merge în Foundation Cycle.`;
+        }
+        return "Ai deblocat misiunea adaptivă de azi. XP-ul e salvat în arc.";
+      },
+    };
+  }, [activeLang]);
   const processedNodes = useMemo(() => {
     if (!config) return [];
     const merged: DailyPathNodeConfig[] = [];
@@ -160,6 +332,42 @@ export default function DailyPath({
   const visibleNodes = useMemo(() => {
     return processedNodes.filter((node) => !node.softPathOnly || softPathChosen);
   }, [processedNodes, softPathChosen]);
+  const questSteps = useMemo(() => {
+    return visibleNodes.map((node, index) => {
+      const isCompleted = completedNodeIds.includes(node.id);
+      const status: "completed" | "active" | "locked" =
+        isCompleted ? "completed" : node.id === currentActiveId ? "active" : "locked";
+      return {
+        id: node.id,
+        order: index + 1,
+        title: node.title,
+        status,
+        xp: node.xp,
+      };
+    });
+  }, [visibleNodes, completedNodeIds, currentActiveId]);
+  const activeQuestStep =
+    questSteps.find((step) => step.status === "active") ??
+    questSteps.find((step) => step.status === "locked") ??
+    questSteps[questSteps.length - 1];
+
+  useEffect(() => {
+    if (!config || !persistenceEnabled) {
+      if (!config) questMapLoggedRef.current = null;
+      return;
+    }
+    if (questMapLoggedRef.current === config.id) return;
+    questMapLoggedRef.current = config.id;
+    void recordDailyRunnerEvent({
+      type: "quest_map_view",
+      configId: config.id,
+      cluster: config.cluster,
+      mode: config.mode,
+      optionValue: visibleNodes.length,
+      label: typeof streakDays === "number" ? `streak:${streakDays}` : undefined,
+      context: "quest_map",
+    });
+  }, [config, persistenceEnabled, visibleNodes.length, streakDays]);
 
   const currentProgress = useMemo(() => {
     if (!visibleNodes.length) return 0;
@@ -189,6 +397,7 @@ export default function DailyPath({
     pendingStartMinutesRef.current = null;
     setTimeAvailableMin(null);
     setTimeSelectionLocked(false);
+    questCompletionLoggedRef.current = null;
   }, [config]);
 
 useEffect(() => {
@@ -198,6 +407,39 @@ useEffect(() => {
   }, 0);
   return () => window.clearTimeout(id);
 }, [config, resetState]);
+
+  useEffect(() => {
+    if (!config || !persistenceEnabled) {
+      missionBriefStartRef.current = null;
+      missionBriefSelectionLoggedRef.current = false;
+      return;
+    }
+    missionBriefStartRef.current = Date.now();
+    missionBriefSelectionLoggedRef.current = false;
+    void recordDailyRunnerEvent({
+      type: "mission_brief_view",
+      configId: config.id,
+      cluster: config.cluster,
+      mode: config.mode,
+      context: "mission_brief",
+    });
+    return () => {
+      if (missionBriefSelectionLoggedRef.current || missionBriefStartRef.current == null) {
+        missionBriefStartRef.current = null;
+        return;
+      }
+      const dwell = Date.now() - missionBriefStartRef.current;
+      missionBriefStartRef.current = null;
+      void recordDailyRunnerEvent({
+        type: "mission_brief_bounce",
+        configId: config.id,
+        cluster: config.cluster,
+        mode: config.mode,
+        dwellMs: dwell,
+        context: "mission_brief",
+      });
+    };
+  }, [config, persistenceEnabled]);
 
 useEffect(() => {
   if (defaultTimeSelection != null) {
@@ -236,14 +478,30 @@ useEffect(() => {
   }
 
   const handleTimeSelect = useCallback(
-    (selected: number) => {
+    (selected: number, meta?: { id?: string; label?: string }) => {
       if (!config || timeSelectionLocked) return;
       setTimeAvailableMin(selected);
       onTimeSelection?.(selected);
       pendingStartMinutesRef.current = selected;
       setTimeSelectionLocked(true);
+      if (persistenceEnabled) {
+        missionBriefSelectionLoggedRef.current = true;
+        const dwell =
+          missionBriefStartRef.current != null ? Math.max(0, Date.now() - missionBriefStartRef.current) : null;
+        void recordDailyRunnerEvent({
+          type: "mission_brief_select",
+          configId: config.id,
+          cluster: config.cluster,
+          mode: config.mode,
+          optionId: meta?.id ?? null,
+          optionValue: selected,
+          label: meta?.label ?? null,
+          ttfaMs: dwell ?? undefined,
+          context: "mission_brief",
+        });
+      }
     },
-    [config, onTimeSelection, timeSelectionLocked],
+    [config, onTimeSelection, persistenceEnabled, timeSelectionLocked],
   );
 
   const logPathStart = useCallback(
@@ -329,6 +587,21 @@ useEffect(() => {
     logDebug,
     persistenceEnabled,
   ]);
+
+  useEffect(() => {
+    if (!config || !pathFinished || !persistenceEnabled) return;
+    if (questCompletionLoggedRef.current === config.id) return;
+    questCompletionLoggedRef.current = config.id;
+    void recordDailyRunnerEvent({
+      type: "quest_complete",
+      configId: config.id,
+      cluster: config.cluster,
+      mode: config.mode,
+      optionValue: xp,
+      label: typeof streakDays === "number" ? `streak:${streakDays}` : undefined,
+      context: "quest_map",
+    });
+  }, [config, pathFinished, persistenceEnabled, xp, streakDays]);
 
   useEffect(() => {
     if (!config || !pathFinished || completionNotifiedRef.current) return;
@@ -444,6 +717,19 @@ useEffect(() => {
             {copy.progressSuffix}
           </span>
         </div>
+        {decisionReason ? (
+          <div className="rounded-[14px] border border-dashed border-[var(--omni-border-soft)] bg-white/70 px-3 py-2 text-xs text-[var(--omni-ink)]/80">
+            <p className="font-semibold text-[var(--omni-ink)]">
+              {activeLang === "ro" ? "De ce ai primit acest traseu" : "Why you got this path"}
+            </p>
+            <p className="mt-1">{decisionReason}</p>
+            {policyReason ? (
+              <p className="mt-1 text-[var(--omni-muted)]">
+                {activeLang === "ro" ? "Politica adaptivă" : "Adaptive policy"}: {policyReason}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         <div className="mt-1 flex flex-col space-y-1 text-[13px] text-[var(--omni-muted)] sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:space-y-0">
           {totalVisibleNodes > 0 ? (
             <span>{copy.stepLabel(Math.min(displayStep, totalVisibleNodes), totalVisibleNodes)}</span>
@@ -452,26 +738,63 @@ useEffect(() => {
             {copy.durationLabel}: {copy.durations[config.mode]}
           </span>
         </div>
-        <div className="mt-2 space-y-2 rounded-[16px] bg-[var(--omni-bg-main)] px-4 py-3">
-          <p className="text-sm font-medium text-[var(--omni-ink)]">
-            {activeLang === "ro" ? "Cât timp ai azi?" : "How much time do you have?"}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {localizedTimeOptions.map((option) => {
+        <div className="mt-2 space-y-3 rounded-[18px] bg-[var(--omni-bg-main)] px-4 py-4">
+          <div>
+            <p className="text-sm font-semibold text-[var(--omni-ink)]">{missionCardCopy.heading}</p>
+            <p className="text-xs text-[var(--omni-muted)]">{missionCardCopy.helper}</p>
+          </div>
+          <div className="space-y-3">
+            {localizedMissionOptions.map((option) => {
               const isSelected = timeAvailableMin === option.value;
               return (
                 <button
-                  key={option.value}
+                  key={option.id}
                   type="button"
                   disabled={timeSelectionLocked}
-                  onClick={() => handleTimeSelect(option.value)}
-                  className={`rounded-full border px-3 py-1 text-sm transition ${
+                  onClick={() => handleTimeSelect(option.value, { id: option.id, label: option.label })}
+                  className={`w-full rounded-[20px] border px-4 py-4 text-left transition ${
                     isSelected
-                      ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white"
-                      : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]"
-                  } ${timeSelectionLocked ? "opacity-60" : "hover:border-[var(--omni-ink)]"}`}
+                      ? "border-[var(--omni-ink)] bg-[var(--omni-ink)]/5 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+                      : "border-[var(--omni-border-soft)] bg-white/70 hover:border-[var(--omni-ink)]/70"
+                  } ${timeSelectionLocked ? "cursor-not-allowed opacity-60" : ""}`}
                 >
-                  {option.label}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-sm font-semibold text-[var(--omni-ink)]">{option.label}</div>
+                    <span
+                      className={`text-[11px] uppercase tracking-[0.25em] ${
+                        isSelected ? "text-[var(--omni-ink)]" : "text-[var(--omni-muted)]"
+                      }`}
+                    >
+                      {isSelected
+                        ? activeLang === "ro"
+                          ? "Selectat"
+                          : "Selected"
+                        : activeLang === "ro"
+                        ? "Brieful tău"
+                        : "Your brief"}
+                    </span>
+                  </div>
+                  <h4 className="mt-2 text-base font-semibold text-[var(--omni-ink)]">{option.copy.title}</h4>
+                  <p className="mt-1 text-sm text-[var(--omni-ink)]/80">{option.copy.description}</p>
+                  <p className="mt-2 text-xs font-medium text-[var(--omni-ink)]/80">{option.copy.recommendation}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="rounded-full bg-[var(--omni-ink)]/5 px-3 py-1 text-[11px] font-semibold text-[var(--omni-ink)]/80">
+                      {option.copy.scienceTag}
+                    </span>
+                    <span className="rounded-full bg-[var(--omni-border-soft)]/40 px-3 py-1 text-[11px] font-medium text-[var(--omni-ink)]/70">
+                      {option.copy.productTag}
+                    </span>
+                  </div>
+                  <div className="mt-3 space-y-1 text-[11px] text-[var(--omni-muted)]">
+                    <p>
+                      <span className="font-semibold text-[var(--omni-ink)]/70">{missionCardCopy.domainLabel}:</span>{" "}
+                      {option.copy.domains.join(" · ")}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-[var(--omni-ink)]/70">{missionCardCopy.kpiLabel}:</span>{" "}
+                      {option.copy.kpis.join(" · ")}
+                    </p>
+                  </div>
                 </button>
               );
             })}
@@ -479,27 +802,116 @@ useEffect(() => {
           {timeAvailableMin == null ? (
             <p className="text-xs text-[var(--omni-muted)]">
               {activeLang === "ro"
-                ? "Selectează timpul pentru a adapta traseul de azi."
-                : "Select your time window to tailor today’s path."}
+                ? "Selectează un brief ca să pornim Path-ul de azi."
+                : "Select a brief to launch today's path."}
             </p>
           ) : (
-            <div className="text-xs text-[var(--omni-muted)] space-y-1">
+            <div className="space-y-1 text-xs text-[var(--omni-muted)]">
+              <p>{timeSelectionLocked ? missionCardCopy.helperSelectedLocked : missionCardCopy.helperSelectedUnlocked}</p>
               <p>
-                {timeSelectionLocked
-                  ? activeLang === "ro"
-                    ? "Am notat timpul – poți continua traseul."
-                    : "Time saved – you can continue the path."
-                  : activeLang === "ro"
-                  ? "Poți ajusta timpul înainte să începem."
-                  : "You can adjust the time before we start."}
-              </p>
-              <p>
-                {activeLang === "ro"
-                  ? `Debug: ${timeAvailableMin} min → mod ${modeHint ?? config.mode}`
-                  : `Debug: ${timeAvailableMin} min → mode ${modeHint ?? config.mode}`}
+                {missionCardCopy.debugLabel}: {timeAvailableMin} min →{" "}
+                {activeLang === "ro" ? `mod ${modeHint ?? config.mode}` : `mode ${modeHint ?? config.mode}`}
               </p>
             </div>
           )}
+        </div>
+        <div className="space-y-4 rounded-[22px] border border-[var(--omni-border-soft)] bg-gradient-to-b from-white/95 via-[var(--omni-bg-main)] to-white/90 px-4 py-5 shadow-[0_16px_48px_rgba(0,0,0,0.08)]">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.4em] text-[var(--omni-muted)]">{questMapCopy.badge}</p>
+              <p className="text-sm text-[var(--omni-ink)]/80">{questMapCopy.subline}</p>
+            </div>
+            {typeof streakDays === "number" && streakDays > 0 ? (
+              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[13px] font-semibold text-[var(--omni-ink)]">
+                <span className="text-[10px] uppercase tracking-[0.4em] text-[var(--omni-muted)]">
+                  {questMapCopy.streakLabel}
+                </span>
+                <span>{streakDays}d</span>
+              </div>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-3 overflow-x-auto pb-1">
+            {questSteps.map((step, index) => {
+              const isCompleted = step.status === "completed";
+              const isActive = step.status === "active";
+              const circleClasses = isCompleted
+                ? "bg-[var(--omni-energy)] text-white border-[var(--omni-energy)]"
+                : isActive
+                ? "border-[var(--omni-ink)] text-[var(--omni-ink)] bg-white shadow-[0_6px_20px_rgba(0,0,0,0.08)] animate-pulse"
+                : "border-dashed border-[var(--omni-border-soft)] text-[var(--omni-muted)] bg-white opacity-80";
+              return (
+                <div key={step.id} className="flex items-center gap-3">
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className={`flex h-12 w-12 flex-col items-center justify-center rounded-full border text-xs font-semibold transition-all duration-300 ${circleClasses}`}
+                    >
+                      <span>{step.order}</span>
+                      <span className="text-[9px] uppercase tracking-[0.3em]">
+                        {isCompleted
+                          ? questMapCopy.completedLabel
+                          : isActive
+                          ? questMapCopy.activeLabel
+                          : questMapCopy.lockedLabel}
+                      </span>
+                    </div>
+                    <span className="rounded-full bg-white/90 px-2 py-[2px] text-[10px] font-semibold text-[var(--omni-ink)] shadow-[0_2px_6px_rgba(0,0,0,0.08)]">
+                      +{step.xp} XP
+                    </span>
+                  </div>
+                  {index < questSteps.length - 1 ? (
+                    <div
+                      className={`h-[2px] w-10 rounded-full transition-colors duration-300 ${
+                        isCompleted
+                          ? "bg-[var(--omni-energy)]"
+                          : isActive
+                          ? "bg-[var(--omni-ink)]/70"
+                          : "bg-[var(--omni-border-soft)]"
+                      }`}
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+          {activeQuestStep ? (
+            <div className="rounded-[14px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-4 py-3 text-sm text-[var(--omni-ink)]/80">
+              <p className="text-xs uppercase tracking-[0.4em] text-[var(--omni-muted)]">
+                {questMapCopy.activeLabel}
+              </p>
+              <p className="mt-1 text-[var(--omni-ink)]">{activeQuestStep.title}</p>
+              <p className="text-[11px] text-[var(--omni-muted)]">
+                XP {activeQuestStep.xp} · {copy.stepLabel(activeQuestStep.order, questSteps.length)}
+              </p>
+            </div>
+          ) : null}
+          {pathFinished ? (
+            <div className="relative overflow-hidden rounded-[22px] border border-[var(--omni-energy)]/40 bg-[var(--omni-bg-paper)]/95 px-5 py-5 text-sm text-[var(--omni-ink)] shadow-[0_16px_48px_rgba(0,0,0,0.15)]">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_hsla(28,60%,80%,0.25),_transparent_60%)]" />
+              <div className="relative space-y-2">
+                <p className="text-xs uppercase tracking-[0.4em] text-[var(--omni-ink)]/70">
+                  {questMapCopy.badge}
+                </p>
+                <p className="text-lg font-semibold">{questMapCopy.celebrationTitle}</p>
+              <p className="text-xs text-[var(--omni-ink)]/80">
+                {questMapCopy.celebrationBody(
+                  typeof streakDays === "number" ? streakDays : 0,
+                  typeof bestStreakDays === "number" ? bestStreakDays : 0,
+                )}
+              </p>
+                <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+                  <OmniCtaButton as="link" href="/progress">
+                    {activeLang === "ro" ? "Vezi progresul" : "View progress"}
+                  </OmniCtaButton>
+                  <Link
+                    href="/training/arenas"
+                    className="inline-flex items-center justify-center rounded-full border border-[var(--omni-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--omni-ink)] transition hover:bg-[var(--omni-ink)]/5"
+                  >
+                    {activeLang === "ro" ? "Antrenează 90s" : "Train 90s"}
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
         <div className="space-y-3 lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto">
           {visibleNodes.map((node, index) => {

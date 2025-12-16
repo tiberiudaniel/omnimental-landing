@@ -28,6 +28,7 @@ import { EMO_FLEX_NAMING_DEEP_RO } from "./emotional_flex/naming/deep.ro";
 import { EMO_FLEX_NAMING_DEEP_EN } from "./emotional_flex/naming/deep.en";
 import { EMO_FLEX_NAMING_SHORT_RO } from "./emotional_flex/naming/short.ro";
 import { EMO_FLEX_NAMING_SHORT_EN } from "./emotional_flex/naming/short.en";
+import { WOW_CLUSTER_MODULES, WOW_CLUSTER_SEQUENCES } from "./wow";
 
 type ClusterCollections = Record<AdaptiveCluster, DailyPathConfig[]>;
 type ModuleVariantCollections = {
@@ -37,13 +38,26 @@ type ModuleVariantCollections = {
 const IS_DEV = process.env.NODE_ENV !== "production";
 
 const MODULE_SEQUENCE: Record<AdaptiveCluster, string[]> = {
-  focus_energy_cluster: ["energy_recovery", "energy_congruence"],
-  clarity_cluster: ["clarity_single_intent", "clarity_one_important_thing"],
-  emotional_flex_cluster: ["emotional_flex_pause", "emotional_flex_naming"],
+  focus_energy_cluster: [
+    ...WOW_CLUSTER_SEQUENCES.focus_energy_cluster,
+    "energy_recovery",
+    "energy_congruence",
+  ],
+  clarity_cluster: [
+    ...WOW_CLUSTER_SEQUENCES.clarity_cluster,
+    "clarity_single_intent",
+    "clarity_one_important_thing",
+  ],
+  emotional_flex_cluster: [
+    ...WOW_CLUSTER_SEQUENCES.emotional_flex_cluster,
+    "emotional_flex_pause",
+    "emotional_flex_naming",
+  ],
 };
 
 const CLUSTER_MODULES: Record<AdaptiveCluster, Record<string, ModuleVariantCollections>> = {
   focus_energy_cluster: {
+    ...WOW_CLUSTER_MODULES.focus_energy_cluster,
     energy_recovery: {
       deep: { ro: ENERGY_DEEP_RO, en: ENERGY_DEEP_EN },
       short: { ro: ENERGY_SHORT_RO, en: ENERGY_SHORT_EN },
@@ -54,6 +68,7 @@ const CLUSTER_MODULES: Record<AdaptiveCluster, Record<string, ModuleVariantColle
     },
   },
   clarity_cluster: {
+    ...WOW_CLUSTER_MODULES.clarity_cluster,
     clarity_single_intent: {
       deep: { ro: CLARITY_DEEP_RO, en: CLARITY_DEEP_EN },
       short: { ro: CLARITY_SHORT_RO, en: CLARITY_SHORT_EN },
@@ -64,6 +79,7 @@ const CLUSTER_MODULES: Record<AdaptiveCluster, Record<string, ModuleVariantColle
     },
   },
   emotional_flex_cluster: {
+    ...WOW_CLUSTER_MODULES.emotional_flex_cluster,
     emotional_flex_pause: {
       deep: { ro: EMOTIONAL_FLEX_DEEP_RO, en: EMOTIONAL_FLEX_DEEP_EN },
       short: { ro: EMOTIONAL_FLEX_SHORT_RO, en: EMOTIONAL_FLEX_SHORT_EN },
@@ -101,6 +117,7 @@ export const DAILY_PATHS_SHORT_RO: ClusterCollections = buildCollections("short"
 export const DAILY_PATHS_SHORT_EN: ClusterCollections = buildCollections("short", "en");
 
 const CONFIG_ID_TO_MODULE_KEY = new Map<string, string>();
+const CONFIG_ID_TO_CONFIG = new Map<string, DailyPathConfig>();
 
 function registerCollections(collections: ClusterCollections) {
   Object.values(collections).forEach((configs) => {
@@ -108,6 +125,7 @@ function registerCollections(collections: ClusterCollections) {
       if (config?.moduleKey) {
         CONFIG_ID_TO_MODULE_KEY.set(config.id, config.moduleKey);
       }
+      CONFIG_ID_TO_CONFIG.set(config.id, config);
     });
   });
 }
@@ -162,6 +180,10 @@ export function getDefaultModuleKey(cluster: AdaptiveCluster): string | null {
 
 export function getModuleKeyForConfigId(configId: string): string | null {
   return CONFIG_ID_TO_MODULE_KEY.get(configId) ?? null;
+}
+
+export function getDailyPathConfigById(configId: string): DailyPathConfig | null {
+  return CONFIG_ID_TO_CONFIG.get(configId) ?? null;
 }
 
 export function getNextModuleKey(cluster: AdaptiveCluster, currentKey: string | null): string | null {

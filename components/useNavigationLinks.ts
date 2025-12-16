@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useTStrings } from "./useTStrings";
 import type { NavLink } from "./MenuOverlay";
+import { hasFoundationCycleCompleted } from "@/lib/dailyCompletion";
 
 type NavLinkConfig = {
   href: string;
@@ -24,8 +26,14 @@ const NAV_LINK_CONFIG: NavLinkConfig[] = [
 
 export function useNavigationLinks(): NavLink[] {
   const { s } = useTStrings();
+  const [foundationDone] = useState(() => hasFoundationCycleCompleted());
 
-  return NAV_LINK_CONFIG.map(({ href, labelKey, descriptionKey }) => ({
+  return NAV_LINK_CONFIG.filter((link) => {
+    if (link.href === "/training/arenas") {
+      return foundationDone;
+    }
+    return true;
+  }).map(({ href, labelKey, descriptionKey }) => ({
     href,
     label: s(labelKey, labelKey),
     description: descriptionKey ? s(descriptionKey, descriptionKey) : undefined,

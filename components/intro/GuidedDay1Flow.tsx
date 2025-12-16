@@ -17,13 +17,9 @@ type QuestionStep = {
 type Content = {
   questions: QuestionStep[];
   reflection: { lines: string[]; cta: string };
-  exercise: { title: string; body: string; note: string };
-  exerciseDone: { line: string };
+  transitionLine: string;
   offer: { title: string; body: string; ctaPrimary: string; ctaSecondary: string };
-  timerLabel: string;
 };
-
-const EXERCISE_DURATION = 90;
 
 const CONTENT: Record<"ro" | "en", Content> = {
   ro: {
@@ -63,19 +59,13 @@ const CONTENT: Record<"ro" | "en", Content> = {
       lines: ["OK. Nu e un defect personal.", "E un tipar de supraîncărcare.", "Începem prin a stabiliza."],
       cta: "Începem",
     },
-    exercise: {
-      title: "Respirație lentă",
-      body: "4 secunde inhale, 6 secunde exhale. Menține ritmul până timerul se termină.",
-      note: "Poți apăsa pauză dacă ai nevoie.",
-    },
-    exerciseDone: { line: "Observă diferența. Nu e motivație. E reglaj." },
+    transitionLine: "Observă cum se simte când iei 5 minute doar pentru calibrat atenția.",
     offer: {
       title: "Păstrezi asta zilnic?",
       body: "5 minute/zi. Traseu ghidat. Istoric & progres.",
       ctaPrimary: "Vezi planurile",
       ctaSecondary: "Continui gratuit azi",
     },
-    timerLabel: "Timp exercițiu",
   },
   en: {
     questions: [
@@ -114,19 +104,13 @@ const CONTENT: Record<"ro" | "en", Content> = {
       lines: ["Okay. This isn’t a personal flaw.", "It’s a pattern of overload.", "We stabilize first."],
       cta: "Let’s begin",
     },
-    exercise: {
-      title: "Slow breathing",
-      body: "4-sec inhale, 6-sec exhale. Keep the rhythm until the timer ends.",
-      note: "Pause if you need to.",
-    },
-    exerciseDone: { line: "Notice the difference. This is regulation, not motivation." },
+    transitionLine: "Notice how it feels to spend 5 minutes just calibrating attention.",
     offer: {
       title: "Keep this daily?",
       body: "5 minutes/day. Guided path. History & progress.",
       ctaPrimary: "See plans",
       ctaSecondary: "Continue for free today",
     },
-    timerLabel: "Exercise time",
   },
 };
 
@@ -136,66 +120,27 @@ export default function GuidedDay1Flow() {
   const content = CONTENT[locale];
   const initialCompleted = useMemo(() => getGuidedCompleted(), []);
   const [stepIndex, setStepIndex] = useState(() =>
-    initialCompleted ? content.questions.length + 2 : 0,
+    initialCompleted ? content.questions.length + 1 : 0,
   );
-  const [exerciseSeconds, setExerciseSeconds] = useState(EXERCISE_DURATION);
-  const [exerciseRunning, setExerciseRunning] = useState(false);
-  const [exerciseStarted, setExerciseStarted] = useState(false);
-  const [exerciseFinished, setExerciseFinished] = useState(initialCompleted);
-  const [offerTracked, setOfferTracked] = useState(initialCompleted);
-  const intervalRef = useRef<number | null>(null);
+  const offerTrackedRef = useRef(initialCompleted);
 
   const reflectionIndex = content.questions.length;
-  const exerciseIndex = reflectionIndex + 1;
-  const offerIndex = exerciseIndex + 1;
+  const offerIndex = reflectionIndex + 1;
 
   useEffect(() => {
     track("guided_opened");
   }, []);
 
   useEffect(() => {
-    if (!exerciseRunning) return;
-    intervalRef.current = window.setInterval(() => {
-      setExerciseSeconds((prev) => {
-        if (prev <= 1) {
-          window.clearInterval(intervalRef.current ?? undefined);
-          intervalRef.current = null;
-          setExerciseRunning(false);
-          handleExerciseComplete();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exerciseRunning]);
-
-  useEffect(() => {
-    if (stepIndex === offerIndex && !offerTracked) {
-      setOfferTracked(true);
+    if (stepIndex === offerIndex && !offerTrackedRef.current) {
+      offerTrackedRef.current = true;
       track("offer_shown", { flow: "guided" });
       if (!initialCompleted) {
         setGuidedCompleted(true);
       }
       track("guided_day1_completed");
     }
-  }, [initialCompleted, offerIndex, offerTracked, stepIndex]);
-
-  const formatTimer = (seconds: number) => {
-    const m = Math.floor(seconds / 60)
-      .toString()
-      .padStart(2, "0");
-    const s = Math.floor(seconds % 60)
-      .toString()
-      .padStart(2, "0");
-    return `${m}:${s}`;
-  };
+  }, [initialCompleted, offerIndex, stepIndex]);
 
   const goToNextStep = useCallback(() => {
     setStepIndex((prev) => Math.min(prev + 1, offerIndex));
@@ -211,27 +156,6 @@ export default function GuidedDay1Flow() {
     track("guided_step_completed", { step: "reflection" });
     goToNextStep();
   };
-
-  const handleExerciseStart = () => {
-    if (!exerciseStarted) {
-      setExerciseStarted(true);
-      track("guided_exercise_started");
-    }
-    setExerciseRunning(true);
-  };
-
-  const handleExercisePause = () => {
-    setExerciseRunning(false);
-  };
-
-  const handleExerciseComplete = useCallback(() => {
-    if (exerciseFinished) return;
-    setExerciseFinished(true);
-    track("guided_exercise_completed");
-    setExerciseRunning(false);
-    setExerciseSeconds(0);
-    goToNextStep();
-  }, [exerciseFinished, goToNextStep]);
 
   const handleOfferClick = (action: "plans" | "continue_free") => {
     track("offer_clicked", { flow: "guided", action });
@@ -288,37 +212,9 @@ export default function GuidedDay1Flow() {
           </section>
         ) : null}
 
-        {stepIndex === exerciseIndex ? (
-          <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 shadow-[0_20px_60px_rgba(0,0,0,0.08)] sm:px-8">
-            <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{content.timerLabel}</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--omni-ink)] sm:text-3xl">{content.exercise.title}</h2>
-            <p className="mt-2 text-sm text-[var(--omni-ink)]/80 sm:text-base">{content.exercise.body}</p>
-            <p className="mt-1 text-xs text-[var(--omni-muted)]">{content.exercise.note}</p>
-            <div className="mt-6 flex flex-col items-center gap-3">
-              <p className="text-5xl font-semibold tracking-tight">{formatTimer(exerciseSeconds)}</p>
-              <div className="flex gap-3">
-                {!exerciseRunning ? (
-                  <OmniCtaButton onClick={handleExerciseStart}>
-                    {exerciseStarted ? (locale === "ro" ? "Reiau" : "Resume") : locale === "ro" ? "Start" : "Start"}
-                  </OmniCtaButton>
-                ) : (
-                  <OmniCtaButton variant="neutral" onClick={handleExercisePause}>
-                    {locale === "ro" ? "Pauză" : "Pause"}
-                  </OmniCtaButton>
-                )}
-                {exerciseSeconds <= 0 && !exerciseFinished ? (
-                  <OmniCtaButton onClick={handleExerciseComplete}>
-                    {locale === "ro" ? "Continuă" : "Continue"}
-                  </OmniCtaButton>
-                ) : null}
-              </div>
-            </div>
-          </section>
-        ) : null}
-
         {stepIndex >= offerIndex ? (
           <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 text-center shadow-[0_20px_60px_rgba(0,0,0,0.1)] sm:px-8">
-            <p className="text-sm text-[var(--omni-ink)]/70">{content.exerciseDone.line}</p>
+            <p className="text-sm text-[var(--omni-ink)]/70">{content.transitionLine}</p>
             <h2 className="mt-4 text-2xl font-semibold tracking-tight text-[var(--omni-ink)] sm:text-3xl">{content.offer.title}</h2>
             <p className="mt-2 text-sm text-[var(--omni-ink)]/80 sm:text-base">{content.offer.body}</p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
