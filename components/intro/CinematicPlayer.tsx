@@ -12,6 +12,7 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { IntroSlide } from "./IntroSlide";
 import { IntroCTA } from "./IntroCTA";
+import { useIntroAudioAssets } from "./useIntroAudioAssets";
 import type { CinematicCue } from "./cues.ro";
 import { RO_CUES_V1 } from "./cues.ro";
 import { useI18n } from "@/components/I18nProvider";
@@ -443,7 +444,7 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
   useEffect(() => {
     console.log("[intro-audio] shouldPlayAudio:", shouldPlayAudio);
   }, [shouldPlayAudio]);
-  useCinematicAudio(shouldPlayAudio, timelineElapsed);
+  useIntroAudioAssets(shouldPlayAudio, timelineElapsed);
 
   return (
     <div
