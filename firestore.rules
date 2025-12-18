@@ -14,13 +14,13 @@ service cloud.firestore {
 
     // User profile remains owner-scoped even in dev.
     match /userProfiles/{userId} {
-      allow read: if isOwner(userId);
+      allow read: if isOwner(userId) || isAdmin();
       allow create, update: if isOwner(userId);
     }
 
     // Progress facts attached to a user id.
     match /userProgressFacts/{userId} {
-      allow read: if isOwner(userId);
+      allow read: if isOwner(userId) || isAdmin();
       allow create, update: if isOwner(userId) &&
         // If recommendation block is present, enforce allowed path values
         isValidSessionType(request.resource.data.recommendation.selectedPath) &&
@@ -125,12 +125,22 @@ service cloud.firestore {
 
     // User recommendations: owner-only access
     match /userRecommendations/{userId} {
-      allow read: if isOwner(userId);
+      allow read: if isOwner(userId) || isAdmin();
       allow create, update: if isOwner(userId);
       match /items/{recId} {
-        allow read: if isOwner(userId);
+        allow read: if isOwner(userId) || isAdmin();
         allow create, update: if isOwner(userId);
       }
+    }
+
+    // Legacy CAT profile + history per user
+    match /users/{userId}/catProfile/{docId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId);
+    }
+    match /users/{userId}/catHistory/{docId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId);
     }
 
     // Daily reset checkins: owner-only access
@@ -143,6 +153,16 @@ service cloud.firestore {
       allow read: if signedIn() && resource.data.userId == request.auth.uid;
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Telemetry sessions per user (used by admin debug + gating): owner-only
+    match /userTelemetry/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId);
+      match /sessions/{sessionId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update, delete: if isOwner(userId);
+      }
     }
 
     function journalEntryOwnerMatches(data) {

@@ -1,27 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
 import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
-import { useProfile } from "@/components/ProfileProvider";
+import { useAuth } from "@/components/AuthProvider";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { track } from "@/lib/telemetry/track";
 import { getTriedExtraToday, hasCompletedToday, readLastCompletion, type DailyCompletionRecord } from "@/lib/dailyCompletion";
+import { getTraitLabel } from "@/lib/profileEngine";
+import { type SessionPlan } from "@/lib/sessionRecommenderEngine";
+import { saveTodayPlan } from "@/lib/todayPlanStorage";
+import { getSensAiTodayPlan, hasFreeDailyLimit, type SensAiContext } from "@/lib/omniSensAI";
 
 export default function TodayOrchestrator() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const navLinks = useNavigationLinks();
-  const { profile } = useProfile();
+  const { user, authReady } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [completedToday, setCompletedToday] = useState(false);
   const [lastCompletion, setLastCompletion] = useState<DailyCompletionRecord | null>(null);
   const cameFromRunComplete = searchParams?.get("source") === "run_complete";
   const [triedExtraToday, setTriedExtraTodayState] = useState(false);
+  const [sessionPlan, setSessionPlan] = useState<SessionPlan | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [sensAiCtx, setSensAiCtx] = useState<SensAiContext | null>(null);
 
   useEffect(() => {
     track("today_viewed");
@@ -47,6 +54,43 @@ export default function TodayOrchestrator() {
     router.replace("/today");
   }, [cameFromRunComplete, router]);
 
+  const loadPlanFromSensAi = useCallback(
+    async (userId: string, token: { cancelled: boolean }) => {
+      setPlanLoading(true);
+      try {
+        const result = await getSensAiTodayPlan(userId);
+        if (token.cancelled) return;
+        setSensAiCtx(result.ctx);
+        setSessionPlan(result.plan);
+      } finally {
+        if (!token.cancelled) setPlanLoading(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!authReady || !user) return;
+    const token = { cancelled: false };
+    void loadPlanFromSensAi(user.uid, token);
+    return () => {
+      token.cancelled = true;
+    };
+  }, [authReady, user, loadPlanFromSensAi]);
+
+  useEffect(() => {
+    if (!sessionPlan) return;
+    saveTodayPlan({
+      arcId: sessionPlan.arcId,
+      arcDayIndex: sessionPlan.arcDayIndex,
+      arcLengthDays: sessionPlan.arcLengthDays,
+      moduleId: sessionPlan.moduleId,
+      traitPrimary: sessionPlan.traitPrimary,
+      traitSecondary: sessionPlan.traitSecondary,
+      canonDomain: sessionPlan.canonDomain,
+    });
+  }, [sessionPlan]);
+
   const lastSessionLabel = useMemo(() => {
     if (!lastCompletion) return "—";
     const completedAt = new Date(lastCompletion.completedAt);
@@ -66,11 +110,6 @@ export default function TodayOrchestrator() {
     router.push("/today/run");
   };
 
-  const handleRecommendations = () => {
-    track("today_secondary_recommendations_clicked");
-    router.push("/recommendation");
-  };
-
   const header = (
     <SiteHeader
       showMenu
@@ -79,6 +118,40 @@ export default function TodayOrchestrator() {
     />
   );
 
+  const isPremiumSubscriber = sensAiCtx?.profile.subscription.status === "premium";
+  const freeLimitReached = hasFreeDailyLimit(sensAiCtx);
+
+  if (!sessionPlan) {
+    return (
+      <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-center text-[var(--omni-ink)]">
+        Se încarcă sesiunea recomandată...
+      </div>
+    );
+  }
+
+  const activeArcDayIndex =
+    sensAiCtx?.profile.activeArcId && sensAiCtx.profile.activeArcId === sessionPlan.arcId
+      ? sensAiCtx.profile.activeArcDayIndex ?? null
+      : null;
+  const arcDayNumber = sessionPlan.arcId
+    ? (() => {
+        const profileDay = typeof activeArcDayIndex === "number" ? activeArcDayIndex + 1 : null;
+        const fallbackDay = typeof sessionPlan.arcDayIndex === "number" ? sessionPlan.arcDayIndex + 1 : null;
+        const rawDay = profileDay ?? fallbackDay;
+        if (rawDay == null) return null;
+        if (sessionPlan.arcLengthDays) {
+          return Math.min(rawDay, sessionPlan.arcLengthDays);
+        }
+        return rawDay;
+      })()
+    : null;
+  const arcProgressLabel = sessionPlan.arcId
+    ? `Ziua ${arcDayNumber ?? "—"}${sessionPlan.arcLengthDays ? ` din ${sessionPlan.arcLengthDays}` : ""} în ${sessionPlan.title}`
+    : "Primul tău antrenament de claritate";
+  const xpForTrait = sensAiCtx?.profile.xpByTrait?.[sessionPlan.traitPrimary] ?? 0;
+
+  const handleUpgrade = () => router.push("/upgrade");
+
   return (
     <>
       <AppShell header={header}>
@@ -86,29 +159,63 @@ export default function TodayOrchestrator() {
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
             <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 shadow-[0_25px_80px_rgba(0,0,0,0.08)] sm:px-10">
               <p className="text-xs uppercase tracking-[0.4em] text-[var(--omni-muted)]">Astăzi</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Antrenamentul de azi</h1>
-              <p className="mt-2 text-sm text-[var(--omni-ink)]/80 sm:text-base">5–7 minute, adaptate la nivelul tău curent.</p>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+                {sessionPlan.title ?? "Antrenamentul de azi"}
+              </h1>
+              <p className="mt-2 text-sm text-[var(--omni-ink)]/80 sm:text-base">{sessionPlan.summary}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                {arcProgressLabel}
+              </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                 <OmniCtaButton
                   className="justify-center sm:min-w-[220px]"
-                  onClick={handleStart}
-                  disabled={completedToday}
+                  onClick={freeLimitReached ? handleUpgrade : handleStart}
+                  disabled={completedToday || planLoading || freeLimitReached}
                 >
-                  {completedToday ? "Completat azi" : "Începe"}
+                  {freeLimitReached
+                    ? "Disponibil în Premium"
+                    : completedToday
+                    ? "Completat azi"
+                    : `Sesiunea zilnică recomandată (${sessionPlan.expectedDurationMinutes} min)`}
                 </OmniCtaButton>
-                {completedToday ? (
-                  <p className="text-sm text-[var(--omni-muted)]">Revii mâine pentru o nouă sesiune.</p>
-                ) : (
+                <button
+                  type="button"
+                  className={`rounded-[12px] border px-4 py-2 text-sm font-semibold ${isPremiumSubscriber ? "border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "border-dashed border-[var(--omni-border-soft)] text-[var(--omni-muted)]"}`}
+                  onClick={() => {
+                    if (!isPremiumSubscriber) handleUpgrade();
+                  }}
+                  disabled={!isPremiumSubscriber}
+                >
+                  Sesiune intensivă (în curând)
+                </button>
+              </div>
+              <div className="mt-5 rounded-[18px] border border-[var(--omni-border-soft)] bg-white/70 px-4 py-4 text-sm text-[var(--omni-ink)]">
+                <p className="font-semibold">Focus: {getTraitLabel(sessionPlan.traitPrimary)}</p>
+                <p className="mt-1 text-[var(--omni-ink)]/80">
+                  {`Consolidezi ${getTraitLabel(sessionPlan.traitPrimary)} și susții ${
+                    sessionPlan.traitSecondary.length
+                      ? getTraitLabel(sessionPlan.traitSecondary[0])
+                      : "energia funcțională"
+                  }.`}
+                </p>
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-[var(--omni-energy)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-energy)]">
+                  {`${getTraitLabel(sessionPlan.traitPrimary)}: ${xpForTrait} XP`}
+                </div>
+                <div className="mt-4 text-right">
                   <button
                     type="button"
-                    className="text-sm font-semibold text-[var(--omni-ink)] underline-offset-4 hover:underline"
-                    onClick={handleRecommendations}
+                    className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-energy)]"
+                    onClick={() => router.push("/os")}
                   >
-                    Vezi recomandări
+                    Vezi harta mentală →
                   </button>
-                )}
+                </div>
               </div>
-              {cameFromRunComplete ? (
+              {freeLimitReached ? (
+                <div className="mt-4 rounded-2xl border border-[var(--omni-energy)]/40 bg-[var(--omni-energy)]/10 px-4 py-3 text-sm text-[var(--omni-ink)]">
+                  Ai făcut deja sesiunea zilnică azi. Dacă vrei să lucrezi mai mult în fiecare zi, activează OmniMental Premium.
+                </div>
+              ) : cameFromRunComplete ? (
                 <div className="mt-4 rounded-2xl border border-[var(--omni-energy)]/40 bg-[var(--omni-energy)]/10 px-4 py-3 text-sm text-[var(--omni-ink)]">
                   Sesiunea de azi este completă. Ne vedem mâine.
                 </div>
@@ -126,7 +233,7 @@ export default function TodayOrchestrator() {
               </div>
             </section>
 
-            {!profile?.isPremium && (completedToday || triedExtraToday) ? (
+            {!isPremiumSubscriber && (completedToday || triedExtraToday || freeLimitReached) ? (
               <section className="rounded-[24px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-6 text-[var(--omni-ink)]">
                 <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Upgrade</p>
                 <h2 className="mt-2 text-2xl font-semibold">Vrei încă o sesiune azi?</h2>

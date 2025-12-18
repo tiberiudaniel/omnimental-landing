@@ -1,0 +1,58 @@
+import { collection, getDocs, limit, orderBy, query, Timestamp, where } from "firebase/firestore";
+import { getDb } from "@/lib/firebase";
+import { isE2EMode, readE2ETelemetry } from "@/lib/e2eMode";
+import type { SessionTelemetry } from "@/lib/telemetry";
+
+function startOfToday(): Date {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
+}
+
+function sessionsCollection(userId: string) {
+  const db = getDb();
+  return collection(db, "userTelemetry", userId, "sessions");
+}
+
+export async function getSessionsToday(userId: string): Promise<number> {
+  if (!userId) return 0;
+  if (isE2EMode()) {
+    const data = readE2ETelemetry<SessionTelemetry>(userId);
+    const today = startOfToday();
+    const todayKey = today.toDateString();
+    return data.filter((entry) => {
+      const recordedAt = entry.recordedAt instanceof Date ? entry.recordedAt : entry.recordedAtOverride;
+      if (!recordedAt) return false;
+      return new Date(recordedAt).toDateString() === todayKey && entry.sessionType === "daily";
+    }).length;
+  }
+  const colRef = sessionsCollection(userId);
+  const start = Timestamp.fromDate(startOfToday());
+  const q = query(colRef, where("sessionType", "==", "daily"), where("recordedAt", ">=", start));
+  const snap = await getDocs(q);
+  return snap.size;
+}
+
+export async function getArenaRunsById(userId: string): Promise<Record<string, number>> {
+  if (!userId) return {};
+  if (isE2EMode()) {
+    const data = readE2ETelemetry<SessionTelemetry>(userId);
+    const counts: Record<string, number> = {};
+    data.forEach((entry) => {
+      if (entry.sessionType !== "arena") return;
+      const arenaId = entry.arenaId ?? entry.moduleId ?? "unknown";
+      counts[arenaId] = (counts[arenaId] ?? 0) + 1;
+    });
+    return counts;
+  }
+  const colRef = sessionsCollection(userId);
+  const q = query(colRef, where("sessionType", "==", "arena"), orderBy("recordedAt", "desc"), limit(200));
+  const snap = await getDocs(q);
+  const counts: Record<string, number> = {};
+  snap.forEach((docSnap) => {
+    const data = docSnap.data() as { arenaId?: string | null };
+    const arenaId = data?.arenaId ?? "unknown";
+    counts[arenaId] = (counts[arenaId] ?? 0) + 1;
+  });
+  return counts;
+}

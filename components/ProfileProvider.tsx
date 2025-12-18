@@ -11,6 +11,7 @@ import { doc, getDoc, onSnapshot, setDoc, Timestamp } from "firebase/firestore";
 import { getDb } from "../lib/firebase";
 import { useAuth } from "./AuthProvider";
 import type { MissionSummary } from "@/lib/hooks/useMissionPerspective";
+import { isE2EMode, E2E_USER_ID } from "@/lib/e2eMode";
 
 export type AccessTier = "public" | "member" | "persona";
 
@@ -65,10 +66,34 @@ async function ensureProfileDocument(uid: string, email: string | null | undefin
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
+  const e2eMode = isE2EMode();
+  const e2eProfile = useMemo<ProfileRecord | null>(() => {
+    if (!e2eMode) return null;
+    return {
+      id: user?.uid ?? E2E_USER_ID,
+      name: "E2E User",
+      email: "e2e@omnimental.dev",
+      accessTier: "public",
+      selection: "individual",
+      createdAt: Timestamp.now(),
+      simulatedInsights: [],
+      experienceOnboardingCompleted: true,
+      activeMission: null,
+      isPremium: true,
+      plan: "monthly",
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      premiumUpdatedAt: Timestamp.now(),
+    };
+  }, [e2eMode, user?.uid]);
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (e2eMode) {
+      return;
+    }
+
     if (authLoading) {
       return;
     }
@@ -152,14 +177,14 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       active = false;
       unsubscribe?.();
     };
-  }, [authLoading, user]);
+  }, [authLoading, user, e2eMode]);
 
   const value = useMemo(
     () => ({
-      profile,
-      loading: authLoading || loading,
+      profile: e2eProfile ?? profile,
+      loading: e2eProfile ? false : authLoading || loading,
     }),
-    [authLoading, loading, profile],
+    [authLoading, e2eProfile, loading, profile],
   );
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

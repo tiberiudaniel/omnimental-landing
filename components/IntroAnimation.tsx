@@ -4,19 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthProvider";
-import { Manrope, Space_Grotesk } from "next/font/google";
 
-const manropeFont = Manrope({
-  subsets: ["latin"],
-  weight: ["500", "600"],
-});
-
-const spaceGroteskFont = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["400", "600"],
-});
-
-const animatedFonts = [manropeFont, spaceGroteskFont];
+const animatedFontClasses = ["font-serif", "font-sans"];
 
 declare global {
   interface Window {
@@ -75,7 +64,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
 
     function createWord() {
       if (!overlay) return;
-      const selectedFont = animatedFonts[Math.floor(Math.random() * animatedFonts.length)];
+      const selectedFont = animatedFontClasses[Math.floor(Math.random() * animatedFontClasses.length)];
       const wordElem = document.createElement("div");
       wordElem.className = [
         "word",
@@ -89,7 +78,7 @@ export default function IntroAnimation({ onComplete }: { onComplete: () => void 
         "tracking-wide",
         "transition-colors",
       ].join(" ");
-      wordElem.classList.add(selectedFont.className);
+      wordElem.classList.add(selectedFont);
 
       wordElem.textContent = wordsList[Math.floor(Math.random() * wordsList.length)];
       wordElem.style.left = `${Math.random() * 80 + 10}%`;

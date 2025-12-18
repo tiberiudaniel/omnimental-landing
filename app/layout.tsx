@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Roboto, Cormorant_Garamond, Courier_Prime } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ProfileProvider } from "@/components/ProfileProvider";
@@ -7,41 +6,6 @@ import { I18nProvider } from "@/components/I18nProvider";
 import QueryLangSync from "@/components/QueryLangSync";
 import { Suspense } from "react";
 import Script from "next/script";
-
-// Font setup
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const roboto = Roboto({
-  variable: "--font-roboto",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const courierPrime = Courier_Prime({
-  variable: "--font-courier-prime",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
 
 // Site metadata
 const title = "OmniMental Coaching | Mental Coaching & Biofeedback";
@@ -98,16 +62,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="ro"
-      className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} ${cormorant.variable} ${courierPrime.variable}`}
-      data-scroll-behavior="smooth"
-    >
+    <html lang="ro" data-scroll-behavior="smooth">
       <body
         className="antialiased min-h-screen"
         style={{
           backgroundColor: "var(--omni-bg-main)",
           color: "var(--omni-ink)",
+          fontFamily:
+            'Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
         }}
       >
         <AuthProvider>
@@ -121,6 +83,9 @@ export default function RootLayout({
           </ProfileProvider>
         </AuthProvider>
 
+        <Script id="e2e-flag" strategy="beforeInteractive">
+          {`try{var params=new URLSearchParams(window.location.search);if((params.get('e2e')||'').toLowerCase()==='1'){window.__OMNI_E2E__=true;}}catch(e){}`}
+        </Script>
         {/* GSAP loaded after page interactive for safety */}
         <Script
           src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"

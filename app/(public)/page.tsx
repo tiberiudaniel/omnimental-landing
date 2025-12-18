@@ -27,6 +27,8 @@ import { computeDimensionScores } from "@/lib/scoring";
 import type { DimensionScores } from "@/lib/scoring";
 import { recommendSession, type SessionType } from "@/lib/recommendation";
 import { saveRecommendationCache, readRecommendationCache, updateSelectedPath } from "@/lib/recommendationCache";
+import { mapScoresToProfile } from "@/lib/scoringMapping";
+import { applyProfilePatch } from "@/lib/profileEngine";
 // duplicate import cleanup
 import { generateAdaptiveIntentCloudWords } from "@/lib/intentExpressions";
 import { CATEGORY_LABELS } from "@/lib/categoryLabels";
@@ -397,6 +399,14 @@ function WizardShell() {
       if (!success) {
         console.warn("intent snapshot could not be persisted; staying on summary");
         return;
+      }
+      if (profile?.id) {
+        try {
+          const { catProfilePatch, domainWeightsPatch } = mapScoresToProfile({ dimensionScores: scores });
+          await applyProfilePatch(profile.id, catProfilePatch, domainWeightsPatch);
+        } catch (error) {
+          console.warn("applyProfilePatch failed", error);
+        }
       }
       navigateToStep("cards");
     },

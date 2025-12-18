@@ -1,16 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { track } from "@/lib/telemetry/track";
 import { useProfile } from "@/components/ProfileProvider";
 import DailyPathRunner from "@/components/today/DailyPathRunner";
 import { getTodayModuleKey, hasCompletedToday, markDailyCompletion, setTriedExtraToday } from "@/lib/dailyCompletion";
+import { advanceArcProgress, addTraitXp, getTraitLabel } from "@/lib/profileEngine";
+import { readTodayPlan, clearTodayPlan } from "@/lib/todayPlanStorage";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
 import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
+import { getWowLessonDefinition, resolveTraitPrimaryForModule } from "@/config/wowLessonsV2";
+import WowLessonShell, { type WowCompletionPayload } from "@/components/wow/WowLessonShell";
+import type { StoredTodayPlan } from "@/lib/todayPlanStorage";
+import { recordSessionTelemetry } from "@/lib/telemetry";
+import { buildPlanKpiEvent } from "@/lib/sessionTelemetry";
 
 export default function TodayRunPage() {
   const router = useRouter();
@@ -20,6 +27,7 @@ export default function TodayRunPage() {
   const [completedToday, setCompletedToday] = useState(false);
   const [todayModuleKey, setTodayModuleKey] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [storedPlan, setStoredPlan] = useState<StoredTodayPlan | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -27,7 +35,13 @@ export default function TodayRunPage() {
     const timeout = window.setTimeout(() => {
       if (!alive) return;
       setCompletedToday(hasCompletedToday());
-      setTodayModuleKey(getTodayModuleKey());
+      const plan = readTodayPlan();
+      setStoredPlan(plan);
+      if (plan?.moduleId) {
+        setTodayModuleKey(plan.moduleId);
+      } else {
+        setTodayModuleKey(getTodayModuleKey());
+      }
       setInitialized(true);
     }, 0);
     return () => {
@@ -48,11 +62,65 @@ export default function TodayRunPage() {
     track("daily_run_started");
   }, [initialized, isBlocked]);
 
-  const handleCompleted = (_configId?: string | null, moduleKey?: string | null) => {
+  const handleCompleted = async (_configId?: string | null, moduleKey?: string | null) => {
     markDailyCompletion(moduleKey ?? null);
     track("daily_run_completed", { moduleKey });
+    const plan = readTodayPlan();
+    if (profile?.id && plan?.arcId) {
+      try {
+        await advanceArcProgress(profile.id, plan.arcId, { completedToday: true });
+      } catch (error) {
+        console.warn("advanceArcProgress failed", error);
+      }
+    }
+    clearTodayPlan();
     track("daily_run_back_to_today", { reason: "completed" });
     router.push("/today?source=run_complete");
+  };
+
+  const handleWowComplete = async (payload: WowCompletionPayload) => {
+    const plan = readTodayPlan();
+    const userId = profile?.id ?? null;
+    if (userId) {
+      const kpiEvent =
+        plan && plan.canonDomain && plan.traitPrimary
+          ? buildPlanKpiEvent(
+              {
+                userId,
+                moduleId: plan.moduleId,
+                canonDomain: plan.canonDomain,
+                traitPrimary: plan.traitPrimary,
+                traitSecondary: plan.traitSecondary,
+              },
+              { source: "daily", difficultyFeedback: payload.difficultyFeedback },
+            )
+          : null;
+      try {
+        await recordSessionTelemetry({
+          sessionId: `today-wow-${Date.now()}`,
+          userId,
+          sessionType: "daily",
+          arcId: plan?.arcId ?? null,
+          moduleId: plan?.moduleId ?? null,
+          traitSignals: payload.traitSignals,
+          kpiEvents: kpiEvent ? [kpiEvent] : [],
+          difficultyFeedback: payload.difficultyFeedback,
+          origin: "real",
+          flowTag: "today",
+        });
+      } catch (error) {
+        console.warn("recordSessionTelemetry failed", error);
+      }
+      const moduleTraitPrimary = resolveTraitPrimaryForModule(plan?.moduleId ?? null, plan?.traitPrimary);
+      if (moduleTraitPrimary) {
+        try {
+          await addTraitXp(userId, moduleTraitPrimary, 10);
+        } catch (error) {
+          console.warn("addTraitXp failed", error);
+        }
+      }
+    }
+    await handleCompleted(null, plan?.moduleId ?? null);
   };
 
   const handleBackToToday = () => {
@@ -60,8 +128,26 @@ export default function TodayRunPage() {
     router.push("/today");
   };
 
+  const wowLesson = useMemo(() => {
+    if (!storedPlan?.moduleId) return null;
+    return getWowLessonDefinition(storedPlan.moduleId);
+  }, [storedPlan]);
+
   if (!initialized) {
     return null;
+  }
+
+  const xpTrait = wowLesson?.traitPrimary ?? storedPlan?.traitPrimary ?? null;
+  const xpLabel = xpTrait ? `+10 XP ${getTraitLabel(xpTrait)}` : "+10 XP";
+
+  if (wowLesson && !isBlocked) {
+    return (
+      <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-8">
+        <div className="mx-auto max-w-3xl">
+          <WowLessonShell lesson={wowLesson} sessionType="daily" xpRewardLabel={xpLabel} onComplete={handleWowComplete} />
+        </div>
+      </div>
+    );
   }
 
   if (isBlocked) {
@@ -76,7 +162,7 @@ export default function TodayRunPage() {
               <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Limită zilnică</p>
               <h1 className="mt-3 text-2xl font-semibold">Ai completat sesiunea de azi</h1>
               <p className="mt-3 text-sm text-[var(--omni-ink)]/80">
-                Revino mâine pentru o nouă sesiune sau activează Premium pentru mai multe sesiuni pe zi.
+                Ai făcut deja sesiunea zilnică azi. Dacă vrei să lucrezi mai mult în fiecare zi, activează OmniMental Premium.
               </p>
               <div className="mt-6 flex flex-col gap-3">
                 <OmniCtaButton className="justify-center" onClick={handleBackToToday}>
