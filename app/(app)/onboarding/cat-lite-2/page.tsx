@@ -9,6 +9,9 @@ import { saveCatLiteSnapshot, getUserProfileSnapshot, type CatAxisId, type UserP
 import { useProgressFacts } from "@/components/useProgressFacts";
 import { needsCatLitePart2 } from "@/lib/gatingSelectors";
 import { CAT_LITE_EXTENDED_AXES } from "@/lib/catLite";
+import VocabChip from "@/components/vocab/VocabChip";
+import { getDefaultVocabForAxis } from "@/config/catVocabulary";
+import { useI18n } from "@/components/I18nProvider";
 
 type CatLitePart2ItemId =
   | "recalibration_1"
@@ -63,10 +66,13 @@ const QUESTIONS: CatLitePart2Question[] = [
 ];
 
 const RETURN_TO = "/onboarding/cat-lite-2";
+const PRIMER_AXES: CatAxisId[] = ["recalibration", "flexibility", "adaptiveConfidence"];
 
 export default function CatLitePart2Page() {
   const router = useRouter();
   const { user, authReady } = useAuth();
+  const { lang } = useI18n();
+  const locale = lang === "en" ? "en" : "ro";
   const { data: progressFacts, loading: progressFactsLoading } = useProgressFacts(user?.uid ?? null);
   const [profile, setProfile] = useState<UserProfileSnapshot | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -183,6 +189,20 @@ export default function CatLitePart2Page() {
             0 = deloc / aproape niciodată · 10 = aproape mereu
           </p>
         </header>
+
+        <div className="rounded-[16px] border border-dashed border-[var(--omni-border-soft)] bg-white/70 px-4 py-4">
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+            {locale === "en"
+              ? "These words help when you need to change direction."
+              : "Astea sunt cuvintele care te ajută când trebuie să schimbi direcția."}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {PRIMER_AXES.map((axisId) => {
+              const vocab = getDefaultVocabForAxis(axisId);
+              return <VocabChip key={vocab.id} vocabId={vocab.id} locale={locale} />;
+            })}
+          </div>
+        </div>
 
         <div className="space-y-5">
           {QUESTIONS.map((question) => (

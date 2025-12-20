@@ -175,16 +175,20 @@ export interface NextDayHistoryContext {
 export function decideNextDailyPathFromHistory(context: NextDayHistoryContext): NextDayDecision {
   const { catProfile, lang, history, todayKey = getCurrentDateKey() } = context;
   const normalizedEntries = normalizeDailyEntries(history);
+  const missingMappingId = findFirstMissingConfigId(history);
   const repeatDecision = pickRepeatDecisionForToday(normalizedEntries, lang, todayKey);
   if (repeatDecision) {
-    return repeatDecision;
+    return annotateDecisionWithMissingMapping(repeatDecision, missingMappingId);
   }
   const wowDecision = pickWowDecision(normalizedEntries, lang);
   if (wowDecision) {
-    return wowDecision;
+    return annotateDecisionWithMissingMapping(wowDecision, missingMappingId);
   }
   if (!catProfile) {
-    return fallbackDecision(lang, "fallback: missing CAT profile");
+    return annotateDecisionWithMissingMapping(
+      fallbackDecision(lang, "fallback: missing CAT profile"),
+      missingMappingId,
+    );
   }
   const derived = deriveAdaptiveClusterFromCat(catProfile);
   const chosenCluster: AdaptiveCluster = derived.cluster ?? FALLBACK_CLUSTER;
@@ -254,6 +258,32 @@ export function decideNextDailyPathFromHistory(context: NextDayHistoryContext): 
     mode: chosenMode,
     reason,
     moduleKey,
+  };
+}
+
+function findFirstMissingConfigId(entries: DailyPracticeDoc[]): string | null {
+  for (const entry of entries) {
+    const id = entry.configId;
+    if (!id) continue;
+    const mapped = getModuleKeyForConfigId(id);
+    if (!mapped) {
+      return id;
+    }
+  }
+  return null;
+}
+
+function annotateDecisionWithMissingMapping(
+  decision: NextDayDecision,
+  missingConfigId: string | null,
+): NextDayDecision {
+  if (!missingConfigId) return decision;
+  console.warn(
+    `[NextDayEngine] Missing moduleKey mapping for configId=${missingConfigId}`,
+  );
+  return {
+    ...decision,
+    reason: `${decision.reason} | mapping=${missingConfigId}->default`,
   };
 }
 

@@ -21,6 +21,9 @@ import {
 } from "@/lib/execution/executionTelemetry";
 import { applyDailyPracticeCompletion } from "@/lib/arcMetrics";
 import { CLUSTER_REGISTRY } from "@/config/clusterRegistry";
+import { getShownVocabIdForToday } from "@/lib/vocabProgress";
+import { getTodayKey } from "@/lib/dailyCompletion";
+import { resolveVocab } from "@/components/vocab/useVocab";
 
 const COMPLETION_BONUS = 15;
 const IS_DEV = process.env.NODE_ENV !== "production";
@@ -96,6 +99,7 @@ type DailyPathProps = {
   bestStreakDays?: number | null;
   decisionReason?: string | null;
   policyReason?: string | null;
+  vocabDayKey?: string | null;
 };
 
 type MissionBriefCopy = {
@@ -201,6 +205,10 @@ const MISSION_TIME_OPTIONS: MissionTimeOption[] = [
 
 const validModes: DailyPathMode[] = ["short", "deep"];
 
+function getNow(): number {
+  return Date.now();
+}
+
 export default function DailyPath({
   config,
   userId = null,
@@ -214,6 +222,7 @@ export default function DailyPath({
   bestStreakDays = null,
   decisionReason = null,
   policyReason = null,
+  vocabDayKey = null,
 }: DailyPathProps) {
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [completedNodeIds, setCompletedNodeIds] = useState<string[]>([]);
@@ -350,6 +359,11 @@ export default function DailyPath({
   useEffect(() => {
     visibleNodesRef.current = visibleNodes;
   }, [visibleNodes]);
+  const todaysVocabId = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const dayKey = vocabDayKey ?? getTodayKey();
+    return getShownVocabIdForToday(dayKey);
+  }, [vocabDayKey]);
   const questSteps = useMemo(() => {
     return visibleNodes.map((node, index) => {
       const isCompleted = completedNodeIds.includes(node.id);
@@ -364,6 +378,13 @@ export default function DailyPath({
       };
     });
   }, [visibleNodes, completedNodeIds, currentActiveId]);
+  const todaysVocab = useMemo(() => (todaysVocabId ? resolveVocab(todaysVocabId) : null), [todaysVocabId]);
+  const todaysReflexCopy = useMemo(() => {
+    if (!todaysVocab) return null;
+    const label = activeLang === "en" ? "Reflex trained" : "Reflex antrenat";
+    const command = todaysVocab.command[activeLang] ?? todaysVocab.command.ro;
+    return { label, command };
+  }, [todaysVocab, activeLang]);
   const activeQuestStep =
     questSteps.find((step) => step.status === "active") ??
     questSteps.find((step) => step.status === "locked") ??
@@ -393,7 +414,7 @@ export default function DailyPath({
     const activeNode = visibleNodes.find((node) => node.id === currentActiveId);
     if (!activeNode) return;
     if (nodeIntentTimesRef.current[activeNode.id]) return;
-    const timestamp = Date.now();
+    const timestamp = getNow();
     nodeIntentTimesRef.current[activeNode.id] = timestamp;
     logExecutionIntent({
       userId,
@@ -416,7 +437,7 @@ export default function DailyPath({
       if (nodeStartTimesRef.current[node.id]) {
         return nodeStartTimesRef.current[node.id];
       }
-      const startTimestamp = Date.now();
+      const startTimestamp = getNow();
       nodeStartTimesRef.current[node.id] = startTimestamp;
       const intentTimestamp = nodeIntentTimesRef.current[node.id];
       logExecutionStart({
@@ -483,7 +504,7 @@ useEffect(() => {
       missionBriefSelectionLoggedRef.current = false;
       return;
     }
-    missionBriefStartRef.current = Date.now();
+    missionBriefStartRef.current = getNow();
     missionBriefSelectionLoggedRef.current = false;
     void recordDailyRunnerEvent({
       type: "mission_brief_view",
@@ -497,7 +518,7 @@ useEffect(() => {
         missionBriefStartRef.current = null;
         return;
       }
-      const dwell = Date.now() - missionBriefStartRef.current;
+      const dwell = getNow() - missionBriefStartRef.current;
       missionBriefStartRef.current = null;
       void recordDailyRunnerEvent({
         type: "mission_brief_bounce",
@@ -556,7 +577,7 @@ useEffect(() => {
       if (persistenceEnabled) {
         missionBriefSelectionLoggedRef.current = true;
         const dwell =
-          missionBriefStartRef.current != null ? Math.max(0, Date.now() - missionBriefStartRef.current) : null;
+          missionBriefStartRef.current != null ? Math.max(0, getNow() - missionBriefStartRef.current) : null;
         void recordDailyRunnerEvent({
           type: "mission_brief_select",
           configId: config.id,
@@ -577,7 +598,7 @@ useEffect(() => {
     (selected: number) => {
       if (!config || startLoggedRef.current) return;
       startLoggedRef.current = true;
-      startTimestampRef.current = Date.now();
+      startTimestampRef.current = getNow();
       logDebug("start", {
         configId: config.id,
         cluster: config.cluster,
@@ -613,7 +634,7 @@ useEffect(() => {
       const cfg = configRef.current;
       if (!cfg) return;
       const nodes = visibleNodesRef.current;
-      const abandonTimestamp = Date.now();
+      const abandonTimestamp = getNow();
       Object.entries(nodeIntentTimesRef.current).forEach(([nodeId, intentTs]) => {
         if (nodeStartTimesRef.current[nodeId]) return;
         const node = nodes.find((n) => n.id === nodeId);
@@ -646,7 +667,7 @@ useEffect(() => {
     const nodesCompletedCount = completedNodeIds.length;
     const durationSeconds =
       startTimestampRef.current != null
-        ? Math.max(0, Math.round((Date.now() - startTimestampRef.current) / 1000))
+        ? Math.max(0, Math.round((getNow() - startTimestampRef.current) / 1000))
         : null;
     logDebug("completed", {
       configId: config.id,
@@ -733,7 +754,7 @@ useEffect(() => {
       setXp((prevXp) => prevXp + xpDelta);
     }
     logDebug("node_completed", { nodeId: node.id, xpDelta, skipAdvance: options?.skipAdvance });
-    const completeTimestamp = Date.now();
+    const completeTimestamp = getNow();
     const startTimestamp = ensureNodeStartLogged(node) ?? completeTimestamp;
     logExecutionCompletion({
       userId,
@@ -1065,6 +1086,11 @@ useEffect(() => {
               {trainedSkill ? (
                 <p className="text-xs text-[var(--omni-muted)]">
                   {copy.skillIntro}: {trainedSkill}
+                </p>
+              ) : null}
+              {todaysReflexCopy ? (
+                <p className="text-xs text-[var(--omni-energy)]/80">
+                  {todaysReflexCopy.label}: {todaysReflexCopy.command}
                 </p>
               ) : null}
             </div>

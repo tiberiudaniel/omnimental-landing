@@ -21,7 +21,10 @@ import { getDailyPathForCluster } from "@/config/dailyPath";
 import { getOnboardingStatus } from "@/lib/onboardingStatus";
 import type { OnboardingStatus } from "@/lib/onboardingStatus";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
-import { CAT_AXES, type CatAxisId } from "@/config/catEngine";
+import VocabCard from "@/components/vocab/VocabCard";
+import { CAT_AXES } from "@/config/catEngine";
+import type { CatAxisId as LegacyCatAxisId } from "@/config/catEngine";
+import type { CatAxisId as ProfileAxisId } from "@/lib/profileEngine";
 import type { AdaptiveCluster, DailyPathLanguage, DailyPathMode } from "@/types/dailyPath";
 import type { DailyPracticeDoc } from "@/types/dailyPractice";
 import type { NextDayDecision } from "@/lib/nextDayEngine";
@@ -33,9 +36,18 @@ import { ensureCurrentArcForUser } from "@/lib/arcStateStore";
 import { CAT_BASELINE_URL, PILLARS_URL, ADAPTIVE_PRACTICE_URL } from "@/config/routes";
 import { getDailyPracticeHistory } from "@/lib/dailyPracticeStore";
 import { getWowDayIndex } from "@/config/dailyPaths/wow";
-import { hasFoundationCycleCompleted } from "@/lib/dailyCompletion";
+import { getTodayKey, hasFoundationCycleCompleted } from "@/lib/dailyCompletion";
 import { recordDailyRunnerEvent } from "@/lib/progressFacts/recorders";
 import { daysBetween } from "@/lib/dailyPathHistory";
+import { pickWordOfDay } from "@/config/catVocabulary";
+import {
+  getUnlockedVocabIds,
+  markVocabShownToday,
+  setShownVocabIdForToday,
+  unlockVocab,
+  wasVocabShownToday,
+} from "@/lib/vocabProgress";
+import { track } from "@/lib/telemetry/track";
 
 const ADAPTIVE_NUDGES: Record<AdaptiveCluster, string> = {
   clarity_cluster: "Alege azi un lucru important și exprimă-l în minte în 7 cuvinte.",
@@ -75,6 +87,45 @@ const QA_LANG_OPTIONS: Array<{ value: DailyPathLanguage; label: string }> = [
   { value: "ro", label: "RO" },
   { value: "en", label: "EN" },
 ];
+
+type VocabPrimerState = {
+  dayKey: string;
+  vocabId: string;
+  axisId: ProfileAxisId;
+};
+
+const CLUSTER_TO_VOCAB_AXIS: Record<AdaptiveCluster, ProfileAxisId> = {
+  clarity_cluster: "clarity",
+  focus_energy_cluster: "focus",
+  emotional_flex_cluster: "emotionalStability",
+};
+
+const LEGACY_TO_PROFILE_AXIS: Record<LegacyCatAxisId, ProfileAxisId> = {
+  clarity: "clarity",
+  focus: "focus",
+  energy: "energy",
+  flex: "flexibility",
+  emo_stab: "emotionalStability",
+  recalib: "recalibration",
+  adapt_conf: "adaptiveConfidence",
+};
+
+function mapLegacyAxisToProfile(axis: LegacyCatAxisId | null | undefined): ProfileAxisId | null {
+  if (!axis) return null;
+  return LEGACY_TO_PROFILE_AXIS[axis] ?? null;
+}
+
+function inferLegacyWeakestAxis(doc: CatProfileDoc | null): LegacyCatAxisId | null {
+  if (!doc?.axisScores) return null;
+  let weakest: { axis: LegacyCatAxisId; score: number } | null = null;
+  for (const [axis, score] of Object.entries(doc.axisScores) as Array<[LegacyCatAxisId, number]>) {
+    if (typeof score !== "number") continue;
+    if (!weakest || score < weakest.score) {
+      weakest = { axis, score };
+    }
+  }
+  return weakest?.axis ?? null;
+}
 
 function formatLocalDateKey(input: Date | number | string): string {
   const date = input instanceof Date ? input : new Date(input);
@@ -190,7 +241,15 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
   const [timeModeHint, setTimeModeHint] = useState<DailyPathMode | null>(null);
   const [timeSelectionMinutes, setTimeSelectionMinutes] = useState<number | null>(null);
   const [softGatePreview, setSoftGatePreview] = useState(false);
+  const [vocabPrimer, setVocabPrimer] = useState<VocabPrimerState | null>(null);
+  const [unlockedVocabIds, setUnlockedVocabIds] = useState<string[]>([]);
+  const vocabImpressionRef = useRef<string | null>(null);
   const gatingStartRef = useRef<number | null>(null);
+  const runDayKeyRef = useRef<string | null>(null);
+  if (!runDayKeyRef.current) {
+    runDayKeyRef.current = getTodayKey();
+  }
+  const vocabDayKey = runDayKeyRef.current;
   const rawSourceParam = searchParams?.get("source")?.toLowerCase() ?? "";
   const cameFromUpgradeSuccess = rawSourceParam === "upgrade_success";
   const rawClusterParam = searchParams?.get("cluster")?.toLowerCase() ?? null;
@@ -327,7 +386,7 @@ useEffect(() => {
 }, [user?.uid, dailyDecision, qaOverrideActive]);
 
   const axisMeta = useMemo(() => {
-    const map = new Map<CatAxisId, { label: string }>();
+    const map = new Map<LegacyCatAxisId, { label: string }>();
     for (const axis of CAT_AXES) {
       map.set(axis.id, { label: axis.label });
     }
@@ -528,7 +587,28 @@ useEffect(() => {
       ? "Free mode active: 1 guided Path/day (soft nodes). Upgrade anytime for full history and adaptive rotations."
       : "Mod gratuit activ: 1 Path ghidat/zi (soft nodes). Poți activa planul pentru istoric complet și adaptare.";
   const missionText = finalCluster ? ADAPTIVE_NUDGES[finalCluster] : null;
+  const vocabUiCopy = useMemo(
+    () => ({
+      title: decisionLang === "en" ? "Word of the day" : "Cuvântul de azi",
+      subtitle: decisionLang === "en" ? "One reflex. Use it today." : "Un reflex. Îl folosești azi.",
+      detail: decisionLang === "en" ? "Use it before the first exercise." : "Aplică-l înainte de primul exercițiu.",
+      start: decisionLang === "en" ? "Start" : "Încep",
+      skip: decisionLang === "en" ? "Skip" : "Sari peste",
+      save: decisionLang === "en" ? "Save to vocabulary" : "Salvează în vocabular",
+      locale: decisionLang === "en" ? ("en" as const) : ("ro" as const),
+    }),
+    [decisionLang],
+  );
   const showQaPanel = QA_PANEL_ENABLED;
+  const vocabAlreadyUnlocked = vocabPrimer ? unlockedVocabIds.includes(vocabPrimer.vocabId) : true;
+  const targetVocabAxis = useMemo<ProfileAxisId>(() => {
+    const clusterCandidate = resolvedDailyPathConfig?.cluster ?? dailyDecision?.cluster ?? cluster ?? null;
+    const clusterAxis = clusterCandidate ? CLUSTER_TO_VOCAB_AXIS[clusterCandidate] ?? null : null;
+    if (clusterAxis) return clusterAxis;
+    const profileAxis =
+      mapLegacyAxisToProfile(catProfile?.weakestAxis) ?? mapLegacyAxisToProfile(inferLegacyWeakestAxis(catProfile));
+    return profileAxis ?? "clarity";
+  }, [resolvedDailyPathConfig?.cluster, dailyDecision?.cluster, cluster, catProfile]);
   const showDailyCompletedState = dailyCompletedToday && !qaOverrideActive;
 
   useEffect(() => {
@@ -548,6 +628,34 @@ useEffect(() => {
     }
   }, [dailyLoopReady]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !vocabDayKey) return;
+    if (showDailyCompletedState) {
+      setVocabPrimer(null);
+      return;
+    }
+    const unlocked = getUnlockedVocabIds();
+    setUnlockedVocabIds(unlocked);
+    if (wasVocabShownToday(vocabDayKey)) {
+      setVocabPrimer(null);
+      return;
+    }
+    const card = pickWordOfDay({ axisId: targetVocabAxis, unlockedIds: unlocked, dayKey: vocabDayKey });
+    setVocabPrimer({ dayKey: vocabDayKey, vocabId: card.id, axisId: card.axisId });
+  }, [targetVocabAxis, showDailyCompletedState, vocabDayKey]);
+
+  useEffect(() => {
+    if (!vocabPrimer || showDailyCompletedState) return;
+    const key = `${vocabPrimer.dayKey}:${vocabPrimer.vocabId}`;
+    if (vocabImpressionRef.current === key) return;
+    track("vocab_today_shown", {
+      vocabId: vocabPrimer.vocabId,
+      axisId: vocabPrimer.axisId,
+      surface: "today_pre",
+    });
+    vocabImpressionRef.current = key;
+  }, [vocabPrimer, showDailyCompletedState]);
+
   const handleSoftPreviewRequest = useCallback(() => {
     setSoftGatePreview(true);
     if (qaOverrideActive) return;
@@ -558,6 +666,34 @@ useEffect(() => {
       context: "calibration_gate",
     });
   }, [qaOverrideActive]);
+
+  const handleVocabDismiss = useCallback(
+    (action: "start" | "skip") => {
+      if (!vocabPrimer || !vocabDayKey) return;
+      markVocabShownToday(vocabDayKey);
+      setShownVocabIdForToday(vocabDayKey, vocabPrimer.vocabId);
+      setVocabPrimer(null);
+      if (action === "skip") {
+        track("vocab_today_skipped", {
+          vocabId: vocabPrimer.vocabId,
+          axisId: vocabPrimer.axisId,
+          surface: "today_pre",
+        });
+      }
+    },
+    [vocabPrimer, vocabDayKey],
+  );
+
+  const handleVocabSave = useCallback(() => {
+    if (!vocabPrimer) return;
+    const updated = unlockVocab(vocabPrimer.vocabId);
+    setUnlockedVocabIds(updated);
+    track("vocab_today_saved", {
+      vocabId: vocabPrimer.vocabId,
+      axisId: vocabPrimer.axisId,
+      surface: "today_pre",
+    });
+  }, [vocabPrimer]);
 
   const header = (
     <SiteHeader
@@ -635,6 +771,48 @@ useEffect(() => {
                     </div>
                   ) : null}
                   {currentArc ? <CurrentArcCard arc={currentArc} /> : null}
+                  {!showDailyCompletedState && vocabPrimer ? (
+                    <div className="rounded-[24px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.12)]">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.4em] text-[var(--omni-muted)]">{vocabUiCopy.title}</p>
+                          <p className="text-sm text-[var(--omni-ink)]/80">{vocabUiCopy.subtitle}</p>
+                          <p className="text-xs text-[var(--omni-muted)]">{vocabUiCopy.detail}</p>
+                        </div>
+                        <VocabCard
+                          vocabId={vocabPrimer.vocabId}
+                          variant="mini"
+                          locale={vocabUiCopy.locale}
+                          className="px-4 py-4 sm:px-6"
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleVocabDismiss("start")}
+                            className="inline-flex flex-1 items-center justify-center rounded-full bg-[var(--omni-energy)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-white sm:flex-none sm:text-sm"
+                          >
+                            {vocabUiCopy.start}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVocabDismiss("skip")}
+                            className="inline-flex flex-1 items-center justify-center rounded-full border border-[var(--omni-border-soft)] px-4 py-2 text-xs font-semibold text-[var(--omni-ink)] sm:flex-none sm:text-sm"
+                          >
+                            {vocabUiCopy.skip}
+                          </button>
+                        </div>
+                        {!vocabAlreadyUnlocked ? (
+                          <button
+                            type="button"
+                            onClick={handleVocabSave}
+                            className="text-xs font-semibold text-[var(--omni-energy)] hover:underline"
+                          >
+                            {vocabUiCopy.save}
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
                   {showDailyCompletedState ? (
                       <DailyPathCompletedCard
                         lang={resolvedDailyPathConfig?.lang ?? decisionLang}
@@ -657,6 +835,7 @@ useEffect(() => {
                       bestStreakDays={dailyStreak.best}
                       decisionReason={decisionReason}
                       policyReason={dailyDecision?.policyReason ?? null}
+                      vocabDayKey={vocabDayKey}
                     />
                   )}
                 </div>

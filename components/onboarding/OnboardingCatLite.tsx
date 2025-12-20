@@ -9,6 +9,11 @@ import { track } from "@/lib/telemetry/track";
 import { CAT_LITE_CORE_AXES } from "@/lib/catLite";
 import CatRadarChart from "@/components/cat/CatRadarChart";
 import type { CatAxisId as RadarAxisId } from "@/config/catEngine";
+import VocabChip from "@/components/vocab/VocabChip";
+import VocabCard from "@/components/vocab/VocabCard";
+import { useI18n } from "@/components/I18nProvider";
+import { getDefaultVocabForAxis } from "@/config/catVocabulary";
+import { getUnlockedVocabIds, unlockVocab } from "@/lib/vocabProgress";
 
 type CoreAxisId = (typeof CAT_LITE_CORE_AXES)[number];
 
@@ -102,6 +107,8 @@ type Props = {
 
 export default function OnboardingCatLite({ onComplete, progress }: Props) {
   const { user, authReady } = useAuth();
+  const { lang } = useI18n();
+  const locale = lang === "en" ? "en" : "ro";
   const [values, setValues] = useState<Record<CatLiteItemId, number>>(() =>
     CAT_LITE_PART1_QUESTIONS.reduce((acc, question) => {
       acc[question.id] = 5;
@@ -190,6 +197,27 @@ export default function OnboardingCatLite({ onComplete, progress }: Props) {
     }
   };
 
+  const [unlockedVocabIds, setUnlockedVocabIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setUnlockedVocabIds(getUnlockedVocabIds());
+  }, []);
+
+  const axisDefaultVocabMap = useMemo(() => {
+    const map: Partial<Record<CatAxisId, string>> = {};
+    CAT_LITE_CORE_AXES.forEach((axisId) => {
+      map[axisId] = getDefaultVocabForAxis(axisId).id;
+    });
+    return map;
+  }, []);
+
+  const weakestVocab = useMemo(() => {
+    if (!weakestAxis) return null;
+    return getDefaultVocabForAxis(weakestAxis);
+  }, [weakestAxis]);
+
+  const weakestUnlocked = weakestVocab ? unlockedVocabIds.includes(weakestVocab.id) : false;
+
   if (!authReady) {
     return (
       <section className="flex min-h-[60vh] items-center justify-center">
@@ -201,6 +229,32 @@ export default function OnboardingCatLite({ onComplete, progress }: Props) {
   if (!user) {
     return null;
   }
+
+  const coreWordLabel = locale === "en" ? "Core word:" : "Cuvânt de bază:";
+  const reflexIntro =
+    locale === "en"
+      ? "Today you learn a reflex-word. Not theory. A button."
+      : "Astăzi înveți un „cuvânt-reflex”. Nu e teorie. E buton.";
+
+  const handleWeakestUnlock = () => {
+    if (!weakestVocab) return;
+    const updated = unlockVocab(weakestVocab.id);
+    setUnlockedVocabIds(updated);
+    track("vocab_unlocked", {
+      vocabId: weakestVocab.id,
+      axisId: weakestVocab.axisId,
+      surface: "onboarding_result",
+    });
+  };
+
+  const handleWeakestSkip = () => {
+    if (!weakestVocab) return;
+    track("vocab_skipped", {
+      vocabId: weakestVocab.id,
+      axisId: weakestVocab.axisId,
+      surface: "onboarding_result",
+    });
+  };
 
   return (
     <section className="mx-auto w-full max-w-3xl space-y-6 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 shadow-[0_8px_28px_rgba(0,0,0,0.15)]">
@@ -219,13 +273,22 @@ export default function OnboardingCatLite({ onComplete, progress }: Props) {
         {CAT_LITE_PART1_QUESTIONS.map((question) => {
           const axisLabel = CORE_AXIS_LABELS[question.axisId as CoreAxisId];
           const value = values[question.id];
+          const vocabId = axisDefaultVocabMap[question.axisId];
           return (
             <article
               key={question.id}
               className="space-y-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4"
               data-testid={`cat-lite-question-${question.id}`}
             >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">{axisLabel}</p>
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">{axisLabel}</p>
+                {vocabId ? (
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-[var(--omni-muted)]">
+                    <span>{coreWordLabel}</span>
+                    <VocabChip vocabId={vocabId} locale={locale} variant="new" />
+                  </div>
+                ) : null}
+              </div>
               <p className="text-sm text-[var(--omni-ink)]">{question.label}</p>
               <input
                 type="range"
@@ -253,11 +316,38 @@ export default function OnboardingCatLite({ onComplete, progress }: Props) {
           <div className="mt-4 space-y-4">
             <CatRadarChart data={radarData} />
             {weakestAxis ? (
-              <p className="text-sm text-[var(--omni-ink)]/85">
-                Zonă cu scor minim:{" "}
-                <span className="font-semibold text-[var(--omni-ink)]">{getTraitLabel(weakestAxis)}</span>. Primul arc și primele module vor lucra prioritar aici,
-                apoi extindem spre celelalte trăsături.
-              </p>
+              <div className="space-y-4">
+                <p className="text-sm text-[var(--omni-ink)]/85">
+                  Zonă cu scor minim:{" "}
+                  <span className="font-semibold text-[var(--omni-ink)]">{getTraitLabel(weakestAxis)}</span>. Primul arc și primele module vor lucra prioritar
+                  aici, apoi extindem spre celelalte trăsături.
+                </p>
+                {weakestVocab ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-[var(--omni-ink)]/75">{reflexIntro}</p>
+                    <VocabCard
+                      vocabId={weakestVocab.id}
+                      locale={locale}
+                      variant="full"
+                      cta={
+                        weakestUnlocked
+                          ? undefined
+                          : {
+                              primaryLabel: locale === "en" ? "Unlock" : "Îl vreau",
+                              onPrimary: handleWeakestUnlock,
+                              secondaryLabel: locale === "en" ? "Later" : "Mai târziu",
+                              onSecondary: handleWeakestSkip,
+                            }
+                      }
+                    />
+                    {weakestUnlocked ? (
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                        {locale === "en" ? "Already in your vocabulary." : "Deja este în vocabularul tău."}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             ) : null}
           </div>
         ) : (
