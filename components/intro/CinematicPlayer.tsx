@@ -116,24 +116,24 @@ const CONTENT: Record<IntroLang, LocaleContent> = {
   ro: {
     slides: [
       { lines: [], kind: "timeline" },
-      { title: "Alege cum intri", lines: [], variant: "split" },
+      { title: "Alege o experiență", lines: [], variant: "split" },
     ],
     choices: [
       {
-        body: "Dacă vrei să înțelegi rapid sistemul și să testezi:",
-        label: "Explorează sistemul",
-        subLabel: "15–30 min. Fără presiune.",
-        href: "/intro/explore",
-        event: "intro_choice_explore",
-        variant: "primary",
-      },
-      {
-        body: "Dacă vrei să începi simplu, ghidat:",
+        body: "Simplă, ghidată:",
         label: "Încep ghidat",
-        subLabel: "5–7 min. Stabilizare.",
+        subLabel: "5–7 min.",
         href: "/intro/guided",
         event: "intro_choice_guided",
         variant: "secondary",
+      },
+      {
+        body: "Intensă, exploratoare:",
+        label: "Explorează sistemul",
+        subLabel: "15–17 min.",
+        href: "/intro/explore",
+        event: "intro_choice_explore",
+        variant: "primary",
       },
     ],
     skipLabel: "Sari peste",
@@ -161,17 +161,9 @@ const CONTENT: Record<IntroLang, LocaleContent> = {
           "Stable capacity.",
         ],
       },
-      { title: "Choose your entry", lines: [], variant: "split" },
+      { title: "Choose your experience", lines: [], variant: "split" },
     ],
     choices: [
-      {
-        body: "If you want to understand the system fast and test it:",
-        label: "Explore the system",
-        subLabel: "15–30 min. No pressure.",
-        href: "/intro/explore",
-        event: "intro_choice_explore",
-        variant: "primary",
-      },
       {
         body: "If you want a simple guided start:",
         label: "Start guided",
@@ -179,6 +171,14 @@ const CONTENT: Record<IntroLang, LocaleContent> = {
         href: "/intro/guided",
         event: "intro_choice_guided",
         variant: "secondary",
+      },
+      {
+        body: "If you want to understand the system fast and test it:",
+        label: "Explore the system",
+        subLabel: "15–30 min. No pressure.",
+        href: "/intro/explore",
+        event: "intro_choice_explore",
+        variant: "primary",
       },
     ],
     skipLabel: "Skip",
@@ -431,7 +431,7 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
 
   const highlightExplore = suggestedChoice === "explore";
   const highlightGuided = suggestedChoice === "guided";
-  const showProgressMeta = !(isTimelineSlide && !isFinalSlide);
+  const showProgressMeta = !isFinalSlide && !isTimelineSlide;
   const shouldPlayAudio = timelineCues.length > 0 && isTimelineSlide && !isFinalSlide;
   useEffect(() => {
     console.log("[intro-audio] shouldPlayAudio:", shouldPlayAudio);

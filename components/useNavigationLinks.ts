@@ -24,11 +24,16 @@ const NAV_LINK_CONFIG: NavLinkConfig[] = [
   { href: "mailto:hello@omnimental.ro", labelKey: "navContact", descriptionKey: "navContactDesc" },
 ];
 
+const BLOCKED_PREFIXES = ["/wizard", "/demo", "/legacy"];
+
 export function useNavigationLinks(): NavLink[] {
   const { s } = useTStrings();
   const [foundationDone] = useState(() => hasFoundationCycleCompleted());
 
   return NAV_LINK_CONFIG.filter((link) => {
+    if (BLOCKED_PREFIXES.some((prefix) => link.href.startsWith(prefix))) {
+      return false;
+    }
     if (link.href === "/training/arenas") {
       return foundationDone;
     }

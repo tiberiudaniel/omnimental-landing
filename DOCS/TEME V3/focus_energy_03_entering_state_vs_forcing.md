@@ -1,145 +1,61 @@
-MODUL #8 — INTRAREA ÎN STARE vs FORȚARE
-CLUSTER: FOCUS & ENERGY
-DEEP — ROMÂNĂ
-HOOK
+# WOW Lesson · Focus/Energy 03 — Intră în stare, nu forța
 
-„Forțarea produce efort. Starea produce rezultat.”
+## DEEP PATH — 12 pași
 
-MIRROR
+### 1. INTRO
+- **RO:** „Forțarea produce efort. Starea produce rezultat. Azi învățăm să pornim corect.”
+- **EN:** “Forcing creates effort. State creates result. Today we learn how to start properly.”
 
-„Te apuci de lucru cu tensiune.
-Te împingi de la spate.
-După puțin timp, energia scade și apare rezistența.”
+### 2. LEARN 1 — Ce e forțarea
+- **RO:** „Forțarea = încerci să treci peste starea internă. După câteva minute apare rezistența.”
+- **EN:** “Forcing means trying to override your internal state. Resistance shows up within minutes.”
 
-CORE INSIGHT
+### 3. EXAMPLE
+- **RO:** „Iulia se așază la birou și își spune „trebuie acum”. După 15 minute simte presiune și se pierde.”
+- **EN:** “Julia sits down and tells herself “I must do this now.” Fifteen minutes later she feels pressure and drifts.”
 
-„Forțarea încearcă să treacă peste starea internă.
-Intrarea în stare o folosește.
-Performanța stabilă apare din aliniere, nu din presiune.”
+### 4. QUIZ 1
+- **Întrebare:** „Ce semn arată că ești în stare?”
+- **Corect:** „Atenția curge fără efort.”
+- **Feedback EN:** “Flowing attention means you entered state, not force.”
 
-ACTIVE CHECK
+### 5. LEARN 2 — Intrarea în stare
+- **RO:** „Starea = condiții + un pas clar + ritm lent la început. Nu înseamnă lene, ci aliniere.”
+- **EN:** “State = conditions + one clear step + slow start. It’s alignment, not laziness.”
 
-Întrebare:
-Care este un semn că ești în stare, nu că te forțezi?
+### 6. QUIZ 2 — Aplicare
+- **Întrebare:** „Ce faci înainte de un task important?”
+- **Corect:** „Setezi primul pas mic și respiri 30 secunde.”
 
-A) Simți presiune constantă
+### 7. SIMULATOR 1 — Ritual 30s
+- **RO:** „1) Pauză 30s. 2) Inspiră 4 sec, expiră 6 sec de 3 ori. 3) Întreabă: care este primul pas clar de 2 minute?”
+- **EN:** “1) Pause 30s. 2) Inhale 4 sec, exhale 6 sec three times. 3) Ask: what is the first clear 2-minute step?”
 
-B) Atenția curge fără efort
+### 8. AUTONOMY CHOICE
+- „Vreau să repet ritualul” / „Sunt gata să încep.”
 
-C) Îți spui că ‘trebuie’
+### 9. SIMULATOR 2 — Primul pas
+- **RO:** „Scrie într-o propoziție ce faci în primele 2 minute. Pornește cronometrul. Observă cum energia rămâne stabilă.”
+- **EN:** “Write one sentence about what you do in the first 2 minutes. Start a timer. Notice energy staying steady.”
 
-Corect: B
+### 10. LEARN 3 — Semn
+- **RO:** „Când ești în stare, corpul e relaxat iar mintea e concentrată. Simți tracțiune, nu presiune.”
+- **EN:** “In state, the body relaxes and the mind focuses. You feel traction instead of pressure.”
 
-Feedback:
+### 11. REAL WORLD CHALLENGE
+- **RO:** „Aplică ritualul înaintea celor mai importante două blocuri de azi. Notează diferența față de zilele când forțezi.”
+- **EN:** “Use the ritual before today’s two key blocks. Note the difference compared to forcing.”
 
-„Când atenția curge, energia nu se pierde.”
+### 12. SUMMARY + MOTTO
+- **RO bullets:** „Forțarea drenează.” / „Starea folosește energia.” / „Primul pas clar pornește fluxul.”
+- **EN bullets:** “Forcing drains.” / “State uses energy.” / “The clear first step starts flow.”
+- **Motto:** „Starea precede performanța.” / “State precedes performance.”
 
-MICRO-SIMULATOR
+## SHORT PATH — 6 pași
 
-„Înainte de a începe următorul task:
-oprește-te 30 de secunde.
-Reglează-ți respirația.
-Întreabă-te: care este primul pas mic, clar?”
-
-REAL-WORLD TRANSFER
-
-„Azi, nu începe nimic important prin forțare.
-Creează mai întâi condițiile: liniște, un pas clar, ritm lent.
-Starea vine înaintea vitezei.”
-
-ANCHOR PHRASE
-
-„Starea precede performanța.”
-
-CLOSE
-
-„Mâine vedem când trebuie să te oprești.”
-
-DEEP — ENGLISH
-HOOK
-
-“Forcing creates effort. State creates results.”
-
-MIRROR
-
-“You start working with tension.
-You push yourself forward.
-Soon, energy drops and resistance appears.”
-
-CORE INSIGHT
-
-“Forcing tries to override your internal state.
-Entering state works with it.
-Stable performance comes from alignment, not pressure.”
-
-ACTIVE CHECK
-
-Question:
-Which signals you’re in state, not forcing?
-
-A) Constant pressure
-
-B) Attention flows effortlessly
-
-C) Repeating ‘I must’
-
-Correct: B
-
-Feedback:
-
-“When attention flows, energy isn’t drained.”
-
-MICRO-SIMULATOR
-
-“Before your next task:
-pause for 30 seconds.
-Regulate your breathing.
-Ask: what is the first small, clear step?”
-
-REAL-WORLD TRANSFER
-
-“Today, don’t start anything important by forcing.
-Create conditions first: quiet, one clear step, slow rhythm.
-State comes before speed.”
-
-ANCHOR PHRASE
-
-“State precedes performance.”
-
-CLOSE
-
-“Tomorrow, we learn when to stop.”
-
-SHORT — ROMÂNĂ
-HOOK
-
-„Forțarea consumă. Starea susține.”
-
-MICRO-SIMULATOR
-
-„Înainte să începi: respiră și alege primul pas mic.”
-
-ANCHOR PHRASE
-
-„Starea precede performanța.”
-
-SHORT — ENGLISH
-HOOK
-
-“Forcing drains. State sustains.”
-
-MICRO-SIMULATOR
-
-“Before starting: breathe and choose the first small step.”
-
-ANCHOR PHRASE
-
-“State precedes performance.”
-
-NOTE CANONICE (intern)
-
-Modul redefinește efortul (cheie pentru burnout).
-
-Simulatorul e subtil, dar extrem de eficient.
-
-Leagă natural de următorul: semnalele reale de epuizare.
+1. **INTRO:** „Nu forța, intră în stare.” / “Don’t force, enter state.”
+2. **LEARN:** „Ritual 30s = respiri + definești primul pas.” / “30s ritual = breathe + define first step.”
+3. **QUIZ:** „Semn că ești în stare?” → „Atenția curge.” / “Sign of state? → Attention flows.”
+4. **SIMULATOR:** „Respiră 3x 4-6, scrie pasul de 2 minute.” / “Breathe 4-6 three times, write the 2-minute step.”
+5. **REAL WORLD:** „Aplică înaintea următorului task critic.” / “Use it before the next critical task.”
+6. **CLOSE:** „Starea precede performanța.” / “State precedes performance.”

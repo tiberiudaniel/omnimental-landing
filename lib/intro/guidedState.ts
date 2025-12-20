@@ -1,6 +1,7 @@
 const STORAGE_KEYS = {
   answers: "guided_day1_answers",
   completed: "guided_day1_completed",
+  completedCount: "guided_day1_completed_count",
 };
 
 type GuidedAnswers = Record<string, string>;
@@ -51,3 +52,19 @@ export function setGuidedCompleted(value: boolean) {
   storage.setItem(STORAGE_KEYS.completed, value ? "1" : "0");
 }
 
+export function getGuidedCompletionCount(): number {
+  const storage = getStorage();
+  if (!storage) return 0;
+  const raw = storage.getItem(STORAGE_KEYS.completedCount);
+  if (!raw) return 0;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+export function incrementGuidedCompletionCount(): number {
+  const storage = getStorage();
+  if (!storage) return 0;
+  const next = getGuidedCompletionCount() + 1;
+  storage.setItem(STORAGE_KEYS.completedCount, String(next));
+  return next;
+}

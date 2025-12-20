@@ -1,143 +1,61 @@
-MODUL #7 — COSTUL COGNITIV AL FRAGMENTĂRII
-CLUSTER: FOCUS & ENERGY
-DEEP — ROMÂNĂ
-HOOK
+# WOW Lesson · Focus/Energy 02 — Costul fragmentării
 
-„Nu lipsa timpului te obosește cel mai mult. Ci fragmentarea atenției.”
+## DEEP PATH — 12 pași
 
-MIRROR
+### 1. INTRO
+- **RO:** „Nu lipsa timpului te obosește cel mai mult, ci felul în care îți fragmentezi atenția.”
+- **EN:** “It’s not the lack of time that drains you most, it’s how you fragment attention.”
 
-„Treci rapid de la un task la altul.
-Verifici mesaje ‘doar un minut’.
-La finalul zilei ești epuizat, deși nu ai făcut ceva greu.”
+### 2. LEARN 1 — Taxa de comutare
+- **RO:** „De fiecare dată când sari la alt task, creierul plătește „taxa de comutare”. Recuperarea durează minute.”
+- **EN:** “Every time you jump to another task the brain pays a switching tax. Recovery takes minutes, not seconds.”
 
-CORE INSIGHT
+### 3. EXAMPLE
+- **RO:** „Maria răspunde la 8 mesaje, citește 3 mailuri și revine la prezentare. La final e epuizată, deși nimic n-a fost greu.”
+- **EN:** “Maria answers eight chats, reads three emails, returns to her deck. She ends exhausted even though nothing was hard.”
 
-„De fiecare dată când îți schimbi focusul, plătești un cost cognitiv.
-Creierul nu comută instant.
-Energia se pierde în tranziții, nu în muncă.”
+### 4. QUIZ 1 — Recunoaștere
+- **Întrebare:** „Ce consumă mai multă energie?”
+- **Corect:** „Mai multe task-uri simple făcute intercalat.”
+- **Feedback:** „Fragmentarea creează oboseală invizibilă.” / “Fragmentation creates invisible fatigue.”
 
-ACTIVE CHECK
+### 5. LEARN 2 — Indicatori
+- **RO:** „Când verifici notificări „doar un minut”, costul real e de 5–15 minute de focus pierdut.”
+- **EN:** “When you check notifications “for one minute”, the real cost is 5–15 minutes of lost focus.”
 
-Întrebare:
-Ce consumă mai multă energie?
+### 6. QUIZ 2 — Aplică
+- **Întrebare:** „Când merită să comuți?”
+- **Corect:** „Numai dacă câștigi mai mult decât pierzi (de ex. o urgență reală).”
 
-A) Un task dificil făcut continuu
+### 7. SIMULATOR 1 — Audit 60 min
+- **RO:** „Închide ochii 10 secunde, revede ultima oră și estimează câte comutări ai făcut.”
+- **EN:** “Close your eyes for ten seconds, replay the last hour, estimate how many switches you made.”
 
-B) Mai multe task-uri simple făcute intercalat
+### 8. AUTONOMY CHOICE
+- „Vreau să reduc comutările” / „Vreau să creez un bloc protejat.”
 
-C) Un task lung cu pauze rare
+### 9. SIMULATOR 2 — Bloc de 30’
+- **RO:** „Alege un task, setează 30 minute fără comutări, mută telefonul. Observă nivelul de energie.”
+- **EN:** “Pick one task, schedule 30 minutes with no switching, move the phone away. Notice the energy level.”
 
-Corect: B
+### 10. LEARN 3 — Semnul corect
+- **RO:** „După un bloc protejat, energia scade mai lent și mintea rămâne calmă.”
+- **EN:** “After a protected block energy drops slower and the mind stays calm.”
 
-Feedback:
+### 11. REAL WORLD CHALLENGE
+- **RO:** „Programează două mini-blocuri de 20–30 minute fără întreruperi azi. Compară energia.”
+- **EN:** “Schedule two 20–30 minute mini blocks without interruptions today. Compare energy afterwards.”
 
-„Fragmentarea creează oboseală invizibilă.”
+### 12. SUMMARY + MOTTO
+- **RO bullets:** „Comutarea are cost.” / „Energia se pierde în tranziții.” / „Blocurile protejate reumplu rezervorul.”
+- **EN bullets:** “Switching has a cost.” / “Energy is lost in transitions.” / “Protected blocks refill the tank.”
+- **Motto:** „Energia se pierde în tranziții.” / “Energy is lost in transitions.”
 
-MICRO-SIMULATOR
+## SHORT PATH — 6 pași
 
-„Amintește-ți ultimele 60 de minute.
-De câte ori ți-ai mutat atenția?
-Prima estimare este suficientă.”
-
-REAL-WORLD TRANSFER
-
-„Azi, creează un bloc de 30 de minute fără comutări.
-Un task. Fără mesaje.
-Observă diferența de energie, nu productivitate.”
-
-ANCHOR PHRASE
-
-„Energia se pierde în tranziții.”
-
-CLOSE
-
-„Mâine învățăm să intrăm în stare, nu să forțăm.”
-
-DEEP — ENGLISH
-HOOK
-
-“What drains you most isn’t lack of time. It’s fragmented attention.”
-
-MIRROR
-
-“You jump quickly between tasks.
-You check messages ‘just for a minute’.
-By the end of the day, you’re exhausted without doing anything hard.”
-
-CORE INSIGHT
-
-“Every time you shift focus, you pay a cognitive cost.
-The brain doesn’t switch instantly.
-Energy is lost in transitions, not in work.”
-
-ACTIVE CHECK
-
-Question:
-What consumes more energy?
-
-A) One difficult task done continuously
-
-B) Several simple tasks done interleaved
-
-C) One long task with few breaks
-
-Correct: B
-
-Feedback:
-
-“Fragmentation creates invisible fatigue.”
-
-MICRO-SIMULATOR
-
-“Recall the last 60 minutes.
-How many times did you shift your attention?
-Your first estimate is enough.”
-
-REAL-WORLD TRANSFER
-
-“Today, create a 30-minute block with no switching.
-One task. No messages.
-Notice the energy difference, not productivity.”
-
-ANCHOR PHRASE
-
-“Energy is lost in transitions.”
-
-CLOSE
-
-“Tomorrow, we learn how to enter state instead of forcing.”
-
-SHORT — ROMÂNĂ
-HOOK
-
-„Fragmentarea te obosește mai mult decât munca.”
-
-MICRO-SIMULATOR
-
-„Câte comutări ai făcut în ultima oră?”
-
-ANCHOR PHRASE
-
-„Energia se pierde în tranziții.”
-
-SHORT — ENGLISH
-HOOK
-
-“Fragmentation drains you more than work.”
-
-MICRO-SIMULATOR
-
-“How many switches did you make in the last hour?”
-
-ANCHOR PHRASE
-
-“Energy is lost in transitions.”
-
-NOTE CANONICE (intern)
-
-Creează conștientizare imediată.
-
-Simulatorul e extrem de simplu, dar revelator.
-
-Leagă direct de următorul modul (stare vs forțare).
+1. **INTRO:** „Fragmentarea obosește.” / “Fragmentation drains you.”
+2. **LEARN:** „Taxa de comutare = minute pierdute.” / “Switch tax = lost minutes.”
+3. **QUIZ:** „Ce consumă mai mult?” → „Task-uri simple intercalate.” / “What costs more energy? → Simple tasks interleaved.”
+4. **SIMULATOR:** „Numără câte comutări ai făcut în ultima oră.” / “Count how many switches you made in the last hour.”
+5. **REAL WORLD:** „Blocează azi 20 de minute fără întreruperi.” / “Block 20 interruption-free minutes today.”
+6. **CLOSE:** „Energia se pierde în tranziții.” / “Energy is lost in transitions.”

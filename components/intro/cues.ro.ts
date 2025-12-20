@@ -137,7 +137,7 @@ export const RO_CUES_V1: CinematicCue[] = [
   },
   {
     id: "id3",
-    text: "Funcționare stabilă: claritate, focus, reziliență, adaptabilitate.",
+    text: "Începi cu cele 4 trăsături: claritate, focus, energie, adaptabilitate emoțională.",
     mode: "system",
     anim: "fade_slide_up",
     startMs: 14000,
@@ -148,7 +148,7 @@ export const RO_CUES_V1: CinematicCue[] = [
   },
   {
     id: "final",
-    text: "Alege cum intri",
+    text: "Vezi unde ești și intră în antrenamentul ghidat sau revii când ești pregătit.",
     mode: "final",
     anim: "fade",
     startMs: 15300,

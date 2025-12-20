@@ -1,153 +1,60 @@
-MODUL #15 — ALEGEREA REACȚIEI
-CLUSTER: EMOTIONAL FLEX
-DEEP — ROMÂNĂ
-HOOK
+# WOW Lesson · Emotional Flex 05 — Alegerea reacției
 
-„Între stimul și reacție există un spațiu mic. Acolo este puterea ta.”
+## DEEP PATH — 12 pași
 
-MIRROR
+### 1. INTRO
+- **RO:** „Între stimul și reacție există un spațiu mic. Acolo stă puterea ta.”
+- **EN:** “Between stimulus and response there is a small space. That’s where your power lives.”
 
-„Simți impulsul să reacționezi imediat.
-Știi ce vrei să spui.
-După aceea, îți dai seama că ai ales prost.”
+### 2. LEARN 1 — Spațiul
+- **RO:** „Reacția este doar opțiunea cea mai rapidă. Creezi spațiu și apar și alte opțiuni.”
+- **EN:** “Reaction is simply the fastest option. Create space and other options appear.”
 
-CORE INSIGHT
+### 3. EXAMPLE
+- **RO:** „Înainte reacționai instant la un mesaj acid. Cu pauză + respirație, alegi dacă răspunzi sau nu.”
+- **EN:** “You used to react instantly to a harsh message. With pause + breath you now decide whether to reply.”
 
-„Reacția nu este inevitabilă.
-Este doar cea mai rapidă opțiune disponibilă.
-Când creezi spațiu, apare alegerea.”
+### 4. QUIZ 1
+- **Întrebare:** „Ce creează posibilitatea alegerii?”
+- **Corect:** „Un mic decalaj înainte de reacție.”
 
-ACTIVE CHECK
+### 5. LEARN 2 — Secvența
+- **RO:** „Pauză – Respir – Aleg. Este protocolul minim.”
+- **EN:** “Pause – Breathe – Choose. This is the minimal protocol.”
 
-Întrebare:
-Ce creează posibilitatea alegerii?
+### 6. QUIZ 2
+- **Întrebare:** „Ce faci când apare impulsul?”
+- **Corect:** „Oprești 1 secundă, respiră, apoi răspunde.”
 
-A) Mai multă analiză
+### 7. SIMULATOR 1 — Repetiție mentală
+- **RO:** „Adu-ți aminte un trigger. Repetă mental „Pauză – Respir – Aleg” și vizualizează scena.”
+- **EN:** “Recall a trigger. Repeat mentally “Pause – Breathe – Choose” and visualize the scene.”
 
-B) Mai mult control
+### 8. AUTONOMY CHOICE
+- „Repet secvența pe alt trigger” / „Aplic în situația reală.”
 
-C) Un mic decalaj înainte de reacție
+### 9. SIMULATOR 2 — Aplicare
+- **RO:** „Data viitoare când simți impulsul, numără 1-2-3, respiră adânc, apoi alege răspunsul.”
+- **EN:** “Next time the impulse hits, count 1-2-3, take a deep breath, then choose the response.”
 
-Corect: C
+### 10. LEARN 3 — Semn
+- **RO:** „Simți că reacția și răspunsul nu mai sunt același lucru.”
+- **EN:** “You feel that reaction and response are no longer the same thing.”
 
-Feedback:
+### 11. REAL WORLD CHALLENGE
+- **RO:** „Aplică secvența la două interacțiuni tensionate azi. După fiecare scrie „Am ales / am reacționat.””
+- **EN:** “Apply the sequence to two tense interactions today. Afterwards write “I chose / I reacted.””
 
-„Spațiul temporal creează libertate de răspuns.”
+### 12. SUMMARY + MOTTO
+- **RO bullets:** „Reacția nu este inevitabilă.” / „Spațiul creează libertate.” / „Alegerea repetată devine identitate.”
+- **EN bullets:** “Reaction is not inevitable.” / “Space creates freedom.” / “Repeated choices become identity.”
+- **Motto:** „Aleg, nu reacționez.” / “I choose, I don’t just react.”
 
-MICRO-SIMULATOR
+## SHORT PATH — 6 pași
 
-„Adu-ți aminte o situație declanșatoare.
-Repetă mental: pauză – respir – aleg.
-Doar atât. Aceasta este secvența.”
-
-REAL-WORLD TRANSFER
-
-„Data viitoare când apare impulsul:
-oprește-te o secundă.
-Respiră o dată.
-Alege răspunsul, nu reacția.”
-
-ANCHOR PHRASE
-
-„Spațiul creează alegerea.”
-
-CLOSE
-
-„Ai închis primul ciclu OmniMental.”
-
-DEEP — ENGLISH
-HOOK
-
-“Between stimulus and response there is a small space. That’s where your power lies.”
-
-MIRROR
-
-“You feel the urge to react immediately.
-You know exactly what to say.
-Afterwards, you realize you chose poorly.”
-
-CORE INSIGHT
-
-“Reaction is not inevitable.
-It’s simply the fastest available option.
-When you create space, choice appears.”
-
-ACTIVE CHECK
-
-Question:
-What enables choice?
-
-A) More analysis
-
-B) More control
-
-C) A small delay before responding
-
-Correct: C
-
-Feedback:
-
-“Temporal space creates freedom of response.”
-
-MICRO-SIMULATOR
-
-“Recall a triggering situation.
-Repeat mentally: pause – breathe – choose.
-That’s the sequence.”
-
-REAL-WORLD TRANSFER
-
-“Next time an impulse arises:
-pause for one second.
-take one breath.
-choose the response, not the reaction.”
-
-ANCHOR PHRASE
-
-“Space creates choice.”
-
-CLOSE
-
-“You’ve completed the first OmniMental cycle.”
-
-SHORT — ROMÂNĂ
-HOOK
-
-„Spațiul dintre stimul și reacție e puterea ta.”
-
-MICRO-SIMULATOR
-
-„Pauză – respir – aleg.”
-
-ANCHOR PHRASE
-
-„Aleg, nu reacționez.”
-
-SHORT — ENGLISH
-HOOK
-
-“The space between stimulus and response is your power.”
-
-MICRO-SIMULATOR
-
-“Pause – breathe – choose.”
-
-ANCHOR PHRASE
-
-“I choose, not react.”
-
-NOTE CANONICE (intern)
-
-Închide arcul emoțional cu autonomie.
-
-Recapitulează implicit toate modulele anterioare:
-
-pauză (amygdala)
-
-separare (fapte vs interpretări)
-
-toleranță (disconfort)
-
-reglare (reset)
-
-Creează identitate: user care alege.
+1. **INTRO:** „Spațiul dintre stimul și reacție e puterea ta.” / “The space between stimulus and response is your power.”
+2. **LEARN:** „Pauză – Respir – Aleg.” / “Pause – Breathe – Choose.”
+3. **QUIZ:** „Ce creezi ca să alegi?” → „Decalaj.” / “What do you create to choose? → Delay.”
+4. **SIMULATOR:** „Repetă mental secvența și aplic-o o dată azi.” / “Repeat the sequence mentally and use it once today.”
+5. **REAL WORLD:** „Folosește la următorul mesaj tensionat.” / “Use it on the next tense message.”
+6. **CLOSE:** „Aleg, nu reacționez.” / “I choose, I don’t just react.”

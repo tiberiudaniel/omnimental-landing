@@ -1178,3 +1178,27 @@ export async function recordHabitTick(payload: { habitKey: string }, ownerId?: s
     console.warn('recordHabitTick failed', e);
   }
 }
+
+export async function recordDailySessionCompletion(ownerId?: string | null) {
+  return mergeProgressFact(
+    {
+      stats: {
+        dailySessionsCompleted: increment(1) as unknown as number,
+        lastDailySessionAt: serverTimestamp(),
+      },
+    },
+    ownerId,
+  );
+}
+
+export async function recordActionCompletion(ownerId?: string | null) {
+  return mergeProgressFact(
+    {
+      stats: {
+        actionsCompleted: increment(1) as unknown as number,
+        lastActionAt: serverTimestamp(),
+      },
+    },
+    ownerId,
+  );
+}

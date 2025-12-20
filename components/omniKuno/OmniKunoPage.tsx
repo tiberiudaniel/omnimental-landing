@@ -26,6 +26,10 @@ import { ModuleOverviewDialog } from "./ModuleOverviewDialog";
 import LessonAccordionItem from "./LessonAccordionItem";
 import ActiveLessonInner from "./ActiveLessonInner";
 import type { UnlockedCollectible } from "@/lib/collectibles";
+import { useAuth } from "@/components/AuthProvider";
+import { canAccessOmniKuno, getTotalDailySessionsCompleted } from "@/lib/gatingSelectors";
+import { GATING } from "@/lib/gatingConfig";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 
 const LOCAL_COMPLETED_PREFIX = "omnikuno_local_completed_";
 
@@ -243,15 +247,26 @@ export default function OmniKunoPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { profile } = useProfile();
+  const { user, authReady } = useAuth();
   const searchParams = useSearchParams();
   const isReplayMode = searchParams?.get("replay") === "1";
-  const { data: progress } = useProgressFacts(profile?.id);
+  const returnTo = encodeURIComponent("/omni-kuno");
+  const { data: progress, loading: progressLoading } = useProgressFacts(profile?.id ?? user?.uid ?? null);
+  const totalSessions = getTotalDailySessionsCompleted(progress);
+  const unlocked = canAccessOmniKuno(progress);
   const kunoFacts = useMemo(() => normalizeKunoFacts(progress?.omni?.kuno), [progress?.omni?.kuno]);
   const { lang } = useI18n();
   const navLinks = useNavigationLinks();
   const [menuOpen, setMenuOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<LessonToastPayload | null>(null);
   const [overviewOpen, setOverviewOpen] = useState(false);
+  useEffect(() => {
+    if (!authReady) return;
+    if (!user) {
+      router.replace(`/auth?returnTo=${returnTo}`);
+    }
+  }, [authReady, user, router, returnTo]);
+
   const handleToast = useCallback((payload: LessonToastPayload) => {
     setToastMsg(payload);
   }, []);
@@ -261,6 +276,7 @@ export default function OmniKunoPage() {
   const notifyLocalProgressUpdate = useCallback(() => {
     setLocalCompletionVersion((v) => v + 1);
   }, []);
+
   const moduleParam = searchParams?.get("module");
   const areaParam = searchParams?.get("area");
   const lessonParamRaw = searchParams?.get("lesson");
@@ -476,6 +492,7 @@ export default function OmniKunoPage() {
       optimal_weight_management: "Optimal Weight",
     };
   }, [lang]);
+
   const finalTestConfig = useMemo(() => getFinalTestConfig(activeAreaKey, lang), [activeAreaKey, lang]);
   const handleLessonSelect = useCallback(
     (lessonId: string | null) => {
@@ -506,6 +523,37 @@ export default function OmniKunoPage() {
       onMenuToggle={() => setMenuOpen(true)}
     />
   );
+
+  if (!authReady || progressLoading) {
+    return (
+      <AppShell header={<SiteHeader />}>
+        <div className="px-4 py-16 text-center text-sm text-[var(--omni-ink-soft)]">Se verifică accesul la OmniKuno...</div>
+      </AppShell>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  if (!unlocked) {
+    return (
+      <AppShell header={<SiteHeader />}>
+        <div className="px-4 py-12">
+          <section className="mx-auto max-w-3xl space-y-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-white px-6 py-8 text-center text-[var(--omni-ink)] shadow-[0_24px_80px_rgba(0,0,0,0.08)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">OmniKuno</p>
+            <h2 className="text-2xl font-semibold">Ai nevoie de {GATING.omniKunoMinDailySessions} sesiuni reale pentru acces</h2>
+            <p className="text-sm text-[var(--omni-ink)]/75">
+              Ai {totalSessions} sesiuni înregistrate. Continuă cu /today pentru a debloca lecțiile și testele OmniKuno.
+            </p>
+            <OmniCtaButton className="mt-4 justify-center" onClick={() => router.push("/today")}>
+              Înapoi la /today
+            </OmniCtaButton>
+          </section>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell header={header}>

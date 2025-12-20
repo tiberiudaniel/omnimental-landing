@@ -1,708 +1,102 @@
 "use client";
 
-import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-// removed unused local step components
-import { useI18n } from "@/components/I18nProvider";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
-import { useAuth } from "@/components/AuthProvider";
 import MenuOverlay from "@/components/MenuOverlay";
-import type { IntentCloudResult } from "@/components/IntentCloud";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
-import { useProfile } from "@/components/ProfileProvider";
-import { useWizardSteps, type WizardStepId } from "@/components/useWizardSteps";
-import { useWizardData } from "@/components/useWizardData";
-import { WizardProgress } from "@/components/WizardProgress";
-import WizardRouter from "@/components/WizardRouter";
-import { clearWizardState } from "@/components/wizardStorage";
-import { areWritesDisabled, getDb } from "@/lib/firebase";
-import { addDoc, collection } from "firebase/firestore";
-import Toast from "@/components/Toast";
-import { recordWizardReset, recordWizardResetCanceled, recordWizardResetNoticeDismissed } from "@/lib/progressFacts";
-import { useProgressFacts } from "@/components/useProgressFacts";
-// Types imported previously for local step wrappers; no longer needed here
-// import type { GoalType, EmotionalState, ResolutionSpeed, BudgetPreference } from "@/lib/evaluation";
-// import type { IntentPrimaryCategory } from "@/lib/intentExpressions";
-import { computeDimensionScores } from "@/lib/scoring";
-import type { DimensionScores } from "@/lib/scoring";
-import { recommendSession, type SessionType } from "@/lib/recommendation";
-import { saveRecommendationCache, readRecommendationCache, updateSelectedPath } from "@/lib/recommendationCache";
-import { mapScoresToProfile } from "@/lib/scoringMapping";
-import { applyProfilePatch } from "@/lib/profileEngine";
-// duplicate import cleanup
-import { generateAdaptiveIntentCloudWords } from "@/lib/intentExpressions";
-import { CATEGORY_LABELS } from "@/lib/categoryLabels";
-import {
-  OMNIKUNO_MODULE_ID_BY_ALIAS,
-  getModuleLabel,
-  type OmniKunoModuleId,
-} from "@/config/omniKunoModules";
-import { useWindowWidth } from "@/lib/useWindowSize";
-import { useTStrings } from "@/components/useTStrings";
-// import { getString as i18nGetString } from "@/lib/i18nGetString";
+import SiteFooter from "@/components/SiteFooter";
 
-const MIN_INTENT_SELECTIONS = 5;
-const MAX_INTENT_SELECTIONS = 7;
+const HIGHLIGHTS = [
+  {
+    title: "4 trăsături fundamentale",
+    description: "Claritate, focus, energie funcțională și adaptabilitate emoțională, antrenate în același program.",
+  },
+  {
+    title: "Sesiuni scurte, practice",
+    description: "Micro-exerciții de 6–10 minute pe zi, cu transfer imediat în deciziile reale.",
+  },
+  {
+    title: "Ghidare + feedback",
+    description: "Context CAT-Lite, mini-task cognitiv și WOW session pentru prima victorie în 15 minute.",
+  },
+];
 
-const parsePositiveInt = (value: string | undefined, fallback: number) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
-};
-
-const CLOUD_ITEMS_PER_CATEGORY_DESKTOP = parsePositiveInt(process.env.NEXT_PUBLIC_CLOUD_ITEMS_PER_CATEGORY, 5);
-const CLOUD_ITEMS_PER_CATEGORY_MOBILE = parsePositiveInt(
-  process.env.NEXT_PUBLIC_CLOUD_ITEMS_PER_CATEGORY_MOBILE,
-  4,
-);
-
-function computeResumeStep(progress: ReturnType<typeof useProgressFacts>["data"] | null): WizardStepId {
-  if (!progress) return "firstInput";
-  const hasIntent = Boolean(progress.intent && progress.intent.firstExpression);
-  const hasCloud =
-    Boolean(progress.intent && Array.isArray(progress.intent.categories) && progress.intent.categories.length > 0);
-  const hasMotivation = Boolean(progress.motivation);
-  const hasChoice = Boolean(progress.recommendation && (progress.recommendation.selectedPath || progress.recommendation.suggestedPath));
-
-  if (!hasIntent) return "firstInput";
-  if (!hasCloud) return "intent";
-  if (!hasMotivation) return "intentMotivation";
-  if (!hasChoice) return "cards";
-  return "details";
-}
-
-function WizardShell() {
-  const { t, lang } = useI18n();
-  const { s } = useTStrings();
-  const { profile } = useProfile();
-  const { step, goToStep } = useWizardSteps();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const searchParams = useSearchParams();
+export default function LandingPage() {
   const router = useRouter();
-  const returnTo = searchParams?.get("returnTo");
-  const isResetFlow = searchParams?.get("reset") === "1";
-  const { data: progress } = useProgressFacts(profile?.id);
-  const resumeAppliedRef = useRef(false);
-
-  const {
-    journalEntry,
-    firstIntentCategory,
-    firstIntentExpression,
-    intentCategories,
-    intentUrgency,
-    setIntentUrgency,
-    selectedCard,
-    showAccountPrompt,
-    isAnonymousUser,
-    saveError,
-    isSavingIntentSnapshot,
-    isSavingJourney,
-    journeySavingChoice,
-    resolutionSpeed,
-    determination,
-    timeCommitmentHours,
-    budgetPreference,
-    goalType,
-    emotionalState,
-    groupComfort,
-    learnFromOthers,
-    scheduleFit,
-    formatPreference,
-    handleFirstInputSubmit: submitFirstInput,
-    handleIntentComplete: recordIntentSelection,
-    handleIntentSummaryComplete: persistIntentSnapshot,
-    handleCardSelect: persistJourneyChoice,
-    requireFullAccountOrPrompt,
-    queueJourneyChoice,
-    dismissAccountPrompt,
-    resetError,
-    resetWizardStateHard,
-    setResolutionSpeed,
-    setDetermination,
-    setTimeCommitmentHours,
-    setBudgetPreference,
-    setGoalType,
-    setEmotionalState,
-    setGroupComfort,
-    setLearnFromOthers,
-    setScheduleFit,
-  } = useWizardData({
-    lang,
-    profileId: profile?.id ?? null,
-  });
-
-  const cachedReco = useMemo(() => {
-    try {
-      const stepParam = searchParams?.get('step');
-      if (stepParam === 'cards') return readRecommendationCache();
-    } catch {}
-    return null;
-  }, [searchParams]);
-  const [dimensionScores, setDimensionScores] = useState<DimensionScores>(() => (
-    (cachedReco?.dimensionScores as DimensionScores | undefined) ?? {
-      emotional_balance: 0,
-      focus_clarity: 0,
-      energy_body: 0,
-      relationships_communication: 0,
-      decision_discernment: 0,
-      self_trust: 0,
-      willpower_perseverance: 0,
-      optimal_weight_management: 0,
-    }
-  ));
-  const [recommendedPath, setRecommendedPath] = useState<SessionType>(() => (cachedReco?.recommendation?.path as SessionType | undefined) ?? "group");
-  const [recommendationReasonKey, setRecommendationReasonKey] =
-    useState<string>(() => cachedReco?.recommendation?.reasonKey ?? "reason_default");
-  const viewportWidth = useWindowWidth();
-  const itemsPerCategory = useMemo(() => {
-    if (viewportWidth === 0) return CLOUD_ITEMS_PER_CATEGORY_DESKTOP;
-    if (viewportWidth < 640) return CLOUD_ITEMS_PER_CATEGORY_MOBILE;
-    return CLOUD_ITEMS_PER_CATEGORY_DESKTOP;
-  }, [viewportWidth]);
-
-  const adaptiveCloudWords = useMemo(
-    () =>
-      generateAdaptiveIntentCloudWords({
-        locale: lang === "en" ? "en" : "ro",
-        primaryCategory: firstIntentCategory ?? undefined,
-        itemsPerCategory,
-        // Exclude the exact curated expression id if present so it doesn't reappear in cloud
-        excludeIds: firstIntentExpression ? [firstIntentExpression] : [],
-      }),
-    [itemsPerCategory, firstIntentCategory, firstIntentExpression, lang],
-  );
-
-  const adaptiveCloudKey = useMemo(
-    () => adaptiveCloudWords.map((word) => word.id).join("|"),
-    [adaptiveCloudWords],
-  );
-
-  const cloudDistributionHint = useMemo(() => {
-    const desktop = CLOUD_ITEMS_PER_CATEGORY_DESKTOP;
-    const mobile = CLOUD_ITEMS_PER_CATEGORY_MOBILE;
-    const same = desktop === mobile;
-    if (lang === "ro") {
-      return same
-        ? `Lista include ${desktop} afirmații din fiecare temă principală.`
-        : `Lista include ${desktop} afirmații din fiecare temă (și ${mobile} pe mobil).`;
-    }
-    return same
-      ? `You’re seeing ${desktop} statements per focus area.`
-      : `You’re seeing ${desktop} statements per focus area (${mobile} on mobile).`;
-  }, [lang]);
-
-  // No set-state-in-effect for cache restore: initialize state lazily above
-
-  useEffect(() => {
-    if (!progress) return;
-    if (isResetFlow) return;
-    const completed =
-      Boolean(progress.intent) &&
-      Boolean(progress.evaluation) &&
-      Boolean(progress.recommendation && progress.recommendation.selectedPath);
-    if (completed) {
-      router.replace("/omniscop");
-    }
-  }, [progress, router, isResetFlow]);
-
-  useEffect(() => {
-    if (searchParams?.get("reset") === "1") return;
-    if (resumeAppliedRef.current) return;
-    if (searchParams?.get("resume") !== "1") return;
-    const resumeStep = computeResumeStep(progress ?? null);
-    if (resumeStep && resumeStep !== step) {
-      resumeAppliedRef.current = true;
-      goToStep(resumeStep);
-      return;
-    }
-    resumeAppliedRef.current = true;
-  }, [progress, searchParams, step, goToStep]);
-
-  useEffect(() => {
-    if ((step === "cards" || step === "details") && intentCategories.length === 0) {
-      // Allow direct access if we have a cached recommendation snapshot
-      try {
-        const cached = readRecommendationCache();
-        if (!cached) {
-          goToStep("firstInput");
-          return;
-        }
-      } catch {
-        goToStep("firstInput");
-        return;
-      }
-    }
-    if (step === "intentMotivation" && intentCategories.length === 0) {
-      goToStep("intent");
-    }
-  }, [goToStep, intentCategories.length, step]);
-
-  const handleReturnToOrigin = useCallback(() => {
-    if (!returnTo) return;
-    router.push(returnTo);
-  }, [returnTo, router]);
-
-  const categoryLabels = useMemo(() => {
-    const fromI18n = t("intentCategoryLabels");
-    const base: Record<string, string> =
-      fromI18n && typeof fromI18n === "object" ? { ...(fromI18n as Record<string, string>) } : {};
-    const langKey: "ro" | "en" = lang === "en" ? "en" : "ro";
-    Object.entries(OMNIKUNO_MODULE_ID_BY_ALIAS).forEach(([alias, moduleId]) => {
-      if (!base[alias]) {
-        base[alias] = getModuleLabel(moduleId, langKey);
-      }
-    });
-    const manualFallbacks: Record<string, OmniKunoModuleId> = {
-      clarity: "focus_clarity",
-      focus: "focus_clarity",
-      relationships: "relationships_communication",
-      relatii: "relationships_communication",
-      stress: "emotional_balance",
-      calm: "emotional_balance",
-      balance: "energy_body",
-      energy: "energy_body",
-      confidence: "self_trust",
-      identity: "self_trust",
-      health: "self_trust",
-      performance: "decision_discernment",
-      discipline: "willpower_perseverance",
-      perseverenta: "willpower_perseverance",
-      perseverance: "willpower_perseverance",
-      willpower: "willpower_perseverance",
-      resilience: "willpower_perseverance",
-      rezilienta: "willpower_perseverance",
-      greutate: "optimal_weight_management",
-      weight: "optimal_weight_management",
-      dieta: "optimal_weight_management",
-      diet: "optimal_weight_management",
-      alimentatie: "optimal_weight_management",
-      optimal_weight_management: "optimal_weight_management",
-    };
-    Object.entries(manualFallbacks).forEach(([alias, moduleId]) => {
-      if (!base[alias]) {
-        base[alias] = getModuleLabel(moduleId, langKey);
-      }
-    });
-    const ensure = (key: string, roKey: keyof typeof CATEGORY_LABELS) => {
-      if (!base[key] || typeof base[key] !== "string") {
-        base[key] = langKey === "ro" ? CATEGORY_LABELS[roKey].name.ro : CATEGORY_LABELS[roKey].name.en;
-      }
-    };
-    ensure("claritate", "claritate");
-    ensure("relatii", "relatii");
-    ensure("stres", "stres");
-    ensure("incredere", "incredere");
-    ensure("echilibru", "echilibru");
-    ensure("disciplina", "disciplina");
-    ensure("greutate", "greutate");
-    return base;
-  }, [t, lang]);
-  const recommendedBadgeValue = s("cardsRecommendedLabel", "");
-  const recommendedBadgeLabel = recommendedBadgeValue || undefined;
-  const reflectionOneLines = useMemo(() => {
-    return ["reflectionOneLine1", "reflectionOneLine2"]
-      .map((key) => s(key, ""))
-      .filter((line) => line.length > 0);
-  }, [s]);
-
-  const reflectionSummaryLines = useMemo(() => {
-    const introValue = s("reflectionTwoIntro", "");
-    const bodyValue = s("reflectionTwoBody", "");
-    const connector = lang === "ro" ? " și " : " & ";
-    const summaryNames = intentCategories
-      .filter((entry) => entry.count > 0)
-      .slice(0, 2)
-      .map((entry) => {
-        const label = categoryLabels[entry.category];
-        return typeof label === "string" && label.length > 0 ? label : entry.category;
-      });
-    const summaryText =
-      summaryNames.length === 0
-        ? lang === "ro"
-          ? "temele tale principale"
-          : "your main themes"
-        : summaryNames.length === 1
-        ? summaryNames[0]
-        : `${summaryNames[0]}${connector}${summaryNames[1]}`;
-    const introLine =
-      introValue.length > 0
-        ? introValue.replace("{{categorySummary}}", summaryText)
-        : lang === "ro"
-        ? `Pare că vrei să lucrezi la ${summaryText}.`
-        : `Looks like you want to work on ${summaryText}.`;
-    const bodyLine =
-      bodyValue.length > 0
-        ? bodyValue
-        : lang === "ro"
-        ? "Există două moduri prin care poți continua."
-        : "There are two ways you can continue.";
-    const lines = [introLine, bodyLine];
-    const trimmedEntry = journalEntry?.trim();
-    if (trimmedEntry && trimmedEntry.length > 0) {
-      lines.push(
-        lang === "ro"
-          ? `Ai menționat că te preocupă: „${trimmedEntry}”.`
-          : `You shared that you're working through: “${trimmedEntry}.”`,
-      );
-    }
-    return lines;
-  }, [intentCategories, categoryLabels, journalEntry, lang, s]);
-
-  const navigateToStep = useCallback(
-    (nextStep: WizardStepId) => {
-      goToStep(nextStep);
-      if (nextStep === "intro") {
-        setMenuOpen(false);
-      }
-      resetError();
-    },
-    [goToStep, resetError],
-  );
-
+  const [menuOpen, setMenuOpen] = useState(false);
   const navLinks = useNavigationLinks();
 
-  const handleIntentComplete = useCallback(
-    (result: IntentCloudResult) => {
-      recordIntentSelection(result);
-      navigateToStep("reflectionSummary");
-    },
-    [recordIntentSelection, navigateToStep],
-  );
-
-  const handleIntentSummaryComplete = useCallback(
-    async (urgency: number) => {
-      setIntentUrgency(urgency);
-      const scores = computeDimensionScores(intentCategories, urgency);
-      setDimensionScores(scores);
-      const recommendation = recommendSession({
-        urgency,
-        primaryCategory: intentCategories[0]?.category,
-        dimensionScores: scores,
-        hasProfile: Boolean(profile),
-      });
-      setRecommendedPath(recommendation.recommendedPath);
-      setRecommendationReasonKey(recommendation.reasonKey);
-      // Persist locally so /recommendation can restore even for guests
-      try {
-        saveRecommendationCache({
-          intent: { categories: intentCategories, urgency },
-          recommendation: { path: recommendation.recommendedPath, reasonKey: recommendation.reasonKey },
-          dimensionScores: scores,
-          timestamp: Date.now(),
-        });
-      } catch {}
-      const success = await persistIntentSnapshot(urgency, {
-        dimensionScores: scores,
-        algoVersion: 1,
-        recommendation: recommendation.recommendedPath,
-        recommendationReasonKey: recommendation.reasonKey,
-      });
-      if (!success) {
-        console.warn("intent snapshot could not be persisted; staying on summary");
-        return;
-      }
-      if (profile?.id) {
-        try {
-          const { catProfilePatch, domainWeightsPatch } = mapScoresToProfile({ dimensionScores: scores });
-          await applyProfilePatch(profile.id, catProfilePatch, domainWeightsPatch);
-        } catch (error) {
-          console.warn("applyProfilePatch failed", error);
-        }
-      }
-      navigateToStep("cards");
-    },
-    [
-      intentCategories,
-      navigateToStep,
-      persistIntentSnapshot,
-      profile,
-      setIntentUrgency,
-    ],
-  );
-
-  const handleCardSelect = useCallback(
-    async (type: "individual" | "group") => {
-      const extra = {
-        recommendedPath,
-        recommendationReasonKey,
-        algoVersion: 1,
-        dimensionScores,
-      } as const;
-      if (!requireFullAccountOrPrompt()) {
-        queueJourneyChoice(type, extra);
-        return;
-      }
-      const success = await persistJourneyChoice(type, extra);
-      if (!success) {
-        console.warn("journey choice could not be persisted; staying on recommendation");
-        return;
-      }
-      // Write an initial recommendation entry (userRecommendations)
-      try {
-        if (!areWritesDisabled() && profile?.id) {
-          const db = getDb();
-          const colRef = collection(db, 'userRecommendations', profile.id, 'items');
-          const title = type === 'group'
-            ? (lang === 'ro' ? 'Începe cu programul de grup OmniMental' : 'Start with the OmniMental group program')
-            : (lang === 'ro' ? 'Începe cu ședințe individuale' : 'Start with individual sessions');
-          const shortLabel = type === 'group' ? 'Pasul 1 – Grup' : 'Pasul 1 – Individual';
-          await addDoc(colRef, {
-            userId: profile.id,
-            title,
-            shortLabel,
-            type: 'onboarding',
-            status: 'new',
-            priority: 1,
-            createdAt: new Date().toISOString(),
-            estimatedMinutes: 10,
-            tags: ['onboarding'],
-            body: lang === 'ro'
-              ? 'Bazat pe răspunsurile tale, acesta este pasul recomandat. Vezi detalii și începe cu un prim pas simplu.'
-              : 'Based on your answers, this is the suggested step. See details and start with one simple action.',
-            ctaLabel: lang === 'ro' ? 'Vezi recomandările' : 'See recommendations',
-            ctaHref: '/recommendation',
-            source: 'onboarding',
-          });
-        }
-      } catch (e) {
-        console.warn('write initial recommendation failed', e);
-      }
-      try {
-        // Update local cache so /recommendation reflects chosen path for guests
-        const cached = readRecommendationCache();
-        if (cached) {
-          updateSelectedPath(type);
-        }
-      } catch {}
-    },
-    [
-      dimensionScores,
-      persistJourneyChoice,
-      recommendationReasonKey,
-      recommendedPath,
-      profile?.id,
-      lang,
-      requireFullAccountOrPrompt,
-      queueJourneyChoice,
-    ],
-  );
-
-  useEffect(() => {
-    if (selectedCard && step === "cards") {
-      goToStep("details");
-    }
-  }, [selectedCard, step, goToStep]);
-
-  const redirectToAuth = useCallback(() => {
-    if (step !== "cards" || !showAccountPrompt || !isAnonymousUser) {
-      console.log("[wizard] redirectToAuth ignored", {
-        step,
-        showAccountPrompt,
-        isAnonymousUser,
-      });
-      return;
-    }
-    console.log("[wizard] redirectToAuth invoked", { step, reason: "WizardShell" });
-    dismissAccountPrompt();
-    router.push("/auth");
-  }, [dismissAccountPrompt, router, step, showAccountPrompt, isAnonymousUser]);
-
-  // Render-driven open: the modal will be open if either explicit state is true
-
-  const savingGenericLabel = lang === "ro" ? "Se salvează..." : "Saving...";
-  const savingChoiceLabel = s(
-    "cardsSavingChoiceLabel",
-    lang === "ro" ? "Se salvează alegerea..." : "Saving your choice...",
-  );
-  // account prompt handled inside Recommendation/Wizard components
-  const intentSelectionTotal = useMemo(
-    () => intentCategories.reduce((sum, entry) => sum + entry.count, 0),
-    [intentCategories],
-  );
-
-  // Legacy stepContent rendering removed; WizardRouter handles routing.
-
   return (
-    <div className="min-h-screen bg-[#FAF9F7] text-[var(--omni-ink)]">
+    <div className="min-h-screen bg-[var(--omni-bg-main)] text-[var(--omni-ink)]">
       <SiteHeader
         showMenu
         onMenuToggle={() => setMenuOpen(true)}
-        onAuthRequest={redirectToAuth}
-        wizardMode={step !== "details"}
-        onWizardExit={() => {
-          if (typeof window !== 'undefined') {
-            const confirmed = window.confirm(
-              lang === "ro"
-                ? "Păstrăm progresul în draft și poți reveni oricând. Vrei să ieși?"
-                : "We’ll keep your progress as a draft. Do you want to exit?",
-            );
-            if (!confirmed) return;
-            const url = new URL(window.location.origin + "/choose");
-            url.searchParams.set("from", "wizard");
-            window.location.assign(url.pathname + url.search);
-          }
-        }}
-        onWizardReset={() => {
-          if (typeof window !== 'undefined') {
-            const confirmed = window.confirm(
-              lang === 'ro'
-                ? 'Vrei să o iei de la capăt? Progresul curent se mută în draft.'
-                : 'Start over? Your current progress will be kept as a draft.'
-            );
-            if (!confirmed) return;
-            try { resetWizardStateHard(); } catch {}
-            try { clearWizardState(); } catch {}
-            const params = new URLSearchParams(searchParams?.toString() ?? "");
-            params.set("step", "preIntro");
-            params.set("reset", "1");
-            const qs = params.toString();
-            window.location.assign(qs ? `/?${qs}` : "/");
-          }
-        }}
-        canWizardReset={(() => {
-          const s = step;
-          return !(s === 'preIntro' || s === 'intro' || s === 'firstInput' || s === 'reflectionPrompt');
-        })()}
+        onAuthRequest={() => router.push("/auth?returnTo=%2Fintro")}
       />
-      <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-3xl flex-col px-4 pb-10 pt-4 sm:px-6">
-        {searchParams?.get("reset") === "1" ? (
-          <Toast
-            message={s("toastResetMessage", lang === "ro" ? "Parcursul a fost resetat." : "Your journey was reset.")}
-            okLabel={s("toastOk", "OK")}
-            onClose={() => {
-              void recordWizardResetNoticeDismissed();
-              const params = new URLSearchParams(searchParams?.toString() ?? "");
-              params.delete("reset");
-              const qs = params.toString();
-              router.replace(qs ? `/?${qs}` : "/", { scroll: false });
-            }}
-          />
-        ) : null}
-        {!["preIntro", "intro"].includes(step) && (
-          <WizardProgress
-            currentStep={step}
-            lang={lang === "en" ? "en" : "ro"}
-            onReset={() => {
-              if (typeof window !== "undefined") {
-                const confirmed = window.confirm(
-                  lang === 'ro'
-                    ? 'Vrei să o iei de la capăt? Progresul curent se mută în draft.'
-                    : 'Start over? Your current progress will be kept as a draft.'
-                );
-                if (!confirmed) {
-                  void recordWizardResetCanceled();
-                  return;
-                }
-              }
-              try {
-                clearWizardState();
-              } catch {}
-              void recordWizardReset();
-              if (typeof window !== "undefined") {
-                const params = new URLSearchParams(searchParams?.toString() ?? "");
-                params.set("step", "preIntro");
-                params.set("reset", "1");
-                const qs = params.toString();
-                window.location.assign(qs ? `/?${qs}` : "/");
-              }
-            }}
-            onExit={() => {
-              if (typeof window !== "undefined") {
-                const confirmed = window.confirm(
-                  lang === 'ro'
-                    ? 'Păstrăm progresul în draft și poți reveni oricând. Vrei să ieși?'
-                    : 'We’ll keep your progress as a draft. Do you want to exit?'
-                );
-                if (!confirmed) return;
-                const url = new URL(window.location.origin + "/choose");
-                url.searchParams.set("from", "wizard");
-                window.location.assign(url.pathname + url.search);
-              }
-            }}
-          />
-        )}
-        {/* per-step reset removed; use the progress bar reset above */}
-        <WizardRouter
-          step={step}
-          lang={lang}
-          navigateToStep={navigateToStep}
-          onFirstInputSubmit={submitFirstInput}
-          onAuthRequest={redirectToAuth}
-          firstInputError={saveError}
-          reflectionPromptLines={reflectionOneLines}
-          reflectionSummaryLines={reflectionSummaryLines}
-          intentCategories={intentCategories}
-          intentSelectionTotal={intentSelectionTotal}
-          categoryLabels={categoryLabels}
-          minSelection={MIN_INTENT_SELECTIONS}
-          maxSelection={MAX_INTENT_SELECTIONS}
-          words={adaptiveCloudWords}
-          cloudKey={adaptiveCloudKey}
-          onIntentComplete={handleIntentComplete}
-          cloudDistributionHint={cloudDistributionHint}
-          isSavingIntent={isSavingIntentSnapshot}
-          saveError={saveError}
-          savingLabel={savingGenericLabel}
-          urgency={intentUrgency}
-          setUrgency={setIntentUrgency}
-          resolutionSpeed={resolutionSpeed}
-          setResolutionSpeed={setResolutionSpeed}
-          determination={determination}
-          setDetermination={setDetermination}
-          timeCommitmentHours={timeCommitmentHours}
-          setTimeCommitmentHours={setTimeCommitmentHours}
-          budgetPreference={budgetPreference}
-          setBudgetPreference={setBudgetPreference}
-          goalType={goalType}
-          setGoalType={setGoalType}
-          emotionalState={emotionalState}
-          setEmotionalState={setEmotionalState}
-          groupComfort={groupComfort}
-          setGroupComfort={setGroupComfort}
-          learnFromOthers={learnFromOthers}
-          setLearnFromOthers={setLearnFromOthers}
-          scheduleFit={scheduleFit}
-          setScheduleFit={setScheduleFit}
-          onIntentSummaryContinue={() => void handleIntentSummaryComplete(intentUrgency)}
-          profile={profile}
-          showAccountPrompt={showAccountPrompt && isAnonymousUser}
-          onAccountRequestCards={redirectToAuth}
-          recommendedPath={recommendedPath}
-          recommendedBadgeLabel={recommendedBadgeLabel}
-          onCardSelect={handleCardSelect}
-          isSavingChoice={isSavingJourney}
-          savingChoiceType={journeySavingChoice}
-          cardsSavingLabel={savingChoiceLabel}
-          recommendationReasonKey={recommendationReasonKey}
-          journalEntry={journalEntry}
-          formatPreference={formatPreference}
-          dimensionScores={dimensionScores}
-          algoVersion={1}
-          selectedCard={selectedCard}
-          onReturnToOrigin={returnTo ? handleReturnToOrigin : undefined}
-          returnLabel={lang === "ro" ? "Înapoi la progres" : "Back to progress"}
-        />
+      <main className="px-6 py-16 sm:px-10 lg:px-16">
+        <section className="mx-auto flex max-w-6xl flex-col gap-10 rounded-[32px] border border-[var(--omni-border-soft)] bg-[color-mix(in_srgb,var(--omni-bg-paper)_85%,transparent)] px-6 py-12 shadow-[0_30px_120px_rgba(8,8,12,0.25)] md:flex-row md:items-center md:px-12 md:py-16">
+          <div className="flex-1 space-y-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--omni-muted)]">
+              Program ghidat OmniMental
+            </p>
+            <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl lg:text-5xl">
+              OmniMental – antrenament pentru claritate, focus și adaptabilitate sub presiune.
+            </h1>
+            <p className="text-lg text-[color-mix(in_srgb,var(--omni-ink)_75%,white_25%)] sm:text-xl">
+              4 trăsături măsurate, sesiuni scurte și exerciții practice care stabilizează deciziile zilnice. Intră în
+              traseul ghidat, fără obiective vagi și fără teorii interminabile.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={() => router.push("/intro")}
+                className="inline-flex w-full items-center justify-center rounded-full bg-[var(--omni-energy)] px-6 py-3 text-base font-semibold uppercase tracking-[0.35em] text-black transition hover:translate-y-0.5 hover:bg-[color-mix(in_srgb,var(--omni-energy)_90%,white_10%)] sm:w-auto"
+              >
+                Pornește cinematicul
+              </button>
+              <p className="text-sm text-[var(--omni-muted)] sm:ml-2">Imersie de 90 secunde → onboarding ghidat</p>
+            </div>
+          </div>
+          <div className="flex flex-1 flex-col gap-4 rounded-3xl border border-white/15 bg-white/3 p-6 backdrop-blur-lg">
+            {HIGHLIGHTS.map((item) => (
+              <div key={item.title} className="rounded-2xl border border-white/15 bg-white/4 p-4 shadow-[0_20px_60px_rgba(5,8,12,0.3)]">
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">{item.title}</p>
+                <p className="mt-2 text-base text-white/90">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto mt-16 grid max-w-5xl gap-8 rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/70 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.25)] md:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Traseu unic</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--omni-ink)]">Cum începi</h2>
+            <ul className="mt-6 space-y-4 text-[var(--omni-ink)]/90">
+              <li>
+                <span className="font-semibold text-[var(--omni-energy)]">1.</span> Cinematic intro → gates &amp; Cat-Lite pentru o estimare rapidă pe cele 4 trăsături.
+              </li>
+              <li>
+                <span className="font-semibold text-[var(--omni-energy)]">2.</span> QuickStroop task cu 10 trial-uri reale pentru control executiv.
+              </li>
+              <li>
+                <span className="font-semibold text-[var(--omni-energy)]">3.</span> WOW session scurtă + templu personalizat → redirect auto la /today.
+              </li>
+            </ul>
+          </div>
+          <div className="rounded-[20px] border border-dashed border-[var(--omni-border-soft)] bg-white/70 p-6 text-[var(--omni-ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Ce deblochezi</p>
+            <ul className="mt-3 space-y-3 text-base">
+              <li>• /today – plan zilnic ghidat (autonomie + feedback).</li>
+              <li>• OmniKuno &amp; Buddy se activează automat când ai suficientă execuție reală.</li>
+              <li>• Wizard (desert) devine disponibil după ~31 sesiuni reale.</li>
+            </ul>
+            <p className="mt-6 text-sm text-[var(--omni-muted)]">Fără alegeri paralele pentru userii noi – doar traseul principal.</p>
+          </div>
+        </section>
       </main>
+      <SiteFooter />
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
     </div>
-  );
-}
-
-function PageContent() {
-  const { authReady } = useAuth();
-  if (!authReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--omni-bg-main)", color: "var(--omni-ink)" }}>
-        <p className="text-sm text-[var(--omni-ink-soft)]">Se pregătește spațiul tău...</p>
-      </div>
-    );
-  }
-  return <WizardShell />;
-}
-
-export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <PageContent />
-    </Suspense>
   );
 }

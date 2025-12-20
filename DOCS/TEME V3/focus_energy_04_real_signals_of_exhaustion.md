@@ -1,141 +1,61 @@
-MODUL #9 — SEMNALELE REALE DE EPUZARE
-CLUSTER: FOCUS & ENERGY
-DEEP — ROMÂNĂ
-HOOK
+# WOW Lesson · Focus/Energy 04 — Semnale reale de epuizare
 
-„Epuizarea nu arată ca lipsa de energie. Arată ca iritare, rigiditate și decizii proaste.”
+## DEEP PATH — 12 pași
 
-MIRROR
+### 1. INTRO
+- **RO:** „Epuizarea nu arată ca lipsa de energie. Arată ca iritare, rigiditate și decizii proaste.”
+- **EN:** “Exhaustion doesn’t look like low energy. It looks like irritability, rigidity, and bad decisions.”
 
-„Devii mai impulsiv.
-Te enervezi ușor.
-Insisți când ar trebui să te oprești.”
+### 2. LEARN 1 — Semnale timpurii
+- **RO:** „Primele semne sunt cognitive și emoționale, nu fizice. Dacă le ignori, intri în overdrive.”
+- **EN:** “Early signals are cognitive and emotional, not physical. Ignore them and you enter overdrive.”
 
-CORE INSIGHT
+### 3. EXAMPLE
+- **RO:** „Când Andrei devine sarcastic și ia decizii impulsive, crede că trebuie să muncească mai mult. De fapt e primul semn de epuizare.”
+- **EN:** “When Andrei gets sarcastic and impulsive he thinks he must work harder. It’s actually the first sign of exhaustion.”
 
-„Epuizarea apare înainte să o simți ca oboseală.
-Primele semnale sunt cognitive și emoționale, nu fizice.”
+### 4. QUIZ 1
+- **Întrebare:** „Care e semn timpuriu?”
+- **Corect:** „Iritabilitatea crescută.”
+- **Feedback:** „Iritabilitatea e alarma.” / “Irritability is the alarm.”
 
-ACTIVE CHECK
+### 5. LEARN 2 — De ce apare
+- **RO:** „Când depășești limita, cortexul se decuplează iar amigdala conduce. Rezultatul: reacții rapide, decizii slabe.”
+- **EN:** “When you go past the limit, the cortex detaches and the amygdala leads. Result: fast reactions, poor decisions.”
 
-Întrebare:
-Care este un semn timpuriu de epuizare?
+### 6. QUIZ 2
+- **Întrebare:** „Ce faci când semnalul apare?”
+- **Corect:** „Te oprești, reduci ritmul, nu forțezi.”
 
-A) Somnolență
+### 7. SIMULATOR 1 — Scanare
+- **RO:** „Observă corpul (maxilar, umeri). Întreabă-te: sunt mai rigid decât de obicei? Dacă da, marchează STOP.”
+- **EN:** “Scan your body (jaw, shoulders). Ask: am I more rigid than usual? If yes, mark STOP.”
 
-B) Iritabilitate crescută
+### 8. AUTONOMY CHOICE
+- „Am semnale → încetinesc” / „Nu am semnale → continui blocul.”
 
-C) Lipsă totală de energie
+### 9. SIMULATOR 2 — Micro-reset
+- **RO:** „Dacă ai semnale: ia 3 minute, mergi, respiră 4-6, relaxează maxilarul. Dacă nu: setează un timer de 20 minute și lucrează protejat.”
+- **EN:** “If you have signals: take 3 minutes, walk, breathe 4-6, relax the jaw. If not: set a 20-minute timer and work protected.”
 
-Corect: B
+### 10. LEARN 3 — Semn că funcționează
+- **RO:** „După reset, reactivitatea scade. Dacă nu scade, ziua e deja compromisă—mai bine închizi.”
+- **EN:** “After the reset, reactivity drops. If it doesn’t, the day is already compromised—stop.”
 
-Feedback:
+### 11. REAL WORLD CHALLENGE
+- **RO:** „Înregistrează azi de două ori: „Semnal? (Da/Nu) Ce am făcut?”. Vezi cum reacția timpurie previne burnout-ul.”
+- **EN:** “Record twice today: ‘Signal? (Yes/No) What did I do?’ See how early reaction prevents burnout.”
 
-„Iritabilitatea e adesea primul semn că ai depășit limita.”
+### 12. SUMMARY + MOTTO
+- **RO bullets:** „Epuizarea începe devreme.” / „Iritabilitatea e alarmă.” / „Oprirea la timp e strategie.”
+- **EN bullets:** “Exhaustion starts early.” / “Irritability is the alarm.” / “Stopping in time is a strategy.”
+- **Motto:** „Epuizarea începe înainte să o simți.” / “Exhaustion starts before you feel it.”
 
-MICRO-SIMULATOR
+## SHORT PATH — 6 pași
 
-„Observă-te acum:
-Ești mai rigid sau mai reactiv decât de obicei?
-Dacă da, nu e momentul pentru efort.”
-
-REAL-WORLD TRANSFER
-
-„Când apar semnalele timpurii, nu negocia cu ele.
-Oprește-te. Redu ritmul.
-E mai eficient decât să repari mai târziu.”
-
-ANCHOR PHRASE
-
-„Epuizarea începe înainte să o simți.”
-
-CLOSE
-
-„Mâine învățăm cum să continui chiar și în zilele slabe.”
-
-DEEP — ENGLISH
-HOOK
-
-“Exhaustion doesn’t look like low energy. It looks like irritability, rigidity, and bad decisions.”
-
-MIRROR
-
-“You become more impulsive.
-You get irritated easily.
-You push when you should stop.”
-
-CORE INSIGHT
-
-“Exhaustion starts before you feel tired.
-The first signals are cognitive and emotional, not physical.”
-
-ACTIVE CHECK
-
-Question:
-Which is an early sign of exhaustion?
-
-A) Sleepiness
-
-B) Increased irritability
-
-C) Total lack of energy
-
-Correct: B
-
-Feedback:
-
-“Irritability is often the first sign you’ve crossed the limit.”
-
-MICRO-SIMULATOR
-
-“Check yourself now:
-Are you more rigid or reactive than usual?
-If yes, it’s not time to push.”
-
-REAL-WORLD TRANSFER
-
-“When early signals appear, don’t negotiate with them.
-Stop. Slow down.
-It’s more efficient than fixing damage later.”
-
-ANCHOR PHRASE
-
-“Exhaustion starts before you feel it.”
-
-CLOSE
-
-“Tomorrow, we learn how to keep going on low days.”
-
-SHORT — ROMÂNĂ
-HOOK
-
-„Iritabilitatea e semn de epuizare.”
-
-MICRO-SIMULATOR
-
-„Sunt mai rigid decât de obicei? Dacă da, oprește-te.”
-
-ANCHOR PHRASE
-
-„Epuizarea începe devreme.”
-
-SHORT — ENGLISH
-HOOK
-
-“Irritability signals exhaustion.”
-
-MICRO-SIMULATOR
-
-“Am I more rigid than usual? If yes, stop.”
-
-ANCHOR PHRASE
-
-“Exhaustion starts early.”
-
-NOTE CANONICE (intern)
-
-Modulul previne overdrive-ul.
-
-Normalizează oprirea ca decizie inteligentă.
-
-Setează terenul pentru continuitate în zilele slabe.
+1. **INTRO:** „Iritabilitatea = alarmă.” / “Irritability = alarm.”
+2. **LEARN:** „Semnalele sunt emoționale.” / “Signals are emotional.”
+3. **QUIZ:** „Ce faci când apar?” → „Te oprești.” / “What do you do when they show up? → Stop.”
+4. **SIMULATOR:** „Întreabă-te acum: sunt mai rigid? Dacă da, ia 3 minute.” / “Ask now: am I more rigid? If yes, take 3 minutes.”
+5. **REAL WORLD:** „Notează de două ori azi semnalul.” / “Log the signal twice today.”
+6. **CLOSE:** „Epuizarea începe devreme.” / “Exhaustion starts early.”

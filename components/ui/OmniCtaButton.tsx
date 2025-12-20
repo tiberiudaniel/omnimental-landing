@@ -4,7 +4,7 @@ import clsx from "clsx";
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from "react";
 import { designTokens } from "@/config/designTokens";
 
-export type OmniCtaVariant = "primary" | "kuno" | "abil" | "neutral";
+export type OmniCtaVariant = "primary" | "kuno" | "abil" | "neutral" | "secondary";
 export type OmniCtaSize = "sm" | "md" | "lg";
 
 export interface OmniCtaButtonProps extends Omit<HTMLAttributes<HTMLElement>, "children" | "onClick"> {
@@ -32,7 +32,10 @@ const sizeClasses: Record<OmniCtaSize, string> = {
 const baseClasses =
   "inline-flex items-center justify-center gap-2 rounded-full font-semibold uppercase tracking-[0.25em] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:-translate-y-[1.5px] hover:shadow-[0_6px_22px_rgba(0,0,0,0.07)] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--omni-energy-tint)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--omni-bg-paper)] disabled:cursor-not-allowed disabled:opacity-60";
 
-const variantTokens = {
+const variantTokens: Record<
+  OmniCtaVariant,
+  { background: string; textColor: string; border: string }
+> = {
   primary: {
     background: designTokens.gradients.primarySoft,
     textColor: designTokens.components.cta.textColor,
@@ -53,7 +56,12 @@ const variantTokens = {
     textColor: designTokens.ui.text.primary,
     border: `1px solid ${designTokens.ui.borderStrong}`,
   },
-} as const;
+  secondary: {
+    background: "var(--omni-bg-paper)",
+    textColor: designTokens.ui.text.primary,
+    border: `1px solid ${designTokens.ui.border}`,
+  },
+};
 
 export function OmniCtaButton({
   as = "button",
@@ -77,7 +85,9 @@ export function OmniCtaButton({
     sizeClasses[size],
     variant === "neutral"
       ? "text-[var(--omni-ink)] hover:bg-[rgba(0,0,0,0.04)] hover:-translate-y-[0.5px]"
-      : "text-[var(--omni-ink)]",
+      : variant === "secondary"
+        ? "text-[var(--omni-ink)] hover:bg-[rgba(0,0,0,0.03)]"
+        : "text-[var(--omni-ink)]",
     className,
   );
   const commonStyle: CSSProperties = {

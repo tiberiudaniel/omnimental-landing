@@ -1,9 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/I18nProvider";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
-import { getGuidedCompleted, setGuidedAnswer, setGuidedCompleted } from "@/lib/intro/guidedState";
+import {
+  getGuidedCompleted,
+  getGuidedCompletionCount,
+  incrementGuidedCompletionCount,
+  setGuidedAnswer,
+  setGuidedCompleted,
+} from "@/lib/intro/guidedState";
 import { track } from "@/lib/telemetry/track";
 import { FREE_CONTINUE_URL, UPGRADE_URL } from "@/lib/constants/routes";
 
@@ -28,20 +35,29 @@ const CONTENT: Record<"ro" | "en", Content> = {
         id: "mind_state",
         title: "În ultimele zile, mintea ta e mai mult:",
         options: [
-          { id: "crowded", label: "aglomerată" },
-          { id: "tired", label: "obosită" },
-          { id: "rigid", label: "rigidă" },
-          { id: "scattered", label: "împrăștiată" },
+          { id: "crowded", label: "Aglomerată" },
+          { id: "tired", label: "Obosită" },
+          { id: "scattered", label: "Împrăștiată" },
+          { id: "blocked", label: "Blocată" },
+          { id: "rushed", label: "Grăbită" },
+          { id: "foggy", label: "În ceață" },
+          { id: "tense", label: "Încordată" },
+          { id: "no_mood", label: "Fără chef" },
         ],
       },
       {
         id: "block_time",
-        title: "Când apar blocajele, cel mai des e:",
+        title: "Asta apare mai ales:",
         options: [
-          { id: "morning", label: "dimineața" },
-          { id: "work", label: "la muncă" },
-          { id: "evening", label: "seara" },
-          { id: "social", label: "în social" },
+          { id: "morning", label: "Dimineața, înainte de lucru" },
+          { id: "after_email", label: "După primele emailuri" },
+          { id: "after_meetings", label: "După meeting-uri lungi" },
+          { id: "post_lunch", label: "După prânz" },
+          { id: "evening", label: "Seara târziu" },
+          { id: "deadline", label: "Când apare un deadline" },
+          { id: "traffic", label: "În trafic / drumuri" },
+          { id: "social_media", label: "După ce intru pe social" },
+          { id: "after_two_hours", label: "După ~2h de lucru intens" },
         ],
       },
       {
@@ -52,6 +68,10 @@ const CONTENT: Record<"ro" | "en", Content> = {
           { id: "energy", label: "energie" },
           { id: "emotions", label: "emoții" },
           { id: "procrastination", label: "procrastinare" },
+          { id: "focus", label: "focus risipit" },
+          { id: "confidence", label: "încredere scăzută" },
+          { id: "sleep", label: "somn instabil" },
+          { id: "motivation", label: "motivație fluctuantă" },
         ],
       },
     ],
@@ -73,20 +93,29 @@ const CONTENT: Record<"ro" | "en", Content> = {
         id: "mind_state",
         title: "Lately, your mind feels mostly:",
         options: [
-          { id: "crowded", label: "crowded" },
-          { id: "tired", label: "tired" },
-          { id: "rigid", label: "rigid" },
-          { id: "scattered", label: "scattered" },
+          { id: "crowded", label: "Crowded" },
+          { id: "tired", label: "Tired" },
+          { id: "scattered", label: "Scattered" },
+          { id: "blocked", label: "Blocked" },
+          { id: "rushed", label: "Rushed" },
+          { id: "foggy", label: "Foggy" },
+          { id: "tense", label: "Tense" },
+          { id: "no_mood", label: "No drive" },
         ],
       },
       {
         id: "block_time",
-        title: "When blocks show up, it’s usually:",
+        title: "It shows up mostly when:",
         options: [
-          { id: "morning", label: "in the morning" },
-          { id: "work", label: "at work" },
-          { id: "evening", label: "in the evening" },
-          { id: "social", label: "in social situations" },
+          { id: "morning", label: "Early morning" },
+          { id: "after_email", label: "After clearing emails" },
+          { id: "after_meetings", label: "After long meetings" },
+          { id: "post_lunch", label: "Right after lunch" },
+          { id: "evening", label: "Late evening" },
+          { id: "deadline", label: "When deadlines pop up" },
+          { id: "traffic", label: "While commuting" },
+          { id: "social_media", label: "After scrolling socials" },
+          { id: "after_two_hours", label: "After ~2h of deep work" },
         ],
       },
       {
@@ -97,6 +126,10 @@ const CONTENT: Record<"ro" | "en", Content> = {
           { id: "energy", label: "energy" },
           { id: "emotions", label: "emotions" },
           { id: "procrastination", label: "procrastination" },
+          { id: "focus", label: "scattered focus" },
+          { id: "confidence", label: "low confidence" },
+          { id: "sleep", label: "unstable sleep" },
+          { id: "motivation", label: "fluctuating motivation" },
         ],
       },
     ],
@@ -114,33 +147,54 @@ const CONTENT: Record<"ro" | "en", Content> = {
   },
 };
 
+const CLOUD_LAYOUT_IDS = ["mind_state", "block_time", "biggest_cost"];
+const MULTI_SELECT_IDS = ["mind_state", "block_time", "biggest_cost"] as const;
+type MultiSelectId = (typeof MULTI_SELECT_IDS)[number];
+const MULTI_SELECT_SET = new Set<string>(MULTI_SELECT_IDS);
+
 export default function GuidedDay1Flow() {
+  const router = useRouter();
   const { lang } = useI18n();
   const locale: "ro" | "en" = lang === "en" ? "en" : "ro";
   const content = CONTENT[locale];
   const initialCompleted = useMemo(() => getGuidedCompleted(), []);
-  const [stepIndex, setStepIndex] = useState(() =>
-    initialCompleted ? content.questions.length + 1 : 0,
-  );
-  const offerTrackedRef = useRef(initialCompleted);
+  const initialCompletionCount = useMemo(() => getGuidedCompletionCount(), []);
+  const [stepIndex, setStepIndex] = useState(0);
+  const offerTrackedRef = useRef(false);
+  const [selectionMap, setSelectionMap] = useState<{
+    mind_state: string[];
+    block_time: string[];
+    biggest_cost: string[];
+  }>({
+    mind_state: [],
+    block_time: [],
+    biggest_cost: [],
+  });
+  const mindStateSelections = selectionMap.mind_state;
+  const blockTimeSelections = selectionMap.block_time;
+  const costSelections = selectionMap.biggest_cost;
 
   const reflectionIndex = content.questions.length;
   const offerIndex = reflectionIndex + 1;
+  const showOfferForUser = initialCompletionCount >= 4;
 
   useEffect(() => {
     track("guided_opened");
   }, []);
 
   useEffect(() => {
-    if (stepIndex === offerIndex && !offerTrackedRef.current) {
+    if (typeof window === "undefined") return;
+    if (!initialCompleted) {
+      window.localStorage.setItem("guided_guest_mode", "1");
+    }
+  }, [initialCompleted]);
+
+  useEffect(() => {
+    if (showOfferForUser && stepIndex >= offerIndex && !offerTrackedRef.current) {
       offerTrackedRef.current = true;
       track("offer_shown", { flow: "guided" });
-      if (!initialCompleted) {
-        setGuidedCompleted(true);
-      }
-      track("guided_day1_completed");
     }
-  }, [initialCompleted, offerIndex, stepIndex]);
+  }, [offerIndex, showOfferForUser, stepIndex]);
 
   const goToNextStep = useCallback(() => {
     setStepIndex((prev) => Math.min(prev + 1, offerIndex));
@@ -152,8 +206,52 @@ export default function GuidedDay1Flow() {
     goToNextStep();
   };
 
+  const handleMultiToggle = (id: MultiSelectId, optionId: string) => {
+    let shouldAdvance = false;
+    let nextList: string[] | null = null;
+    setSelectionMap((prev) => {
+      const prevList = prev[id];
+      if (prevList.includes(optionId)) {
+        nextList = prevList.filter((value) => value !== optionId);
+      } else if (prevList.length >= 2) {
+        nextList = prevList;
+        return prev;
+      } else {
+        nextList = [...prevList, optionId];
+      }
+      shouldAdvance = nextList.length === 2 && nextList !== prevList;
+      return { ...prev, [id]: nextList };
+    });
+    if (shouldAdvance && nextList) {
+      finalizeMultiSelection(id, nextList);
+    }
+  };
+
+  const finalizeMultiSelection = useCallback(
+    (questionId: "mind_state" | "block_time" | "biggest_cost", selections: string[]) => {
+      const value = selections.join(",");
+      setGuidedAnswer(questionId, value);
+      track("guided_step_completed", { step: questionId, value });
+      setSelectionMap((prev) => ({ ...prev, [questionId]: [] }));
+      goToNextStep();
+    },
+    [goToNextStep],
+  );
+
   const handleReflectionContinue = () => {
     track("guided_step_completed", { step: "reflection" });
+    incrementGuidedCompletionCount();
+    if (!initialCompleted) {
+      setGuidedCompleted(true);
+      track("guided_day1_completed");
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("guided_guest_mode", "1");
+      }
+    }
+    if (!showOfferForUser) {
+      router.replace("/today?source=guided");
+      return;
+    }
     goToNextStep();
   };
 
@@ -184,18 +282,65 @@ export default function GuidedDay1Flow() {
             <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[var(--omni-ink)] sm:text-3xl">
               {currentQuestion.title}
             </h2>
-            <div className="mt-6 space-y-3">
-              {currentQuestion.options.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => handleQuestionSelect(currentQuestion.id, option.id)}
-                  className="w-full rounded-[18px] border border-[var(--omni-border-soft)] px-4 py-3 text-left text-sm font-semibold text-[var(--omni-ink)] transition hover:border-[var(--omni-ink)]/50"
-                >
-                  {option.label}
-                </button>
-              ))}
+            <div
+              className={
+                CLOUD_LAYOUT_IDS.includes(currentQuestion.id)
+                  ? "mt-6 flex flex-wrap justify-center gap-3"
+                  : "mt-6 space-y-3"
+              }
+            >
+              {currentQuestion.options.map((option, idx) => {
+                const isCloud = CLOUD_LAYOUT_IDS.includes(currentQuestion.id);
+                const isMultiSelect = MULTI_SELECT_SET.has(currentQuestion.id);
+                const cloudSizes = ["px-6 py-2.5", "px-4 py-2", "px-5 py-3"];
+                const cloudClass = cloudSizes[idx % cloudSizes.length];
+                const selected =
+                  currentQuestion.id === "mind_state"
+                    ? mindStateSelections.includes(option.id)
+                    : currentQuestion.id === "block_time"
+                      ? blockTimeSelections.includes(option.id)
+                      : currentQuestion.id === "biggest_cost"
+                        ? costSelections.includes(option.id)
+                        : false;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      isMultiSelect
+                        ? handleMultiToggle(currentQuestion.id as MultiSelectId, option.id)
+                        : handleQuestionSelect(currentQuestion.id, option.id)
+                    }
+                    className={
+                      isCloud
+                        ? `rounded-full border ${
+                            selected
+                              ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white"
+                              : "border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] text-[var(--omni-ink)]"
+                          } text-sm font-semibold capitalize transition hover:border-[var(--omni-ink)]/50 ${cloudClass}`
+                        : "w-full rounded-[18px] border border-[var(--omni-border-soft)] px-4 py-3 text-left text-sm font-semibold text-[var(--omni-ink)] transition hover:border-[var(--omni-ink)]/50"
+                    }
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
             </div>
+            {currentQuestion.id === "mind_state" ? (
+              <p className="mt-4 text-center text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                {locale === "ro" ? "Alege două care ți se potrivesc." : "Pick two that fit best."}
+              </p>
+            ) : null}
+            {currentQuestion.id === "block_time" ? (
+              <p className="mt-4 text-center text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                {locale === "ro" ? "Alege două situații." : "Choose two situations."}
+              </p>
+            ) : null}
+            {currentQuestion.id === "biggest_cost" ? (
+              <p className="mt-4 text-center text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                {locale === "ro" ? "Alege două costuri." : "Choose two costs."}
+              </p>
+            ) : null}
           </section>
         ) : null}
 
@@ -212,10 +357,12 @@ export default function GuidedDay1Flow() {
           </section>
         ) : null}
 
-        {stepIndex >= offerIndex ? (
+        {showOfferForUser && stepIndex >= offerIndex ? (
           <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 text-center shadow-[0_20px_60px_rgba(0,0,0,0.1)] sm:px-8">
             <p className="text-sm text-[var(--omni-ink)]/70">{content.transitionLine}</p>
-            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-[var(--omni-ink)] sm:text-3xl">{content.offer.title}</h2>
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-[var(--omni-ink)] sm:text-3xl">
+              {content.offer.title}
+            </h2>
             <p className="mt-2 text-sm text-[var(--omni-ink)]/80 sm:text-base">{content.offer.body}</p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <OmniCtaButton
@@ -238,6 +385,7 @@ export default function GuidedDay1Flow() {
             </div>
           </section>
         ) : null}
+
       </div>
     </div>
   );

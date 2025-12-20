@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Suspense, useMemo } from 'react';
+import { Suspense, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import { AppShell } from '@/components/AppShell';
@@ -9,6 +9,11 @@ import { OmniCard } from '@/components/OmniCard';
 import { KunoCtaButton } from "@/components/ui/cta/KunoCtaButton";
 import { listMicroLessons } from '@/data/lessons';
 import type { MicroLesson } from '@/lib/lessonTypes';
+import { useAuth } from "@/components/AuthProvider";
+import { useProgressFacts } from "@/components/useProgressFacts";
+import { canAccessOmniKuno, getTotalDailySessionsCompleted } from "@/lib/gatingSelectors";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
+import { GATING } from "@/lib/gatingConfig";
 
 function CategoryPill({ label }: { label: string }) {
   return (
@@ -30,6 +35,20 @@ function LearnInner() {
   const router = useRouter();
   const e2e = (search?.get('e2e') === '1') || (search?.get('demo') === '1');
   const goToAuth = () => router.push('/auth');
+  const { user, authReady } = useAuth();
+  const returnPath = useMemo(() => {
+    const qs = search?.toString();
+    return qs && qs.length > 0 ? `/kuno/learn?${qs}` : "/kuno/learn";
+  }, [search]);
+  const { data: progress, loading: progressLoading } = useProgressFacts(user?.uid ?? null);
+  const totalSessions = getTotalDailySessionsCompleted(progress);
+  const unlocked = e2e || canAccessOmniKuno(progress);
+  useEffect(() => {
+    if (!authReady) return;
+    if (!user) {
+      router.replace(`/auth?returnTo=${encodeURIComponent(returnPath)}`);
+    }
+  }, [authReady, user, router, returnPath]);
   const locale = (search?.get('lang') === 'en' ? 'en' : 'ro') as 'ro' | 'en';
   const catParam = search?.get('cat') || null;
   const lessons = useMemo<MicroLesson[]>(() => listMicroLessons({ level: 'initiation', locale }), [locale]);
@@ -51,6 +70,58 @@ function LearnInner() {
     }
     return lessons[0];
   }, [lessons, catParam]);
+
+  if (!authReady || progressLoading) {
+    return (
+      <AppShell header={<SiteHeader onAuthRequest={goToAuth} />}>
+        <div className="px-4 py-16 text-center text-sm text-[var(--omni-ink-soft)]">Se verifică accesul la OmniKuno...</div>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
+  if (!unlocked) {
+    const remainingSessions = Math.max(0, GATING.omniKunoMinDailySessions - totalSessions);
+    const progressPct = Math.min(
+      100,
+      Math.round((totalSessions / GATING.omniKunoMinDailySessions) * 100),
+    );
+    return (
+      <AppShell header={<SiteHeader onAuthRequest={goToAuth} />}>
+        <div className="px-4 py-12">
+          <section className="mx-auto max-w-3xl space-y-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-white px-6 py-8 text-center text-[var(--omni-ink)] shadow-[0_24px_80px_rgba(0,0,0,0.08)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">OmniKuno</p>
+            <h2 className="text-2xl font-semibold">Ai nevoie de {GATING.omniKunoMinDailySessions} sesiuni reale</h2>
+            <p className="text-sm text-[var(--omni-ink)]/75">
+              Ai înregistrat {totalSessions} sesiuni. Continuă antrenamentele zilnice, apoi revino pentru a accesa lecțiile OmniKuno.
+            </p>
+            <div className="mx-auto mt-4 w-full max-w-sm text-left">
+              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
+                <span>Progres</span>
+                <span>{progressPct}%</span>
+              </div>
+              <div className="mt-1 h-2 rounded-full bg-[var(--omni-border-soft)]/60">
+                <div className="h-2 rounded-full bg-[var(--omni-energy)]" style={{ width: `${progressPct}%` }} />
+              </div>
+              <p className="mt-1 text-[var(--omni-ink)]/70 text-xs">
+                Continuă încă {remainingSessions} {remainingSessions === 1 ? "zi" : "zile"} pentru a descuia lecțiile ghidate.
+              </p>
+            </div>
+            <div className="mt-6 rounded-[18px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4 text-left">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">Preview lecții</p>
+              <ul className="mt-3 space-y-1 text-sm text-[var(--omni-ink)]/80">
+                <li>• Micro-lecții cu exerciții aplicate</li>
+                <li>• Exemple concrete pentru transfer în viața reală</li>
+                <li>• Recomandări adaptate categoriei tale principale</li>
+              </ul>
+            </div>
+            <OmniCtaButton className="mt-4 justify-center" onClick={() => router.push("/today")}>
+              Înapoi la /today
+            </OmniCtaButton>
+          </section>
+        </div>
+      </AppShell>
+    );
+  }
 
   const catLabel = (d: string) => d.charAt(0).toUpperCase() + d.slice(1);
 

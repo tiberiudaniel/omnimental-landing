@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { getUserProfileSnapshot, advanceArcProgress, addTraitXp, getTraitLabel } from "@/lib/profileEngine";
 import { getFirstSessionPlan, type SessionPlan } from "@/lib/sessionRecommenderEngine";
@@ -8,15 +8,20 @@ import WowLessonShell, { type WowCompletionPayload } from "@/components/wow/WowL
 import { getWowLessonDefinition, resolveTraitPrimaryForModule } from "@/config/wowLessonsV2";
 import { recordSessionTelemetry } from "@/lib/telemetry";
 import { buildPlanKpiEvent } from "@/lib/sessionTelemetry";
+import { recordDailySessionCompletion } from "@/lib/progressFacts/recorders";
+import OnboardingProgressBar, { type OnboardingProgressMeta } from "@/components/onboarding/OnboardingProgressBar";
+import { track } from "@/lib/telemetry/track";
 
 type Props = {
   onComplete: () => void;
+  progress: OnboardingProgressMeta;
 };
 
-export default function OnboardingFirstSession({ onComplete }: Props) {
+export default function OnboardingFirstSession({ onComplete, progress }: Props) {
   const { user, authReady } = useAuth();
   const [plan, setPlan] = useState<SessionPlan | null>(null);
   const [loading, setLoading] = useState(false);
+  const startTrackedRef = useRef(false);
 
   const loadPlan = useCallback(
     async (userId: string, cancelToken: { cancelled: boolean }) => {
@@ -45,6 +50,12 @@ export default function OnboardingFirstSession({ onComplete }: Props) {
       token.cancelled = true;
     };
   }, [authReady, user, loadPlan]);
+
+  useEffect(() => {
+    if (!plan || startTrackedRef.current) return;
+    track("onboarding_first_session_started", { moduleId: plan.moduleId, arcId: plan.arcId, mode: "short" });
+    startTrackedRef.current = true;
+  }, [plan]);
 
   const handleLessonComplete = useCallback(
     async (payload: WowCompletionPayload) => {
@@ -93,6 +104,21 @@ export default function OnboardingFirstSession({ onComplete }: Props) {
           console.warn("addTraitXp failed", error);
         }
       }
+      try {
+        await recordDailySessionCompletion(user.uid);
+      } catch (error) {
+        console.warn("recordDailySessionCompletion failed", error);
+      }
+      track("daily_session_completed", {
+        source: "onboarding",
+        moduleId: plan.moduleId,
+        arcId: plan.arcId,
+      });
+      track("onboarding_first_session_completed", {
+        moduleId: plan.moduleId,
+        arcId: plan.arcId,
+        mode: "short",
+      });
       onComplete();
     },
     [user, plan, onComplete],
@@ -107,11 +133,7 @@ export default function OnboardingFirstSession({ onComplete }: Props) {
   }
 
   if (!user) {
-    return (
-      <section className="flex min-h-[40vh] items-center justify-center text-sm text-[var(--omni-ink)]">
-        Ai nevoie de un cont (anonim sau complet) pentru a continua.
-      </section>
-    );
+    return null;
   }
 
   if (loading || !plan) {
@@ -134,5 +156,16 @@ export default function OnboardingFirstSession({ onComplete }: Props) {
   const xpTraitLabel = definition?.traitPrimary ?? plan?.traitPrimary ?? null;
   const xpLabel = xpTraitLabel ? `+10 XP ${getTraitLabel(xpTraitLabel)}` : undefined;
 
-  return <WowLessonShell lesson={definition} sessionType="daily" xpRewardLabel={xpLabel} onComplete={handleLessonComplete} />;
+  return (
+    <div className="space-y-6">
+      <OnboardingProgressBar {...progress} />
+      <WowLessonShell
+        lesson={definition}
+        sessionType="daily"
+        xpRewardLabel={xpLabel}
+        onComplete={handleLessonComplete}
+        mode="short"
+      />
+    </div>
+  );
 }

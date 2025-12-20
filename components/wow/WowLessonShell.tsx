@@ -16,9 +16,16 @@ type Props = {
   sessionType?: TelemetrySessionType;
   xpRewardLabel?: string;
   onComplete?: (payload: WowCompletionPayload) => Promise<void> | void;
+  mode?: "full" | "short";
 };
 
-export default function WowLessonShell({ lesson, sessionType = "daily", xpRewardLabel, onComplete }: Props) {
+export default function WowLessonShell({
+  lesson,
+  sessionType = "daily",
+  xpRewardLabel,
+  onComplete,
+  mode = "full",
+}: Props) {
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [contextAnswer, setContextAnswer] = useState<string | null>(null);
   const [reflection, setReflection] = useState("");
@@ -26,6 +33,7 @@ export default function WowLessonShell({ lesson, sessionType = "daily", xpReward
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isShort = mode === "short";
   const disableStep0 = !contextAnswer;
   const disableStep2 = reflection.trim().length === 0 || saving || !difficulty;
 
@@ -71,11 +79,16 @@ export default function WowLessonShell({ lesson, sessionType = "daily", xpReward
       : sessionType === "daily"
       ? "WOW • L1/L2/L3"
       : "WOW • Session";
+  const contextOptions = isShort ? lesson.context.options.slice(0, 2) : lesson.context.options;
+  const exerciseSteps = isShort ? lesson.exercise.steps.slice(0, 2) : lesson.exercise.steps;
 
   return (
     <section className="mx-auto w-full max-w-3xl space-y-4 rounded-[18px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-6 shadow-[0_20px_45px_rgba(0,0,0,0.08)]">
       <header className="text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">{headerLabel}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+          {headerLabel}
+          {isShort ? " · Mod scurt" : ""}
+        </p>
         <h1 className="text-2xl font-semibold text-[var(--omni-ink)]">{lesson.title}</h1>
         <p className="text-sm text-[var(--omni-ink-soft)]">{lesson.summary}</p>
       </header>
@@ -87,7 +100,7 @@ export default function WowLessonShell({ lesson, sessionType = "daily", xpReward
           <p className="mt-2 text-sm text-[var(--omni-ink-soft)]">{lesson.context.description}</p>
           <p className="mt-4 text-sm font-semibold">{lesson.context.question}</p>
           <div className="mt-3 grid gap-2">
-            {lesson.context.options.map((option) => (
+            {contextOptions.map((option) => (
               <button
                 key={option}
                 type="button"
@@ -116,7 +129,7 @@ export default function WowLessonShell({ lesson, sessionType = "daily", xpReward
             <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">{lesson.exercise.durationHint}</p>
           ) : null}
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--omni-ink)]/85">
-            {lesson.exercise.steps.map((stepText, idx) => (
+            {exerciseSteps.map((stepText, idx) => (
               <li key={idx}>{stepText}</li>
             ))}
           </ol>

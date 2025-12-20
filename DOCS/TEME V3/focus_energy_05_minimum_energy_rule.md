@@ -1,143 +1,59 @@
-MODUL #10 — REGULA ENERGIEI MINIME
-CLUSTER: FOCUS & ENERGY
-DEEP — ROMÂNĂ
-HOOK
+# WOW Lesson · Focus/Energy 05 — Regula energiei minime
 
-„Nu continui pentru că ai multă energie. Continui pentru că ceri puțină.”
+## DEEP PATH — 12 pași
 
-MIRROR
+### 1. INTRO
+- **RO:** „Nu continui pentru că ai multă energie. Continui pentru că ceri puțină.”
+- **EN:** “You don’t keep going because you have high energy. You keep going because you demand little.”
 
-„Sunt zile în care totul pare prea mult.
-Renunți complet sau nu începi deloc.
-Crezi că dacă nu poți face ‘bine’, nu are rost.”
+### 2. LEARN 1 — Zilele slabe
+- **RO:** „În zilele grele renunți pentru că ceri standardul „perfect”. Sistemele bune supraviețuiesc zilelor proaste.”
+- **EN:** “On rough days you quit because you demand the ‘perfect’ standard. Good systems survive the bad days.”
 
-CORE INSIGHT
+### 3. EXAMPLE
+- **RO:** „Andra sare antrenamentul dacă nu poate face 45 min. Dacă ar cere 5 min, continuitatea ar rămâne intactă.”
+- **EN:** “Andra skips the workout if she can’t do 45 minutes. If she demanded 5 minutes, continuity would stay intact.”
 
-„Continuitatea nu cere energie mare.
-Cere o cerință suficient de mică.
-Sistemele bune supraviețuiesc zilelor proaste.”
+### 4. QUIZ 1
+- **Întrebare:** „Ce menține cel mai bine continuitatea?” → „Cerințe minime clare.”
 
-ACTIVE CHECK
+### 5. LEARN 2 — Ce e versiunea minimă
+- **RO:** „Versiunea minimă = cea mai mică execuție acceptabilă care păstrează identitatea. Nu e un downgrade permanent, ci un mod de supraviețuire.”
+- **EN:** “The minimum version is the smallest acceptable execution that keeps your identity. It isn’t a permanent downgrade; it’s survival mode.”
 
-Întrebare:
-Ce menține cel mai bine continuitatea?
+### 6. QUIZ 2 — Aplicare
+- **Întrebare:** „Ce faci într-o zi slabă?” → „Stabilești versiunea minimă și o execuți.”
 
-A) Obiective ambițioase
+### 7. SIMULATOR 1 — Mini plan
+- **RO pași:** „1) Alege activitatea-cheie (ex.: scris, antrenament). 2) Întreabă: „Care e cea mai mică versiune acceptabilă?” 3) Scrie propoziția: „Minimul azi = ____.””
+- **EN:** “1) Choose the key activity (e.g., writing, training). 2) Ask: ‘What is the smallest acceptable version?’ 3) Write the sentence: ‘My minimum today = ____.’”
 
-B) Motivație ridicată
+### 8. AUTONOMY CHOICE
+- „Recalculez încă un minim” / „Aplic acum.”
 
-C) Cerințe minime clare
+### 9. SIMULATOR 2 — Execuție
+- **RO:** „Pornește un cronometru de 3–5 min și execută minimul. Observă cum rezistența scade.”
+- **EN:** “Start a 3–5 minute timer and execute the minimum. Notice how the resistance drops.”
 
-Corect: C
+### 10. LEARN 3 — Semn
+- **RO:** „Când execuți minimul, simți relief și identitatea rămâne intactă. Nu mai apare vinovăția.”
+- **EN:** “When you hit the minimum you feel relief and your identity stays intact. The guilt doesn’t show up.”
 
-Feedback:
+### 11. REAL WORLD CHALLENGE
+- **RO:** „Notează pentru următoarele 3 zile: Activitate X → Minimul meu este ____ (timp / volum). Fă-l indiferent de stare.”
+- **EN:** “For the next 3 days note: Activity X → My minimum is ____ (time/volume). Do it regardless of how you feel.”
 
-„Când cerința e mică, rezistența dispare.”
+### 12. SUMMARY + MOTTO
+- **RO bullets:** „Continuitatea bate intensitatea.” / „Cerințele mici mențin identitatea.” / „Sistemele bune supraviețuiesc zilelor proaste.”
+- **EN bullets:** “Continuity beats intensity.” / “Small demands keep identity intact.” / “Good systems survive bad days.”
+- **Motto:** „Puțin, dar constant.” / “Little, but consistent.”
 
-MICRO-SIMULATOR
+## SHORT PATH — 6 pași
 
-„Alege o activitate importantă.
-Răspunde: care este cea mai mică versiune acceptabilă?
-Atât. Nimic mai mult.”
-
-REAL-WORLD TRANSFER
-
-„În zilele slabe, nu forța revenirea completă.
-Aplică regula energiei minime.
-Continuitatea bate intensitatea.”
-
-ANCHOR PHRASE
-
-„Cerințe mici. Continuitate mare.”
-
-CLOSE
-
-„Mâine intrăm în zona emoțională.”
-
-DEEP — ENGLISH
-HOOK
-
-“You don’t continue because you have high energy. You continue because you demand little.”
-
-MIRROR
-
-“Some days everything feels like too much.
-You quit entirely or don’t start at all.
-You think if you can’t do it ‘well’, it’s not worth doing.”
-
-CORE INSIGHT
-
-“Continuity doesn’t require high energy.
-It requires small enough demands.
-Good systems survive bad days.”
-
-ACTIVE CHECK
-
-Question:
-What best sustains continuity?
-
-A) Ambitious goals
-
-B) High motivation
-
-C) Clear minimal requirements
-
-Correct: C
-
-Feedback:
-
-“When the demand is small, resistance disappears.”
-
-MICRO-SIMULATOR
-
-“Choose one important activity.
-Ask: what is the smallest acceptable version?
-That’s enough.”
-
-REAL-WORLD TRANSFER
-
-“On low days, don’t force a full comeback.
-Apply the minimum energy rule.
-Continuity beats intensity.”
-
-ANCHOR PHRASE
-
-“Small demands. High continuity.”
-
-CLOSE
-
-“Tomorrow, we enter the emotional layer.”
-
-SHORT — ROMÂNĂ
-HOOK
-
-„Continuitatea cere puțin, nu mult.”
-
-MICRO-SIMULATOR
-
-„Care e versiunea minimă acceptabilă azi?”
-
-ANCHOR PHRASE
-
-„Puțin, dar constant.”
-
-SHORT — ENGLISH
-HOOK
-
-“Continuity requires little, not much.”
-
-MICRO-SIMULATOR
-
-“What’s the smallest acceptable version today?”
-
-ANCHOR PHRASE
-
-“Small, but consistent.”
-
-NOTE CANONICE (intern)
-
-Închide complet arcul Focus & Energy.
-
-Creează toleranță la zilele slabe → retenție.
-
-Face tranziția naturală spre Emotional Flex.
+1. **INTRO:** „Continuitatea cere puțin.” / “Continuity demands little.”
+2. **LEARN:** „Cerința minimă păstrează identitatea.” / “The minimum requirement protects identity.”
+3. **QUIZ:** „Ce alegi într-o zi slabă?” → „Versiunea minimă.” / “What do you pick on a weak day? → The minimum version.”
+4. **SIMULATOR:** „Scrie: „Minimul meu azi = ____.” și execută 3 min.” / “Write ‘My minimum today = ____’ and execute it for 3 minutes.”
+5. **REAL WORLD:** „Aplică regula pentru 2 activități azi.” / “Apply the rule to two activities today.”
+6. **CLOSE:** „Puțin, dar constant.” / “Little, but consistent.”
+*** End Patch

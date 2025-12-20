@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
-import { useRouter } from "next/navigation";
 import {
   recordSessionTelemetry,
   type KpiEvent,
@@ -13,6 +12,8 @@ import {
 } from "@/lib/telemetry";
 import { ARENA_TASKS } from "@/config/arenas";
 import { buildArenaKpiEvent } from "@/lib/arenaEngine";
+import OnboardingProgressBar, { type OnboardingProgressMeta } from "@/components/onboarding/OnboardingProgressBar";
+import { track } from "@/lib/telemetry/track";
 
 type ColorKey = "red" | "green" | "blue" | "yellow";
 
@@ -27,32 +28,35 @@ type Stimulus = {
   word: ColorKey;
   inkColor: ColorKey;
   congruent: boolean;
+  phase: "practice" | "real";
 };
 
 type TrialResult = {
   congruent: boolean;
   correct: boolean;
   rtMs: number;
+  phase: "practice" | "real";
 };
 
 type Phase = "intro" | "running" | "summary";
 
-const TRIAL_COUNT = 36;
+const PRACTICE_TRIALS = 2;
+const REAL_TRIALS = 10;
+const TOTAL_TRIALS = PRACTICE_TRIALS + REAL_TRIALS;
 
 function generateStimuli(): Stimulus[] {
-  const result: Stimulus[] = [];
-  for (let i = 0; i < TRIAL_COUNT; i += 1) {
-    const inkColor = pickRandomColor();
-    const congruent = Math.random() > 0.4;
-    if (congruent) {
-      result.push({ word: inkColor, inkColor, congruent: true });
-    } else {
+  const build = (count: number, phase: "practice" | "real") =>
+    Array.from({ length: count }, () => {
+      const inkColor = pickRandomColor();
+      const congruent = Math.random() > 0.4;
+      if (congruent) {
+        return { word: inkColor, inkColor, congruent: true, phase };
+      }
       const choices = (Object.keys(COLOR_META) as ColorKey[]).filter((color) => color !== inkColor);
       const word = choices[Math.floor(Math.random() * choices.length)];
-      result.push({ word, inkColor, congruent: false });
-    }
-  }
-  return result;
+      return { word, inkColor, congruent: false, phase };
+    });
+  return [...build(PRACTICE_TRIALS, "practice"), ...build(REAL_TRIALS, "real")];
 }
 
 function pickRandomColor(): ColorKey {
@@ -66,6 +70,7 @@ type Props = {
   arenaId?: keyof typeof ARENA_TASKS;
   origin?: TelemetryOrigin;
   flowTag?: TelemetryFlowTag;
+  progress?: OnboardingProgressMeta;
 };
 
 export default function QuickStroopTask({
@@ -74,9 +79,9 @@ export default function QuickStroopTask({
   arenaId = "exec_control_micro_stroop",
   origin = "real",
   flowTag = "onboarding",
+  progress,
 }: Props) {
   const { user, authReady } = useAuth();
-  const router = useRouter();
   const [phase, setPhase] = useState<Phase>("intro");
   const [stimuli, setStimuli] = useState<Stimulus[]>(() => generateStimuli());
   const [trialIndex, setTrialIndex] = useState(0);
@@ -86,6 +91,13 @@ export default function QuickStroopTask({
   const [saving, setSaving] = useState(false);
 
   const currentStimulus = stimuli[trialIndex];
+
+  const startTrackedRef = useRef(false);
+  useEffect(() => {
+    if (startTrackedRef.current) return;
+    track("quick_stroop_started");
+    startTrackedRef.current = true;
+  }, []);
 
   const beginTask = () => {
     setStimuli(generateStimuli());
@@ -105,10 +117,11 @@ export default function QuickStroopTask({
         congruent: currentStimulus.congruent,
         correct: choice === currentStimulus.inkColor,
         rtMs: rt,
+        phase: currentStimulus.phase,
       },
     ];
     setResults(nextResults);
-    if (trialIndex + 1 >= TRIAL_COUNT) {
+    if (trialIndex + 1 >= TOTAL_TRIALS) {
       finishTask(nextResults);
     } else {
       setTrialIndex((prev) => prev + 1);
@@ -118,13 +131,14 @@ export default function QuickStroopTask({
 
   const finishTask = useCallback(
     async (finalResults: TrialResult[]) => {
+      const realResults = finalResults.filter((trial) => trial.phase === "real");
       const accuracy =
-        finalResults.length > 0
-          ? finalResults.filter((trial) => trial.correct).length / finalResults.length
+        realResults.length > 0
+          ? realResults.filter((trial) => trial.correct).length / realResults.length
           : 0;
       const meanRt =
-        finalResults.length > 0
-          ? finalResults.reduce((sum, trial) => sum + trial.rtMs, 0) / finalResults.length
+        realResults.length > 0
+          ? realResults.reduce((sum, trial) => sum + trial.rtMs, 0) / realResults.length
           : 0;
       const accuracyScore = accuracy * 80;
       const speedBonus = Math.max(0, Math.min(20, ((700 - meanRt) / 700) * 20));
@@ -160,6 +174,11 @@ export default function QuickStroopTask({
       } catch (error) {
         console.warn("recordSessionTelemetry failed", error);
       } finally {
+        track("quick_stroop_completed", {
+          meanReactionTime: Math.round(meanRt),
+          accuracy: Number((accuracy * 100).toFixed(2)),
+          score: Number(score.toFixed(2)),
+        });
         setSummary(summaryData);
         setPhase("summary");
         setSaving(false);
@@ -176,21 +195,9 @@ export default function QuickStroopTask({
     );
   }
 
-  if (!user) {
-    return (
-      <section className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <p className="text-sm text-[var(--omni-ink)]">
-          Ai nevoie de un cont (poate fi și anonim) pentru a rula mini-taskul.
-        </p>
-        <OmniCtaButton onClick={() => router.push("/auth")} variant="primary">
-          Creează cont
-        </OmniCtaButton>
-      </section>
-    );
-  }
-
   return (
     <section className="mx-auto w-full max-w-3xl space-y-6 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 shadow-[0_8px_28px_rgba(0,0,0,0.15)]">
+      {progress ? <OnboardingProgressBar {...progress} /> : null}
       {phase === "intro" ? (
         <IntroStep onBegin={beginTask} />
       ) : null}
@@ -199,7 +206,7 @@ export default function QuickStroopTask({
           stimulus={currentStimulus}
           trialIndex={trialIndex}
           onChoice={handleChoice}
-          totalTrials={TRIAL_COUNT}
+          practiceCount={PRACTICE_TRIALS}
         />
       ) : null}
       {phase === "summary" && summary ? (
@@ -218,10 +225,10 @@ export default function QuickStroopTask({
 function IntroStep({ onBegin }: { onBegin: () => void }) {
   return (
     <div className="space-y-4 text-center">
-      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Pasul 2 din 3</p>
       <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">Task rapid: Micro-Stroop</h2>
       <p className="text-sm text-[var(--omni-ink-soft)]">
-        Selectează culoarea cu care este scris cuvântul (nu textul). 36 de trialuri · ~2 minute.
+        Selectează culoarea cu care este scris cuvântul (nu textul). Ai 2 trialuri de practică și 10 reale — totul durează
+        sub 3 minute.
       </p>
       <OmniCtaButton variant="primary" onClick={onBegin} data-testid="stroop-start">
         Începe taskul
@@ -233,19 +240,21 @@ function IntroStep({ onBegin }: { onBegin: () => void }) {
 function RunStep({
   stimulus,
   trialIndex,
-  totalTrials,
   onChoice,
+  practiceCount,
 }: {
   stimulus: Stimulus;
   trialIndex: number;
-  totalTrials: number;
   onChoice: (choice: ColorKey) => void;
+  practiceCount: number;
 }) {
+  const isPractice = stimulus.phase === "practice";
+  const label = isPractice
+    ? `Trial de practică ${Math.min(trialIndex + 1, practiceCount)}/${practiceCount}`
+    : `Trial real ${Math.min(trialIndex + 1 - practiceCount, REAL_TRIALS)}/${REAL_TRIALS}`;
   return (
     <div className="space-y-4 text-center">
-      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
-        Trial {trialIndex + 1}/{totalTrials}
-      </p>
+      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">{label}</p>
       <div className="flex min-h-[160px] items-center justify-center rounded-[12px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]">
         <span
           className="text-4xl font-semibold tracking-wide"

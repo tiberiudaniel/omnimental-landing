@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
-import { getUserProfileSnapshot, type CatAxisState, type CatAxisId } from "@/lib/profileEngine";
+import { getUserProfileSnapshot, type CatAxisState, type CatAxisId, type CatProfile } from "@/lib/profileEngine";
 import type { ArcConfig } from "@/config/arcs";
 import { getTempleByDomain } from "@/config/temples";
 import { getActiveArc } from "@/lib/arcEngine";
+import OnboardingProgressBar, { type OnboardingProgressMeta } from "@/components/onboarding/OnboardingProgressBar";
+import { track } from "@/lib/telemetry/track";
+import CatRadarChart from "@/components/cat/CatRadarChart";
+import type { CatAxisId as RadarAxisId } from "@/config/catEngine";
+import { CAT_LITE_EXTENDED_AXES } from "@/lib/catLite";
+import { getTraitLabel } from "@/lib/profileEngine";
 
 const TRAIT_NAMES: Record<CatAxisId, string> = {
   clarity: "Claritate cognitivă",
@@ -19,13 +25,28 @@ const TRAIT_NAMES: Record<CatAxisId, string> = {
   emotionalStability: "Stabilitate emoțională",
 };
 
-export default function OnboardingFirstTemple() {
+type Props = {
+  progress: OnboardingProgressMeta;
+};
+
+const RADAR_AXES: Array<{ profileAxis: CatAxisId; radarAxis: RadarAxisId; label: string }> = [
+  { profileAxis: "clarity", radarAxis: "clarity", label: "Claritate" },
+  { profileAxis: "focus", radarAxis: "focus", label: "Focus și continuitate" },
+  { profileAxis: "recalibration", radarAxis: "recalib", label: "Recalibrare" },
+  { profileAxis: "energy", radarAxis: "energy", label: "Energie" },
+  { profileAxis: "flexibility", radarAxis: "flex", label: "Flexibilitate" },
+  { profileAxis: "adaptiveConfidence", radarAxis: "adapt_conf", label: "Încredere adaptativă" },
+  { profileAxis: "emotionalStability", radarAxis: "emo_stab", label: "Stabilitate emoțională" },
+];
+
+export default function OnboardingFirstTemple({ progress }: Props) {
   const { user, authReady } = useAuth();
   const router = useRouter();
   const [traits, setTraits] = useState<Array<{ id: CatAxisId; state: CatAxisState }>>([]);
   const [loading, setLoading] = useState(false);
   const [activeArc, setActiveArc] = useState<ArcConfig | null>(null);
   const [templeLabel, setTempleLabel] = useState<string | null>(null);
+  const [catProfile, setCatProfile] = useState<CatProfile | null>(null);
 
   useEffect(() => {
     if (!authReady || !user) return;
@@ -36,6 +57,7 @@ export default function OnboardingFirstTemple() {
         const snapshot = await getUserProfileSnapshot(user.uid);
         if (cancelled || !snapshot) return;
         if (snapshot.catProfile) {
+          setCatProfile(snapshot.catProfile);
           const entries = Object.entries(snapshot.catProfile.axes)
             .filter(([, value]) => typeof value.score === "number")
             .map(([id, state]) => ({ id: id as CatAxisId, state }))
@@ -62,6 +84,25 @@ export default function OnboardingFirstTemple() {
     };
   }, [authReady, user]);
 
+  const viewTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!authReady || !user || loading || viewTrackedRef.current) return;
+    const coverage =
+      catProfile == null ? "none" : CAT_LITE_EXTENDED_AXES.some((axis) => typeof catProfile.axes[axis]?.score !== "number") ? "partial" : "full";
+    const topTraits =
+      traits.length > 0
+        ? traits.map((trait) => ({ id: trait.id, score: trait.state.score ?? null }))
+        : activeArc
+        ? [activeArc.traitPrimary, ...activeArc.traitSecondary].map((trait) => ({ id: trait, score: null }))
+        : [];
+    track("first_temple_viewed", {
+      templeId: activeArc?.id ?? null,
+      topTraits,
+      catCoverage: coverage,
+    });
+    viewTrackedRef.current = true;
+  }, [authReady, user, loading, traits, activeArc, catProfile]);
+
   const message = useMemo(() => {
     if (loading) return "Se calculează...";
     if (!activeArc) {
@@ -70,6 +111,34 @@ export default function OnboardingFirstTemple() {
     const label = templeLabel ?? "Templul activ";
     return `${label} — ${activeArc.description}`;
   }, [activeArc, templeLabel, loading]);
+
+  const missingExtendedAxes = useMemo(() => {
+    if (!catProfile) return CAT_LITE_EXTENDED_AXES;
+    return CAT_LITE_EXTENDED_AXES.filter((axis) => typeof catProfile.axes[axis]?.score !== "number");
+  }, [catProfile]);
+
+  const radarData = useMemo(() => {
+    if (!catProfile) return [];
+    return RADAR_AXES.map((axis) => {
+      const score = catProfile.axes[axis.profileAxis]?.score ?? 0;
+      return {
+        id: axis.radarAxis,
+        label: axis.label,
+        value: Math.max(0, Math.min(10, score)) * 10,
+      };
+    });
+  }, [catProfile]);
+
+  const coverageNote = useMemo(() => {
+    if (!catProfile) {
+      return "Nu avem încă toate măsurătorile. După primele sesiuni zilnice completăm harta CAT.";
+    }
+    if (missingExtendedAxes.length > 0) {
+      const labels = missingExtendedAxes.map((axis) => getTraitLabel(axis)).join(", ");
+      return `Ai completat prima parte (4 trăsături de bază). Mai evaluăm ${labels} după câteva sesiuni.`;
+    }
+    return "Harta de auto-percepție pe toate cele 7 trăsături este completă. Pe măsură ce rulezi antrenamente reale, aceste valori devin tot mai precise.";
+  }, [catProfile, missingExtendedAxes]);
 
   if (!authReady) {
     return (
@@ -80,23 +149,41 @@ export default function OnboardingFirstTemple() {
   }
 
   if (!user) {
-    return (
-      <section className="flex min-h-[40vh] flex-col items-center justify-center gap-4 text-center">
-        <p className="text-sm text-[var(--omni-ink)]">Creează un cont ca să vezi progresul în Temples.</p>
-        <OmniCtaButton onClick={() => router.push("/auth?returnTo=%2Fonboarding")} variant="primary">
-          Creează cont
-        </OmniCtaButton>
-      </section>
-    );
+    return null;
   }
 
   return (
     <section className="mx-auto w-full max-w-4xl space-y-6 rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
+      <OnboardingProgressBar {...progress} />
       <header className="space-y-2 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Pasul 4 din 4</p>
         <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">Templul activat</h2>
         <p className="text-sm text-[var(--omni-ink-soft)]">Primele măsurători sunt salvate. Acesta este templul tău principal acum.</p>
       </header>
+
+      <section className="rounded-[20px] border border-[var(--omni-border-soft)] bg-white/90 px-5 py-6 shadow-[0_12px_35px_rgba(0,0,0,0.08)]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+          <div className="flex-1">
+            <CatRadarChart data={radarData} />
+          </div>
+          <div className="flex-1 space-y-3 text-sm text-[var(--omni-ink)]/85">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Profil CAT</p>
+            <p>{coverageNote}</p>
+            {missingExtendedAxes.length > 0 ? (
+              <p className="text-[13px] text-[var(--omni-ink-soft)]">
+                Lipsesc încă:{" "}
+                <span className="font-medium text-[var(--omni-ink)]">
+                  {missingExtendedAxes.map((axis) => getTraitLabel(axis)).join(", ")}
+                </span>
+                .
+              </p>
+            ) : (
+              <p className="text-[13px] text-[var(--omni-ink-soft)]">
+                Poți trece oricând prin /onboarding/cat-lite-2 dacă vrei să-ți ajustezi self-percepția.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
 
       <div className="rounded-[18px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-5 text-sm text-[var(--omni-ink)]/90">
         {loading ? "Se calculează..." : message}
@@ -125,11 +212,23 @@ export default function OnboardingFirstTemple() {
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <OmniCtaButton variant="primary" onClick={() => router.replace("/today")}>
-          Mergi la /today
+        <OmniCtaButton
+          variant="primary"
+          onClick={() => {
+            track("first_temple_cta_today_clicked");
+            router.replace("/today");
+          }}
+        >
+          Încep programul ghidat
         </OmniCtaButton>
-        <OmniCtaButton variant="neutral" onClick={() => router.replace("/antrenament")}>
-          Vezi alte trasee
+        <OmniCtaButton
+          variant="neutral"
+          onClick={() => {
+            track("first_temple_cta_arenas_clicked");
+            router.replace("/arenas");
+          }}
+        >
+          Explorez exerciții intensive
         </OmniCtaButton>
       </div>
     </section>

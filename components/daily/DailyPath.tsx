@@ -13,6 +13,12 @@ import DailyPathNode from "./DailyPathNode";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { recordDailyPathEvent } from "@/lib/dailyPathEvents";
 import { recordDailyRunnerEvent } from "@/lib/progressFacts/recorders";
+import {
+  logExecutionIntent,
+  logExecutionStart,
+  logExecutionCompletion,
+  logExecutionAbandon,
+} from "@/lib/execution/executionTelemetry";
 import { applyDailyPracticeCompletion } from "@/lib/arcMetrics";
 import { CLUSTER_REGISTRY } from "@/config/clusterRegistry";
 
@@ -228,6 +234,8 @@ export default function DailyPath({
   const missionBriefSelectionLoggedRef = useRef(false);
   const questMapLoggedRef = useRef<string | null>(null);
   const questCompletionLoggedRef = useRef<string | null>(null);
+  const nodeIntentTimesRef = useRef<Record<string, number>>({});
+  const nodeStartTimesRef = useRef<Record<string, number>>({});
   const activeLang: DailyPathLanguage = config?.lang ?? "ro";
   const persistenceEnabled = !disablePersistence;
   const copy = DAILY_PATH_COPY[activeLang] ?? DAILY_PATH_COPY.ro;
@@ -332,6 +340,16 @@ export default function DailyPath({
   const visibleNodes = useMemo(() => {
     return processedNodes.filter((node) => !node.softPathOnly || softPathChosen);
   }, [processedNodes, softPathChosen]);
+  const configRef = useRef(config);
+  const visibleNodesRef = useRef(visibleNodes);
+
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+
+  useEffect(() => {
+    visibleNodesRef.current = visibleNodes;
+  }, [visibleNodes]);
   const questSteps = useMemo(() => {
     return visibleNodes.map((node, index) => {
       const isCompleted = completedNodeIds.includes(node.id);
@@ -368,6 +386,57 @@ export default function DailyPath({
       context: "quest_map",
     });
   }, [config, persistenceEnabled, visibleNodes.length, streakDays]);
+
+  useEffect(() => {
+    if (!config) return;
+    if (!currentActiveId) return;
+    const activeNode = visibleNodes.find((node) => node.id === currentActiveId);
+    if (!activeNode) return;
+    if (nodeIntentTimesRef.current[activeNode.id]) return;
+    const timestamp = Date.now();
+    nodeIntentTimesRef.current[activeNode.id] = timestamp;
+    logExecutionIntent({
+      userId,
+      moduleKey: config.moduleKey ?? null,
+      cluster: config.cluster,
+      mode: config.mode,
+      lang: config.lang,
+      skillLabel: config.skillLabel,
+      nodeId: activeNode.id,
+      nodeKind: activeNode.kind,
+      nodeTitle: activeNode.title,
+      xp: activeNode.xp,
+      intentTimestamp: timestamp,
+    });
+  }, [config, currentActiveId, userId, visibleNodes]);
+
+  const ensureNodeStartLogged = useCallback(
+    (node: DailyPathNodeConfig) => {
+      if (!config) return null;
+      if (nodeStartTimesRef.current[node.id]) {
+        return nodeStartTimesRef.current[node.id];
+      }
+      const startTimestamp = Date.now();
+      nodeStartTimesRef.current[node.id] = startTimestamp;
+      const intentTimestamp = nodeIntentTimesRef.current[node.id];
+      logExecutionStart({
+        userId,
+        moduleKey: config.moduleKey ?? null,
+        cluster: config.cluster,
+        mode: config.mode,
+        lang: config.lang,
+        skillLabel: config.skillLabel,
+        nodeId: node.id,
+        nodeKind: node.kind,
+        nodeTitle: node.title,
+        xp: node.xp,
+        startTimestamp,
+        latencyMs: intentTimestamp ? Math.max(0, startTimestamp - intentTimestamp) : undefined,
+      });
+      return startTimestamp;
+    },
+    [config, userId],
+  );
 
   const currentProgress = useMemo(() => {
     if (!visibleNodes.length) return 0;
@@ -539,6 +608,36 @@ useEffect(() => {
     logPathStart(selected);
   }, [config, modeHint, logPathStart, timeAvailableMin]);
 
+  useEffect(() => {
+    return () => {
+      const cfg = configRef.current;
+      if (!cfg) return;
+      const nodes = visibleNodesRef.current;
+      const abandonTimestamp = Date.now();
+      Object.entries(nodeIntentTimesRef.current).forEach(([nodeId, intentTs]) => {
+        if (nodeStartTimesRef.current[nodeId]) return;
+        const node = nodes.find((n) => n.id === nodeId);
+        if (!node) return;
+        logExecutionAbandon({
+          userId,
+          moduleKey: cfg.moduleKey ?? null,
+          cluster: cfg.cluster,
+          mode: cfg.mode,
+          lang: cfg.lang,
+          skillLabel: cfg.skillLabel,
+          nodeId,
+          nodeKind: node.kind,
+          nodeTitle: node.title,
+          xp: node.xp,
+          abandonTimestamp,
+          elapsedMs: abandonTimestamp - intentTs,
+        });
+      });
+      nodeIntentTimesRef.current = {};
+      nodeStartTimesRef.current = {};
+    };
+  }, [userId]);
+
 useEffect(() => {
   if (!config || !pathFinished || completionLoggedRef.current) return;
     completionLoggedRef.current = true;
@@ -612,6 +711,7 @@ useEffect(() => {
   const handleNodeAction = (node: DailyPathNodeConfig) => {
     if (!config) return;
     if (node.id !== currentActiveId) return;
+    ensureNodeStartLogged(node);
     markNodeCompleted(node);
   };
 
@@ -633,6 +733,24 @@ useEffect(() => {
       setXp((prevXp) => prevXp + xpDelta);
     }
     logDebug("node_completed", { nodeId: node.id, xpDelta, skipAdvance: options?.skipAdvance });
+    const completeTimestamp = Date.now();
+    const startTimestamp = ensureNodeStartLogged(node) ?? completeTimestamp;
+    logExecutionCompletion({
+      userId,
+      moduleKey: config.moduleKey ?? null,
+      cluster: config.cluster,
+      mode: config.mode,
+      lang: config.lang,
+      skillLabel: config.skillLabel,
+      nodeId: node.id,
+      nodeKind: node.kind,
+      nodeTitle: node.title,
+      xp: xpDelta,
+      completeTimestamp,
+      durationMs: Math.max(0, completeTimestamp - startTimestamp),
+    });
+    delete nodeIntentTimesRef.current[node.id];
+    delete nodeStartTimesRef.current[node.id];
     if (!options?.skipAdvance) {
       advanceToNext(node.id, updated);
     }

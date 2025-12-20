@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import QuickStroopTask from "@/components/onboarding/QuickStroopTask";
 import { ARENA_TASKS } from "@/config/arenas";
@@ -10,10 +10,14 @@ import { FREE_LIMITS } from "@/lib/gatingRules";
 import { getArenaRunsById } from "@/lib/usageStats";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 
-export default function ArenaRunPage({ params }: { params: { arenaId: string } }) {
+export default function ArenaRunPage() {
   const router = useRouter();
+  const params = useParams<{ arenaId: string }>();
   const { user } = useAuth();
-  const arena = useMemo(() => ARENA_TASKS[params.arenaId as keyof typeof ARENA_TASKS], [params.arenaId]);
+  const arena = useMemo(() => {
+    const arenaId = params?.arenaId;
+    return arenaId ? ARENA_TASKS[arenaId as keyof typeof ARENA_TASKS] : undefined;
+  }, [params]);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [runCount, setRunCount] = useState(0);
 

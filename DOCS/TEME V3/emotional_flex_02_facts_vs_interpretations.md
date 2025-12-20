@@ -1,147 +1,61 @@
-MODUL #12 — SEPARAREA FAPTELOR DE INTERPRETĂRI
-CLUSTER: EMOTIONAL FLEX
-DEEP — ROMÂNĂ
-HOOK
+# WOW Lesson · Emotional Flex 02 — Fapte vs Interpretări
 
-„Nu faptele te afectează cel mai mult. Ci povestea pe care o spui despre ele.”
+## DEEP PATH — 12 pași
 
-MIRROR
+### 1. INTRO
+- **RO:** „Nu faptele te lovesc cel mai tare, ci povestea despre ele. Astăzi separăm cele două.”
+- **EN:** “What hurts most isn’t the facts; it’s the story. Today we separate them.”
 
-„Cineva spune ceva neutru și te enervezi.
-Un mesaj scurt pare ostil.
-Reacționezi ca și cum interpretarea ar fi realitatea.”
+### 2. LEARN 1 — Definiții
+- **RO:** „Fapt = ceea ce poate fi filmat. Interpretare = ce înseamnă pentru tine. Emoția urmează interpretarea.”
+- **EN:** “Facts are what can be filmed. Interpretations are what they mean to you. Emotion follows interpretation.”
 
-CORE INSIGHT
+### 3. EXAMPLE
+- **RO:** „Mesaj: „Hai să vorbim mâine.” Interpretare: „Nu-i pasă.” Emoția vine din interpretare, nu din cuvinte.”
+- **EN:** “Message: “Let’s talk tomorrow.” Interpretation: “They don’t care.” The emotion comes from the interpretation, not the words.”
 
-„Faptele sunt ce s-a întâmplat.
-Interpretările sunt ce înseamnă pentru tine.
-Emoțiile apar din interpretări, nu din fapte.”
+### 4. QUIZ 1 — Recunoaștere
+- **Întrebare:** „Care este fapt?”
+- **Corect:** „Nu a răspuns 3 ore.”
+- **Feedback:** „Faptele pot fi observate. Interpretările sunt concluzii.” / “Facts can be observed. Interpretations are conclusions.”
 
-ACTIVE CHECK
+### 5. LEARN 2 — De ce contează
+- **RO:** „Când tranșezi faptul de interpretare, câștigi spațiu. Când le amesteci, reacția devine automată.”
+- **EN:** “When you split fact from interpretation you gain space. Mix them and reaction becomes automatic.”
 
-Întrebare:
-Care dintre următoarele este un fapt, nu o interpretare?
+### 6. QUIZ 2 — Aplicare
+- **Întrebare:** „Ce faci când apare emoție puternică?”
+- **Corect:** „Întrebi: Ce știu sigur? Ce presupun?”
 
-A) „M-a ignorat intenționat.”
+### 7. SIMULATOR 1 — Separă
+- **RO:** „Ia o situație recentă. Scrie două coloane: FAPT / INTERPRETARE. Completează câte o propoziție în fiecare.”
+- **EN:** “Take a recent situation. Write two columns: FACT / INTERPRETATION. Fill one sentence in each.”
 
-B) „Nu a răspuns la mesaj timp de 3 ore.”
+### 8. AUTONOMY CHOICE
+- „Mai exersez pe alt exemplu” / „Trec la aplicare reală.”
 
-C) „Nu îi pasă.”
+### 9. SIMULATOR 2 — Re-cadrare
+- **RO:** „Transformă interpretarea în întrebări: „Este sigur?” „Există altă explicație?””
+- **EN:** “Turn the interpretation into questions: “Is this for sure?” “Is there another explanation?””
 
-Corect: B
+### 10. LEARN 3 — Semn
+- **RO:** „Când poți spune „asta e fapt, restul e poveste”, emoția scade cu 20–30%.”
+- **EN:** “When you can say “this is fact, the rest is story”, emotion drops by 20–30%.”
 
-Feedback:
+### 11. REAL WORLD CHALLENGE
+- **RO:** „Când simți reacție azi, notează „Fapt:” / „Interpretare:”. Clarifică înainte de răspuns.”
+- **EN:** “When you feel a reaction today, write “Fact:” / “Interpretation:”. Clarify before responding.”
 
-„Faptele pot fi observate. Interpretările sunt concluzii.”
+### 12. SUMMARY + MOTTO
+- **RO bullets:** „Faptele sunt filmabile.” / „Interpretările aprind emoția.” / „Separarea creează flexibilitate.”
+- **EN bullets:** “Facts are filmable.” / “Interpretations ignite emotion.” / “Separation creates flexibility.”
+- **Motto:** „Emoția urmează interpretarea.” / “Emotion follows interpretation.”
 
-MICRO-SIMULATOR
+## SHORT PATH — 6 pași
 
-„Ia o situație recentă.
-Scrie mental două lucruri:
-1) Faptul brut
-2) Interpretarea ta
-Dacă nu le poți separa, reacția va fi automată.”
-
-REAL-WORLD TRANSFER
-
-„Când apare o emoție puternică, fă pauză și întreabă:
-Ce știu sigur? Ce presupun?
-Separarea creează flexibilitate.”
-
-ANCHOR PHRASE
-
-„Emoția urmează interpretarea.”
-
-CLOSE
-
-„Mâine lucrăm cu disconfortul, nu împotriva lui.”
-
-DEEP — ENGLISH
-HOOK
-
-“What affects you most isn’t facts. It’s the story you tell about them.”
-
-MIRROR
-
-“Someone says something neutral and you get triggered.
-A short message feels hostile.
-You react as if interpretation were reality.”
-
-CORE INSIGHT
-
-“Facts are what happened.
-Interpretations are what it means to you.
-Emotions come from interpretations, not facts.”
-
-ACTIVE CHECK
-
-Question:
-Which is a fact, not an interpretation?
-
-A) “They ignored me on purpose.”
-
-B) “They didn’t reply for three hours.”
-
-C) “They don’t care.”
-
-Correct: B
-
-Feedback:
-
-“Facts can be observed. Interpretations are conclusions.”
-
-MICRO-SIMULATOR
-
-“Take a recent situation.
-Write mentally two things:
-1) The raw fact
-2) Your interpretation
-If you can’t separate them, the reaction stays automatic.”
-
-REAL-WORLD TRANSFER
-
-“When a strong emotion appears, pause and ask:
-What do I know for sure? What am I assuming?
-Separation creates flexibility.”
-
-ANCHOR PHRASE
-
-“Emotion follows interpretation.”
-
-CLOSE
-
-“Tomorrow, we work with discomfort instead of avoiding it.”
-
-SHORT — ROMÂNĂ
-HOOK
-
-„Emoțiile vin din interpretări, nu din fapte.”
-
-MICRO-SIMULATOR
-
-„Ce e fapt? Ce e interpretare?”
-
-ANCHOR PHRASE
-
-„Separarea creează spațiu.”
-
-SHORT — ENGLISH
-HOOK
-
-“Emotions come from interpretations, not facts.”
-
-MICRO-SIMULATOR
-
-“What’s fact? What’s interpretation?”
-
-ANCHOR PHRASE
-
-“Separation creates space.”
-
-NOTE CANONICE (intern)
-
-Instrument central pentru Emotional Flex.
-
-Reduce escaladarea emoțională.
-
-Pregătește natural modulul despre toleranța la disconfort.
+1. **INTRO:** „Emoția vine din interpretare.” / “Emotion comes from interpretation.”
+2. **LEARN:** „Fapt = filmabil, Interpretare = poveste.” / “Fact = filmable, Interpretation = story.”
+3. **QUIZ:** „Care e fapt?” / “Which one is a fact?”
+4. **SIMULATOR:** „Scrie: „Fapt = ___; Interpretare = ___.”” / “Write: ‘Fact = ___; Interpretation = ___.’”
+5. **REAL WORLD:** „Aplică la următorul mesaj tensionat.” / “Use it for the next tense message.”
+6. **CLOSE:** „Separarea creează spațiu.” / “Separation creates space.”

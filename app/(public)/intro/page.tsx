@@ -47,9 +47,5 @@ export default function IntroGatePage() {
     return <StartScreen onStart={handleStart} />;
   }
 
-  const handleCompleteSequence = () => {
-    router.replace("/onboarding?step=cat-lite");
-  };
-
-  return <CinematicPlayer allowSkip={false} onComplete={handleCompleteSequence} />;
+  return <CinematicPlayer allowSkip={false} />;
 }

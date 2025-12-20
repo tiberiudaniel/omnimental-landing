@@ -1,143 +1,60 @@
-MODUL #13 — TOLERANȚA LA DISCONFORT
-CLUSTER: EMOTIONAL FLEX
-DEEP — ROMÂNĂ
-HOOK
+# WOW Lesson · Emotional Flex 03 — Toleranța la disconfort
 
-„Disconfortul nu te slăbește. Evitarea lui o face.”
+## DEEP PATH — 12 pași
 
-MIRROR
+### 1. INTRO
+- **RO:** „Disconfortul nu te slăbește. Evitarea lui o face. Azi exersăm să rămânem în el.”
+- **EN:** “Discomfort doesn’t weaken you. Avoiding it does. Today we practice staying in it.”
 
-„Amâni conversații dificile.
-Eviți sarcini care te tensionează.
-Cauți alinare rapidă în loc de progres.”
+### 2. LEARN 1 — Natura disconfortului
+- **RO:** „Este o senzație temporară. Dacă fugi, devine tipar permanent.”
+- **EN:** “It is a temporary sensation. If you run away it becomes a permanent pattern.”
 
-CORE INSIGHT
+### 3. EXAMPLE
+- **RO:** „Amâni conversația grea, te ascunzi în mailuri. Disconfortul scade pe moment, dar revine mai puternic.”
+- **EN:** “You postpone the tough talk and hide in emails. Discomfort drops for a moment, then returns stronger.”
 
-„Disconfortul este o senzație temporară.
-Evitarea îl transformă într-un tipar permanent.
-Capacitatea ta nu crește prin confort, ci prin toleranță.”
+### 4. QUIZ 1
+- **Întrebare:** „Ce întărește toleranța?” → „Expunerea controlată.”
+- **EN feedback:** “Controlled exposure is what strengthens tolerance.”
 
-ACTIVE CHECK
+### 5. LEARN 2 — Expunere controlată
+- **RO:** „Alegi un disconfort mic, stai cu el 30–60s, observi cum intensitatea se modifică singură.”
+- **EN:** “Choose a small discomfort, stay with it 30–60 seconds, watch intensity change on its own.”
 
-Întrebare:
-Ce întărește cel mai mult toleranța la disconfort?
+### 6. QUIZ 2
+- **Întrebare:** „Ce faci când apare disconfortul?” → „Nu negociezi, ci rămâi prezent.”
 
-A) Evitarea situațiilor neplăcute
+### 7. SIMULATOR 1 — Contact ghidat
+- **RO:** „1) Identifică un disconfort mic (mesaj, conversație). 2) Cronometrează 30s. 3) Fără soluții; doar respiră și observă corpul.”
+- **EN:** “1) Identify a small discomfort (message, conversation). 2) Time 30 seconds. 3) No solutions—just breathe and observe the body.”
 
-B) Gândirea pozitivă
+### 8. AUTONOMY CHOICE
+- „Mai repet o dată” / „Aplic în situația reală.”
 
-C) Expunerea controlată
+### 9. SIMULATOR 2 — Reamintire
+- **RO:** „Notează mental: „Pot rămâne cu disconfortul x secunde.” Repetă fraza de 3 ori.”
+- **EN:** “Mentally note: ‘I can stay with this discomfort for X seconds.’ Repeat the sentence three times.”
 
-Corect: C
+### 10. LEARN 3 — Semn al progresului
+- **RO:** „După expunere, simți calm și claritate. Nu dispare disconfortul, dar își pierde puterea.”
+- **EN:** “After exposure you feel calmer and clearer. The discomfort doesn’t vanish, but it loses power.”
 
-Feedback:
+### 11. REAL WORLD CHALLENGE
+- **RO:** „Când apare următorul trigger azi, cronometrează 30s înainte de a acționa. Scrie după: „Am stat cu el / am fugit”. Observă diferența.”
+- **EN:** “When the next trigger shows up today, time 30 seconds before acting. Afterwards note: ‘I stayed with it / I ran.’ Notice the difference.”
 
-„Creșterea vine din contact repetat, nu din evitare.”
+### 12. SUMMARY + MOTTO
+- **RO bullets:** „Disconfortul e temporar.” / „Evitarea îl face perpetuu.” / „Expunerea controlată crește capacitatea.”
+- **EN bullets:** “Discomfort is temporary.” / “Avoidance makes it permanent.” / “Controlled exposure grows capacity.”
+- **Motto:** „Pot rămâne cu disconfortul.” / “I can stay with discomfort.”
 
-MICRO-SIMULATOR
+## SHORT PATH — 6 pași
 
-„Identifică un mic disconfort de azi.
-Stai cu el 30 de secunde fără să faci nimic.
-Observă: intensitatea se schimbă singură.”
-
-REAL-WORLD TRANSFER
-
-„Când apare disconfortul, nu îl negocia.
-Nu îl explica.
-Rămâi prezent suficient cât să treacă.”
-
-ANCHOR PHRASE
-
-„Pot rămâne cu disconfortul.”
-
-CLOSE
-
-„Mâine învățăm să ieșim rapid din stări negative.”
-
-DEEP — ENGLISH
-HOOK
-
-“Discomfort doesn’t weaken you. Avoiding it does.”
-
-MIRROR
-
-“You postpone difficult conversations.
-You avoid tasks that create tension.
-You look for quick relief instead of progress.”
-
-CORE INSIGHT
-
-“Discomfort is temporary.
-Avoidance turns it into a permanent pattern.
-Capacity grows through tolerance, not comfort.”
-
-ACTIVE CHECK
-
-Question:
-What best builds discomfort tolerance?
-
-A) Avoiding unpleasant situations
-
-B) Positive thinking
-
-C) Controlled exposure
-
-Correct: C
-
-Feedback:
-
-“Growth comes from repeated contact, not avoidance.”
-
-MICRO-SIMULATOR
-
-“Identify a small discomfort today.
-Stay with it for 30 seconds without doing anything.
-Notice: intensity changes on its own.”
-
-REAL-WORLD TRANSFER
-
-“When discomfort appears, don’t negotiate with it.
-Don’t explain it away.
-Stay present long enough for it to pass.”
-
-ANCHOR PHRASE
-
-“I can stay with discomfort.”
-
-CLOSE
-
-“Tomorrow, we learn how to reset emotional states.”
-
-SHORT — ROMÂNĂ
-HOOK
-
-„Evitarea te slăbește.”
-
-MICRO-SIMULATOR
-
-„Stai 30 de secunde cu disconfortul.”
-
-ANCHOR PHRASE
-
-„Pot rămâne.”
-
-SHORT — ENGLISH
-HOOK
-
-“Avoidance weakens you.”
-
-MICRO-SIMULATOR
-
-“Stay with discomfort for 30 seconds.”
-
-ANCHOR PHRASE
-
-“I can stay.”
-
-NOTE CANONICE (intern)
-
-Modul de reziliență reală, nu motivațional.
-
-Foarte important pentru retenție pe termen lung.
-
-Leagă direct de reset emoțional rapid.
+1. **INTRO:** „Evitarea te slăbește.” / “Avoidance makes you weaker.”
+2. **LEARN:** „Senzația e temporară.” / “The sensation is temporary.”
+3. **QUIZ:** „Ce ajută?” → „Expunerea controlată.” / “What helps? → Controlled exposure.”
+4. **SIMULATOR:** „Stai 30s cu disconfortul.” / “Stay with the discomfort for 30 seconds.”
+5. **REAL WORLD:** „Aplică la următoarea conversație dificilă.” / “Apply it to the next difficult conversation.”
+6. **CLOSE:** „Pot rămâne.” / “I can stay.”
+*** End Patch

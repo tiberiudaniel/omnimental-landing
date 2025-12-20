@@ -15,9 +15,9 @@ interface IntroCTAProps {
   autoFocus?: boolean;
 }
 
-const CTA_VARIANT_MAP: Record<IntroCTAVariant, "primary" | "neutral"> = {
+const CTA_VARIANT_MAP: Record<IntroCTAVariant, "primary" | "neutral" | "secondary"> = {
   primary: "primary",
-  secondary: "neutral",
+  secondary: "secondary",
 };
 
 export function IntroCTA({
@@ -32,7 +32,7 @@ export function IntroCTA({
 }: IntroCTAProps) {
   const selectedClasses = selected ? "ring-2 ring-[var(--omni-ink)]" : "";
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 text-center">
       <OmniCtaButton
         as="link"
         href={href}

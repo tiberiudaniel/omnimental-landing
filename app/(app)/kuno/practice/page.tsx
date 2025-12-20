@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useRef, useState } from 'react';
+import { Suspense, useMemo, useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
@@ -14,6 +14,10 @@ import { saveKunoAttempts } from '@/lib/kunoPersistence';
 import { recordPracticeSession } from '@/lib/progressFacts';
 import { useProgressFacts } from '@/components/useProgressFacts';
 import type { OmniKunoModuleId } from "@/config/omniKunoModules";
+import { useAuth } from "@/components/AuthProvider";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
+import { canAccessOmniKuno, getTotalDailySessionsCompleted } from "@/lib/gatingSelectors";
+import { GATING } from "@/lib/gatingConfig";
 
 const CATEGORY_TO_MODULE: Record<string, OmniKunoModuleId> = {
   clarity: "focus_clarity",
@@ -40,14 +44,27 @@ function PracticeInner() {
   const router = useRouter();
   const { profile } = useProfile();
   const search = useSearchParams();
+  const { user, authReady } = useAuth();
   const cat = search?.get('cat');
   const n = Math.max(1, Math.min(10, Number(search?.get('n') ?? 5)));
+  const returnPath = useMemo(() => {
+    const qs = search?.toString();
+    return qs && qs.length > 0 ? `/kuno/practice?${qs}` : "/kuno/practice";
+  }, [search]);
   type BankQ = typeof CUNO_QUESTIONS[number];
   const questions: BankQ[] = useMemo(() => {
     const pool = cat ? CUNO_QUESTIONS.filter((q) => String(q.category) === cat) : CUNO_QUESTIONS;
     return pool;
   }, [cat]);
-  const { data: facts } = useProgressFacts(profile?.id);
+  const { data: facts, loading: factsLoading } = useProgressFacts(profile?.id ?? user?.uid ?? null);
+  const totalSessions = getTotalDailySessionsCompleted(facts);
+  const unlocked = canAccessOmniKuno(facts);
+  useEffect(() => {
+    if (!authReady) return;
+    if (!user) {
+      router.replace(`/auth?returnTo=${encodeURIComponent(returnPath)}`);
+    }
+  }, [authReady, user, router, returnPath]);
   const mastery = useMemo(() => {
     const mk = (facts?.omni as unknown as { kuno?: { masteryByCategory?: Record<string, number> } } | undefined)?.kuno?.masteryByCategory;
     if (mk) return mk;
@@ -117,6 +134,56 @@ function PracticeInner() {
   };
 
   const [toast, setToast] = useState<string | null>(null);
+
+  if (!authReady || factsLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center text-sm text-[var(--omni-ink-soft)]">
+        Se verifică accesul la OmniKuno...
+      </div>
+    );
+  }
+  if (!user) return null;
+  if (!unlocked) {
+    const remainingSessions = Math.max(0, GATING.omniKunoMinDailySessions - totalSessions);
+    const progressPct = Math.min(
+      100,
+      Math.round((totalSessions / GATING.omniKunoMinDailySessions) * 100),
+    );
+    return (
+      <div className="px-4 py-12">
+        <section className="mx-auto max-w-3xl space-y-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-white px-6 py-8 text-center text-[var(--omni-ink)] shadow-[0_24px_80px_rgba(0,0,0,0.08)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">OmniKuno</p>
+          <h2 className="text-2xl font-semibold">Completează {GATING.omniKunoMinDailySessions} sesiuni reale pentru a exersa aici</h2>
+          <p className="text-sm text-[var(--omni-ink)]/75">
+            Ai {totalSessions} sesiuni înregistrate. Continuă cu /today și revino după prag pentru a rula mini-testele OmniKuno.
+          </p>
+          <div className="mx-auto mt-4 w-full max-w-sm text-left">
+            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
+              <span>Progres</span>
+              <span>{progressPct}%</span>
+            </div>
+            <div className="mt-1 h-2 rounded-full bg-[var(--omni-border-soft)]/60">
+              <div className="h-2 rounded-full bg-[var(--omni-energy)]" style={{ width: `${progressPct}%` }} />
+            </div>
+            <p className="mt-1 text-[var(--omni-ink)]/70 text-xs">
+              Mai ai {remainingSessions} {remainingSessions === 1 ? "zi" : "zile"} până când deblocăm mini-teste adaptive.
+            </p>
+          </div>
+          <div className="mt-6 rounded-[18px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-4 text-left">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">Ce primești la acces</p>
+            <ul className="mt-3 space-y-1 text-sm text-[var(--omni-ink)]/80">
+              <li>• Drill-uri de 5 întrebări cu dificultate adaptivă.</li>
+              <li>• Feedback instant și recomandare de lecție.</li>
+              <li>• XP suplimentar pe trăsătura dominantă.</li>
+            </ul>
+          </div>
+          <OmniCtaButton className="mt-4 justify-center" onClick={() => router.push("/today")}>
+            Înapoi la /today
+          </OmniCtaButton>
+        </section>
+      </div>
+    );
+  }
   if (done) {
     const s = scoreAttempts(attempts);
     const moduleId = CATEGORY_TO_MODULE[cat ?? ""] ?? "emotional_balance";

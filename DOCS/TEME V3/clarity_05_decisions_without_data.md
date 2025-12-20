@@ -1,145 +1,60 @@
-MODUL #5 — DECIZII FĂRĂ SUFICIENTE DATE
-CLUSTER: CLARITY
-DEEP — ROMÂNĂ
-HOOK
+# WOW Lesson · Clarity 05 — Decizii fără date
 
-„Așteptarea clarității complete este una dintre cele mai scumpe greșeli mentale.”
+## DEEP PATH — 12 pași
 
-MIRROR
+### 1. INTRO
+- **RO:** „Așteptarea clarității totale e o capcană. Astăzi învățăm să decidem suficient de bine fără date perfecte.”
+- **EN:** “Waiting for perfect clarity is a trap. Today we learn to decide well enough without complete data.”
 
-„Tot mai aștepți informații.
-Spui că nu e momentul potrivit.
-Simți că ‘încă nu știi destul’, deși situația stagnează.”
+### 2. LEARN 1 — Iluzia certitudinii
+- **RO:** „Creierul vrea siguranță, dar realitatea nu oferă toate informațiile. Clarity ≠ certitude.”
+- **EN:** “The brain craves certainty, but reality rarely gives you all the information. Clarity is not the same as certainty.”
 
-CORE INSIGHT
+### 3. EXAMPLE
+- **RO:** „Radu amână lansarea unei funcții „până are toate datele”. După 6 săptămâni, competitorii lansează înainte și costul lipsei deciziei devine evident.”
+- **EN:** “Radu delays a feature launch “until he has all the data.” Six weeks later a competitor ships first and the cost of indecision is obvious.”
 
-„Majoritatea deciziilor importante se iau fără date suficiente.
-Claritatea absolută apare rar înainte de acțiune.
-De multe ori, apare după.”
+### 4. QUIZ 1 — Semnul că amânarea e toxică
+- **Întrebare:** „Care indicator arată că lipsa deciziei costă?” → „Stagnarea generează cost real (timp/piață).”
+- **Feedback:** „Când inaction costă, așteptarea e decizie proastă.”
 
-ACTIVE CHECK
+### 5. LEARN 2 — Decizia reversibilă
+- **RO:** „Alege soluția cu risc controlat și feedback rapid. Începi mic, înveți, ajustezi.”
+- **EN:** “Choose the option with controlled risk and fast feedback. Start small, learn, adjust.”
 
-Întrebare:
-Care dintre următoarele este un semn că amânarea nu mai e rațională?
+### 6. QUIZ 2 — Aplicare
+- **Întrebare:** „Ce alegi dacă ai două opțiuni cu date incomplete?” → „Pe cea reversibilă, care produce feedback curând.”
+- **Feedback:** „Feedback-ul creează claritate.”
 
-A) Mai există informații posibile
+### 7. SIMULATOR 1 — Sentința începe cu „Dacă…”
+- **RO pași:** „1) Gândește-te la decizia amânată. 2) Completează rapid: „Dacă nu decid acum, cel mai probabil ______.” 3) Acceptă primul răspuns – acesta îți arată costul.”
+- **EN steps:** “1) Think about the delayed decision. 2) Complete quickly: ‘If I don’t decide now, most likely ______ will happen.’ 3) Accept the first answer—it reveals the cost.”
 
-B) Riscul nu este zero
+### 8. AUTONOMY CHOICE
+- „Vreau să definesc pașii de feedback” / „Vreau să aleg acum varianta reversibilă.”
 
-C) Lipsa deciziei creează costuri reale
+### 9. SIMULATOR 2 — Plan de feedback
+- **RO:** „Scrie: 1) decizia minimă pe care o iei azi; 2) ce măsori ca feedback în 48h; 3) cum revii dacă greșești.”
+- **EN:** “Write: 1) the minimum decision you take today; 2) what feedback you’ll measure in 48h; 3) how you revert if it’s wrong.”
 
-Corect: C
+### 10. LEARN 3 — Semnul că ai decis
+- **RO:** „Simți o ușurare mică și direcție clară, chiar dacă există risc. Frica rămâne, dar nu te mai paralizează.”
+- **EN:** “You feel a small relief and a clear direction even though risk remains. The fear is there, but it no longer paralyzes you.”
 
-Feedback:
+### 11. REAL WORLD CHALLENGE
+- **RO:** „Aplică regula: „Decizia minimă reversibilă” pe problema principală de azi. Scrie „Decid X până la ora Y, măsor Z.””
+- **EN:** “Apply the “minimal reversible decision” rule to today’s main issue. Write “I decide X by time Y, I measure Z.””
 
-„Când lipsa deciziei costă, așteptarea devine o alegere proastă.”
+### 12. SUMMARY + MOTTO
+- **RO bullets:** „Datele perfecte nu apar.” / „Decizia minimă creează claritate.” / „Feedbackul e noua informație.”
+- **EN bullets:** “Perfect data never shows up.” / “The minimal decision creates clarity.” / “Feedback becomes the new data.”
+- **Motto:** „Lipsa deciziei este tot o decizie.” / “Not deciding is still a decision.”
 
-MICRO-SIMULATOR
+## SHORT PATH — 6 pași
 
-„Gândește-te la o decizie amânată.
-Completează mental propoziția:
-Dacă nu decid acum, cel mai probabil se va întâmpla ___ .
-Prima variantă care apare e suficientă.”
-
-REAL-WORLD TRANSFER
-
-„Azi, nu mai căuta certitudine.
-Caută o decizie reversibilă și fă-o.
-Claritatea vine din feedback, nu din așteptare.”
-
-ANCHOR PHRASE
-
-„Lipsa deciziei este tot o decizie.”
-
-CLOSE
-
-„Mâine trecem de la claritate la energie.”
-
-DEEP — ENGLISH
-HOOK
-
-“Waiting for complete clarity is one of the most expensive mental mistakes.”
-
-MIRROR
-
-“You keep waiting for more information.
-You say it’s not the right moment.
-You feel you ‘don’t know enough yet’, while the situation stalls.”
-
-CORE INSIGHT
-
-“Most important decisions are made without sufficient data.
-Perfect clarity rarely comes before action.
-Often, it comes after.”
-
-ACTIVE CHECK
-
-Question:
-Which signals that delaying is no longer rational?
-
-A) More information is possible
-
-B) Risk is not zero
-
-C) Not deciding creates real costs
-
-Correct: C
-
-Feedback:
-
-“When inaction has a cost, waiting becomes a bad choice.”
-
-MICRO-SIMULATOR
-
-“Think of a decision you’ve been delaying.
-Complete this sentence mentally:
-If I don’t decide now, most likely ___ will happen.
-The first answer is enough.”
-
-REAL-WORLD TRANSFER
-
-“Today, stop chasing certainty.
-Look for a reversible decision and make it.
-Clarity comes from feedback, not waiting.”
-
-ANCHOR PHRASE
-
-“Not deciding is still a decision.”
-
-CLOSE
-
-“Tomorrow, we move from clarity to energy.”
-
-SHORT — ROMÂNĂ
-HOOK
-
-„Așteptarea certitudinii te ține blocat.”
-
-MICRO-SIMULATOR
-
-„Dacă nu decid acum, cel mai probabil se va întâmpla ___.”
-
-ANCHOR PHRASE
-
-„Lipsa deciziei este tot o decizie.”
-
-SHORT — ENGLISH
-HOOK
-
-“Waiting for certainty keeps you stuck.”
-
-MICRO-SIMULATOR
-
-“If I don’t decide now, most likely ___ will happen.”
-
-ANCHOR PHRASE
-
-“Not deciding is still a decision.”
-
-NOTE CANONICE (intern)
-
-Închide perfect arcul Clarity.
-
-Leagă claritatea de acțiune, nu de confort.
-
-Pregătește natural trecerea către Focus & Energy.
+1. **INTRO:** „Versiune rapidă: nu mai aștepți certitudine.” / “Quick version: stop waiting for certainty.”
+2. **LEARN:** „Când lipsa deciziei costă, acționezi.” / “When indecision costs, you act.”
+3. **QUIZ:** „Care opțiune alegi?” → „Decizia reversibilă cu feedback rapid.” / “Which option do you choose? → The reversible decision with fast feedback.”
+4. **SIMULATOR:** „Completează: „Dacă nu decid acum, ______.” + „Decizia minimă este ______.”” / “Fill in: ‘If I don’t decide now, ______.’ + ‘The minimum decision is ______.’”
+5. **REAL WORLD HOOK:** „Aplică azi la cea mai amânată decizie.” / “Apply it today to your most delayed decision.”
+6. **CLOSE:** Motto „Lipsa deciziei este tot o decizie.” / “Not deciding is still a decision.”

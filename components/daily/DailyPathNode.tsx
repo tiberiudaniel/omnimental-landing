@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import SimulatorTimer from "./SimulatorTimer";
 import type { DailyPathLanguage, DailyPathNodeConfig } from "@/types/dailyPath";
+import { recordActionCompletion } from "@/lib/progressFacts/recorders";
 
 export type DailyNodeStatus = "locked" | "active" | "completed";
 
@@ -175,6 +176,9 @@ export default function DailyPathNode({
       console.log("[REAL_WORLD commitment]", {
         context: realContext.trim(),
         rule: realRule.trim(),
+      });
+      void recordActionCompletion().catch((error) => {
+        console.warn("recordActionCompletion failed", error);
       });
     }
     onSelect?.();

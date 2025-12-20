@@ -1,147 +1,61 @@
-MODUL #4 — CLARITATE PRIN SCRIERE BRUTALĂ
-CLUSTER: CLARITY
-DEEP — ROMÂNĂ
-HOOK
+# WOW Lesson · Clarity 04 — Scriere brutală
 
-„Dacă nu poți scrie clar, nu gândești clar. Doar ți se pare.”
+## DEEP PATH — 12 pași
 
-MIRROR
+### 1. INTRO
+- **RO:** „Dacă nu poți scrie clar, nu gândești clar. Azi transformăm confuzia în text concret.”
+- **EN:** “If you can’t write it clearly, you’re not thinking clearly. Today we turn fog into concrete text.”
 
-„În cap pare totul logic.
-Când încerci să scrii, te blochezi.
-Reformulezi de zece ori și tot nu sună bine.”
+### 2. LEARN 1 — De ce doare scrisul
+- **RO:** „Scrisul nu e doar exprimare; este testul gândirii. Te blochezi nu din lipsă de vocabular, ci pentru că ideea nu are structură.”
+- **EN:** “Writing isn’t just expression; it is the test of thinking. You get stuck not because of vocabulary, but because the idea lacks structure.”
 
-CORE INSIGHT
+### 3. EXAMPLE
+- **RO:** „Angela ține în minte „planul Q4”. Când îl scrie, realizează că nu poate formula obiectivul în 1 propoziție. Blocajul nu e emoția, ci lipsa clarității.”
+- **EN:** “Angela keeps the ‘Q4 plan’ in her head. When she writes it, she can’t put the objective into a single sentence. The block isn’t emotion, it’s the lack of clarity.”
 
-„Scrisul nu este exprimarea gândirii.
-Este testul gândirii.
-Ce nu poate fi scris simplu nu este încă clar.”
+### 4. QUIZ 1 — Recunoaștere
+- **Întrebare:** „Ce arată cel mai clar lipsa structurii?” → „Reformulezi aceeași frază de 10 ori fără rezultat.”
+- **Feedback:** „Scrisul repetitiv = idee neclară.”
 
-ACTIVE CHECK
+### 5. LEARN 2 — Regula propoziției brute
+- **RO:** „Constrângerea: 1 propoziție, 20 cuvinte, verb de acțiune. Dacă nu încape, clarifici până când încape.”
+- **EN:** “Constraint: one sentence, 20 words, action verb. If it doesn’t fit, keep clarifying until it does.”
 
-Întrebare:
-De ce apare blocajul când scrii?
+### 6. QUIZ 2 — Aplicare
+- **Întrebare:** „Care propoziție trece testul?” (ex: „Îi informez pe stakeholderi despre schimbarea X până mâine.” vs „Trebuie să rezolv ceva important.”) – corect prima.
+- **Feedback:** „Testul cere acțiune + timp.”
 
-A) Pentru că nu ai vocabular bun
+### 7. SIMULATOR 1 — Brut Writing
+- **RO pași:** „1) Alege tema care te blochează. 2) Scrie o propoziție de max 20 cuvinte despre problemă. 3) Citește cu voce joasă; dacă simți ambiguitate, rescrie.”
+- **EN steps:** “1) Pick the topic that blocks you. 2) Write one sentence (max 20 words) about the problem. 3) Read it softly; if it feels ambiguous, rewrite.”
 
-B) Pentru că ideea nu e încă structurată
+### 8. AUTONOMY CHOICE
+- **RO:** „Mai rafinez propoziția” / „Trec la aplicare.”
+- **EN:** “Refine sentence” / “Apply now.”
 
-C) Pentru că nu ai destul timp
+### 9. SIMULATOR 2 — Transfer
+- **RO:** „Scrie o a doua propoziție: „Succes = ____” (max 15 cuvinte). Dacă nu poți defini succesul, încă nu e clar.”
+- **EN:** “Write a second sentence: ‘Success = ____’ (max 15 words). If you can’t define success, it isn’t clear yet.”
 
-Corect: B
+### 10. LEARN 3 — Semnal
+- **RO:** „Când propoziția e clară, simți direcție și rezistența scade. Dacă încă ai nevoie de jargon, nu e gata.”
+- **EN:** “When the sentence is clear, you feel direction and resistance drops. If you still need jargon, it isn’t done.”
 
-Feedback:
+### 11. REAL WORLD CHALLENGE
+- **RO:** „De fiecare dată când un task te intimidează azi, deschide notițe: scrie 1 propoziție „Problema este…”, 1 propoziție „Succes înseamnă…”. Execută abia după ce le poți citi fără ezitare.”
+- **EN:** “Whenever a task intimidates you today, open your notes: write one sentence ‘The problem is…’ and one sentence ‘Success means…’. Act only after you can read them without hesitation.”
 
-„Scrisul scoate la suprafață lipsa de structură, nu lipsa de inteligență.”
+### 12. SUMMARY + MOTTO
+- **RO bullets:** „Scrisul testează gândirea.” / „Constrângerea aduce claritatea.” / „Propozițiile brute devin plan.”
+- **EN bullets:** “Writing tests thinking.” / “Constraints create clarity.” / “Brut sentences become a plan.”
+- **Motto:** „Ce nu pot scrie simplu, nu este clar.” / “What I can’t write simply isn’t clear.”
 
-MICRO-SIMULATOR
+## SHORT PATH — 6 pași
 
-„Scrie acum, fără corecturi:
-Ce problemă încerci de fapt să rezolvi?
-O singură propoziție. Fără explicații.”
-
-( dacă ai nevoie de a doua propoziție, nu e clar )
-
-REAL-WORLD TRANSFER
-
-„De fiecare dată când ceva pare confuz, scrie-l brutal:
-o propoziție, fără ornamente.
-Claritatea apare din constrângere.”
-
-ANCHOR PHRASE
-
-„Ce nu pot scrie simplu, nu este clar.”
-
-CLOSE
-
-„Mâine învățăm să decidem fără certitudine.”
-
-DEEP — ENGLISH
-HOOK
-
-“If you can’t write it clearly, you’re not thinking clearly. It just feels that way.”
-
-MIRROR
-
-“In your head, everything seems logical.
-When you try to write, you freeze.
-You rewrite the same sentence again and again.”
-
-CORE INSIGHT
-
-“Writing is not expressing thought.
-It is testing thought.
-What can’t be written simply isn’t clear yet.”
-
-ACTIVE CHECK
-
-Question:
-Why does writing feel hard?
-
-A) Because you lack vocabulary
-
-B) Because the idea isn’t structured yet
-
-C) Because you don’t have enough time
-
-Correct: B
-
-Feedback:
-
-“Writing exposes lack of structure, not lack of intelligence.”
-
-MICRO-SIMULATOR
-
-“Write now, without editing:
-What problem are you actually trying to solve?
-One sentence only. No explanations.”
-
-( if you need a second sentence, it’s not clear )
-
-REAL-WORLD TRANSFER
-
-“Whenever something feels unclear, write it brutally:
-one sentence, no decoration.
-Clarity emerges from constraint.”
-
-ANCHOR PHRASE
-
-“What I can’t write simply isn’t clear.”
-
-CLOSE
-
-“Tomorrow, we’ll learn to decide without certainty.”
-
-SHORT — ROMÂNĂ
-HOOK
-
-„Dacă nu poți scrie clar, nu e clar.”
-
-MICRO-SIMULATOR
-
-„Scrie într-o propoziție: ce problemă încerci să rezolvi?”
-
-ANCHOR PHRASE
-
-„Claritatea apare din constrângere.”
-
-SHORT — ENGLISH
-HOOK
-
-“If you can’t write it clearly, it’s not clear.”
-
-MICRO-SIMULATOR
-
-“Write one sentence: what problem are you trying to solve?”
-
-ANCHOR PHRASE
-
-“Clarity comes from constraint.”
-
-NOTE CANONICE (intern)
-
-Modulul forțează externalizarea gândirii.
-
-Pregătește userul pentru decizii rapide, imperfecte.
-
-Creează un ritual reutilizabil (scrierea în 1 propoziție).
+1. **INTRO:** „Versiune rapidă: claritate în 1 propoziție.” / “Quick version: clarity in one sentence.”
+2. **LEARN:** „Scrisul brutal scoate adevărul la suprafață.” / “Brut writing brings the truth to the surface.”
+3. **QUIZ:** „Care propoziție e clară?” (ex: „Decid dacă aprob bugetul X azi.”) / “Which sentence is clear? (e.g., ‘I decide today if I approve budget X.’)”
+4. **SIMULATOR:** „Scrie „Problema este…” + „Succes = …” (2 propoziții scurte).” / “Write ‘The problem is…’ and ‘Success = …’ — two short sentences.”
+5. **REAL WORLD HOOK:** „Aplica înainte de următorul email important.” / “Use it before the next important email.”
+6. **CLOSE:** Motto „Ce nu pot scrie simplu, nu e clar.” / “If I can’t write it simply, it isn’t clear.”

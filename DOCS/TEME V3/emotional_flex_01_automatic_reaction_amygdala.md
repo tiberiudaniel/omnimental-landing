@@ -1,145 +1,61 @@
-MODUL #11 — REACȚIA AUTOMATĂ (AMYGDALA HIJACK)
-CLUSTER: EMOTIONAL FLEX
-DEEP — ROMÂNĂ
-HOOK
+# WOW Lesson · Emotional Flex 01 — Reacția automată
 
-„De multe ori nu reacționezi prost pentru că vrei. Reacționezi prost pentru că preiei controlul prea târziu.”
+## DEEP PATH — 12 pași
 
-MIRROR
+### 1. INTRO
+- **RO:** „Nu reacționezi prost pentru că vrei. Reacționezi prost pentru că preiei controlul prea târziu.”
+- **EN:** “You don’t react badly because you want to; you react badly because control arrives too late.”
 
-„Spui ceva și imediat regreți.
-Reacționezi defensiv fără să gândești.
-După, știi exact ce ar fi trebuit să faci.”
+### 2. LEARN 1 — Biologie
+- **RO:** „Sub stres, controlul se mută din cortexul prefrontal în amigdala. Reacția vine înaintea rațiunii. Nu e defect de caracter.”
+- **EN:** “Under stress control shifts from the prefrontal cortex to the amygdala. Reaction precedes reasoning. It isn’t a character flaw.”
 
-CORE INSIGHT
+### 3. EXAMPLE
+- **RO:** „Spui ceva impulsiv și imediat regreți. Secunde mai târziu știi cum trebuia să răspunzi, dar reacția s-a întâmplat deja.”
+- **EN:** “You say something impulsive and instantly regret it. Seconds later you know the right response, but the reaction already happened.”
 
-„În momentele de stres, controlul se mută automat din cortexul prefrontal în amigdala.
-Reacția apare înaintea rațiunii.
-Asta nu e un defect de caracter. E biologie.”
+### 4. QUIZ 1
+- **Întrebare:** „Ce semn indică reacție automată?”
+- **Corect:** „Răspuns rapid și defensiv.”
+- **Feedback:** „Viteza + defensiva = preluare automată.” / “Speed + defensiveness = automatic takeover.”
 
-ACTIVE CHECK
+### 5. LEARN 2 — Ce urmărești
+- **RO:** „Dacă stimul → reacție sub o secundă, nu a fost alegere. Caută spațiul dintre.”
+- **EN:** “If stimulus → reaction happens in under a second, it wasn’t a choice. Look for space between.”
 
-Întrebare:
-Ce indică faptul că ești într-o reacție automată?
+### 6. QUIZ 2
+- **Întrebare:** „Cum creezi alegere?”
+- **Corect:** „Introduci pauza de 3 respirații.”
 
-A) Analizezi calm opțiunile
+### 7. SIMULATOR 1 — Memorie
+- **RO:** „Amintește-ți ultima reacție impulsivă. Estimează câte secunde au trecut. Dacă e <1s, marchează „AUTO”.”
+- **EN:** “Recall your last impulsive reaction. Estimate the seconds. If it’s <1s, label it “AUTO”.”
 
-B) Reacționezi rapid și defensiv
+### 8. AUTONOMY CHOICE
+- „Vreau să repet scena și să inserez pauza” / „Vreau să ancorez respirația acum.”
 
-C) Aștepți înainte să răspunzi
+### 9. SIMULATOR 2 — Pauza de 3 secunde
+- **RO:** „Inspiră 3s, ține 1s, expiră 3s. Repetă de 3 ori. Spune mental „Reacție → Pauză → Alegere.””
+- **EN:** “Inhale 3s, hold 1s, exhale 3s. Repeat three times. Say mentally “Reaction → Pause → Choice.””
 
-Corect: B
+### 10. LEARN 3 — Semn
+- **RO:** „Când apare spațiul, simți că poți interveni. Acolo trăiește flexibilitatea emoțională.”
+- **EN:** “When space appears you feel you can intervene. That’s where emotional flexibility lives.”
 
-Feedback:
+### 11. REAL WORLD CHALLENGE
+- **RO:** „La următoarea interacțiune dificilă, creează intenționat pauza de 3 secunde. Notează diferența dintre reacție și alegere.”
+- **EN:** “During the next difficult interaction, intentionally create a 3-second pause. Note the difference between reaction and choice.”
 
-„Viteza + defensiva sunt semnale clare de preluare automată.”
+### 12. SUMMARY + MOTTO
+- **RO bullets:** „Reacția vine înaintea alegerii.” / „Spațiul creează control.” / „Nu ești defect; ești uman.”
+- **EN bullets:** “Reaction precedes choice.” / “Space creates control.” / “You’re not broken; you’re human.”
+- **Motto:** „Spațiul creează alegere.” / “Space creates choice.”
 
-MICRO-SIMULATOR
+## SHORT PATH — 6 pași
 
-„Amintește-ți ultima reacție impulsivă.
-Cât timp a trecut între stimul și reacție?
-Dacă a fost sub o secundă, nu a fost o alegere.”
-
-REAL-WORLD TRANSFER
-
-„Data viitoare când simți impulsul să reacționezi:
-nu răspunde imediat.
-Creează un decalaj de 3 secunde.
-Spațiul creează alegerea.”
-
-ANCHOR PHRASE
-
-„Reacția apare înaintea alegerii.”
-
-CLOSE
-
-„Mâine învățăm să separăm faptele de interpretări.”
-
-DEEP — ENGLISH
-HOOK
-
-“Often you don’t react badly because you want to. You react badly because control arrives too late.”
-
-MIRROR
-
-“You say something and instantly regret it.
-You get defensive without thinking.
-Afterwards, you know exactly what you should have done.”
-
-CORE INSIGHT
-
-“Under stress, control automatically shifts from the prefrontal cortex to the amygdala.
-Reaction comes before reasoning.
-This isn’t a character flaw. It’s biology.”
-
-ACTIVE CHECK
-
-Question:
-What signals an automatic reaction?
-
-A) Calm analysis
-
-B) Fast, defensive response
-
-C) Waiting before replying
-
-Correct: B
-
-Feedback:
-
-“Speed plus defensiveness are clear takeover signals.”
-
-MICRO-SIMULATOR
-
-“Recall your last impulsive reaction.
-How much time passed between stimulus and response?
-If it was under one second, it wasn’t a choice.”
-
-REAL-WORLD TRANSFER
-
-“Next time you feel the urge to react:
-don’t respond immediately.
-Create a 3-second gap.
-Space creates choice.”
-
-ANCHOR PHRASE
-
-“Reaction comes before choice.”
-
-CLOSE
-
-“Tomorrow, we separate facts from interpretations.”
-
-SHORT — ROMÂNĂ
-HOOK
-
-„Reacția rapidă nu e alegere.”
-
-MICRO-SIMULATOR
-
-„Data viitoare, creează 3 secunde între stimul și răspuns.”
-
-ANCHOR PHRASE
-
-„Spațiul creează alegerea.”
-
-SHORT — ENGLISH
-HOOK
-
-“Fast reaction isn’t choice.”
-
-MICRO-SIMULATOR
-
-“Next time, create 3 seconds between stimulus and response.”
-
-ANCHOR PHRASE
-
-“Space creates choice.”
-
-NOTE CANONICE (intern)
-
-Normalizează reacțiile automate → reduce rușinea.
-
-Introduce limbaj neuro simplu, fără medicalizare.
-
-Deschide arcul pentru reglare emoțională reală.
+1. **INTRO:** „Reacția rapidă nu e alegere.” / “Fast reaction isn’t choice.”
+2. **LEARN:** „Sub stres, amigdala preia.” / “Under stress the amygdala takes over.”
+3. **QUIZ:** „Semn?” → „Răspuns defensiv instant.” / “Sign? → Instant defensive answer.”
+4. **SIMULATOR:** „Exersează pauza 3-1-3 de trei ori.” / “Practice the 3-1-3 pause three times.”
+5. **REAL WORLD:** „Aplică pauza la următorul mesaj tensionat.” / “Apply the pause to the next tense message.”
+6. **CLOSE:** „Spațiul creează alegerea.” / “Space creates choice.”

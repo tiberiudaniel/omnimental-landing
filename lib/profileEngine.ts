@@ -61,6 +61,16 @@ export type UserSubscription = {
   currentPeriodEnd?: string | null;
 };
 
+export type LearningStyle = "visual" | "verbal" | "mixed";
+export type ExecutionPace = "micro" | "block";
+export type InfoProcessing = "analytic" | "intuitive" | "mixed";
+
+export type UserProfileStyle = {
+  learning?: LearningStyle | null;
+  executionPace?: ExecutionPace | null;
+  infoProcessing?: InfoProcessing | null;
+};
+
 export type UserProfileSnapshot = {
   userId: string;
   catProfile: CatProfile | null;
@@ -75,6 +85,7 @@ export type UserProfileSnapshot = {
   activeArcDayIndex: number;
   activeArcCompleted: boolean;
   updatedAt?: string | null;
+  style?: UserProfileStyle | null;
 };
 
 type ProfileDoc = {
@@ -94,6 +105,7 @@ type ProfileDoc = {
   subscriptionCurrentPeriodEnd?: string | null;
   xpByTrait?: TraitXp;
   updatedAt?: string | Date | { toDate?: () => Date };
+  style?: UserProfileStyle | null;
 };
 
 const AXIS_DOMAIN_MAP: Record<CatAxisId, CanonDomainId> = {
@@ -307,6 +319,7 @@ function buildFallbackSnapshot(userId: string): UserProfileSnapshot {
     activeArcId: null,
     activeArcDayIndex: 0,
     activeArcCompleted: false,
+    style: null,
   };
 }
 
@@ -422,6 +435,7 @@ export async function getUserProfileSnapshot(userId: string): Promise<UserProfil
   const activeArcId = profileData?.activeArcId ?? null;
   const activeArcDayIndex = profileData?.activeArcDayIndex ?? 0;
   const activeArcCompleted = Boolean(profileData?.activeArcCompleted);
+  const profileStyle = (profileData?.style as UserProfileStyle | undefined) ?? null;
 
   return {
     userId,
@@ -437,6 +451,7 @@ export async function getUserProfileSnapshot(userId: string): Promise<UserProfil
     activeArcDayIndex,
     activeArcCompleted,
     updatedAt: profileData?.updatedAt ? tsToIso(profileData.updatedAt) : null,
+    style: profileStyle,
   };
 }
 
@@ -501,6 +516,28 @@ export async function saveCatLiteSnapshot(
   }
 
   return profile;
+}
+
+export async function saveUserStyleProfile(userId: string, style: UserProfileStyle): Promise<void> {
+  if (!userId || !style) return;
+  if (isE2EMode()) {
+    const snapshot = getOrCreateE2ESnapshot(userId);
+    snapshot.style = { ...(snapshot.style ?? {}), ...style };
+    snapshot.updatedAt = new Date().toISOString();
+    setE2EProfileSnapshot(userId, snapshot);
+    return;
+  }
+  if (areWritesDisabled()) return;
+  const db = getDb();
+  const profileRef = doc(db, "userProfiles", userId);
+  await setDoc(
+    profileRef,
+    {
+      style,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
 }
 
 export async function applyProfilePatch(

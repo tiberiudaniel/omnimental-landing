@@ -106,4 +106,10 @@ export type ProgressFact = {
     endedAt?: Date;
     durationSec: number;
   }>;
+  stats?: {
+    dailySessionsCompleted?: number;
+    actionsCompleted?: number;
+    lastDailySessionAt?: Date | FireTs | null;
+    lastActionAt?: Date | FireTs | null;
+  };
 };
