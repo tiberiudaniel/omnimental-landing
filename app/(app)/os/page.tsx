@@ -9,6 +9,10 @@ import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
 import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
+import { useCopy } from "@/lib/useCopy";
+import { getScreenIdForRoute } from "@/lib/routeIds";
+
+const OS_SCREEN_ID = getScreenIdForRoute("/os");
 
 export default function TempleOverviewPage() {
   const { user } = useAuth();
@@ -43,16 +47,23 @@ export default function TempleOverviewPage() {
     <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => {}} />
   );
 
+  const defaultTitle = "Temple & Arcuri";
+  const defaultSubtitle = "Aici vezi în ce Templu lucrezi acum și câte arcuri are fiecare domeniu.";
+  const heroCopy = useCopy(OS_SCREEN_ID, "ro", {
+    h1: defaultTitle,
+    subtitle: defaultSubtitle,
+  });
+  const heroTitle = heroCopy.h1 ?? defaultTitle;
+  const heroSubtitle = heroCopy.subtitle ?? defaultSubtitle;
+
   return (
     <>
       <AppShell header={header}>
         <div className="mx-auto max-w-4xl px-4 py-10 text-[var(--omni-ink)] sm:px-6 lg:px-8">
           <header className="mb-8 space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Harta mentală</p>
-            <h1 className="text-3xl font-semibold">Temple & Arcuri</h1>
-            <p className="text-sm text-[var(--omni-ink)]/80">
-              Aici vezi în ce Templu lucrezi acum și câte arcuri are fiecare domeniu.
-            </p>
+            <h1 className="text-3xl font-semibold">{heroTitle}</h1>
+            <p className="text-sm text-[var(--omni-ink)]/80">{heroSubtitle}</p>
           </header>
           {loading ? (
             <p className="text-sm text-[var(--omni-ink-soft)]">Se încarcă progresul…</p>

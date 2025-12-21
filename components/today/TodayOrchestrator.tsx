@@ -10,6 +10,10 @@ import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useAuth } from "@/components/AuthProvider";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { track } from "@/lib/telemetry/track";
+import { useCopy } from "@/lib/useCopy";
+import { getScreenIdForRoute } from "@/lib/routeIds";
+
+const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
 import { getTriedExtraToday, hasCompletedToday, readLastCompletion, type DailyCompletionRecord } from "@/lib/dailyCompletion";
 import { getTraitLabel } from "@/lib/profileEngine";
 import { type SessionPlan } from "@/lib/sessionRecommenderEngine";
@@ -203,6 +207,28 @@ export default function TodayOrchestrator() {
   const isPremiumSubscriber = sensAiCtx?.profile.subscription.status === "premium";
   const freeLimitReached = hasFreeDailyLimit(sensAiCtx);
 
+  const defaultHeroTitle = sessionPlan?.title ?? "Antrenamentul de azi";
+  const defaultHeroSubtitle = sessionPlan?.summary ?? "Traseu adaptiv calibrat pe profilul tău mental.";
+  const recommendedLabel = sessionPlan?.expectedDurationMinutes
+    ? `Sesiunea zilnică recomandată (${sessionPlan.expectedDurationMinutes} min)`
+    : "Sesiunea zilnică recomandată";
+  const defaultPrimaryCta = freeLimitReached
+    ? "Disponibil în Premium"
+    : completedToday
+    ? "Completat azi"
+    : recommendedLabel;
+  const defaultSecondaryCta = "Sesiune intensivă (în curând)";
+  const todayCopy = useCopy(TODAY_SCREEN_ID, "ro", {
+    h1: defaultHeroTitle,
+    subtitle: defaultHeroSubtitle,
+    ctaPrimary: defaultPrimaryCta,
+    ctaSecondary: defaultSecondaryCta,
+  });
+  const heroTitle = todayCopy.h1 ?? defaultHeroTitle;
+  const heroSubtitle = todayCopy.subtitle ?? defaultHeroSubtitle;
+  const primaryCtaLabel = todayCopy.ctaPrimary ?? defaultPrimaryCta;
+  const secondaryCtaLabel = todayCopy.ctaSecondary ?? defaultSecondaryCta;
+
   if (!sessionPlan) {
     return (
       <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-center text-[var(--omni-ink)]">
@@ -243,10 +269,8 @@ export default function TodayOrchestrator() {
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
             <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 shadow-[0_25px_80px_rgba(0,0,0,0.08)] sm:px-10">
               <p className="text-xs uppercase tracking-[0.4em] text-[var(--omni-muted)]">Astăzi</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-                {sessionPlan.title ?? "Antrenamentul de azi"}
-              </h1>
-              <p className="mt-2 text-sm text-[var(--omni-ink)]/80 sm:text-base">{sessionPlan.summary}</p>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{heroTitle}</h1>
+              <p className="mt-2 text-sm text-[var(--omni-ink)]/80 sm:text-base">{heroSubtitle}</p>
               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
                 {arcProgressLabel}
               </p>
@@ -256,11 +280,7 @@ export default function TodayOrchestrator() {
                   onClick={freeLimitReached ? handleUpgrade : handleStart}
                   disabled={completedToday || planLoading || freeLimitReached}
                 >
-                  {freeLimitReached
-                    ? "Disponibil în Premium"
-                    : completedToday
-                    ? "Completat azi"
-                    : `Sesiunea zilnică recomandată (${sessionPlan.expectedDurationMinutes} min)`}
+                  {primaryCtaLabel}
                 </OmniCtaButton>
                 {!guidedGuestMode ? (
                   <button
@@ -271,7 +291,7 @@ export default function TodayOrchestrator() {
                     }}
                     disabled={!isPremiumSubscriber}
                   >
-                    Sesiune intensivă (în curând)
+                    {secondaryCtaLabel}
                   </button>
                 ) : null}
               </div>

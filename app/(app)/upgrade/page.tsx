@@ -8,6 +8,10 @@ import MenuOverlay from "@/components/MenuOverlay";
 import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
+import { useCopy } from "@/lib/useCopy";
+import { getScreenIdForRoute } from "@/lib/routeIds";
+
+const UPGRADE_SCREEN_ID = getScreenIdForRoute("/upgrade");
 
 export default function UpgradePage() {
   const { user } = useAuth();
@@ -38,14 +42,28 @@ export default function UpgradePage() {
     <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => {}} />
   );
 
+  const defaultTitle = "OmniMental Premium";
+  const defaultSubtitle =
+    "Acces nelimitat la sesiuni zilnice, arene, sesiuni intensive și orchestrare completă Omni-SensAI.";
+  const defaultPrimaryCta = "Activează Premium (mock)";
+  const defaultSecondaryCta = "Înapoi la Today";
+  const heroCopy = useCopy(UPGRADE_SCREEN_ID, "ro", {
+    h1: defaultTitle,
+    subtitle: defaultSubtitle,
+    ctaPrimary: defaultPrimaryCta,
+    ctaSecondary: defaultSecondaryCta,
+  });
+  const heroTitle = heroCopy.h1 ?? defaultTitle;
+  const heroSubtitle = heroCopy.subtitle ?? defaultSubtitle;
+  const primaryCtaLabel = heroCopy.ctaPrimary ?? defaultPrimaryCta;
+  const secondaryCtaLabel = heroCopy.ctaSecondary ?? defaultSecondaryCta;
+
   return (
     <>
       <AppShell header={header}>
         <div className="mx-auto max-w-3xl px-4 py-10 text-[var(--omni-ink)] sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-semibold">OmniMental Premium</h1>
-          <p className="mt-2 text-sm text-[var(--omni-ink)]/80">
-            Acces nelimitat la sesiuni zilnice, arene, sesiuni intensive și orchestrare completă Omni-SensAI.
-          </p>
+          <h1 className="text-3xl font-semibold">{heroTitle}</h1>
+          <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{heroSubtitle}</p>
           <ul className="mt-6 space-y-2 text-sm">
             <li>• Sesiuni zilnice nelimitate</li>
             <li>• Sesiuni intensive ghidate (30–45 min)</li>
@@ -55,10 +73,10 @@ export default function UpgradePage() {
           {message ? <p className="mt-4 text-sm text-[var(--omni-ink)]">{message}</p> : null}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <OmniCtaButton onClick={handleUpgrade} disabled={saving} className="justify-center sm:min-w-[220px]">
-              Activează Premium (mock)
+              {primaryCtaLabel}
             </OmniCtaButton>
             <OmniCtaButton as="link" href="/today" variant="neutral" className="justify-center">
-              Înapoi la Today
+              {secondaryCtaLabel}
             </OmniCtaButton>
           </div>
         </div>

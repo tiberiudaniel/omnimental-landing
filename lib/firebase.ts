@@ -148,7 +148,8 @@ if (typeof window !== "undefined") {
         try { window.clearTimeout(anonTimer); } catch {}
         anonTimer = null;
       }
-      console.log("Signed in as:", user.uid);
+      const label = user.email ? `${user.email} (${user.uid})` : user.uid;
+      console.log("Signed in as:", label);
       return;
     }
     // Avoid racing against magic-link consumption: if URL still contains oobCode, skip anon sign-in

@@ -42,6 +42,12 @@ Open http://localhost:3000 to view the app.
 - The panel lists shortcut links for every cluster (energy, clarity, emotional_flex), mode (deep, short), and language (RO, EN). Each link simply opens `/recommendation` with the appropriate query (`?cluster=energy&mode=short&lang=en`, etc.).
 - You can also hit those URLs directly without the panel; removing the env var hides the QA controls for production builds.
 
+## Flow Studio
+
+1. **Bootstrap admin config** – set the `FLOW_STUDIO_ADMINS="you@example.com"` env variable (comma-separated list) and run `npm run bootstrap:flowstudio`. This writes `adminConfig/flowStudio` with the whitelist + timezone used by the admin gate.
+2. **Sync routes** – whenever routes change run `npm run gen:routes` followed by `npm run sync:routes` (requires Firebase Admin env vars). This scans `app/**/page.tsx`, rebuilds `generated/routes.generated.json`, and upserts every route into `adminRoutes` for Flow Studio to consume.
+3. **Edit flows + copy** – sign in with an approved admin account and open `/admin/flow-studio`. Use the Routes tab to add screens, the Flows tab to edit nodes/edges, and the sidebar copy editor to override H1/subtitle/CTA strings (saved in `copyOverrides/{screenId}`). Runtime screens now consume these overrides through `useCopy`.
+
 ## Scripts
 
 - `npm run dev` — start development

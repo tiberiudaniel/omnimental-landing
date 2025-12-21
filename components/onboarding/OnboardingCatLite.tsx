@@ -14,6 +14,8 @@ import VocabCard from "@/components/vocab/VocabCard";
 import { useI18n } from "@/components/I18nProvider";
 import { getDefaultVocabForAxis } from "@/config/catVocabulary";
 import { getUnlockedVocabIds, unlockVocab } from "@/lib/vocabProgress";
+import { useCopy } from "@/lib/useCopy";
+import { getScreenIdForRoute } from "@/lib/routeIds";
 
 type CoreAxisId = (typeof CAT_LITE_CORE_AXES)[number];
 
@@ -104,6 +106,8 @@ type Props = {
   onComplete: () => void;
   progress: OnboardingProgressMeta;
 };
+
+const ONBOARDING_SCREEN_ID = getScreenIdForRoute("/onboarding");
 
 export default function OnboardingCatLite({ onComplete, progress }: Props) {
   const { user, authReady } = useAuth();
@@ -218,6 +222,21 @@ export default function OnboardingCatLite({ onComplete, progress }: Props) {
 
   const weakestUnlocked = weakestVocab ? unlockedVocabIds.includes(weakestVocab.id) : false;
 
+  const defaultTitle =
+    locale === "en"
+      ? "CAT Mini-profile · Part 1 (4 baseline traits)"
+      : "Mini-profil CAT – Partea 1 (4 trăsături de bază)";
+  const defaultSubtitle =
+    locale === "en"
+      ? "We start with four baseline traits. The other three unlock after a few guided sessions."
+      : "Acum ne uităm la 4 trăsături de bază. Harta completă are 7, iar celelalte 3 se vor deschide după câteva sesiuni.";
+  const heroCopy = useCopy(ONBOARDING_SCREEN_ID, locale, {
+    h1: defaultTitle,
+    subtitle: defaultSubtitle,
+  });
+  const headerTitle = heroCopy.h1 ?? defaultTitle;
+  const headerSubtitle = heroCopy.subtitle ?? defaultSubtitle;
+
   if (!authReady) {
     return (
       <section className="flex min-h-[60vh] items-center justify-center">
@@ -260,10 +279,8 @@ export default function OnboardingCatLite({ onComplete, progress }: Props) {
     <section className="mx-auto w-full max-w-3xl space-y-6 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 shadow-[0_8px_28px_rgba(0,0,0,0.15)]">
       <OnboardingProgressBar {...progress} />
       <header className="space-y-2 text-center">
-        <h1 className="text-2xl font-semibold text-[var(--omni-ink)]">Mini-profil CAT – Partea 1 (4 trăsături de bază)</h1>
-        <p className="text-sm text-[var(--omni-ink-soft)]">
-          Acum ne uităm la 4 trăsături de bază. Harta completă are 7, iar celelalte 3 se vor deschide după câteva sesiuni.
-        </p>
+        <h1 className="text-2xl font-semibold text-[var(--omni-ink)]">{headerTitle}</h1>
+        <p className="text-sm text-[var(--omni-ink-soft)]">{headerSubtitle}</p>
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
           0 = deloc / aproape niciodată · 10 = aproape mereu
         </p>

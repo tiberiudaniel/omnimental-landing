@@ -6,6 +6,18 @@ service cloud.firestore {
 
     function signedIn() { return request.auth != null; }
     function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function adminEmail() {
+      return (request.auth != null && request.auth.token.email != null) ? request.auth.token.email : "";
+    }
+    function flowStudioConfig() {
+      return get(/databases/$(database)/documents/adminConfig/flowStudio).data;
+    }
+    function isFlowStudioAdmin() {
+      return signedIn() &&
+        flowStudioConfig().enabled == true &&
+        flowStudioConfig().admins != null &&
+        flowStudioConfig().admins.hasAny([adminEmail()]);
+    }
     function isValidSessionType(v) { return v == null || v == 'individual' || v == 'group'; }
     function isValidSelection(v) { return v == null || v == 'none' || v == 'individual' || v == 'group'; }
     function isValidLang(lang) { return lang == 'ro' || lang == 'en'; }
@@ -99,6 +111,24 @@ service cloud.firestore {
     }
     match /emailUnsubscribes/{doc} {
       allow create: if true;
+    }
+
+    // Flow Studio admin area (dev only)
+    match /adminConfig/{docId} {
+      allow read, write: if isFlowStudioAdmin();
+    }
+
+    match /adminRoutes/{routeId} {
+      allow read, write: if isFlowStudioAdmin();
+    }
+
+    match /adminFlows/{flowId} {
+      allow read, write: if isFlowStudioAdmin();
+    }
+
+    match /copyOverrides/{screenId} {
+      allow read: if true;
+      allow write: if isFlowStudioAdmin();
     }
 
     function isAdmin() { return signedIn() && request.auth.token.admin == true; }

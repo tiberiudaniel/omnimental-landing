@@ -1,0 +1,431 @@
+{
+  "generatedAt": "2025-12-20T15:43:09.876Z",
+  "routes": [
+    {
+      "routePath": "/",
+      "group": "public",
+      "filePath": "app/(public)/page.tsx",
+      "routeId": "Lw"
+    },
+    {
+      "routePath": "/404",
+      "group": "public",
+      "filePath": "app/(public)/404/page.tsx",
+      "routeId": "LzQwNA"
+    },
+    {
+      "routePath": "/500",
+      "group": "public",
+      "filePath": "app/(public)/500/page.tsx",
+      "routeId": "LzUwMA"
+    },
+    {
+      "routePath": "/about",
+      "group": "public",
+      "filePath": "app/(public)/about/page.tsx",
+      "routeId": "L2Fib3V0"
+    },
+    {
+      "routePath": "/admin/legacy/omniabil-v1",
+      "group": "app",
+      "filePath": "app/(app)/admin/legacy/omniabil-v1/page.tsx",
+      "routeId": "L2FkbWluL2xlZ2FjeS9vbW5pYWJpbC12MQ"
+    },
+    {
+      "routePath": "/admin/legacy/omnikuno-v1",
+      "group": "app",
+      "filePath": "app/(app)/admin/legacy/omnikuno-v1/page.tsx",
+      "routeId": "L2FkbWluL2xlZ2FjeS9vbW5pa3Vuby12MQ"
+    },
+    {
+      "routePath": "/admin/seed-insights",
+      "group": "app",
+      "filePath": "app/(app)/admin/seed-insights/page.tsx",
+      "routeId": "L2FkbWluL3NlZWQtaW5zaWdodHM"
+    },
+    {
+      "routePath": "/admin/seed-practice",
+      "group": "app",
+      "filePath": "app/(app)/admin/seed-practice/page.tsx",
+      "routeId": "L2FkbWluL3NlZWQtcHJhY3RpY2U"
+    },
+    {
+      "routePath": "/admin/seed-recommendations",
+      "group": "app",
+      "filePath": "app/(app)/admin/seed-recommendations/page.tsx",
+      "routeId": "L2FkbWluL3NlZWQtcmVjb21tZW5kYXRpb25z"
+    },
+    {
+      "routePath": "/admin/v4-debug",
+      "group": "app",
+      "filePath": "app/(app)/admin/v4-debug/page.tsx",
+      "routeId": "L2FkbWluL3Y0LWRlYnVn"
+    },
+    {
+      "routePath": "/antrenament",
+      "group": "public",
+      "filePath": "app/(public)/antrenament/page.tsx",
+      "routeId": "L2FudHJlbmFtZW50"
+    },
+    {
+      "routePath": "/arenas",
+      "group": "app",
+      "filePath": "app/(app)/arenas/page.tsx",
+      "routeId": "L2FyZW5hcw"
+    },
+    {
+      "routePath": "/arenas/[arenaId]/run",
+      "group": "app",
+      "filePath": "app/(app)/arenas/[arenaId]/run/page.tsx",
+      "routeId": "L2FyZW5hcy9bYXJlbmFJZF0vcnVu"
+    },
+    {
+      "routePath": "/auth",
+      "group": "public",
+      "filePath": "app/(public)/auth/page.tsx",
+      "routeId": "L2F1dGg"
+    },
+    {
+      "routePath": "/choose",
+      "group": "public",
+      "filePath": "app/(public)/choose/page.tsx",
+      "routeId": "L2Nob29zZQ"
+    },
+    {
+      "routePath": "/collectibles",
+      "group": "app",
+      "filePath": "app/(app)/collectibles/page.tsx",
+      "routeId": "L2NvbGxlY3RpYmxlcw"
+    },
+    {
+      "routePath": "/contact",
+      "group": "public",
+      "filePath": "app/(public)/contact/page.tsx",
+      "routeId": "L2NvbnRhY3Q"
+    },
+    {
+      "routePath": "/cookies",
+      "group": "public",
+      "filePath": "app/(public)/cookies/page.tsx",
+      "routeId": "L2Nvb2tpZXM"
+    },
+    {
+      "routePath": "/demo",
+      "group": "public",
+      "filePath": "app/(public)/demo/page.tsx",
+      "routeId": "L2RlbW8"
+    },
+    {
+      "routePath": "/evaluation",
+      "group": "public",
+      "filePath": "app/(public)/evaluation/page.tsx",
+      "routeId": "L2V2YWx1YXRpb24"
+    },
+    {
+      "routePath": "/experience-onboarding",
+      "group": "app",
+      "filePath": "app/(app)/experience-onboarding/page.tsx",
+      "routeId": "L2V4cGVyaWVuY2Utb25ib2FyZGluZw"
+    },
+    {
+      "routePath": "/group",
+      "group": "public",
+      "filePath": "app/(public)/group/page.tsx",
+      "routeId": "L2dyb3Vw"
+    },
+    {
+      "routePath": "/group-info",
+      "group": "public",
+      "filePath": "app/(public)/group-info/page.tsx",
+      "routeId": "L2dyb3VwLWluZm8"
+    },
+    {
+      "routePath": "/individual",
+      "group": "public",
+      "filePath": "app/(public)/individual/page.tsx",
+      "routeId": "L2luZGl2aWR1YWw"
+    },
+    {
+      "routePath": "/intro",
+      "group": "public",
+      "filePath": "app/(public)/intro/page.tsx",
+      "routeId": "L2ludHJv"
+    },
+    {
+      "routePath": "/intro/explore",
+      "group": "app",
+      "filePath": "app/(app)/intro/explore/page.tsx",
+      "routeId": "L2ludHJvL2V4cGxvcmU"
+    },
+    {
+      "routePath": "/intro/guided",
+      "group": "app",
+      "filePath": "app/(app)/intro/guided/page.tsx",
+      "routeId": "L2ludHJvL2d1aWRlZA"
+    },
+    {
+      "routePath": "/knowledge-exam",
+      "group": "app",
+      "filePath": "app/(app)/knowledge-exam/page.tsx",
+      "routeId": "L2tub3dsZWRnZS1leGFt"
+    },
+    {
+      "routePath": "/kuno",
+      "group": "app",
+      "filePath": "app/(app)/kuno/page.tsx",
+      "routeId": "L2t1bm8"
+    },
+    {
+      "routePath": "/kuno/learn",
+      "group": "app",
+      "filePath": "app/(app)/kuno/learn/page.tsx",
+      "routeId": "L2t1bm8vbGVhcm4"
+    },
+    {
+      "routePath": "/kuno/learn/[lessonId]",
+      "group": "app",
+      "filePath": "app/(app)/kuno/learn/[lessonId]/page.tsx",
+      "routeId": "L2t1bm8vbGVhcm4vW2xlc3NvbklkXQ"
+    },
+    {
+      "routePath": "/kuno/practice",
+      "group": "app",
+      "filePath": "app/(app)/kuno/practice/page.tsx",
+      "routeId": "L2t1bm8vcHJhY3RpY2U"
+    },
+    {
+      "routePath": "/legacy/intro",
+      "group": "app",
+      "filePath": "app/(app)/legacy/intro/page.tsx",
+      "routeId": "L2xlZ2FjeS9pbnRybw"
+    },
+    {
+      "routePath": "/legacy/recommendation",
+      "group": "app",
+      "filePath": "app/(app)/legacy/recommendation/page.tsx",
+      "routeId": "L2xlZ2FjeS9yZWNvbW1lbmRhdGlvbg"
+    },
+    {
+      "routePath": "/mental-universe",
+      "group": "app",
+      "filePath": "app/(app)/mental-universe/page.tsx",
+      "routeId": "L21lbnRhbC11bml2ZXJzZQ"
+    },
+    {
+      "routePath": "/mission-map",
+      "group": "app",
+      "filePath": "app/(app)/mission-map/page.tsx",
+      "routeId": "L21pc3Npb24tbWFw"
+    },
+    {
+      "routePath": "/omni-abil",
+      "group": "app",
+      "filePath": "app/(app)/omni-abil/page.tsx",
+      "routeId": "L29tbmktYWJpbA"
+    },
+    {
+      "routePath": "/omni-kuno",
+      "group": "app",
+      "filePath": "app/(app)/omni-kuno/page.tsx",
+      "routeId": "L29tbmkta3Vubw"
+    },
+    {
+      "routePath": "/omni-scope",
+      "group": "app",
+      "filePath": "app/(app)/omni-scope/page.tsx",
+      "routeId": "L29tbmktc2NvcGU"
+    },
+    {
+      "routePath": "/omnicuno/quick-start",
+      "group": "app",
+      "filePath": "app/(app)/omnicuno/quick-start/page.tsx",
+      "routeId": "L29tbmljdW5vL3F1aWNrLXN0YXJ0"
+    },
+    {
+      "routePath": "/omniflex",
+      "group": "app",
+      "filePath": "app/(app)/omniflex/page.tsx",
+      "routeId": "L29tbmlmbGV4"
+    },
+    {
+      "routePath": "/omniintel",
+      "group": "app",
+      "filePath": "app/(app)/omniintel/page.tsx",
+      "routeId": "L29tbmlpbnRlbA"
+    },
+    {
+      "routePath": "/omniscop",
+      "group": "app",
+      "filePath": "app/(app)/omniscop/page.tsx",
+      "routeId": "L29tbmlzY29w"
+    },
+    {
+      "routePath": "/omniscop-lite",
+      "group": "app",
+      "filePath": "app/(app)/omniscop-lite/page.tsx",
+      "routeId": "L29tbmlzY29wLWxpdGU"
+    },
+    {
+      "routePath": "/onboarding",
+      "group": "app",
+      "filePath": "app/(app)/onboarding/page.tsx",
+      "routeId": "L29uYm9hcmRpbmc"
+    },
+    {
+      "routePath": "/onboarding/adaptive-practice",
+      "group": "app",
+      "filePath": "app/(app)/onboarding/adaptive-practice/page.tsx",
+      "routeId": "L29uYm9hcmRpbmcvYWRhcHRpdmUtcHJhY3RpY2U"
+    },
+    {
+      "routePath": "/onboarding/cat-baseline",
+      "group": "app",
+      "filePath": "app/(app)/onboarding/cat-baseline/page.tsx",
+      "routeId": "L29uYm9hcmRpbmcvY2F0LWJhc2VsaW5l"
+    },
+    {
+      "routePath": "/onboarding/cat-baseline/result",
+      "group": "app",
+      "filePath": "app/(app)/onboarding/cat-baseline/result/page.tsx",
+      "routeId": "L29uYm9hcmRpbmcvY2F0LWJhc2VsaW5lL3Jlc3VsdA"
+    },
+    {
+      "routePath": "/onboarding/cat-lite-2",
+      "group": "app",
+      "filePath": "app/(app)/onboarding/cat-lite-2/page.tsx",
+      "routeId": "L29uYm9hcmRpbmcvY2F0LWxpdGUtMg"
+    },
+    {
+      "routePath": "/onboarding/pillars",
+      "group": "app",
+      "filePath": "app/(app)/onboarding/pillars/page.tsx",
+      "routeId": "L29uYm9hcmRpbmcvcGlsbGFycw"
+    },
+    {
+      "routePath": "/onboarding/style",
+      "group": "app",
+      "filePath": "app/(app)/onboarding/style/page.tsx",
+      "routeId": "L29uYm9hcmRpbmcvc3R5bGU"
+    },
+    {
+      "routePath": "/os",
+      "group": "app",
+      "filePath": "app/(app)/os/page.tsx",
+      "routeId": "L29z"
+    },
+    {
+      "routePath": "/platform",
+      "group": "public",
+      "filePath": "app/(public)/platform/page.tsx",
+      "routeId": "L3BsYXRmb3Jt"
+    },
+    {
+      "routePath": "/privacy",
+      "group": "public",
+      "filePath": "app/(public)/privacy/page.tsx",
+      "routeId": "L3ByaXZhY3k"
+    },
+    {
+      "routePath": "/progress",
+      "group": "app",
+      "filePath": "app/(app)/progress/page.tsx",
+      "routeId": "L3Byb2dyZXNz"
+    },
+    {
+      "routePath": "/recommendation",
+      "group": "app",
+      "filePath": "app/(app)/recommendation/page.tsx",
+      "routeId": "L3JlY29tbWVuZGF0aW9u"
+    },
+    {
+      "routePath": "/replay/module/[moduleId]",
+      "group": "app",
+      "filePath": "app/(app)/replay/module/[moduleId]/page.tsx",
+      "routeId": "L3JlcGxheS9tb2R1bGUvW21vZHVsZUlkXQ"
+    },
+    {
+      "routePath": "/sessions/individual",
+      "group": "public",
+      "filePath": "app/(public)/sessions/individual/page.tsx",
+      "routeId": "L3Nlc3Npb25zL2luZGl2aWR1YWw"
+    },
+    {
+      "routePath": "/terms",
+      "group": "public",
+      "filePath": "app/(public)/terms/page.tsx",
+      "routeId": "L3Rlcm1z"
+    },
+    {
+      "routePath": "/today",
+      "group": "app",
+      "filePath": "app/(app)/today/page.tsx",
+      "routeId": "L3RvZGF5"
+    },
+    {
+      "routePath": "/today/run",
+      "group": "app",
+      "filePath": "app/(app)/today/run/page.tsx",
+      "routeId": "L3RvZGF5L3J1bg"
+    },
+    {
+      "routePath": "/training/arenas",
+      "group": "app",
+      "filePath": "app/(app)/training/arenas/page.tsx",
+      "routeId": "L3RyYWluaW5nL2FyZW5hcw"
+    },
+    {
+      "routePath": "/training/arenas/[arenaId]",
+      "group": "app",
+      "filePath": "app/(app)/training/arenas/[arenaId]/page.tsx",
+      "routeId": "L3RyYWluaW5nL2FyZW5hcy9bYXJlbmFJZF0"
+    },
+    {
+      "routePath": "/training/arenas/[arenaId]/[moduleId]",
+      "group": "app",
+      "filePath": "app/(app)/training/arenas/[arenaId]/[moduleId]/page.tsx",
+      "routeId": "L3RyYWluaW5nL2FyZW5hcy9bYXJlbmFJZF0vW21vZHVsZUlkXQ"
+    },
+    {
+      "routePath": "/training/arenas/[arenaId]/[moduleId]/run",
+      "group": "app",
+      "filePath": "app/(app)/training/arenas/[arenaId]/[moduleId]/run/page.tsx",
+      "routeId": "L3RyYWluaW5nL2FyZW5hcy9bYXJlbmFJZF0vW21vZHVsZUlkXS9ydW4"
+    },
+    {
+      "routePath": "/training/arenas/history",
+      "group": "app",
+      "filePath": "app/(app)/training/arenas/history/page.tsx",
+      "routeId": "L3RyYWluaW5nL2FyZW5hcy9oaXN0b3J5"
+    },
+    {
+      "routePath": "/unsubscribe",
+      "group": "public",
+      "filePath": "app/(public)/unsubscribe/page.tsx",
+      "routeId": "L3Vuc3Vic2NyaWJl"
+    },
+    {
+      "routePath": "/upgrade",
+      "group": "app",
+      "filePath": "app/(app)/upgrade/page.tsx",
+      "routeId": "L3VwZ3JhZGU"
+    },
+    {
+      "routePath": "/upgrade/cancel",
+      "group": "app",
+      "filePath": "app/(app)/upgrade/cancel/page.tsx",
+      "routeId": "L3VwZ3JhZGUvY2FuY2Vs"
+    },
+    {
+      "routePath": "/upgrade/success",
+      "group": "app",
+      "filePath": "app/(app)/upgrade/success/page.tsx",
+      "routeId": "L3VwZ3JhZGUvc3VjY2Vzcw"
+    },
+    {
+      "routePath": "/wizard",
+      "group": "app",
+      "filePath": "app/(app)/wizard/page.tsx",
+      "routeId": "L3dpemFyZA"
+    }
+  ]
+}

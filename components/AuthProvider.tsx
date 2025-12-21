@@ -66,10 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const anon = window.localStorage.getItem('OMNI_LAST_ANON_UID');
           if (anon && anon !== firebaseUser.uid) {
             void migrateAnonToUser(anon, firebaseUser.uid)
-              .then(() => {
+              .catch((e) => console.warn('migrateAnonToUser failed', e))
+              .finally(() => {
                 try { window.localStorage.removeItem('OMNI_LAST_ANON_UID'); } catch {}
-              })
-              .catch((e) => console.warn('migrateAnonToUser failed', e));
+              });
           }
         }
       } catch {}
