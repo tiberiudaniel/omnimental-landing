@@ -69,6 +69,16 @@
         { "fieldPath": "__name__", "order": "DESCENDING" }
       ],
       "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "telemetryEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isPremium", "order": "ASCENDING" },
+        { "fieldPath": "ts", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
+      ],
+      "density": "SPARSE_ALL"
     }
   ],
   "fieldOverrides": [

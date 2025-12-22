@@ -4,6 +4,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ProfileProvider } from "@/components/ProfileProvider";
 import { I18nProvider } from "@/components/I18nProvider";
 import QueryLangSync from "@/components/QueryLangSync";
+import { TelemetryScreenTracker } from "@/components/TelemetryScreenTracker";
 import { Suspense } from "react";
 import Script from "next/script";
 
@@ -78,6 +79,7 @@ export default function RootLayout({
               <Suspense fallback={null}>
                 <QueryLangSync />
               </Suspense>
+              <TelemetryScreenTracker />
               {children}
             </I18nProvider>
           </ProfileProvider>

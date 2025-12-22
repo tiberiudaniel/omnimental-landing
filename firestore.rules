@@ -230,6 +230,12 @@ service cloud.firestore {
       allow update, delete: if signedIn() && quizAttemptOwnerMatches(resource.data);
     }
 
+    match /telemetryEvents/{eventId} {
+      allow read: if isAdmin();
+      allow create: if signedIn();
+      allow update, delete: if false;
+    }
+
     // Fallback: deny everything else.
     match /{document=**} {
       allow read, write: if false;

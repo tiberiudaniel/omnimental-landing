@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 
 import en from "../i18n/en.json";
 import ro from "../i18n/ro.json";
+import { setTrackingContext } from "@/lib/telemetry/trackContext";
 
 type Lang = "en" | "ro";
 type TranslationValue = unknown;
@@ -48,6 +49,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     if (typeof document !== "undefined") {
       document.documentElement.lang = lang;
     }
+    setTrackingContext({ locale: lang });
   }, [lang]);
 
   return (

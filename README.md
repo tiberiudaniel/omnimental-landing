@@ -48,6 +48,14 @@ Open http://localhost:3000 to view the app.
 2. **Sync routes** – whenever routes change run `npm run gen:routes` followed by `npm run sync:routes` (requires Firebase Admin env vars). This scans `app/**/page.tsx`, rebuilds `generated/routes.generated.json`, and upserts every route into `adminRoutes` for Flow Studio to consume.
 3. **Edit flows + copy** – sign in with an approved admin account and open `/admin/flow-studio`. Use the Routes tab to add screens, the Flows tab to edit nodes/edges, and the sidebar copy editor to override H1/subtitle/CTA strings (saved in `copyOverrides/{screenId}`). Runtime screens now consume these overrides through `useCopy`.
 
+## How to test
+
+1. Run `npm run dev` and sign in with a non-admin + admin user to check telemetry captures both contexts.
+2. Visit `/today` (or any route) and verify the console logs `[telemetry] screen_view`.
+3. In Firestore, confirm new docs appear in `telemetryEvents` with your userId + route path.
+4. Open `/admin/flow-studio`, toggle the Observed overlay, and ensure node stats + events refresh when switching windows or segments.
+5. Reload Flow Studio to confirm saved nodes/edges (with handle positions) and observed overlays persist.
+
 ## Scripts
 
 - `npm run dev` — start development

@@ -27,14 +27,21 @@ export function useCopy(screenId: string | null | undefined, locale: "ro" | "en"
 
   useEffect(() => {
     if (!screenId) {
-      setDocData(null);
-      return;
+      const rafId = requestAnimationFrame(() => {
+        setDocData(null);
+      });
+      return () => cancelAnimationFrame(rafId);
     }
     const cached = copyCache.get(screenId);
     let cancelled = false;
     if (cached !== undefined) {
-      setDocData(cached);
-      return;
+      const rafId = requestAnimationFrame(() => {
+        if (!cancelled) setDocData(cached);
+      });
+      return () => {
+        cancelled = true;
+        cancelAnimationFrame(rafId);
+      };
     }
     let pending = inflight.get(screenId);
     if (!pending) {
@@ -56,7 +63,9 @@ export function useCopy(screenId: string | null | undefined, locale: "ro" | "en"
     }
     pending.then((data) => {
       if (!cancelled) {
-        setDocData(data ?? null);
+        requestAnimationFrame(() => {
+          if (!cancelled) setDocData(data ?? null);
+        });
       }
     });
     return () => {

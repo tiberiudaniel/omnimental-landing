@@ -12,6 +12,7 @@ import { getDb } from "../lib/firebase";
 import { useAuth } from "./AuthProvider";
 import type { MissionSummary } from "@/lib/hooks/useMissionPerspective";
 import { isE2EMode, E2E_USER_ID } from "@/lib/e2eMode";
+import { setTrackingContext } from "@/lib/telemetry/trackContext";
 
 export type AccessTier = "public" | "member" | "persona";
 
@@ -186,6 +187,32 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     }),
     [authLoading, e2eProfile, loading, profile],
   );
+
+  useEffect(() => {
+    if (e2eProfile) {
+      setTrackingContext({
+        userId: e2eProfile.id,
+        isPremium: e2eProfile.isPremium,
+        accessTier: e2eProfile.accessTier,
+      });
+      return;
+    }
+    if (authLoading) return;
+    if (!user) {
+      setTrackingContext({
+        userId: null,
+        isPremium: null,
+        accessTier: null,
+      });
+      return;
+    }
+    if (!profile) return;
+    setTrackingContext({
+      userId: profile.id,
+      isPremium: profile.isPremium ?? null,
+      accessTier: profile.accessTier ?? null,
+    });
+  }, [authLoading, e2eProfile, profile, user]);
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 }
