@@ -1,5 +1,8 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminDb } from "../lib/firebaseAdmin";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.local" });
 
 type FlowTemplate = {
   id: string;

@@ -9,6 +9,8 @@ import { getStepManifestForRoute, type StepManifest } from "@/lib/stepManifests"
 import type { ObservedEvent } from "@/lib/flowStudio/observed";
 import { StepStatusBadge, type StepAvailability } from "./StepStatusBadge";
 
+const DEBUG_STEPS = process.env.NEXT_PUBLIC_FLOW_STUDIO_DEBUG_STEPS === "true";
+
 const EDGE_COLOR_FALLBACK = "#0f172a";
 const EDGE_COLOR_PALETTE = ["#0f172a", "#0369a1", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2"];
 
@@ -54,6 +56,14 @@ type InspectorPanelProps = {
   onCollapse: () => void;
   observedEnabled: boolean;
   observedEvents: ObservedEvent[];
+  debugInfo?: {
+    hostNodeId: string;
+    routePath: string | null;
+    routeMismatch: boolean;
+    hasManifest: boolean;
+    isExpanded: boolean;
+    stepNodeCountForHost: number;
+  } | null;
 };
 
 export function InspectorPanel({
@@ -84,20 +94,30 @@ export function InspectorPanel({
   onCollapse,
   observedEnabled,
   observedEvents,
+  debugInfo,
 }: InspectorPanelProps) {
   const resolvedRoutePath = selectedNode ? routeMap.get(selectedNode.data.routeId)?.routePath ?? selectedNode.data.routePath ?? null : null;
   const manifestFallback = resolvedRoutePath ? getStepManifestForRoute(resolvedRoutePath, {}) : null;
   const manifestForDisplay = currentManifest ?? manifestFallback;
-  const canExpandSteps = Boolean(selectedNode && manifestForDisplay);
+  const canExpandSteps = Boolean(selectedNode);
   const expandDisabled = !canExpandSteps;
+  if (DEBUG_STEPS) {
+    console.log("[Inspector] selected node", {
+      nodeId: selectedNode?.id,
+      routePath: resolvedRoutePath,
+      stepStatus,
+      hasCurrentManifest: Boolean(currentManifest),
+      hasFallbackManifest: Boolean(manifestFallback),
+    });
+  }
   const expandTitle =
     !selectedNode
       ? "Selecteaza un nod."
-      : stepStatus === "route-mismatch"
-        ? "Fix mapping pentru a vedea pasii."
-        : stepStatus === "unavailable"
-          ? "Nu exista manifest pentru acest route."
-          : undefined;
+      : !canExpandSteps
+        ? stepStatus === "route-mismatch"
+          ? "Fix mapping pentru a vedea pasii."
+          : "Nu exista manifest pentru acest route."
+        : undefined;
   return (
     <aside className="space-y-4 rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-4 text-sm shadow-[0_25px_60px_rgba(0,0,0,0.08)]">
       <div className="flex items-center justify-between">
@@ -165,6 +185,19 @@ export function InspectorPanel({
               </li>
             ))}
           </ol>
+        </div>
+      ) : null}
+      {DEBUG_STEPS && debugInfo ? (
+        <div className="rounded-2xl border border-dashed border-amber-500/60 bg-white/95 p-3 text-xs text-[var(--omni-muted)]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-amber-600">Debug</p>
+          <ul className="mt-2 space-y-1 font-mono text-[11px] text-[var(--omni-ink)]">
+            <li>hostNodeId: {debugInfo.hostNodeId}</li>
+            <li>routePath: {debugInfo.routePath ?? "n/a"}</li>
+            <li>routeMismatch: {debugInfo.routeMismatch ? "true" : "false"}</li>
+            <li>hasManifest: {debugInfo.hasManifest ? "true" : "false"}</li>
+            <li>isExpanded: {debugInfo.isExpanded ? "true" : "false"}</li>
+            <li>stepNodesForHost: {debugInfo.stepNodeCountForHost}</li>
+          </ul>
         </div>
       ) : null}
       <FlowDiagnosticsPanel issues={diagnostics} onSelectIssue={onSelectIssue} flowStats={flowStats} />

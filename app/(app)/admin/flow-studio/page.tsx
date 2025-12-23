@@ -44,6 +44,8 @@ import { FlowCanvas } from "@/components/admin/flowStudio/FlowCanvas";
 import { InspectorPanel, type FlowStats, type MissingManifestNode } from "@/components/admin/flowStudio/InspectorPanel";
 import { buildEdgeGroupKey } from "@/lib/flowStudio/edgeUtils";
 
+const DEBUG_STEPS = process.env.NEXT_PUBLIC_FLOW_STUDIO_DEBUG_STEPS === "true";
+
 const DEFAULT_NODE_POSITION = { x: 160, y: 120 };
 const DAGRE_NODE_WIDTH = 220;
 const DAGRE_NODE_HEIGHT = 80;
@@ -257,30 +259,52 @@ export default function FlowStudioPage() {
         map.set(node.id, null);
         return;
       }
-      if (node.data.routeMismatch) {
-        map.set(node.id, null);
-        return;
-      }
       map.set(node.id, getStepManifestForRoute(path, {}));
     });
     return map;
   }, [nodes, resolveNodeRoutePath]);
+  const nodeCanExpandSteps = useMemo(() => {
+    const map = new Map<string, boolean>();
+    nodeManifestMap.forEach((manifest, nodeId) => {
+      map.set(nodeId, Boolean(manifest));
+    });
+    return map;
+  }, [nodeManifestMap]);
   const currentStepManifest = selectedNode ? nodeManifestMap.get(selectedNode.id) ?? null : null;
-  const stepsExpanded = Boolean(
-    selectedNode && (expandedStepsMap[selectedNode.id] ?? (currentStepManifest ? true : false)),
-  );
+  const stepsExpanded = Boolean(selectedNode && expandedStepsMap[selectedNode.id]);
   const nodeStepAvailability = useMemo(() => {
     const map = new Map<string, StepAvailability>();
     nodes.forEach((node) => {
-      const path = resolveNodeRoutePath(node);
-      if (!path) {
-        map.set(node.id, node.data.routeMismatch ? "route-mismatch" : "unavailable");
-        return;
+      if (node.data.routeMismatch) {
+        map.set(node.id, "route-mismatch");
+      } else {
+        map.set(node.id, nodeCanExpandSteps.get(node.id) ? "available" : "unavailable");
       }
-      map.set(node.id, nodeManifestMap.get(node.id) ? "available" : getStepManifestForRoute(path, {}) ? "available" : "unavailable");
     });
     return map;
-  }, [nodeManifestMap, nodes, resolveNodeRoutePath]);
+  }, [nodeCanExpandSteps, nodes]);
+  useEffect(() => {
+    if (!DEBUG_STEPS) return;
+    console.groupCollapsed("[FlowStudio] node manifest & availability snapshot");
+    nodes.forEach((node) => {
+      const path = resolveNodeRoutePath(node);
+      const manifest = nodeManifestMap.get(node.id);
+      const availability = nodeStepAvailability.get(node.id);
+      const inDegree = edges.filter((edge) => edge.target === node.id).length;
+      const outDegree = edges.filter((edge) => edge.source === node.id).length;
+      console.log({
+        nodeId: node.id,
+        routeId: node.data.routeId,
+        routePath: path,
+        routeMismatch: node.data.routeMismatch,
+        stepManifest: Boolean(manifest),
+        availability,
+        inDegree,
+        outDegree,
+      });
+    });
+    console.groupEnd();
+  }, [edges, nodeManifestMap, nodeStepAvailability, nodes, resolveNodeRoutePath]);
   const missingManifestNodes = useMemo<MissingManifestNode[]>(() => {
     const entries: MissingManifestNode[] = [];
     nodes.forEach((node) => {
@@ -326,6 +350,16 @@ export default function FlowStudioPage() {
     });
     return map;
   }, [expandedStepsMap, nodeManifestMap, nodes]);
+  const selectedNodeDebugInfo = useMemo(() => {
+    if (!DEBUG_STEPS || !selectedNode) return null;
+    const hostNodeId = selectedNode.id;
+    const routePath = selectedNodeResolvedRoutePath;
+    const routeMismatch = Boolean(selectedNode.data.routeMismatch);
+    const hasManifest = Boolean(nodeManifestMap.get(hostNodeId));
+    const isExpanded = Boolean(expandedStepsMap[hostNodeId]);
+    const stepNodeCountForHost = expandedStepRenderData.get(hostNodeId)?.nodes.length ?? 0;
+    return { hostNodeId, routePath, routeMismatch, hasManifest, isExpanded, stepNodeCountForHost };
+  }, [expandedStepRenderData, expandedStepsMap, nodeManifestMap, selectedNode, selectedNodeResolvedRoutePath]);
   const stepNodes = useMemo<Node<StepNodeRenderData>[]>(() => {
     const list: Node<StepNodeRenderData>[] = [];
     expandedStepRenderData.forEach((data) => {
@@ -348,24 +382,12 @@ export default function FlowStudioPage() {
   const nodesForCanvas = useMemo<Node<FlowNodeData | StepNodeRenderData>[]>(() => {
     return [...nodes, ...stepNodes];
   }, [nodes, stepNodes]);
-  const setNodeStepsExpanded = useCallback(
-    (nodeId: string, expanded: boolean) => {
-      setExpandedStepsMap((prev) => {
-        if ((prev[nodeId] ?? false) === expanded) return prev;
-        return { ...prev, [nodeId]: expanded };
-      });
-      if (!expanded) {
-        setSelectedStepNodeId((current) => {
-          const parsed = current ? parseStepNodeReactId(current) : null;
-          return parsed?.hostNodeId === nodeId ? null : current;
-        });
-      }
-    },
-    [setExpandedStepsMap, setSelectedStepNodeId],
-  );
   const ensureNodeStepsExpanded = useCallback(
     (nodeId: string) => {
       setExpandedStepsMap((prev) => {
+        if (DEBUG_STEPS) {
+          console.log("[FlowStudio] ensureNodeStepsExpanded", { nodeId, expandedStepsMapBefore: { ...prev } });
+        }
         if (prev[nodeId]) return prev;
         pendingFitNodeRef.current = nodeId;
         return { ...prev, [nodeId]: true };
@@ -373,29 +395,103 @@ export default function FlowStudioPage() {
     },
     [],
   );
-  const handleRequestExpandSteps = useCallback(
-    (nodeId: string, toggle?: boolean) => {
-      const node = nodes.find((entry) => entry.id === nodeId);
-      if (!node) return;
-      const manifest = nodeManifestMap.get(node.id);
-      if (!manifest) return;
-      setSelectedNodeId(node.id);
-      setSelectedEdgeId(null);
-      const current = expandedStepsMap[node.id] ?? false;
-      const next = typeof toggle === "boolean" ? toggle : !current;
-      setNodeStepsExpanded(node.id, next);
-      if (next) {
-        pendingFitNodeRef.current = node.id;
-      }
+  const collapseNodeSteps = useCallback(
+    (nodeId: string) => {
+      setExpandedStepsMap((prev) => {
+        if (!prev[nodeId]) return prev;
+        const next = { ...prev, [nodeId]: false };
+        if (DEBUG_STEPS) {
+          console.log("[FlowStudio] collapseNodeSteps", { nodeId, expandedStepsMapBefore: { ...prev }, expandedStepsMapAfter: next });
+        }
+        return next;
+      });
+      setSelectedStepNodeId((current) => {
+        if (!current) return current;
+        const parsed = parseStepNodeReactId(current);
+        return parsed?.hostNodeId === nodeId ? null : current;
+      });
     },
-    [expandedStepsMap, nodeManifestMap, nodes, setNodeStepsExpanded, setSelectedEdgeId, setSelectedNodeId],
+    [setExpandedStepsMap, setSelectedStepNodeId],
+  );
+  const fitStepsView = useCallback(
+    (hostNodeId: string) => {
+      if (typeof window === "undefined" || !reactFlowInstance) {
+        if (DEBUG_STEPS) {
+          console.log("[FlowStudio] fitStepsView skipped (no reactFlowInstance)", { hostNodeId });
+        }
+        return;
+      }
+      requestAnimationFrame(() => {
+        const rfNodes = reactFlowInstance
+          .getNodes()
+          .filter((node) => node.id === hostNodeId || node.id.startsWith(`step:${hostNodeId}:`));
+        if (DEBUG_STEPS) {
+          console.log("[FlowStudio] fitStepsView", { hostNodeId, candidateCount: rfNodes.length });
+        }
+        if (!rfNodes.length) return;
+        reactFlowInstance.fitView({ nodes: rfNodes, padding: 0.3, duration: 350 });
+      });
+    },
+    [reactFlowInstance],
+  );
+  const openStepsForNode = useCallback(
+    (hostNodeId: string, stepReactId?: string | null) => {
+      const node = nodes.find((entry) => entry.id === hostNodeId);
+      if (!node) {
+        if (DEBUG_STEPS) {
+          console.warn("[FlowStudio] openStepsForNode: host node not found", { hostNodeId });
+        }
+        return;
+      }
+      if (DEBUG_STEPS) {
+        console.log("[FlowStudio] openStepsForNode", {
+          hostNodeId,
+          stepReactId: stepReactId ?? null,
+          selectedNodeIdBefore: selectedNodeId,
+          selectedStepNodeIdBefore: selectedStepNodeId,
+          expandedStepsMapBefore: { ...expandedStepsMap },
+          hasReactFlowInstance: Boolean(reactFlowInstance),
+        });
+      }
+      setSelectedNodeId(hostNodeId);
+      setSelectedEdgeId(null);
+      setSelectedStepNodeId(stepReactId ?? null);
+      ensureNodeStepsExpanded(hostNodeId);
+      pendingFitNodeRef.current = hostNodeId;
+      fitStepsView(hostNodeId);
+    },
+    [ensureNodeStepsExpanded, expandedStepsMap, fitStepsView, nodes, reactFlowInstance, selectedNodeId, selectedStepNodeId, setSelectedEdgeId, setSelectedNodeId, setSelectedStepNodeId],
+  );
+  const handleRequestExpandSteps = useCallback(
+    (nodeId: string) => {
+      if (DEBUG_STEPS) {
+        console.log("[FlowStudio] handleRequestExpandSteps", { nodeId });
+      }
+      if (expandedStepsMap[nodeId]) {
+        collapseNodeSteps(nodeId);
+        return;
+      }
+      openStepsForNode(nodeId);
+    },
+    [collapseNodeSteps, expandedStepsMap, openStepsForNode],
   );
   const handleNodeDoubleClick = useCallback(
     (node: Node<FlowNodeData | StepNodeRenderData>) => {
-      if (node.type === "stepNode") return;
+      if (DEBUG_STEPS) {
+        console.log("[FlowStudio] double-click on node", {
+          nodeId: node.id,
+          type: node.type,
+          routePath: node.type === "stepNode" ? null : (node.data as FlowNodeData).routePath,
+        });
+      }
+      if (node.type === "stepNode") {
+        const stepData = node.data as StepNodeRenderData;
+        openStepsForNode(stepData.parentNodeId, node.id);
+        return;
+      }
       handleRequestExpandSteps(node.id);
     },
-    [handleRequestExpandSteps],
+    [handleRequestExpandSteps, openStepsForNode],
   );
   const toggleSelectedNodeSteps = useCallback(() => {
     if (!selectedNode) return;
@@ -1268,42 +1364,31 @@ export default function FlowStudioPage() {
 
   const handleSelectIssue = useCallback(
     (issue: FlowIssue) => {
+      if (!reactFlowInstance) return;
       if (issue.targetType === "node" && issue.targetId) {
-        setSelectedNodeId(issue.targetId);
-        setSelectedEdgeId(null);
-        setSelectedStepNodeId(null);
-        ensureNodeStepsExpanded(issue.targetId);
-        const node = nodes.find((entry) => entry.id === issue.targetId);
-        if (node && reactFlowInstance) {
-          reactFlowInstance.setCenter(
-            node.position.x + DAGRE_NODE_WIDTH / 2,
-            node.position.y + DAGRE_NODE_HEIGHT / 2,
-            { zoom: 1.1, duration: 500 },
-          );
-        }
-      } else if (issue.targetType === "edge" && issue.targetId) {
-        setSelectedEdgeId(issue.targetId);
-        setSelectedNodeId(null);
-        const edge = edges.find((entry) => entry.id === issue.targetId);
-        if (edge && reactFlowInstance) {
-          const source = nodes.find((entry) => entry.id === edge.source);
-          const target = nodes.find((entry) => entry.id === edge.target);
-          if (source && target) {
-            const centerX = (source.position.x + target.position.x) / 2;
-            const centerY = (source.position.y + target.position.y) / 2;
-            reactFlowInstance.setCenter(centerX, centerY, { zoom: 1.05, duration: 500 });
-          }
-        }
-      } else if (issue.targetType === "stepNode" && issue.targetId) {
+        openStepsForNode(issue.targetId);
+        return;
+      }
+      if (issue.targetType === "stepNode" && issue.targetId) {
         const parsed = parseStepNodeReactId(issue.targetId);
         if (!parsed) return;
-        setSelectedNodeId(parsed.hostNodeId);
-        setSelectedEdgeId(null);
-        ensureNodeStepsExpanded(parsed.hostNodeId);
-        setSelectedStepNodeId(issue.targetId);
+        openStepsForNode(parsed.hostNodeId, issue.targetId);
+        return;
+      }
+      if (issue.targetType === "edge" && issue.targetId) {
+        setSelectedEdgeId(issue.targetId);
+        setSelectedNodeId(null);
+        setSelectedStepNodeId(null);
+        const edge = edges.find((entry) => entry.id === issue.targetId);
+        if (edge) {
+          const rfNodes = reactFlowInstance.getNodes().filter((node) => node.id === edge.source || node.id === edge.target);
+          if (rfNodes.length) {
+            reactFlowInstance.fitView({ nodes: rfNodes, padding: 0.3, duration: 300 });
+          }
+        }
       }
     },
-    [edges, ensureNodeStepsExpanded, nodes, reactFlowInstance],
+    [edges, nodes, openStepsForNode, reactFlowInstance, setSelectedEdgeId, setSelectedNodeId, setSelectedStepNodeId],
   );
   const handleSelectMissingManifestNode = useCallback(
     (nodeId: string) => {
@@ -1546,9 +1631,10 @@ export default function FlowStudioPage() {
                 onAutoLayout={handleAutoLayout}
                 extraHeader={canvasHeaderActions}
                 nodeStepAvailability={nodeStepAvailability}
+                nodeCanExpandSteps={nodeCanExpandSteps}
                 autoLayoutRunning={autoLayoutRunning}
                 onNodeDoubleClick={handleNodeDoubleClick}
-                onRequestNodeSteps={(node) => handleRequestExpandSteps(node.id)}
+                onRequestNodeSteps={(nodeId) => handleRequestExpandSteps(nodeId)}
               />
             </div>
             <div className={clsx("xl:w-[360px]", inspectorCollapsed && "xl:w-auto xl:flex-none")}>
@@ -1582,6 +1668,7 @@ export default function FlowStudioPage() {
                   onApplyEdgeColorToGroup={handleApplyEdgeColorToGroup}
                   observedEnabled={observedEnabled}
                   observedEvents={observedEventsForSelection}
+                  debugInfo={selectedNodeDebugInfo}
                   onCollapse={() => setInspectorCollapsed(true)}
                 />
               )}
