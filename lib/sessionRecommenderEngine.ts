@@ -1,7 +1,7 @@
 "use client";
 
 import type { UserProfileSnapshot, CanonDomainId, CatAxisId } from "./profileEngine";
-import type { ArcConfig } from "@/config/arcs";
+import { ARC_CONFIGS, type ArcConfig } from "@/config/arcs";
 import { getNextArcRecommendation, getActiveArc } from "@/lib/arcEngine";
 
 export type SessionPlan = {
@@ -59,8 +59,14 @@ export function getFirstSessionPlan(profile: UserProfileSnapshot | null): Sessio
   return buildPlanFromArc(nextArc, 0);
 }
 
-export function getTodayPlan(user: UserProfileSnapshot | null): SessionPlan {
+export function getTodayPlan(user: UserProfileSnapshot | null, opts?: { forcedTrait?: CatAxisId | null }): SessionPlan {
   try {
+    if (opts?.forcedTrait) {
+      const overrideArc = ARC_CONFIGS.find((arc) => arc.traitPrimary === opts.forcedTrait);
+      if (overrideArc) {
+        return buildPlanFromArc(overrideArc, 0);
+      }
+    }
     if (user?.activeArcCompleted) {
       const nextArc = getNextArcRecommendation(user);
       return buildPlanFromArc(nextArc, 0);

@@ -15,7 +15,7 @@ import { getScreenIdForRoute } from "@/lib/routeIds";
 
 const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
 import { getTriedExtraToday, hasCompletedToday, readLastCompletion, type DailyCompletionRecord } from "@/lib/dailyCompletion";
-import { getTraitLabel } from "@/lib/profileEngine";
+import { getTraitLabel, type CatAxisId } from "@/lib/profileEngine";
 import { type SessionPlan } from "@/lib/sessionRecommenderEngine";
 import { saveTodayPlan } from "@/lib/todayPlanStorage";
 import { getSensAiTodayPlan, hasFreeDailyLimit, type SensAiContext } from "@/lib/omniSensAI";
@@ -30,6 +30,7 @@ import {
   needsStyleProfile,
 } from "@/lib/gatingSelectors";
 import { CAT_LITE_EXTENDED_AXES } from "@/lib/catLite";
+import { getAxisFromMindPacingSignal, isMindPacingSignalTag } from "@/lib/mindPacingSignals";
 
 export default function TodayOrchestrator() {
   const router = useRouter();
@@ -41,6 +42,12 @@ export default function TodayOrchestrator() {
   const [completedToday, setCompletedToday] = useState(false);
   const [lastCompletion, setLastCompletion] = useState<DailyCompletionRecord | null>(null);
   const sourceParam = searchParams?.get("source");
+  const mindpacingTagParam = searchParams?.get("mindpacingTag") ?? null;
+  const forcedMindAxis = useMemo(() => {
+    if (sourceParam !== "mindpacing_safe") return null;
+    if (!isMindPacingSignalTag(mindpacingTagParam)) return null;
+    return getAxisFromMindPacingSignal(mindpacingTagParam);
+  }, [mindpacingTagParam, sourceParam]);
   const cameFromRunComplete = sourceParam === "run_complete";
   const cameFromGuided = sourceParam === "guided";
   const [triedExtraToday, setTriedExtraTodayState] = useState(false);
@@ -137,10 +144,10 @@ export default function TodayOrchestrator() {
   }, [sourceParam, router]);
 
   const loadPlanFromSensAi = useCallback(
-    async (userId: string, token: { cancelled: boolean }) => {
+    async (userId: string, token: { cancelled: boolean }, forcedAxis?: CatAxisId | null) => {
       setPlanLoading(true);
       try {
-        const result = await getSensAiTodayPlan(userId);
+        const result = await getSensAiTodayPlan(userId, forcedAxis ? { forcedAxis } : undefined);
         if (token.cancelled) return;
         setSensAiCtx(result.ctx);
         setSessionPlan(result.plan);
@@ -154,11 +161,11 @@ export default function TodayOrchestrator() {
   useEffect(() => {
     if (!authReady || !user) return;
     const token = { cancelled: false };
-    void loadPlanFromSensAi(user.uid, token);
+    void loadPlanFromSensAi(user.uid, token, forcedMindAxis);
     return () => {
       token.cancelled = true;
     };
-  }, [authReady, user, loadPlanFromSensAi]);
+  }, [authReady, user, loadPlanFromSensAi, forcedMindAxis]);
 
   useEffect(() => {
     if (!sessionPlan) return;

@@ -122,18 +122,18 @@ const CONTENT: Record<IntroLang, LocaleContent> = {
       {
         body: "Simplă, ghidată:",
         label: "Încep ghidat",
-        subLabel: "5–7 min.",
-        href: "/intro/guided",
+        subLabel: "5–7 min. Recomandat pentru început.",
+        href: "/intro/mindpacing",
         event: "intro_choice_guided",
-        variant: "secondary",
+        variant: "primary",
       },
       {
         body: "Intensă, exploratoare:",
         label: "Explorează sistemul",
-        subLabel: "15–17 min.",
+        subLabel: "15–17 min. Pentru cei care vor context mai profund.",
         href: "/intro/explore",
         event: "intro_choice_explore",
-        variant: "primary",
+        variant: "secondary",
       },
     ],
     skipLabel: "Sari peste",
@@ -168,7 +168,7 @@ const CONTENT: Record<IntroLang, LocaleContent> = {
         body: "If you want a simple guided start:",
         label: "Start guided",
         subLabel: "5–7 min. Stabilization.",
-        href: "/intro/guided",
+        href: "/intro/mindpacing",
         event: "intro_choice_guided",
         variant: "secondary",
       },
@@ -379,7 +379,7 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
 
   useEffect(() => {
     if (!isFinalSlide) return;
-    const target = suggestedChoice ?? "explore";
+    const target = suggestedChoice ?? "guided";
     const el = document.getElementById(
       target === "explore" ? "intro-choice-explore" : "intro-choice-guided",
     );
@@ -429,8 +429,9 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
     [allowSkip, handleSkip, isFinalSlide],
   );
 
-  const highlightExplore = suggestedChoice === "explore";
-  const highlightGuided = suggestedChoice === "guided";
+  const resolvedChoice = suggestedChoice ?? "guided";
+  const highlightExplore = resolvedChoice === "explore";
+  const highlightGuided = resolvedChoice === "guided";
   const showProgressMeta = !isFinalSlide && !isTimelineSlide;
   const shouldPlayAudio = timelineCues.length > 0 && isTimelineSlide && !isFinalSlide;
   useEffect(() => {

@@ -7,6 +7,7 @@ type MindPacingEntry = {
   answerTagsSecondary?: string[];
   vocabPrimaryId?: string;
   vocabSecondaryId?: string | null;
+  mindTag?: string | null;
   updatedAt: number;
 };
 
@@ -88,6 +89,7 @@ export function storeMindPacingAnswer(
     answerTagsSecondary?: string[];
     vocabPrimaryId?: string | null;
     vocabSecondaryId?: string | null;
+    mindTag?: string | null;
   },
 ) {
   const state = loadState();
@@ -98,6 +100,7 @@ export function storeMindPacingAnswer(
     optionId: payload.optionId,
     answerTagPrimary: payload.answerTagPrimary,
     answerTagsSecondary: payload.answerTagsSecondary,
+    mindTag: payload.mindTag ?? current.mindTag ?? null,
     updatedAt: Date.now(),
   };
   if (payload.vocabPrimaryId !== undefined) {

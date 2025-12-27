@@ -14,6 +14,11 @@ import {
   setMindPacingRotationIndex,
   getLastMindPacingQuestionId,
 } from "@/lib/mindPacingStore";
+import {
+  getMindPacingSignalFromOption,
+  isMindPacingSignalTag,
+  type MindPacingSignalTag,
+} from "@/lib/mindPacingSignals";
 
 type MindPacingOption = (typeof MIND_PACING_QUESTIONS)[number]["options"][number];
 
@@ -62,6 +67,8 @@ export default function MindPacingPage() {
     const entry = getMindPacingEntry(dayKey);
     return entry?.answerTagPrimary ? "result" : "question";
   });
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
+  const [mindTag, setMindTag] = useState<MindPacingSignalTag | null>(null);
   useEffect(() => {
     setHydrated(true);
   }, []);
@@ -70,14 +77,36 @@ export default function MindPacingPage() {
     setQuestion(resolveQuestion(dayKey));
   }, [dayKey]);
 
+  useEffect(() => {
+    const entry = getMindPacingEntry(dayKey);
+    if (!entry?.optionId) {
+      setSelectedLabel(null);
+      setMindTag(null);
+      return;
+    }
+    const resolvedQuestion = getMindPacingQuestionById(entry.questionId);
+    const option = resolvedQuestion?.options.find((opt) => opt.id === entry.optionId);
+    setSelectedLabel(option ? option.label[locale] : null);
+    const inferredTag = getMindPacingSignalFromOption(entry.optionId);
+    const storedTag = isMindPacingSignalTag(entry.mindTag) ? entry.mindTag : null;
+    setMindTag(storedTag ?? inferredTag ?? null);
+  }, [dayKey, locale, question]);
+
   const vocabUrl = useMemo(() => {
     const params = new URLSearchParams({
       source: "mindpacing",
       returnTo: RETURN_TO_TODAY,
       avoid: previousDayKey ? [dayKey, previousDayKey].join(",") : dayKey,
     });
+    if (mindTag) {
+      params.set("mindpacingTag", mindTag);
+    }
     return `/intro/vocab?${params.toString()}`;
-  }, [dayKey, previousDayKey]);
+  }, [dayKey, previousDayKey, mindTag]);
+
+  const eyebrowText = locale === "ro" ? "5 secunde · 1 întrebare" : "5 seconds · 1 question";
+  const helperText = locale === "ro" ? "Ne ajută să ajustăm exercițiul de azi pentru tine." : "This helps us adjust today's exercise for you.";
+  const questionTitle = question?.prompt?.[locale] ?? "";
 
   if (!hydrated) {
     return (
@@ -89,31 +118,33 @@ export default function MindPacingPage() {
 
   const handleAnswer = (option: MindPacingOption) => {
     if (!option) return;
+    const signal = getMindPacingSignalFromOption(option.id);
     storeMindPacingAnswer(dayKey, {
       questionId: question.id,
       optionId: option.id,
       answerTagPrimary: option.tagsPrimary[0],
       answerTagsSecondary: option.tagsSecondary,
+      mindTag: signal,
     });
+    setSelectedLabel(option.label[locale]);
+    setMindTag(signal);
     setPhase("result");
   };
 
   return (
     <div className="min-h-screen bg-[var(--omni-bg-main)] text-[var(--omni-ink)]">
       <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-6 py-12">
-        <section className="space-y-3 text-center">
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">MindPacing · Primele 24h</p>
-          <h1 className="text-3xl font-semibold">{locale === "ro" ? "Calibrăm rapid" : "Quick calibration"}</h1>
-          <p className="text-sm text-[var(--omni-muted)]">
-            {locale === "ro" ? "O singură întrebare și notăm semnalul. Apoi trecem la vocab." : "One check-in. We note the signal, then continue with vocab."}
-          </p>
-        </section>
+        {phase === "question" ? (
+          <section className="space-y-3 text-center">
+            <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{eyebrowText}</p>
+            <h1 className="text-3xl font-semibold text-[var(--omni-ink)]">{questionTitle}</h1>
+            <p className="text-sm text-[var(--omni-muted)]">{helperText}</p>
+          </section>
+        ) : null}
 
         {phase === "question" ? (
           <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 shadow-[0_15px_50px_rgba(0,0,0,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">{locale === "ro" ? "MindPacing" : "Mind pacing"}</p>
-            <h2 className="mt-3 text-2xl font-semibold text-[var(--omni-ink)]">{question.prompt[locale]}</h2>
-            <div className="mt-6 space-y-3">
+            <div className="space-y-3">
               {question.options.map((option) => (
                 <button
                   key={option.id}
@@ -131,13 +162,31 @@ export default function MindPacingPage() {
         {phase === "result" ? (
           <section className="space-y-6 rounded-[28px] border border-[var(--omni-border-soft)] bg-white/95 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
             <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{locale === "ro" ? "Semnal notat" : "Signal noted"}</p>
+            <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
+              {selectedLabel
+                ? locale === "ro"
+                  ? `Ai ales: „${selectedLabel}”.`
+                  : `You chose: “${selectedLabel}”.`
+                : locale === "ro"
+                  ? "Ai ales un semnal."
+                  : "You captured a signal."}
+            </h3>
             <div className="space-y-2 text-sm text-[var(--omni-ink)]/85">
-              <p>{locale === "ro" ? "Ne oprim aici. Urmează vocab reflex, într-un pas separat." : "We stop here. Vocab will follow in a separate step."}</p>
-              <p>{locale === "ro" ? "Continuă liniștit – nu există verdict, doar urmărim semnalul." : "Continue gently – no verdict, just recording the signal."}</p>
+              {locale === "ro" ? (
+                <>
+                  <p>Mintea nu stă pe loc. Într-o zi sare prin mii de gânduri și stări care vin și pleacă.</p>
+                  <p>Nu le poți controla pe toate, dar poți învăța să recunoști câteva tipare cheie și să știi ce să faci cu ele.</p>
+                </>
+              ) : (
+                <>
+                  <p>The mind never stays still. Some days it jumps through a thousand thoughts and states that appear and disappear.</p>
+                  <p>You can’t control them all, but you can learn to notice the key patterns and know what to do with them.</p>
+                </>
+              )}
             </div>
             <div className="flex justify-center">
               <OmniCtaButton className="justify-center" onClick={() => router.push(vocabUrl)}>
-                {locale === "ro" ? "Continuă către vocab" : "Continue to vocab"}
+                {locale === "ro" ? "Continuă" : "Continue"}
               </OmniCtaButton>
             </div>
           </section>

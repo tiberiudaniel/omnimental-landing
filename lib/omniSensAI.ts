@@ -1,6 +1,6 @@
 "use client";
 
-import { getUserProfileSnapshot, type UserProfileSnapshot } from "@/lib/profileEngine";
+import { getUserProfileSnapshot, type UserProfileSnapshot, type CatAxisId } from "@/lib/profileEngine";
 import { getTodayPlan, type SessionPlan } from "@/lib/sessionRecommenderEngine";
 import { getSessionsToday, getArenaRunsById } from "@/lib/usageStats";
 import { FREE_LIMITS } from "@/lib/gatingRules";
@@ -46,7 +46,9 @@ export async function buildSensAiContext(userId: string): Promise<SensAiContext 
 
 export async function getSensAiTodayPlan(
   userId: string,
+  options?: { forcedAxis?: CatAxisId | null },
 ): Promise<{ ctx: SensAiContext | null; plan: SessionPlan | null }> {
+  const forcedAxis = options?.forcedAxis ?? null;
   const ctx = await buildSensAiContext(userId);
   if (!ctx) {
     const fallbackProfile = await getUserProfileSnapshot(userId);
@@ -54,14 +56,14 @@ export async function getSensAiTodayPlan(
       return { ctx: null, plan: SAFE_FALLBACK_PLAN };
     }
     try {
-      return { ctx: null, plan: getTodayPlan(fallbackProfile) };
+      return { ctx: null, plan: getTodayPlan(fallbackProfile, forcedAxis ? { forcedTrait: forcedAxis } : undefined) };
     } catch (error) {
       console.warn("getSensAiTodayPlan fallback planner failed", error);
       return { ctx: null, plan: SAFE_FALLBACK_PLAN };
     }
   }
   try {
-    const plan = getTodayPlan(ctx.profile);
+    const plan = getTodayPlan(ctx.profile, forcedAxis ? { forcedTrait: forcedAxis } : undefined);
     return { ctx, plan };
   } catch (error) {
     console.warn("getSensAiTodayPlan planner failed", error);
