@@ -3,13 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import CinematicPlayer, { primeIntroAudio } from "@/components/intro/CinematicPlayer";
-import StartScreen from "@/components/intro/StartScreen";
 import { getIntroSeen } from "@/lib/introGate";
 
 export default function IntroGatePage() {
   const router = useRouter();
   const [checkComplete, setCheckComplete] = useState(false);
-  const [mode, setMode] = useState<"gate" | "cinematic">("gate");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -28,23 +26,15 @@ export default function IntroGatePage() {
     };
   }, [router]);
 
-  const handleStart = async () => {
-    const ok = await primeIntroAudio();
-    if (typeof window !== "undefined") {
-      const state = (window as typeof window & { __introAudioState?: string }).__introAudioState;
-      console.log("primeIntroAudio ok:", ok, "state:", state);
-    } else {
-      console.log("primeIntroAudio ok:", ok);
-    }
-    setMode("cinematic");
-  };
+  useEffect(() => {
+    if (!checkComplete) return;
+    void primeIntroAudio().catch((error) => {
+      console.warn("[intro] primeIntroAudio failed", error);
+    });
+  }, [checkComplete]);
 
   if (!checkComplete) {
     return <div className="min-h-screen bg-[#0f1116]" />;
-  }
-
-  if (mode === "gate") {
-    return <StartScreen onStart={handleStart} />;
   }
 
   return <CinematicPlayer allowSkip={false} />;

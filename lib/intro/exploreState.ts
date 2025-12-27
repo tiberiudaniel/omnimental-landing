@@ -4,6 +4,8 @@ const STORAGE_KEYS = {
   mediumUnlocked: "intro_explore_medium_unlocked",
   mapViewed: "intro_explore_map_viewed",
   offerShown: "intro_explore_offer_shown",
+  axisChoice: "intro_explore_axis_choice",
+  completion: "intro_explore_completion",
 };
 
 function getStorage(): Storage | null {
@@ -81,3 +83,26 @@ export function setExploreOfferShown(value: boolean) {
   storage.setItem(STORAGE_KEYS.offerShown, value ? "1" : "0");
 }
 
+export function getAxisLessonChoice(): string | null {
+  const storage = getStorage();
+  if (!storage) return null;
+  return storage.getItem(STORAGE_KEYS.axisChoice);
+}
+
+export function setAxisLessonChoice(axisId: string) {
+  const storage = getStorage();
+  if (!storage) return;
+  storage.setItem(STORAGE_KEYS.axisChoice, axisId);
+}
+
+export function getExploreCompletion(): string | null {
+  const storage = getStorage();
+  if (!storage) return null;
+  return storage.getItem(STORAGE_KEYS.completion);
+}
+
+export function setExploreCompletion(source: string) {
+  const storage = getStorage();
+  if (!storage) return;
+  storage.setItem(STORAGE_KEYS.completion, source);
+}

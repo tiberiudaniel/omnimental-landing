@@ -4,7 +4,7 @@ import { startTransition, useCallback, useEffect, useMemo, useRef, useState } fr
 import type { DragEvent as ReactDragEvent } from "react";
 import { useEdgesState, useNodesState, type Connection, type Edge, type Node, type ReactFlowInstance, type XYPosition } from "reactflow";
 import "reactflow/dist/style.css";
-import { addDoc, collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
 import clsx from "clsx";
 import dagre from "dagre";
 import { getDb } from "@/lib/firebase";
@@ -45,6 +45,7 @@ import { InspectorPanel, type FlowStats, type MissingManifestNode } from "@/comp
 import { buildEdgeGroupKey } from "@/lib/flowStudio/edgeUtils";
 
 const DEBUG_STEPS = process.env.NEXT_PUBLIC_FLOW_STUDIO_DEBUG_STEPS === "true";
+const FLOW_STUDIO_DIAG = process.env.NEXT_PUBLIC_FLOW_STUDIO_DIAG === "1";
 
 const DEFAULT_NODE_POSITION = { x: 160, y: 120 };
 const DAGRE_NODE_WIDTH = 220;
@@ -56,6 +57,9 @@ const STEP_NODE_VERTICAL_GAP = 80;
 const LAST_FLOW_KEY = "flowStudio:lastFlowId";
 const EMPTY_COPY: CopyFields = {};
 const DEFAULT_EDGE_COLOR = "#0f172a";
+const AUTOSAVE_INTERVAL_MS = 3 * 60 * 1000;
+const AUTOSAVE_DOC_ID = "autosave";
+const autosaveTimeFormatter = new Intl.DateTimeFormat("ro-RO", { hour: "2-digit", minute: "2-digit" });
 
 type FlowSpecNode = {
   id: string;
@@ -78,6 +82,14 @@ type FlowSpecEdge = {
   targetHandle?: string | null;
   color?: string;
   command?: string;
+};
+
+type FlowDraftDoc = {
+  name?: string;
+  nodes?: FlowNode[];
+  edges?: FlowEdge[];
+  updatedAt?: unknown;
+  updatedAtMs?: number;
 };
 
 type FlowSpec = {
@@ -125,6 +137,9 @@ export default function FlowStudioPage() {
   const [flowNameDraft, setFlowNameDraft] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [lastAutosaveAt, setLastAutosaveAt] = useState<Date | null>(null);
+  const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [autosaveError, setAutosaveError] = useState<string | null>(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdgeData>([]);
@@ -152,6 +167,20 @@ export default function FlowStudioPage() {
   const [centeringSelection, setCenteringSelection] = useState(false);
   const canvasWrapperRef = useRef<HTMLDivElement | null>(null);
   const pendingFitNodeRef = useRef<string | null>(null);
+  const autosavePromptedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!FLOW_STUDIO_DIAG) return;
+    console.log("[FlowStudioDiag] FlowStudio mounted");
+    return () => {
+      console.log("[FlowStudioDiag] FlowStudio unmounted");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!FLOW_STUDIO_DIAG) return;
+    console.log("[FlowStudioDiag] Observed toggle", { enabled: observedEnabled });
+  }, [observedEnabled]);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -236,6 +265,37 @@ export default function FlowStudioPage() {
     });
     return () => unsub();
   }, [db, selectedFlowId, routeMap, routeByPath, setEdges, setNodes, isAdmin]);
+
+  useEffect(() => {
+    if (!selectedFlowId || !flowDoc) return;
+    if (autosavePromptedRef.current === selectedFlowId) return;
+    autosavePromptedRef.current = selectedFlowId;
+    let cancelled = false;
+    const draftRef = doc(db, "adminFlows", selectedFlowId, "drafts", AUTOSAVE_DOC_ID);
+    getDoc(draftRef)
+      .then((snapshot) => {
+        if (cancelled || !snapshot.exists()) return;
+        const draft = snapshot.data() as FlowDraftDoc;
+        const draftMs = typeof draft.updatedAtMs === "number" ? draft.updatedAtMs : getTimestampMillis(draft.updatedAt);
+        const flowMs = getTimestampMillis(flowDoc.updatedAt);
+        if (!draftMs || !flowMs || draftMs <= flowMs) return;
+        const shouldRestore = window.confirm(`Exista un autosave din ${autosaveTimeFormatter.format(new Date(draftMs))}. Vrei sa il incarci?`);
+        if (!shouldRestore) return;
+        const restoredNodes = (draft.nodes ?? []).map((stored) => buildFlowNode(stored, routeMap, routeByPath));
+        const restoredEdges = (draft.edges ?? []).map(buildFlowEdge);
+        setNodes(restoredNodes);
+        setEdges(restoredEdges);
+        if (draft.name) {
+          setFlowNameDraft(draft.name);
+        }
+      })
+      .catch((error) => {
+        console.warn("[FlowStudio] failed to load autosave draft", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [db, flowDoc, routeByPath, routeMap, selectedFlowId, setEdges, setNodes]);
 
   const filteredRoutes = useMemo(() => {
     const needle = routeSearch.trim().toLowerCase();
@@ -652,12 +712,19 @@ export default function FlowStudioPage() {
 
   useEffect(() => {
     if (!observedEnabled) {
+      if (FLOW_STUDIO_DIAG) {
+        console.log("[FlowStudioDiag] Observed disabled – clearing snapshot");
+      }
       const rafId = requestAnimationFrame(() => setObservedSnapshot(null));
       return () => cancelAnimationFrame(rafId);
     }
     let active = true;
+    if (FLOW_STUDIO_DIAG) {
+      console.count("Observed:schedule");
+      console.log("[FlowStudioDiag] Observed schedule", { windowKey: observedWindow, segment: observedSegment });
+    }
     const loadingRaf = requestAnimationFrame(() => setObservedLoading(true));
-    loadObservedSnapshot({ windowKey: observedWindow, segment: observedSegment })
+    const loadPromise = loadObservedSnapshot({ windowKey: observedWindow, segment: observedSegment })
       .then((data) => {
         if (active) {
           setObservedSnapshot(data);
@@ -671,6 +738,10 @@ export default function FlowStudioPage() {
     return () => {
       active = false;
       cancelAnimationFrame(loadingRaf);
+      if (FLOW_STUDIO_DIAG) {
+        console.log("[FlowStudioDiag] Observed schedule cleanup", { windowKey: observedWindow, segment: observedSegment });
+      }
+      void loadPromise;
     };
   }, [observedEnabled, observedSegment, observedWindow]);
 
@@ -888,6 +959,9 @@ export default function FlowStudioPage() {
         x: node.position.x,
         y: node.position.y,
       };
+      if (node.data.routePath) {
+        stored.routePath = node.data.routePath;
+      }
       const label = normalizeLabelMap(node.data.labelOverrides);
       const tags = normalizeTags(node.data.tags);
       if (label) stored.label = label;
@@ -912,6 +986,29 @@ export default function FlowStudioPage() {
     });
     return { storedNodes, storedEdges };
   }, [edges, nodes]);
+
+  const flowSignature = useMemo(() => {
+    const { storedNodes, storedEdges } = serializeFlow();
+    return JSON.stringify({
+      name: flowNameDraft.trim(),
+      nodes: storedNodes,
+      edges: storedEdges,
+    });
+  }, [flowNameDraft, serializeFlow]);
+
+  const persistedSignature = useMemo(() => {
+    if (!selectedFlowId || !flowDoc) return "";
+    return JSON.stringify({
+      name: flowDoc.name ?? "",
+      nodes: flowDoc.nodes ?? [],
+      edges: flowDoc.edges ?? [],
+    });
+  }, [flowDoc, selectedFlowId]);
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (!selectedFlowId) return false;
+    return persistedSignature !== flowSignature;
+  }, [flowSignature, persistedSignature, selectedFlowId]);
 
   const buildFlowSpec = useCallback((): FlowSpec | null => {
     if (!selectedFlowId) return null;
@@ -1000,6 +1097,7 @@ export default function FlowStudioPage() {
       );
       setSaveStatus("success");
       setSaveMessage("Salvat");
+      setAutosaveError(null);
       window.setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (error) {
       console.error("Failed to save flow", error);
@@ -1038,6 +1136,40 @@ export default function FlowStudioPage() {
     setSelectedFlowId(docRef.id);
     setFlowNameDraft(name);
   }, [db, flowDoc?.description, flowDoc?.name, flowDoc?.version, flowNameDraft, selectedFlowId, serializeFlow]);
+
+  const performAutosave = useCallback(async () => {
+    if (!selectedFlowId || !flowNameDraft.trim() || !hasUnsavedChanges) return;
+    try {
+      setAutosaveStatus("saving");
+      setAutosaveError(null);
+      const { storedNodes, storedEdges } = serializeFlow();
+      await setDoc(
+        doc(db, "adminFlows", selectedFlowId, "drafts", AUTOSAVE_DOC_ID),
+        {
+          name: flowNameDraft.trim(),
+          nodes: storedNodes,
+          edges: storedEdges,
+          updatedAt: serverTimestamp(),
+          updatedAtMs: Date.now(),
+        },
+        { merge: true },
+      );
+      setLastAutosaveAt(new Date());
+      setAutosaveStatus("idle");
+    } catch (error) {
+      console.error("[FlowStudio] autosave failed", error);
+      setAutosaveStatus("error");
+      setAutosaveError(error instanceof Error ? error.message : "Autosave esuat");
+    }
+  }, [db, flowNameDraft, hasUnsavedChanges, selectedFlowId, serializeFlow]);
+
+  useEffect(() => {
+    if (!selectedFlowId) return undefined;
+    const intervalId = window.setInterval(() => {
+      void performAutosave();
+    }, AUTOSAVE_INTERVAL_MS);
+    return () => window.clearInterval(intervalId);
+  }, [performAutosave, selectedFlowId]);
 
   const handleOpenImportModal = useCallback(() => {
     setImportModalOpen(true);
@@ -1388,7 +1520,7 @@ export default function FlowStudioPage() {
         }
       }
     },
-    [edges, nodes, openStepsForNode, reactFlowInstance, setSelectedEdgeId, setSelectedNodeId, setSelectedStepNodeId],
+    [edges, openStepsForNode, reactFlowInstance, setSelectedEdgeId, setSelectedNodeId, setSelectedStepNodeId],
   );
   const handleSelectMissingManifestNode = useCallback(
     (nodeId: string) => {
@@ -1519,6 +1651,16 @@ export default function FlowStudioPage() {
                   >
                     {saveMessage}
                   </span>
+                ) : null}
+                {hasUnsavedChanges ? (
+                  <span className="text-xs font-semibold text-amber-600">Modificari nesalvate</span>
+                ) : lastAutosaveAt ? (
+                  <span className="text-xs text-[var(--omni-muted)]">Autosalvat la {autosaveTimeFormatter.format(lastAutosaveAt)}</span>
+                ) : null}
+                {autosaveStatus === "saving" ? (
+                  <span className="text-xs text-[var(--omni-muted)]">Autosalvare…</span>
+                ) : autosaveStatus === "error" && autosaveError ? (
+                  <span className="text-xs font-semibold text-rose-500">{autosaveError}</span>
                 ) : null}
               </div>
             </div>
@@ -1996,6 +2138,30 @@ function formatTimestamp(value: unknown): string | null {
     }
   }
   return null;
+}
+
+function getTimestampMillis(value: unknown): number | null {
+  if (!value) return null;
+  if (typeof value === "number") return value;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "object" && value !== null) {
+    if ("toMillis" in value && typeof (value as { toMillis: () => number }).toMillis === "function") {
+      try {
+        return (value as { toMillis: () => number }).toMillis();
+      } catch {
+        return null;
+      }
+    }
+    if ("toDate" in value && typeof (value as { toDate: () => Date }).toDate === "function") {
+      try {
+        return (value as { toDate: () => Date }).toDate().getTime();
+      } catch {
+        return null;
+      }
+    }
+  }
+  const iso = formatTimestamp(value);
+  return iso ? new Date(iso).getTime() : null;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

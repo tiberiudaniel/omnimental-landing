@@ -3,7 +3,10 @@
 import type { StepManifest, StepManifestContext } from "./types";
 import { getTodayRunManifest } from "./todayRun";
 import { getIntroManifest } from "./intro";
+import { getIntroGuidedManifest } from "./introGuided";
+import { getMindPacingManifest } from "./mindPacing";
 import { getOnboardingManifest } from "./onboarding";
+import { getOnboardingCatLiteManifest } from "./onboardingCatLite";
 import { getTodayOverviewManifest } from "./todayOverview";
 import { getUpgradeManifest } from "./upgrade";
 import { getArenaRunManifest } from "./arenaRun";
@@ -26,11 +29,12 @@ type ManifestRegistryEntry =
 const MANIFEST_REGISTRY: ManifestRegistryEntry[] = [
   { type: "exact", value: "/intro", getManifest: getIntroManifest },
   { type: "exact", value: "/intro/explore", getManifest: getIntroManifest },
-  { type: "exact", value: "/intro/guided", getManifest: getIntroManifest },
+  { type: "exact", value: "/intro/guided", getManifest: getIntroGuidedManifest },
+  { type: "exact", value: "/intro/mindpacing", getManifest: getMindPacingManifest },
   { type: "exact", value: "/onboarding", getManifest: getOnboardingManifest },
   { type: "exact", value: "/onboarding/cat-baseline", getManifest: getOnboardingManifest },
   { type: "exact", value: "/onboarding/cat-baseline/result", getManifest: getOnboardingManifest },
-  { type: "exact", value: "/onboarding/cat-lite-2", getManifest: getOnboardingManifest },
+  { type: "exact", value: "/onboarding/cat-lite-2", getManifest: getOnboardingCatLiteManifest },
   { type: "exact", value: "/onboarding/pillars", getManifest: getOnboardingManifest },
   { type: "exact", value: "/onboarding/style", getManifest: getOnboardingManifest },
   { type: "exact", value: "/today", getManifest: getTodayOverviewManifest },

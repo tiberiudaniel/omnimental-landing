@@ -4,7 +4,16 @@ import { collection, getDocs, limit, orderBy, query, Timestamp, where } from "fi
 import { getDb } from "@/lib/firebase";
 import { flowObservedMap, type FlowObservedMapping, type NodeMetric } from "@/config/flowObservedMap";
 
+const FLOW_STUDIO_DIAG_ENABLED = process.env.NEXT_PUBLIC_FLOW_STUDIO_DIAG === "1";
+const OBSERVED_RATE_WINDOW_MS = 60_000;
+const OBSERVED_RATE_LIMIT_PER_MIN = 20;
+
 const db = getDb();
+const inflightLoads = new Map<string, Promise<ObservedSnapshot>>();
+const observedRateState = {
+  windowStart: Date.now(),
+  fetchesInWindow: 0,
+};
 
 export type ObservedWindowKey = "1h" | "6h" | "24h";
 export type ObservedSegmentKey = "all" | "premium" | "free";
@@ -80,21 +89,80 @@ function bumpNodeMetric(store: Record<string, ObservedNodeStats>, routePath: str
 }
 
 function bumpEdgeMetric(store: Record<string, ObservedEdgeStats>, sourceRoute: string, targetRoute: string) {
-  const key = `${sourceRoute}→${targetRoute}`;
+  const key = `${sourceRoute}->${targetRoute}`;
   if (!store[key]) {
     store[key] = {};
   }
   store[key].count = (store[key].count ?? 0) + 1;
 }
 
+function recordObservedRate() {
+  if (!FLOW_STUDIO_DIAG_ENABLED) return;
+  const now = Date.now();
+  if (now - observedRateState.windowStart >= OBSERVED_RATE_WINDOW_MS) {
+    observedRateState.windowStart = now;
+    observedRateState.fetchesInWindow = 0;
+  }
+  observedRateState.fetchesInWindow += 1;
+  const elapsed = Math.max(now - observedRateState.windowStart, 1);
+  const ratePerMinute = (observedRateState.fetchesInWindow / elapsed) * 60_000;
+  if (ratePerMinute > OBSERVED_RATE_LIMIT_PER_MIN) {
+    console.warn(`[FlowStudioDiag] Observed fetch rate high: ${ratePerMinute.toFixed(1)}/min`);
+    console.trace();
+  }
+}
+
 export async function loadObservedSnapshot(params: { windowKey: ObservedWindowKey; segment: ObservedSegmentKey }) {
   const { windowKey, segment } = params;
+  if (FLOW_STUDIO_DIAG_ENABLED) {
+    console.count("Observed:load");
+  }
+  const key = `${windowKey}|${segment}`;
+  const existing = inflightLoads.get(key);
+  if (existing) {
+    return existing;
+  }
+  const start = Date.now();
+  const pending = getDocs(buildObservedQuery(windowKey, segment))
+    .then((snapshot) => buildObservedSnapshot(snapshot))
+    .then((result) => {
+      if (FLOW_STUDIO_DIAG_ENABLED) {
+        const durationMs = Date.now() - start;
+        console.log("[FlowStudioDiag] Observed load complete", {
+          windowKey,
+          segment,
+          durationMs,
+          nodeCount: Object.keys(result.nodeStats).length,
+          edgeCount: Object.keys(result.edgeStats).length,
+          eventsCount: result.events.length,
+        });
+        recordObservedRate();
+      }
+      return result;
+    })
+    .catch((error) => {
+      if (FLOW_STUDIO_DIAG_ENABLED) {
+        console.warn("[FlowStudioDiag] Observed load failed", { windowKey, segment, error });
+      }
+      throw error;
+    })
+    .finally(() => {
+      inflightLoads.delete(key);
+    });
+  inflightLoads.set(key, pending);
+  return pending;
+}
+
+function buildObservedQuery(windowKey: ObservedWindowKey, segment: ObservedSegmentKey) {
   const since = Timestamp.fromMillis(Date.now() - WINDOW_TO_MS[windowKey]);
   const conditions = [where("ts", ">=", since), orderBy("ts", "desc"), limit(200)];
   if (segment !== "all") {
     conditions.splice(1, 0, where("isPremium", "==", segment === "premium"));
   }
-  const snapshot = await getDocs(query(collection(db, "telemetryEvents"), ...conditions));
+  return query(collection(db, "telemetryEvents"), ...conditions);
+}
+
+function buildObservedSnapshot(snapshot: Awaited<ReturnType<typeof getDocs>>) {
   const nodeStats: Record<string, ObservedNodeStats> = {};
   const edgeStats: Record<string, ObservedEdgeStats> = {};
   const events: ObservedEvent[] = [];

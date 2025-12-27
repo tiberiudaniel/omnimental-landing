@@ -781,7 +781,7 @@ useEffect(() => {
                         </div>
                         <VocabCard
                           vocabId={vocabPrimer.vocabId}
-                          variant="mini"
+                          size="mini"
                           locale={vocabUiCopy.locale}
                           className="px-4 py-4 sm:px-6"
                         />

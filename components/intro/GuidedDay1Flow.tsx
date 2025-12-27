@@ -207,24 +207,19 @@ export default function GuidedDay1Flow() {
   };
 
   const handleMultiToggle = (id: MultiSelectId, optionId: string) => {
-    let shouldAdvance = false;
-    let nextList: string[] | null = null;
     setSelectionMap((prev) => {
       const prevList = prev[id];
+      let nextList: string[];
       if (prevList.includes(optionId)) {
         nextList = prevList.filter((value) => value !== optionId);
       } else if (prevList.length >= 2) {
         nextList = prevList;
-        return prev;
       } else {
         nextList = [...prevList, optionId];
       }
-      shouldAdvance = nextList.length === 2 && nextList !== prevList;
+      if (nextList === prevList) return prev;
       return { ...prev, [id]: nextList };
     });
-    if (shouldAdvance && nextList) {
-      finalizeMultiSelection(id, nextList);
-    }
   };
 
   const finalizeMultiSelection = useCallback(
@@ -237,6 +232,12 @@ export default function GuidedDay1Flow() {
     },
     [goToNextStep],
   );
+
+  const handleMultiContinue = (questionId: MultiSelectId) => {
+    const selections = selectionMap[questionId];
+    if (!selections.length) return;
+    finalizeMultiSelection(questionId, selections);
+  };
 
   const handleReflectionContinue = () => {
     track("guided_step_completed", { step: "reflection" });
@@ -260,6 +261,7 @@ export default function GuidedDay1Flow() {
   };
 
   const currentQuestion = content.questions[stepIndex];
+  const isCurrentMultiSelect = currentQuestion ? MULTI_SELECT_SET.has(currentQuestion.id) : false;
 
   return (
     <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-8">
@@ -291,7 +293,7 @@ export default function GuidedDay1Flow() {
             >
               {currentQuestion.options.map((option, idx) => {
                 const isCloud = CLOUD_LAYOUT_IDS.includes(currentQuestion.id);
-                const isMultiSelect = MULTI_SELECT_SET.has(currentQuestion.id);
+                const isMultiSelect = isCurrentMultiSelect;
                 const cloudSizes = ["px-6 py-2.5", "px-4 py-2", "px-5 py-3"];
                 const cloudClass = cloudSizes[idx % cloudSizes.length];
                 const selected =
@@ -328,18 +330,30 @@ export default function GuidedDay1Flow() {
             </div>
             {currentQuestion.id === "mind_state" ? (
               <p className="mt-4 text-center text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-                {locale === "ro" ? "Alege două care ți se potrivesc." : "Pick two that fit best."}
+                {locale === "ro" ? "Selectează până la două opțiuni." : "Select up to two options."}
               </p>
             ) : null}
             {currentQuestion.id === "block_time" ? (
               <p className="mt-4 text-center text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-                {locale === "ro" ? "Alege două situații." : "Choose two situations."}
+                {locale === "ro" ? "Selectează până la două situații." : "Select up to two situations."}
               </p>
             ) : null}
             {currentQuestion.id === "biggest_cost" ? (
               <p className="mt-4 text-center text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-                {locale === "ro" ? "Alege două costuri." : "Choose two costs."}
+                {locale === "ro" ? "Selectează până la două costuri." : "Select up to two costs."}
               </p>
+            ) : null}
+            {isCurrentMultiSelect ? (
+              <div className="mt-5 flex justify-center">
+                <OmniCtaButton
+                  variant="neutral"
+                  disabled={!selectionMap[currentQuestion.id as MultiSelectId].length}
+                  onClick={() => handleMultiContinue(currentQuestion.id as MultiSelectId)}
+                  className="justify-center"
+                >
+                  {locale === "ro" ? "Continuă" : "Continue"}
+                </OmniCtaButton>
+              </div>
             ) : null}
           </section>
         ) : null}

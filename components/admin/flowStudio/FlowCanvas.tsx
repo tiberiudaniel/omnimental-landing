@@ -168,15 +168,6 @@ function ParallelEdge(props: ParallelEdgeProps) {
   );
 }
 
-const NODE_TYPES: NodeTypes = {
-  flowNode: FlowNodeRenderer,
-  stepNode: StepNodeRenderer,
-};
-
-const EDGE_TYPES: EdgeTypes = {
-  parallel: ParallelEdge,
-};
-
 type FlowCanvasProps = {
   nodes: Node<FlowNodeData | StepNodeRenderData>[];
   edges: Edge<FlowEdgeData>[];
@@ -289,7 +280,8 @@ export function FlowCanvas({
     }),
     [nodeCanExpandSteps, nodeIssueMap, nodeStepAvailability, observedEnabled, observedNodeStats, onRequestNodeSteps],
   );
-  const edgeTypes = useMemo(() => ({ parallel: ParallelEdge }), []);
+  const nodeTypes = useMemo<NodeTypes>(() => ({ flowNode: FlowNodeRenderer, stepNode: StepNodeRenderer }), []);
+  const edgeTypes = useMemo<EdgeTypes>(() => ({ parallel: ParallelEdge }), []);
 
   return (
     <section className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-4 shadow-[0_25px_60px_rgba(0,0,0,0.08)]">
@@ -327,8 +319,8 @@ export function FlowCanvas({
               onConnect={onConnect}
               onInit={onInit}
               fitView
-              nodeTypes={NODE_TYPES}
-              edgeTypes={EDGE_TYPES}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               onNodeClick={(_, node) => onNodeSelect(node as Node<FlowNodeData | StepNodeRenderData>)}
               onNodeDoubleClick={(_, node) => onNodeDoubleClick?.(node as Node<FlowNodeData | StepNodeRenderData>)}
               onEdgeClick={(_, edge) => onEdgeSelect(edge.id)}

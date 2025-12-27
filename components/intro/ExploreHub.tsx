@@ -1,207 +1,86 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ExploreMap } from "./ExploreMap";
-import { AxisTestCard } from "./AxisTestCard";
-import { ContractCard } from "./ContractCard";
-import {
-  getExploreStartedAt,
-  getTestsCompleted,
-  getUnlockedMediumTests,
-  setExploreStartedAt,
-  setTestsCompleted,
-  setUnlockedMediumTests,
-  getExploreOfferShown,
-  setExploreOfferShown,
-} from "@/lib/intro/exploreState";
+import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { track } from "@/lib/telemetry/track";
-import { PaywallSoftModal } from "./PaywallSoftModal";
-import { useI18n } from "@/components/I18nProvider";
-import { UPGRADE_URL } from "@/lib/constants/routes";
-import { INTRO_COPY } from "./introCopy";
+import { getAxisLessonChoice, getExploreCompletion } from "@/lib/intro/exploreState";
 
 export default function ExploreHub() {
   const router = useRouter();
-  const { lang } = useI18n();
-  const locale = lang === "en" ? "en" : "ro";
-  const [timerLabel, setTimerLabel] = useState("00:00");
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [testsCompleted, setTestsCompletedState] = useState(0);
-  const [mediumUnlocked, setMediumUnlockedState] = useState(false);
-  const [contractVisible, setContractVisible] = useState(false);
-  const [actionsCount, setActionsCount] = useState(0);
-  const [offerOpen, setOfferOpen] = useState(false);
-  const [offerShown, setOfferShown] = useState(() => getExploreOfferShown());
-  const testsCardRef = useRef<HTMLDivElement | null>(null);
-  const intervalRef = useRef<number | null>(null);
-  const startedAtRef = useRef<number | null>(null);
+  const exploreCompletion = useMemo(() => getExploreCompletion(), []);
+  const axisChoice = useMemo(() => getAxisLessonChoice(), []);
 
   useEffect(() => {
-    track("explore_opened");
-    let startedAt = getExploreStartedAt();
-    if (!startedAt) {
-      startedAt = Date.now();
-      setExploreStartedAt(startedAt);
-    }
-    startedAtRef.current = startedAt;
-    const updateTimer = () => {
-      const diff = Math.max(0, Date.now() - (startedAt ?? Date.now()));
-      setElapsedMs(diff);
-      const minutes = Math.floor(diff / 60000)
-        .toString()
-        .padStart(2, "0");
-      const seconds = Math.floor((diff % 60000) / 1000)
-        .toString()
-        .padStart(2, "0");
-      setTimerLabel(`${minutes}:${seconds}`);
-    };
-    updateTimer();
-    if (intervalRef.current) {
-      window.clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    intervalRef.current = window.setInterval(updateTimer, 1000);
-    return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
+    track("explore_opened_final");
   }, []);
 
   useEffect(() => {
-    const storedTests = getTestsCompleted();
-    const storedMedium = getUnlockedMediumTests();
-    setTestsCompletedState(storedTests);
-    setMediumUnlockedState(storedMedium);
-  }, []);
+    if (!exploreCompletion) return;
+    router.replace("/intro/guided?source=explore");
+  }, [exploreCompletion, router]);
 
-  useEffect(() => {
-    setContractVisible(testsCompleted >= 2);
-  }, [testsCompleted]);
+  const axisDisabled = Boolean(axisChoice);
 
-  useEffect(() => {
-    if (offerShown || offerOpen) return;
-    const enoughActions = actionsCount >= 3;
-    const testsCondition = testsCompleted >= 2 && elapsedMs >= 6 * 60 * 1000 && enoughActions;
-    const timeCondition = elapsedMs >= 12 * 60 * 1000 && enoughActions;
-    if (testsCondition) {
-      setOfferOpen(true);
-      setOfferShown(true);
-      setExploreOfferShown(true);
-      track("offer_shown", { flow: "explore", reason: "tests+actions" });
-      return;
-    }
-    if (timeCondition) {
-      setOfferOpen(true);
-      setOfferShown(true);
-      setExploreOfferShown(true);
-      track("offer_shown", { flow: "explore", reason: "time+actions" });
-    }
-  }, [actionsCount, elapsedMs, offerOpen, offerShown, testsCompleted]);
-
-  const handleScrollToTests = useCallback(() => {
-    testsCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setActionsCount((prev) => prev + 1);
-  }, []);
-
-  const handleTestComplete = useCallback(() => {
-    setTestsCompletedState((prev) => {
-      const next = prev + 1;
-      setTestsCompleted(next);
-      return next;
-    });
-    setActionsCount((prev) => prev + 1);
-  }, []);
-
-  const handleTestStarted = useCallback(() => {
-    setActionsCount((prev) => prev + 1);
-  }, []);
-
-  const handleUnlockMedium = useCallback(() => {
-    setMediumUnlockedState((prev) => {
-      if (prev) return prev;
-      setUnlockedMediumTests(true);
-      return true;
-    });
-  }, []);
-
-  const handleOfferClose = useCallback(() => {
-    setOfferOpen(false);
-    track("offer_dismissed", { flow: "explore" });
-  }, []);
-
-  const handleOfferUpgrade = useCallback(() => {
-    track("offer_clicked", { flow: "explore", action: "upgrade" });
-    setOfferOpen(false);
-    router.push(UPGRADE_URL);
-  }, [router]);
-
-  const handleFeedbackAction = useCallback(() => {
-    setActionsCount((prev) => prev + 1);
-  }, []);
-
-  const handleContractAction = useCallback(() => {
-    setActionsCount((prev) => prev + 1);
-  }, []);
-
-  const heroCopy = useMemo(() => {
-    if (locale === "en") {
-      return {
-        title: "Explore OmniMental",
-        subtitle: "Quick test. Nothing is saved without your consent.",
-        timerLabel: "Exploration time",
-      };
-    }
-    return {
-      title: "Explorează OmniMental",
-      subtitle: "Test rapid. Nimic nu se salvează fără acordul tău.",
-      timerLabel: "Timp explorare",
-    };
-  }, [locale]);
-
-  const offerCopy = INTRO_COPY.offer[locale];
+  const cards = useMemo(
+    () => [
+      {
+        id: "cat-lite",
+        eyebrow: "Opțiunea 1",
+        title: "🟨 Vreau să văd unde mă situez acum",
+        description:
+          "O evaluare scurtă, pe câteva direcții, ca să obții o imagine mai clară a stării tale actuale.",
+        micro: "Nu este un rezultat final. Este o fotografie de moment.",
+        action: "👉 Continuă cu evaluarea",
+        onClick: () => router.push("/intro/explore/cat-lite"),
+        variant: "primary" as const,
+        disabled: false,
+      },
+      {
+        id: "axis",
+        eyebrow: "Opțiunea 2",
+        title: "🟦 Vreau să înțeleg mai bine o altă zonă",
+        description: "O lecție scurtă, la alegere, fără evaluare.",
+        micro: axisDisabled ? "Ai ales deja o zonă în această sesiune." : "Poți explora o singură zonă acum.",
+        action: axisDisabled ? "Explore deja închis" : "👉 Alege o zonă",
+        onClick: () => router.push("/intro/explore/axes"),
+        variant: "secondary" as const,
+        disabled: axisDisabled,
+      },
+    ],
+    [axisDisabled, router],
+  );
 
   return (
-    <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+    <main className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-0">
+      <div className="mx-auto w-full max-w-4xl space-y-6">
         <header className="space-y-3 text-center">
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Exploration Mode</p>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{heroCopy.title}</h1>
-          <p className="text-base text-[var(--omni-ink)]/80 sm:text-lg">{heroCopy.subtitle}</p>
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
-            {heroCopy.timerLabel}: <span className="text-[var(--omni-ink)]">{timerLabel}</span>
-          </p>
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Explore Mode</p>
+          <h1 className="text-3xl font-semibold sm:text-4xl">Cum vrei să continui explorarea?</h1>
+          <p className="text-base text-[var(--omni-muted)]">Poți merge mai în profunzime într-unul din aceste moduri.</p>
         </header>
-        <ExploreMap onContinue={handleScrollToTests} />
-        <div ref={testsCardRef}>
-          <AxisTestCard
-            mediumUnlocked={mediumUnlocked}
-            onTestComplete={handleTestComplete}
-            onUnlockMedium={handleUnlockMedium}
-            onTestStarted={handleTestStarted}
-            onFeedback={handleFeedbackAction}
-          />
-        </div>
-        {contractVisible ? (
-          <ContractCard
-            onExploreMore={() => {
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            onAction={handleContractAction}
-          />
-        ) : null}
+        <section className="space-y-5">
+          {cards.map((card) => (
+            <article
+              key={card.id}
+              className="space-y-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.08)]"
+            >
+              <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{card.eyebrow}</p>
+              <h2 className="text-2xl font-semibold leading-snug text-[var(--omni-ink)]">{card.title}</h2>
+              <p className="text-base text-[var(--omni-ink)]/85">{card.description}</p>
+              <p className="text-xs text-[var(--omni-muted)]">{card.micro}</p>
+              <OmniCtaButton
+                className={card.variant === "primary" ? "justify-center" : "justify-center bg-[var(--omni-ink)]/90"}
+                variant="neutral"
+                disabled={card.disabled}
+                onClick={card.disabled ? undefined : card.onClick}
+              >
+                {card.action}
+              </OmniCtaButton>
+            </article>
+          ))}
+        </section>
       </div>
-      <PaywallSoftModal
-        open={offerOpen}
-        title={offerCopy.title}
-        body={offerCopy.body}
-        primaryLabel={offerCopy.primary}
-        secondaryLabel={offerCopy.secondary}
-        onClose={handleOfferClose}
-        onUpgrade={handleOfferUpgrade}
-      />
-    </div>
+    </main>
   );
 }

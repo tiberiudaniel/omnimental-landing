@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-12-21T13:16:08.886Z",
+  "generatedAt": "2025-12-27T00:11:12.714Z",
   "routes": [
     {
       "routePath": "/",
@@ -24,6 +24,12 @@
       "group": "public",
       "filePath": "app/(public)/about/page.tsx",
       "routeId": "L2Fib3V0"
+    },
+    {
+      "routePath": "/admin",
+      "group": "app",
+      "filePath": "app/(app)/admin/page.tsx",
+      "routeId": "L2FkbWlu"
     },
     {
       "routePath": "/admin/flow-studio",
@@ -164,10 +170,46 @@
       "routeId": "L2ludHJvL2V4cGxvcmU"
     },
     {
+      "routePath": "/intro/explore/axes",
+      "group": "app",
+      "filePath": "app/(app)/intro/explore/axes/page.tsx",
+      "routeId": "L2ludHJvL2V4cGxvcmUvYXhlcw"
+    },
+    {
+      "routePath": "/intro/explore/axes/[axisId]",
+      "group": "app",
+      "filePath": "app/(app)/intro/explore/axes/[axisId]/page.tsx",
+      "routeId": "L2ludHJvL2V4cGxvcmUvYXhlcy9bYXhpc0lkXQ"
+    },
+    {
+      "routePath": "/intro/explore/cat-lite",
+      "group": "app",
+      "filePath": "app/(app)/intro/explore/cat-lite/page.tsx",
+      "routeId": "L2ludHJvL2V4cGxvcmUvY2F0LWxpdGU"
+    },
+    {
+      "routePath": "/intro/explore/complete",
+      "group": "app",
+      "filePath": "app/(app)/intro/explore/complete/page.tsx",
+      "routeId": "L2ludHJvL2V4cGxvcmUvY29tcGxldGU"
+    },
+    {
       "routePath": "/intro/guided",
       "group": "app",
       "filePath": "app/(app)/intro/guided/page.tsx",
       "routeId": "L2ludHJvL2d1aWRlZA"
+    },
+    {
+      "routePath": "/intro/mindpacing",
+      "group": "public",
+      "filePath": "app/(public)/intro/mindpacing/page.tsx",
+      "routeId": "L2ludHJvL21pbmRwYWNpbmc"
+    },
+    {
+      "routePath": "/intro/vocab",
+      "group": "app",
+      "filePath": "app/(app)/intro/vocab/page.tsx",
+      "routeId": "L2ludHJvL3ZvY2Fi"
     },
     {
       "routePath": "/knowledge-exam",
@@ -330,6 +372,12 @@
       "group": "public",
       "filePath": "app/(public)/privacy/page.tsx",
       "routeId": "L3ByaXZhY3k"
+    },
+    {
+      "routePath": "/program-ghidat",
+      "group": "public",
+      "filePath": "app/(public)/program-ghidat/page.tsx",
+      "routeId": "L3Byb2dyYW0tZ2hpZGF0"
     },
     {
       "routePath": "/progress",

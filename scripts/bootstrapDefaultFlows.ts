@@ -9,6 +9,7 @@ type FlowTemplate = {
   name: string;
   description?: string;
   routes: string[];
+  frozen?: boolean;
 };
 
 const templates: FlowTemplate[] = [
@@ -17,23 +18,34 @@ const templates: FlowTemplate[] = [
     name: "Onboarding canonical",
     description: "Landing → Auth → WOW session → Today",
     routes: ["/", "/auth", "/onboarding", "/today"],
+    frozen: true,
+  },
+  {
+    id: "intro-mindpacing-template",
+    name: "Intro → MindPacing",
+    description: "Intro cinematic → MindPacing → Today",
+    routes: ["/intro", "/intro/mindpacing", "/today"],
+    frozen: true,
   },
   {
     id: "daily-loop-template",
     name: "Daily loop",
     description: "Today → Run → Completion → Progress",
     routes: ["/today", "/today/run", "/today/completion", "/progress"],
+    frozen: true,
   },
   {
     id: "upgrade-funnel-template",
     name: "Upgrade funnel",
     description: "Limit → Upgrade → Success → Return",
     routes: ["/limits", "/upgrade", "/upgrade/success", "/today"],
+    frozen: true,
   },
 ];
 
 async function main() {
   const db = getAdminDb();
+  const overwriteExisting = process.env.BOOTSTRAP_DEFAULTFLOWS_OVERWRITE === "1";
   const routesSnapshot = await db.collection("adminRoutes").get();
   const routeByPath = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
   routesSnapshot.forEach((docSnap) => {
@@ -44,6 +56,22 @@ async function main() {
   });
 
   for (const template of templates) {
+    const flowRef = db.collection("adminFlows").doc(template.id);
+    const existingSnapshot = await flowRef.get();
+    if (existingSnapshot.exists) {
+      const existingData = existingSnapshot.data() as { frozen?: boolean } | undefined;
+      if (existingData?.frozen) {
+        console.log(`[bootstrapDefaultFlows] Skipping ${template.name} (frozen).`);
+        continue;
+      }
+      if (!overwriteExisting) {
+        console.log(
+          `[bootstrapDefaultFlows] Skipping ${template.name} (already exists; set BOOTSTRAP_DEFAULTFLOWS_OVERWRITE=1 to overwrite).`,
+        );
+        continue;
+      }
+    }
+
     const nodes: Array<Record<string, unknown>> = [];
     template.routes.forEach((routePath, index) => {
       const docSnap = routeByPath.get(routePath);
@@ -73,17 +101,24 @@ async function main() {
       eventName: "",
     }));
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: template.name,
       description: template.description ?? "",
       nodes,
       edges,
       version: 1,
       updatedAt: FieldValue.serverTimestamp(),
-      createdAt: FieldValue.serverTimestamp(),
+      frozen: template.frozen !== false,
     };
-    await db.collection("adminFlows").doc(template.id).set(payload, { merge: true });
-    console.log(`[bootstrapDefaultFlows] Seeded template ${template.name} (${nodes.length} nodes).`);
+    if (!existingSnapshot.exists) {
+      payload.createdAt = FieldValue.serverTimestamp();
+    }
+    await flowRef.set(payload, { merge: true });
+    console.log(
+      `[bootstrapDefaultFlows] ${existingSnapshot.exists ? "Overwrote" : "Created"} template ${template.name} (${nodes.length} nodes)${
+        template.frozen !== false ? " [frozen]" : ""
+      }.`,
+    );
   }
 }
 

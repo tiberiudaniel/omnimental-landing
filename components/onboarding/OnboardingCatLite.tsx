@@ -13,7 +13,7 @@ import VocabChip from "@/components/vocab/VocabChip";
 import VocabCard from "@/components/vocab/VocabCard";
 import { useI18n } from "@/components/I18nProvider";
 import { getDefaultVocabForAxis } from "@/config/catVocabulary";
-import { getUnlockedVocabIds, unlockVocab } from "@/lib/vocabProgress";
+import { unlockVocab } from "@/lib/vocabProgress";
 import { useCopy } from "@/lib/useCopy";
 import { getScreenIdForRoute } from "@/lib/routeIds";
 
@@ -201,12 +201,6 @@ export default function OnboardingCatLite({ onComplete, progress }: Props) {
     }
   };
 
-  const [unlockedVocabIds, setUnlockedVocabIds] = useState<string[]>([]);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setUnlockedVocabIds(getUnlockedVocabIds());
-  }, []);
-
   const axisDefaultVocabMap = useMemo(() => {
     const map: Partial<Record<CatAxisId, string>> = {};
     CAT_LITE_CORE_AXES.forEach((axisId) => {
@@ -220,7 +214,10 @@ export default function OnboardingCatLite({ onComplete, progress }: Props) {
     return getDefaultVocabForAxis(weakestAxis);
   }, [weakestAxis]);
 
-  const weakestUnlocked = weakestVocab ? unlockedVocabIds.includes(weakestVocab.id) : false;
+  useEffect(() => {
+    if (!weakestVocab) return;
+    unlockVocab(weakestVocab.id);
+  }, [weakestVocab]);
 
   const defaultTitle =
     locale === "en"
@@ -254,26 +251,6 @@ export default function OnboardingCatLite({ onComplete, progress }: Props) {
     locale === "en"
       ? "Today you learn a reflex-word. Not theory. A button."
       : "Astăzi înveți un „cuvânt-reflex”. Nu e teorie. E buton.";
-
-  const handleWeakestUnlock = () => {
-    if (!weakestVocab) return;
-    const updated = unlockVocab(weakestVocab.id);
-    setUnlockedVocabIds(updated);
-    track("vocab_unlocked", {
-      vocabId: weakestVocab.id,
-      axisId: weakestVocab.axisId,
-      surface: "onboarding_result",
-    });
-  };
-
-  const handleWeakestSkip = () => {
-    if (!weakestVocab) return;
-    track("vocab_skipped", {
-      vocabId: weakestVocab.id,
-      axisId: weakestVocab.axisId,
-      surface: "onboarding_result",
-    });
-  };
 
   return (
     <section className="mx-auto w-full max-w-3xl space-y-6 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-surface-card)] px-6 py-8 shadow-[0_8px_28px_rgba(0,0,0,0.15)]">
@@ -342,26 +319,7 @@ export default function OnboardingCatLite({ onComplete, progress }: Props) {
                 {weakestVocab ? (
                   <div className="space-y-3">
                     <p className="text-sm text-[var(--omni-ink)]/75">{reflexIntro}</p>
-                    <VocabCard
-                      vocabId={weakestVocab.id}
-                      locale={locale}
-                      variant="full"
-                      cta={
-                        weakestUnlocked
-                          ? undefined
-                          : {
-                              primaryLabel: locale === "en" ? "Unlock" : "Îl vreau",
-                              onPrimary: handleWeakestUnlock,
-                              secondaryLabel: locale === "en" ? "Later" : "Mai târziu",
-                              onSecondary: handleWeakestSkip,
-                            }
-                      }
-                    />
-                    {weakestUnlocked ? (
-                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-                        {locale === "en" ? "Already in your vocabulary." : "Deja este în vocabularul tău."}
-                      </p>
-                    ) : null}
+                    <VocabCard vocabId={weakestVocab.id} locale={locale} size="full" />
                   </div>
                 ) : null}
               </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { useAuth } from "@/components/AuthProvider";
 import { track } from "@/lib/telemetry/track";
@@ -12,6 +12,8 @@ import { CAT_LITE_EXTENDED_AXES } from "@/lib/catLite";
 import VocabChip from "@/components/vocab/VocabChip";
 import { getDefaultVocabForAxis } from "@/config/catVocabulary";
 import { useI18n } from "@/components/I18nProvider";
+import { setExploreCompletion } from "@/lib/intro/exploreState";
+import type { CatVocabTag } from "@/config/catVocabulary";
 
 type CatLitePart2ItemId =
   | "recalibration_1"
@@ -67,9 +69,17 @@ const QUESTIONS: CatLitePart2Question[] = [
 
 const RETURN_TO = "/onboarding/cat-lite-2";
 const PRIMER_AXES: CatAxisId[] = ["recalibration", "flexibility", "adaptiveConfidence"];
+const AXIS_VOCAB_TAG_MAP: Partial<Record<CatAxisId, CatVocabTag>> = {
+  recalibration: "change_resistance",
+  flexibility: "rigid",
+  adaptiveConfidence: "stuck",
+};
 
-export default function CatLitePart2Page() {
+function CatLitePart2PageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const exploreSource = searchParams.get("source");
+  const returnToParam = searchParams.get("returnTo") ?? RETURN_TO;
   const { user, authReady } = useAuth();
   const { lang } = useI18n();
   const locale = lang === "en" ? "en" : "ro";
@@ -99,9 +109,9 @@ export default function CatLitePart2Page() {
   useEffect(() => {
     if (!authReady) return;
     if (!user) {
-      router.replace(`/auth?returnTo=${encodeURIComponent(RETURN_TO)}`);
+      router.replace(`/auth?returnTo=${encodeURIComponent(returnToParam)}`);
     }
-  }, [authReady, user, router]);
+  }, [authReady, returnToParam, router, user]);
 
   useEffect(() => {
     if (!authReady || !user) return;
@@ -159,7 +169,22 @@ export default function CatLitePart2Page() {
         flexibility: axisScores.flexibility ?? null,
         adaptiveConfidence: axisScores.adaptiveConfidence ?? null,
       });
-      router.replace("/today?source=cat-lite-2");
+      if (exploreSource === "explore") {
+        setExploreCompletion("cat-lite");
+      }
+      const sorted = Object.entries(axisScores)
+        .filter(([, value]) => typeof value === "number")
+        .sort(([, a], [, b]) => (a ?? 0) - (b ?? 0));
+      const weakestAxis = (sorted[0]?.[0] as CatAxisId | undefined) ?? null;
+      const vocabTag = weakestAxis ? AXIS_VOCAB_TAG_MAP[weakestAxis] : null;
+      const vocabUrl = new URLSearchParams({
+        source: "cat-lite",
+        returnTo: returnToParam || "/today?source=cat-lite-2",
+      });
+      if (vocabTag) {
+        vocabUrl.set("tag", vocabTag);
+      }
+      router.replace(`/intro/vocab?${vocabUrl.toString()}`);
     } catch (err) {
       console.error("saveCatLiteSnapshot part2 failed", err);
       setError("Nu am reușit să salvăm măsurarea. Încearcă din nou.");
@@ -238,5 +263,19 @@ export default function CatLitePart2Page() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function CatLitePart2Page() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[var(--omni-bg-main)] px-4 py-10 text-sm text-[var(--omni-muted)]">
+          Pregătim evaluarea…
+        </main>
+      }
+    >
+      <CatLitePart2PageInner />
+    </Suspense>
   );
 }
