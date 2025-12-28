@@ -53,7 +53,7 @@ function walkDirectory(
     const routePath = buildRoutePath(segments);
     const routeId = encodeRouteIdValue(routePath);
     const relativePath = normalizeSlashes(path.relative(ROOT_DIR, path.join(currentDir, entry.name)));
-    const resolvedGroup = relativePath.includes("/(app)/") ? "app" : "public";
+    const resolvedGroup = deriveRouteGroup(routePath);
     routes.push({ routePath, group: resolvedGroup, filePath: relativePath, routeId });
   }
 }
@@ -80,6 +80,53 @@ function main() {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   fs.writeFileSync(OUTPUT_FILE, `${JSON.stringify(payload, null, 2)}\n`, { encoding: "utf-8" });
   console.log(`[genRoutes] wrote ${routes.length} routes to ${normalizeSlashes(path.relative(ROOT_DIR, OUTPUT_FILE))}`);
+}
+
+function deriveRouteGroup(routePath: string): string {
+  if (!routePath || routePath === "/") {
+    return "public";
+  }
+  const withoutLeadingSlash = routePath.replace(/^\/+/, "");
+  if (!withoutLeadingSlash.length) {
+    return "public";
+  }
+  const [firstSegment] = withoutLeadingSlash.split("/");
+  const seg = firstSegment?.toLowerCase() ?? "";
+  if (!seg) return "public";
+  if (seg === "admin") return "admin";
+  if (seg === "intro") return "intro";
+  if (seg === "experience-onboarding") return "experience-onboarding";
+  if (seg === "onboarding") return "onboarding";
+  if (seg === "today") return "today";
+  if (seg === "recommendation") return "recommendation";
+  if (["os", "progress", "mission-map", "mental-universe", "collectibles", "omni-scope", "omniscop", "omniscop-lite"].includes(seg)) {
+    return "progress";
+  }
+  if (seg === "training") return "training";
+  if (seg === "arenas") return "arenas";
+  if (
+    seg === "kuno" ||
+    seg === "omni-kuno" ||
+    seg === "omnicuno" ||
+    seg === "replay" ||
+    seg === "knowledge-exam"
+  ) {
+    return "library";
+  }
+  if (seg === "wizard" || seg === "group" || seg === "individual" || seg === "sessions") {
+    return "advanced";
+  }
+  if (seg === "upgrade" || seg === "unsubscribe" || seg === "auth") {
+    return "account";
+  }
+  if (seg === "omni-abil") {
+    return "omni-abil";
+  }
+  if (seg.startsWith("kuno") || seg.startsWith("omni-kuno") || seg.startsWith("omnicuno")) {
+    return "library";
+  }
+  if (seg.startsWith("admin")) return "admin";
+  return "public";
 }
 
 function encodeRouteIdValue(routePath: string): string {

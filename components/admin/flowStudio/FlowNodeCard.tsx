@@ -13,6 +13,7 @@ type FlowNodeCardProps = NodeProps<FlowNodeData> & {
   stepStatus: StepAvailability;
   canExpandSteps: boolean;
   onExpandSteps?: (nodeId: string) => void;
+  commentCount?: number;
 };
 
 const handleStyleBase = "h-2 w-2 border-none";
@@ -27,6 +28,7 @@ export function FlowNodeCard({
   stepStatus,
   canExpandSteps,
   onExpandSteps,
+  commentCount,
 }: FlowNodeCardProps) {
   const label = data.labelOverrides?.ro ?? data.routePath;
   const isStart = Boolean(data.tags?.includes("start"));
@@ -55,6 +57,11 @@ export function FlowNodeCard({
               {issueCount ? (
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
                   {issueCount}
+                </span>
+              ) : null}
+              {commentCount ? (
+                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
+                  💬 {commentCount}
                 </span>
               ) : null}
               {isStart ? (

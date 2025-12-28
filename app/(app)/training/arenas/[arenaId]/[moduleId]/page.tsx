@@ -1,24 +1,13 @@
-import { notFound } from "next/navigation";
-import { ArenaModuleDetail } from "@/components/arenas/ArenaModuleDetail";
-import type { ArenaId, ArenaLang } from "@/config/arenaModules/v1/types";
+import { redirect } from "next/navigation";
 
-interface Props {
-  params:
-    | { arenaId: ArenaId; moduleId: string }
-    | Promise<{ arenaId: ArenaId; moduleId: string }>;
-  searchParams?: { lang?: ArenaLang } | Promise<{ lang?: ArenaLang }>;
-}
+type ArenaModuleParams = { arenaId?: string | string[]; moduleId?: string | string[] };
 
-export default async function ArenaModulePage(props: Props) {
-  const params = await Promise.resolve(props.params);
-  const searchParams = await Promise.resolve(props.searchParams ?? {});
-  const lang: ArenaLang = searchParams.lang === "en" ? "en" : "ro";
-  if (!params.arenaId || !params.moduleId) {
-    notFound();
+export default function TrainingArenaModuleRedirect({ params }: { params: ArenaModuleParams }) {
+  const arenaRaw = Array.isArray(params?.arenaId) ? params?.arenaId[0] : params?.arenaId;
+  const moduleRaw = Array.isArray(params?.moduleId) ? params?.moduleId[0] : params?.moduleId;
+  if (!arenaRaw || !moduleRaw) {
+    redirect("/arenas");
+    return;
   }
-  return (
-    <main className="min-h-screen bg-[#05060a] text-white p-6">
-      <ArenaModuleDetail arenaId={params.arenaId} moduleId={params.moduleId} lang={lang} />
-    </main>
-  );
+  redirect(`/arenas/${arenaRaw}/${moduleRaw}`);
 }

@@ -157,7 +157,7 @@ function ExperienceOnboardingContent() {
     return null;
   }
 
-  const header = <SiteHeader />;
+  const header = <SiteHeader showMenu={false} />;
 
   return (
     <>

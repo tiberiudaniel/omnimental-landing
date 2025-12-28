@@ -42,10 +42,10 @@ const MANIFEST_REGISTRY: ManifestRegistryEntry[] = [
   { type: "exact", value: "/upgrade", getManifest: getUpgradeManifest },
   { type: "exact", value: "/upgrade/cancel", getManifest: getUpgradeManifest },
   { type: "exact", value: "/upgrade/success", getManifest: getUpgradeManifest },
-  { type: "exact", value: "/training/arenas/[arenaId]/[moduleId]/run", getManifest: getArenaRunManifest },
+  { type: "exact", value: "/arenas/[arenaId]/[moduleId]/run", getManifest: getArenaRunManifest },
   {
     type: "prefix",
-    value: "/training/arenas/",
+    value: "/arenas/",
     predicate: (routePath) => routePath.endsWith("/run"),
     getManifest: getArenaRunManifest,
   },

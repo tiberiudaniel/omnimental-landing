@@ -217,7 +217,7 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
   );
 
   const historyLink = useMemo(
-    () => `/training/arenas/history?arenaId=${module.arena}&moduleId=${module.id}`,
+    () => `/arenas/history?arenaId=${module.arena}&moduleId=${module.id}`,
     [module.arena, module.id],
   );
 
@@ -455,10 +455,10 @@ export function StroopRun({ module, lang, duration }: StroopRunProps) {
         }}
         onSelectDuration={(value) =>
           router.replace(
-            `/training/arenas/${module.arena}/${module.id}/run?duration=${value}&lang=${lang}`,
+            `/arenas/${module.arena}/${module.id}/run?duration=${value}&lang=${lang}`,
           )
         }
-        onBackToArena={() => router.push(`/training/arenas/${module.arena}`)}
+        onBackToArena={() => router.push(`/arenas/${module.arena}`)}
         onSubmit={(value) => {
           if (runRecordIdRef.current) {
             updateArenaRun(runRecordIdRef.current, { selfReport: value });

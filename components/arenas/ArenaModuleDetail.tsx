@@ -57,7 +57,7 @@ export function ArenaModuleDetail({ arenaId, moduleId, lang = "ro" }: Props) {
 
       <div className="flex justify-end">
         <Link
-          href={`/training/arenas/${arenaId}/${moduleId}/run?duration=${selectedDuration ?? "30s"}`}
+          href={`/arenas/${arenaId}/${moduleId}/run?duration=${selectedDuration ?? "30s"}`}
           className="rounded-full bg-white/90 text-black text-sm font-semibold px-5 py-2 hover:bg-white"
         >
           Start run

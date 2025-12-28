@@ -55,7 +55,7 @@ export function ArenaModuleList({ arenaId }: Props) {
               {module.explain.ro.slice(0, 160)}...
             </p>
             <Link
-              href={`/training/arenas/${module.arena}/${module.id}`}
+              href={`/arenas/${module.arena}/${module.id}`}
               className="rounded-full bg-white/90 text-black text-sm font-semibold px-4 py-2 hover:bg-white"
             >
               Deschide

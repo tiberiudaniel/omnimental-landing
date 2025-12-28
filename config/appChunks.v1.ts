@@ -1,0 +1,251 @@
+// config/appChunks.v1.ts
+// Canonical 12 macro-chunks (v1): strategy + gating + menu unlock + Flow Studio metadata.
+// Stable IDs: do not change once shipped.
+
+export type ChunkTier = 0 | 1 | 2 | 3 | 4 | 5;
+export type ChunkMenuState = "OFF" | "MINIMAL" | "CORE" | "EXPANDED";
+export type Bilingual = { ro: string; en?: string };
+
+export type AppChunkId =
+  | "public"
+  | "entry_intro"
+  | "guided_day1"
+  | "onboarding"
+  | "daily_loop"
+  | "recommendation"
+  | "progress_map"
+  | "training_arenas"
+  | "curriculum_library"
+  | "module_hubs"
+  | "advanced_wizard"
+  | "account_admin_legacy";
+
+export type AppChunkV1 = {
+  id: AppChunkId;
+  order: number;
+  title: Bilingual;
+  colorToken?: string;
+  collapsedByDefault?: boolean;
+
+  /** Progressive unlock */
+  tierMin: ChunkTier;
+  menuState: ChunkMenuState;
+
+  /** Delivery contract: Provocare → Câștig → Rezultat */
+  description: Bilingual;
+  target: Bilingual;
+  challenge: Bilingual;
+  reward: Bilingual;
+  proof: Bilingual;
+  exitGate: Bilingual;
+
+  /** Optional helpers for mapping */
+  routePrefixes?: string[];
+  routeGroups?: string[];
+};
+
+export const APP_CHUNKS_V1: AppChunkV1[] = [
+  {
+    id: "public",
+    order: 10,
+    title: { ro: "Public / Acquisition" },
+    colorToken: "public",
+    collapsedByDefault: false,
+    tierMin: 0,
+    menuState: "CORE",
+    description: { ro: "Landing + pagini publice (încredere, claritate, CTA)." },
+    target: { ro: "Userul înțelege produsul în <20 sec și intră în Intro." },
+    challenge: { ro: "Scepticism + lipsă de timp: «încă o aplicație»." },
+    reward: { ro: "Claritate + motiv real să încerce." },
+    proof: { ro: "Preview concret: «așa arată o zi» + 3 beneficii măsurabile." },
+    exitGate: { ro: "Click CTA → intrare în Intro." },
+    routeGroups: ["public"],
+  },
+
+  {
+    id: "entry_intro",
+    order: 20,
+    title: { ro: "Entry / Intro" },
+    colorToken: "intro",
+    collapsedByDefault: false,
+    tierMin: 0,
+    menuState: "OFF",
+    description: { ro: "Hook + alegere Guided vs Explore (fără meniu, fără distrageri)." },
+    target: { ro: "Creezi intenție + direcție rapidă, fără fricțiune." },
+    challenge: { ro: "Confuzie inițială + scepticism + oboseală cognitivă." },
+    reward: { ro: "«Mă prinde» + «știu ce urmează»." },
+    proof: { ro: "Promisiune scurtă + 2 moduri ultra-clare (Guided/Explore)." },
+    exitGate: { ro: "User alege mod → intră în Guided Day-1 sau Onboarding." },
+    routeGroups: ["intro"],
+  },
+
+  {
+    id: "guided_day1",
+    order: 30,
+    title: { ro: "Guided Day-1" },
+    colorToken: "guided",
+    collapsedByDefault: false,
+    tierMin: 0,
+    menuState: "OFF",
+    description: { ro: "Primul «win» rapid (guest), fără cont și fără explorare liberă." },
+    target: { ro: "Valoare reală în 3–7 minute (proof-of-value)." },
+    challenge: { ro: "«Nu am răbdare; vreau dovadă acum»." },
+    reward: { ro: "Micro-upgrade de stare + XP/stamp + 1 card util." },
+    proof: { ro: "Before/After simplu + recap: ce ai făcut, ce ai câștigat." },
+    exitGate: { ro: "First session complete → intrare în Today (Tier 1)." },
+    routeGroups: ["intro"],
+  },
+
+  {
+    id: "onboarding",
+    order: 40,
+    title: { ro: "Onboarding / Calibration" },
+    colorToken: "onboarding",
+    collapsedByDefault: false,
+    tierMin: 0,
+    menuState: "OFF",
+    description: { ro: "Semnal minim + baseline inițial care personalizează Today." },
+    target: { ro: "Demonstrezi personalizare (nu e generic) cu efort minim." },
+    challenge: { ro: "«Nu vreau formulare; vreau să funcționeze»." },
+    reward: { ro: "«Mă înțelege» + recomandări relevante imediat." },
+    proof: { ro: "Tag/axe/stil salvate + Today modificat pe baza lor." },
+    exitGate: { ro: "Onboarding minimal complet → Today core." },
+    routeGroups: ["onboarding", "account", "intro"],
+  },
+
+  {
+    id: "daily_loop",
+    order: 50,
+    title: { ro: "Daily Loop (Today)" },
+    colorToken: "today",
+    collapsedByDefault: false,
+    tierMin: 1,
+    menuState: "MINIMAL",
+    description: { ro: "Motorul principal: Today → Run → Complete → reward → next step." },
+    target: { ro: "Habit loop zilnic, clar și repetabil (10–15 min)." },
+    challenge: { ro: "Haos + lipsă de energie + «nu am timp»." },
+    reward: { ro: "Stare mai bună + control + progres vizibil (XP/streak)." },
+    proof: { ro: "Summary clar: ce ai făcut / ce ai câștigat / ce urmează." },
+    exitGate: { ro: ">=1 sesiune → meniu minimal. >=3 → OS/Progress." },
+    routeGroups: ["today"],
+  },
+
+  {
+    id: "recommendation",
+    order: 60,
+    title: { ro: "Recommendation Gateway" },
+    colorToken: "recommendation",
+    collapsedByDefault: true,
+    tierMin: 1,
+    menuState: "MINIMAL",
+    description: { ro: "«Next best step» fără explorare liberă (reduce choice paralysis)." },
+    target: { ro: "Crești repetarea: decizie zero, acțiune imediată." },
+    challenge: { ro: "«Nu știu ce să fac» → risc de abandon." },
+    reward: { ro: "O recomandare clară + motiv scurt + Start." },
+    proof: { ro: "User începe sesiunea fără să se plimbe prin meniu." },
+    exitGate: { ro: "User pornește acțiunea recomandată (de obicei Today/Run)." },
+    routeGroups: ["recommendation"],
+  },
+
+  {
+    id: "progress_map",
+    order: 70,
+    title: { ro: "OS / Progress" },
+    colorToken: "progress",
+    collapsedByDefault: true,
+    tierMin: 2,
+    menuState: "CORE",
+    description: { ro: "Hartă + progres + sens: de ce continui și unde merg." },
+    target: { ro: "Retenție: progres vizibil + ownership după ce habit-ul începe." },
+    challenge: { ro: "«Nu văd progres, nu simt rostul»." },
+    reward: { ro: "Direcție + milestone-uri + preview de unlock-uri." },
+    proof: { ro: "Streak/XP/trend + mapă simplă cu următorul prag." },
+    exitGate: { ro: ">=3 sesiuni → acces. User revine în Today." },
+    routeGroups: ["progress"],
+  },
+
+  {
+    id: "training_arenas",
+    order: 80,
+    title: { ro: "Training / Arenas" },
+    colorToken: "training",
+    collapsedByDefault: true,
+    tierMin: 3,
+    menuState: "EXPANDED",
+    description: { ro: "Antrenament sub presiune + scor + trend (performance layer)." },
+    target: { ro: "Treci de la «mă simt mai bine» la «devin mai performant»." },
+    challenge: { ro: "Vreau ceva serios și măsurabil, nu doar content." },
+    reward: { ro: "Personal best + rank personal + feedback imediat." },
+    proof: { ro: "Run complet + scor salvat + recomandare de antrenament." },
+    exitGate: { ro: "Deblocat după Foundation milestone (ex day 15)." },
+    routeGroups: ["training"],
+  },
+
+  {
+    id: "curriculum_library",
+    order: 90,
+    title: { ro: "Curriculum / Library" },
+    colorToken: "library",
+    collapsedByDefault: true,
+    tierMin: 4,
+    menuState: "EXPANDED",
+    description: { ro: "Kuno + replay + exam: skill-uri sistematice (fără infinite browsing)." },
+    target: { ro: "Învățare pe termen lung; library ca suport pentru Today." },
+    challenge: { ro: "«Vreau să învăț clar, nu doar să fac exerciții»." },
+    reward: { ro: "Skill unlock + badge + aplicare în Today." },
+    proof: { ro: "Lecție completată + practică + marker + link către aplicare." },
+    exitGate: { ro: "Deblocat după >=12 sesiuni (disciplină)." },
+    routeGroups: ["library"],
+  },
+
+  {
+    id: "module_hubs",
+    order: 100,
+    title: { ro: "Module Hubs" },
+    colorToken: "hubs",
+    collapsedByDefault: true,
+    tierMin: 3,
+    menuState: "EXPANDED",
+    description: { ro: "Suite-uri pe obiective (Scope/Intel/Flex/Abil) cu acces gradual." },
+    target: { ro: "Extensii scalabile fără haos: 3 opțiuni max per hub." },
+    challenge: { ro: "Prea multe opțiuni distrag; hub-urile trebuie ghidate." },
+    reward: { ro: "«Am un hub pentru problema mea» + recomandare contextuală." },
+    proof: { ro: "Hub → Start/Continue/Deep → întoarcere în Today (nu browsing)." },
+    exitGate: { ro: "Recomandat după Foundation (Tier 3+)." },
+    routeGroups: ["hubs"],
+  },
+
+  {
+    id: "advanced_wizard",
+    order: 110,
+    title: { ro: "Advanced / Wizard / Coaching" },
+    colorToken: "advanced",
+    collapsedByDefault: true,
+    tierMin: 5,
+    menuState: "EXPANDED",
+    description: { ro: "Planificare, programe, coaching. Agency real (târziu)." },
+    target: { ro: "Strategie săptămânală care produce acțiuni, nu setări sterile." },
+    challenge: { ro: "Plan porn: dacă e prea devreme, omoară execuția." },
+    reward: { ro: "Plan clar + accountability + progres pe plan." },
+    proof: { ro: "Plan/quest săptămânal + măsurare aderentă (execuție)." },
+    exitGate: { ro: "Deblocat la >=31 sesiuni (Tier 5)." },
+    routeGroups: ["advanced"],
+  },
+
+  {
+    id: "account_admin_legacy",
+    order: 120,
+    title: { ro: "Account / Billing / Admin / Legacy" },
+    colorToken: "account",
+    collapsedByDefault: true,
+    tierMin: 0,
+    menuState: "CORE",
+    description: { ro: "Auth + plăți + admin intern. Invizibil în nav pentru user normal." },
+    target: { ro: "Fricțiune minimă, încredere maximă (account & money)." },
+    challenge: { ro: "Orice confuzie aici = drop. Trebuie simplu și sigur." },
+    reward: { ro: "Control + transparență + flows curate (upgrade/cancel)." },
+    proof: { ro: "Upgrade/cancel clar + admin separat (nu apare în produs)." },
+    exitGate: { ro: "Contextual (nu e «progress chunk»)." },
+    routeGroups: ["account", "admin", "legacy"],
+  },
+] as const;

@@ -1,9 +1,11 @@
 import { getWowDayIndex } from "@/config/dailyPaths/wow";
+import { recordFoundationCycleComplete } from "@/lib/progressFacts/recorders";
 
 const COMPLETION_PREFIX = "OMNI_DAILY_COMPLETED_";
 const LAST_COMPLETION_KEY = "OMNI_DAILY_LAST_COMPLETION";
 const TRIED_EXTRA_PREFIX = "OMNI_DAILY_TRIED_EXTRA_";
 const FOUNDATION_DONE_KEY = "OMNI_FOUNDATION_DONE";
+const FOUNDATION_SYNCED_KEY = "OMNI_FOUNDATION_SYNCED";
 
 export type DailyCompletionRecord = {
   completedAt: string;
@@ -32,6 +34,7 @@ export function markDailyCompletion(moduleKey: string | null = null, date: Date 
     window.localStorage.setItem(LAST_COMPLETION_KEY, JSON.stringify(record));
     if (moduleKey && getWowDayIndex(moduleKey) === 15) {
       window.localStorage.setItem(FOUNDATION_DONE_KEY, "1");
+      syncFoundationCompletionFlag();
     }
   } catch (error) {
     console.warn("Failed to persist local daily completion", error);
@@ -97,4 +100,22 @@ export function setTriedExtraToday(value: boolean, date: Date = new Date()): voi
 export function hasFoundationCycleCompleted(): boolean {
   if (typeof window === "undefined") return false;
   return window.localStorage.getItem(FOUNDATION_DONE_KEY) === "1";
+}
+
+export function syncFoundationCompletionFlag() {
+  if (typeof window === "undefined") return;
+  if (window.localStorage.getItem(FOUNDATION_DONE_KEY) !== "1") return;
+  if (window.localStorage.getItem(FOUNDATION_SYNCED_KEY) === "1") return;
+  void recordFoundationCycleComplete().then(
+    () => {
+      try {
+        window.localStorage.setItem(FOUNDATION_SYNCED_KEY, "1");
+      } catch {
+        // ignore
+      }
+    },
+    (error) => {
+      console.warn("Failed to sync foundation completion", error);
+    },
+  );
 }

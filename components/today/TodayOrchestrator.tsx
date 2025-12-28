@@ -31,6 +31,7 @@ import {
 } from "@/lib/gatingSelectors";
 import { CAT_LITE_EXTENDED_AXES } from "@/lib/catLite";
 import { getAxisFromMindPacingSignal, isMindPacingSignalTag } from "@/lib/mindPacingSignals";
+import { useUserAccessTier } from "@/components/useUserAccessTier";
 
 export default function TodayOrchestrator() {
   const router = useRouter();
@@ -77,6 +78,7 @@ export default function TodayOrchestrator() {
   const wizardUnlockRef = useRef(false);
   const omniKunoUnlockRef = useRef(false);
   const buddyUnlockRef = useRef(false);
+  const { accessTier } = useUserAccessTier();
 
   useEffect(() => {
     if (wizardUnlocked && !wizardUnlockRef.current) {
@@ -205,11 +207,17 @@ export default function TodayOrchestrator() {
 
   const header = (
     <SiteHeader
-      showMenu
+      showMenu={accessTier.flags.showMenu}
       onMenuToggle={() => setMenuOpen(true)}
       onAuthRequest={() => router.push("/auth?returnTo=%2Ftoday")}
     />
   );
+
+  useEffect(() => {
+    if (!accessTier.flags.showMenu && menuOpen) {
+      setMenuOpen(false);
+    }
+  }, [accessTier.flags.showMenu, menuOpen]);
 
   const isPremiumSubscriber = sensAiCtx?.profile.subscription.status === "premium";
   const freeLimitReached = hasFreeDailyLimit(sensAiCtx);

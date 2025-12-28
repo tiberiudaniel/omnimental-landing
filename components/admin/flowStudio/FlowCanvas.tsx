@@ -24,6 +24,7 @@ import { createContext, useContext, useMemo } from "react";
 import "reactflow/dist/style.css";
 import clsx from "clsx";
 import type { FlowEdgeData, FlowNodeData, StepNodeRenderData } from "@/lib/flowStudio/types";
+import type { ChunkNodeData } from "@/lib/flowStudio/chunkUtils";
 import type { ObservedNodeStats } from "@/lib/flowStudio/observed";
 import { FlowNodeCard } from "./FlowNodeCard";
 import type { StepAvailability } from "./StepStatusBadge";
@@ -41,6 +42,7 @@ type FlowNodeContextValue = {
   nodeStepAvailability: Map<string, StepAvailability>;
   nodeCanExpandSteps: Map<string, boolean>;
   onRequestNodeSteps?: (nodeId: string) => void;
+  commentCountMap: Map<string, number>;
 };
 
 const FlowNodeContext = createContext<FlowNodeContextValue | null>(null);
@@ -75,6 +77,24 @@ function StepNodeCard({ data, selected, issueCount }: StepNodeCardProps) {
   );
 }
 
+function ChunkNodeCard({ data, selected }: NodeProps<ChunkNodeData>) {
+  return (
+    <div
+      className={clsx(
+        "w-52 rounded-2xl border-2 px-3 py-2 text-left shadow-md",
+        selected ? "shadow-[0_12px_24px_rgba(15,23,42,0.25)]" : "shadow-[0_6px_16px_rgba(15,23,42,0.15)]",
+      )}
+      style={{
+        borderColor: data.color ?? "var(--omni-border-soft)",
+        background: "#fff",
+      }}
+    >
+      <p className="text-sm font-semibold text-[var(--omni-ink)]">{data.title}</p>
+      <p className="text-xs text-[var(--omni-muted)]">Total: {data.counts.total}</p>
+    </div>
+  );
+}
+
 function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
   const ctx = useFlowNodeContext();
   const availability = ctx.nodeStepAvailability.get(props.id) ?? "unknown";
@@ -98,6 +118,7 @@ function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
       stepStatus={availability}
       canExpandSteps={canExpand}
       onExpandSteps={(nodeId) => ctx.onRequestNodeSteps?.(nodeId)}
+      commentCount={ctx.commentCountMap.get(props.id) ?? 0}
     />
   );
 }
@@ -169,14 +190,14 @@ function ParallelEdge(props: ParallelEdgeProps) {
 }
 
 type FlowCanvasProps = {
-  nodes: Node<FlowNodeData | StepNodeRenderData>[];
+  nodes: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>[];
   edges: Edge<FlowEdgeData>[];
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
   onInit: (instance: ReactFlowInstance) => void;
-  onNodeSelect: (node: Node<FlowNodeData | StepNodeRenderData>) => void;
-  onNodeDoubleClick?: (node: Node<FlowNodeData | StepNodeRenderData>) => void;
+  onNodeSelect: (node: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>) => void;
+  onNodeDoubleClick?: (node: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>) => void;
   onRequestNodeSteps?: (nodeId: string) => void;
   onEdgeSelect: (edgeId: string | null) => void;
   onCanvasClear: () => void;
@@ -192,6 +213,10 @@ type FlowCanvasProps = {
   nodeStepAvailability: Map<string, StepAvailability>;
   autoLayoutRunning: boolean;
   nodeCanExpandSteps: Map<string, boolean>;
+  viewMode: "nodes" | "chunks";
+  autoLayoutDisabled?: boolean;
+  onSelectionChange?: (params: { nodes: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>[]; edges: Edge<FlowEdgeData>[] }) => void;
+  nodeCommentCounts: Map<string, number>;
 };
 
 export function FlowCanvas({
@@ -218,6 +243,10 @@ export function FlowCanvas({
   nodeStepAvailability,
   autoLayoutRunning,
   nodeCanExpandSteps,
+  viewMode,
+  autoLayoutDisabled,
+  onSelectionChange,
+  nodeCommentCounts,
 }: FlowCanvasProps) {
   const decoratedEdges = useMemo(() => {
     if (!edges.length) return edges;
@@ -277,11 +306,23 @@ export function FlowCanvas({
       nodeStepAvailability,
       nodeCanExpandSteps,
       onRequestNodeSteps,
+      commentCountMap: nodeCommentCounts,
     }),
-    [nodeCanExpandSteps, nodeIssueMap, nodeStepAvailability, observedEnabled, observedNodeStats, onRequestNodeSteps],
+    [nodeCanExpandSteps, nodeCommentCounts, nodeIssueMap, nodeStepAvailability, observedEnabled, observedNodeStats, onRequestNodeSteps],
   );
-  const nodeTypes = useMemo<NodeTypes>(() => ({ flowNode: FlowNodeRenderer, stepNode: StepNodeRenderer }), []);
+  const nodeTypes = useMemo<NodeTypes>(() => ({ flowNode: FlowNodeRenderer, stepNode: StepNodeRenderer, chunkNode: ChunkNodeCard }), []);
   const edgeTypes = useMemo<EdgeTypes>(() => ({ parallel: ParallelEdge }), []);
+  const defaultEdgeOptions = useMemo(
+    () => ({
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: "#0f172a",
+      },
+      interactionWidth: 32,
+    }),
+    [],
+  );
+  const layoutButtonDisabled = disabled || !nodes.length || autoLayoutRunning || autoLayoutDisabled;
 
   return (
     <section className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-4 shadow-[0_25px_60px_rgba(0,0,0,0.08)]">
@@ -296,11 +337,12 @@ export function FlowCanvas({
             type="button"
             className={clsx(
               "rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold",
-              disabled || !nodes.length ? "cursor-not-allowed opacity-60" : "",
+              layoutButtonDisabled ? "cursor-not-allowed opacity-60" : "",
               autoLayoutRunning ? "bg-[var(--omni-ink)] text-white" : "",
             )}
             onClick={onAutoLayout}
-            disabled={disabled || !nodes.length || autoLayoutRunning}
+            disabled={layoutButtonDisabled}
+            title={autoLayoutDisabled ? "Disponibil doar in modul Nodes" : undefined}
           >
             {autoLayoutRunning ? "Auto layout..." : "Auto layout"}
           </button>
@@ -321,17 +363,19 @@ export function FlowCanvas({
               fitView
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
-              onNodeClick={(_, node) => onNodeSelect(node as Node<FlowNodeData | StepNodeRenderData>)}
-              onNodeDoubleClick={(_, node) => onNodeDoubleClick?.(node as Node<FlowNodeData | StepNodeRenderData>)}
+              nodesDraggable={viewMode === "nodes"}
+              nodesConnectable={viewMode === "nodes"}
+              onNodeClick={(_, node) => onNodeSelect(node as Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>)}
+              onNodeDoubleClick={(_, node) => onNodeDoubleClick?.(node as Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>)}
               onEdgeClick={(_, edge) => onEdgeSelect(edge.id)}
               onPaneClick={onCanvasClear}
-              defaultEdgeOptions={{
-                markerEnd: {
-                  type: MarkerType.ArrowClosed,
-                  color: "#0f172a",
-                },
-                interactionWidth: 32,
-              }}
+              onSelectionChange={(params) =>
+                onSelectionChange?.({
+                  nodes: params.nodes as Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>[],
+                  edges: params.edges as Edge<FlowEdgeData>[],
+                })
+              }
+              defaultEdgeOptions={defaultEdgeOptions}
             >
               <MiniMap
                 pannable
@@ -339,8 +383,20 @@ export function FlowCanvas({
                 position="bottom-right"
                 className="!bg-white/85 !p-2 !rounded-xl !shadow-lg"
                 style={{ width: 200, height: 140 }}
-                nodeStrokeColor={(node) => (nodeIssueMap.get(node.id) ? "#f59e0b" : "#0f172a")}
-                nodeColor={(node) => (node.selected ? "#e0f2fe" : "#ffffff")}
+                nodeStrokeColor={(node) => {
+                  if (node.type === "chunkNode") {
+                    const data = node.data as ChunkNodeData;
+                    return data.color ?? "#0f172a";
+                  }
+                  return nodeIssueMap.get(node.id) ? "#f59e0b" : "#0f172a";
+                }}
+                nodeColor={(node) => {
+                  if (node.type === "chunkNode") {
+                    const data = node.data as ChunkNodeData;
+                    return data.color ?? "#f8fafc";
+                  }
+                  return node.selected ? "#e0f2fe" : "#ffffff";
+                }}
               />
               <Controls />
               <Background />

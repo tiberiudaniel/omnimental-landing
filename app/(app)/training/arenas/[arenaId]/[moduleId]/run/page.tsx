@@ -1,43 +1,31 @@
-import { notFound } from "next/navigation";
-import { ARENA_MODULES_V1 } from "@/config/arenaModules/v1";
-import type { ArenaId, ArenaLang } from "@/config/arenaModules/v1/types";
-import { StroopRun } from "@/components/arenas/drills/StroopRun";
-import { GenericTimedRun } from "@/components/arenas/drills/GenericTimedRun";
+import { redirect } from "next/navigation";
 
-interface Props {
-  params: { arenaId: ArenaId; moduleId: string } | Promise<{ arenaId: ArenaId; moduleId: string }>;
-  searchParams?:
-    | { duration?: "30s" | "90s" | "3m"; lang?: ArenaLang }
-    | Promise<{ duration?: "30s" | "90s" | "3m"; lang?: ArenaLang }>;
-}
+type ArenaModuleRunParams = { arenaId?: string | string[]; moduleId?: string | string[] };
+type ArenaRunSearch = Record<string, string | string[] | undefined>;
 
-export default async function ArenaRunPage(props: Props) {
-  const params = await Promise.resolve(props.params);
-  const searchParams = await Promise.resolve(props.searchParams ?? {});
-  const arenaId = params.arenaId;
-  const moduleId = params.moduleId;
-  const arenaModule = ARENA_MODULES_V1.find(
-    (mod) => mod.arena === arenaId && mod.id === moduleId,
-  );
-  if (!arenaModule) {
-    notFound();
+export default async function TrainingArenaModuleRunRedirect({
+  params,
+  searchParams,
+}: {
+  params: ArenaModuleRunParams;
+  searchParams?: ArenaRunSearch;
+}) {
+  const arenaRaw = Array.isArray(params?.arenaId) ? params.arenaId[0] : params?.arenaId;
+  const moduleRaw = Array.isArray(params?.moduleId) ? params.moduleId[0] : params?.moduleId;
+  if (!arenaRaw || !moduleRaw) {
+    redirect("/arenas");
+    return;
   }
-  const lang: ArenaLang = searchParams.lang === "en" ? "en" : "ro";
-  const duration = (searchParams.duration ?? "30s") as "30s" | "90s" | "3m";
-
-  if (
-    arenaModule.arena === "executive_control" &&
-    arenaModule.id === "executive_metacognition_v1"
-  ) {
-    return (
-      <StroopRun
-        key={`${arenaModule.id}-${duration}`}
-        module={arenaModule}
-        lang={lang}
-        duration={duration}
-      />
-    );
-  }
-
-  return <GenericTimedRun module={arenaModule} lang={lang} duration={duration} />;
+  const query = new URLSearchParams();
+  const resolvedSearch = searchParams ?? {};
+  Object.entries(resolvedSearch).forEach(([key, value]) => {
+    if (typeof value === "string") {
+      query.set(key, value);
+    } else if (Array.isArray(value) && value.length) {
+      query.set(key, value[0]);
+    }
+  });
+  const suffix = query.toString();
+  const target = suffix ? `/arenas/${arenaRaw}/${moduleRaw}/run?${suffix}` : `/arenas/${arenaRaw}/${moduleRaw}/run`;
+  redirect(target);
 }

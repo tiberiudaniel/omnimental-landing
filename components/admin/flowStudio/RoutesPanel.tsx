@@ -10,8 +10,9 @@ type RoutesPanelProps = {
   routes: RouteDoc[];
   search: string;
   onSearchChange: (value: string) => void;
-  groupFilter: "all" | "app" | "public";
-  onGroupFilterChange: (value: "all" | "app" | "public") => void;
+  groupFilter: string;
+  groupOptions: string[];
+  onGroupFilterChange: (value: string) => void;
   onQuickAddRoute: (route: RouteDoc, options?: { markAsStart?: boolean }) => void;
   hasActiveFlow: boolean;
   onRouteDragStart: RouteDragHandler;
@@ -23,6 +24,7 @@ export function RoutesPanel({
   search,
   onSearchChange,
   groupFilter,
+  groupOptions,
   onGroupFilterChange,
   onQuickAddRoute,
   hasActiveFlow,
@@ -44,18 +46,23 @@ export function RoutesPanel({
             <select
               className="rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
               value={groupFilter}
-              onChange={(event) => onGroupFilterChange(event.target.value as "all" | "app" | "public")}
+              onChange={(event) => onGroupFilterChange(event.target.value)}
             >
               <option value="all">Toate</option>
-              <option value="app">App</option>
-              <option value="public">Public</option>
+              {groupOptions.map((group) => (
+                <option key={group} value={group}>
+                  {group}
+                </option>
+              ))}
             </select>
             <button
               type="button"
-              className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold"
+              className="inline-flex items-center rounded-full border border-[var(--omni-border-soft)] px-2 py-1 text-xs font-semibold text-[var(--omni-muted)] transition hover:text-[var(--omni-ink)]"
               onClick={onCollapse}
+              title="Ascunde panoul Routes"
             >
-              Ascunde
+              <span aria-hidden className="text-base leading-none">⟵</span>
+              <span className="sr-only">Ascunde Routes</span>
             </button>
           </div>
         </div>

@@ -36,7 +36,7 @@ import { ensureCurrentArcForUser } from "@/lib/arcStateStore";
 import { CAT_BASELINE_URL, PILLARS_URL, ADAPTIVE_PRACTICE_URL } from "@/config/routes";
 import { getDailyPracticeHistory } from "@/lib/dailyPracticeStore";
 import { getWowDayIndex } from "@/config/dailyPaths/wow";
-import { getTodayKey, hasFoundationCycleCompleted } from "@/lib/dailyCompletion";
+import { getTodayKey } from "@/lib/dailyCompletion";
 import { recordDailyRunnerEvent } from "@/lib/progressFacts/recorders";
 import { daysBetween } from "@/lib/dailyPathHistory";
 import { pickWordOfDay } from "@/config/catVocabulary";
@@ -48,6 +48,7 @@ import {
   wasVocabShownToday,
 } from "@/lib/vocabProgress";
 import { track } from "@/lib/telemetry/track";
+import { useUserAccessTier } from "@/components/useUserAccessTier";
 
 const ADAPTIVE_NUDGES: Record<AdaptiveCluster, string> = {
   clarity_cluster: "Alege azi un lucru important și exprimă-l în minte în 7 cuvinte.",
@@ -221,6 +222,8 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
   const { user } = useAuth();
   const { profile } = useProfile();
   const navLinks = useNavigationLinks();
+  const { accessTier } = useUserAccessTier();
+  const foundationDone = accessTier.flags.canArenas;
   const goToAuth = useCallback(() => {
     router.push(`/auth?returnTo=${authReturnTo}`);
   }, [authReturnTo, router]);
@@ -236,7 +239,6 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
   const [dailyCompletedToday, setDailyCompletedToday] = useState(false);
   const [dailyStreak, setDailyStreak] = useState({ current: 0, best: 0 });
   const [weeklyStats, setWeeklyStats] = useState({ completed: 0, total: 7 });
-  const [foundationDone, setFoundationDone] = useState(false);
   const [timeModeOverride, setTimeModeOverride] = useState<DailyPathMode | null>(null);
   const [timeModeHint, setTimeModeHint] = useState<DailyPathMode | null>(null);
   const [timeSelectionMinutes, setTimeSelectionMinutes] = useState<number | null>(null);
@@ -564,10 +566,6 @@ useEffect(() => {
   }, [moduleKeyForSelection, resolvedDailyPathConfig?.moduleKey]);
   const isWowActive = Boolean(wowDayIndex);
   const catUnlocked = onboardingStatusState?.catBaselineDone ?? false;
-
-  useEffect(() => {
-    setFoundationDone(hasFoundationCycleCompleted());
-  }, [dailyCompletedToday, moduleKeyForSelection]);
 
   const finalCluster = resolvedDailyPathConfig?.cluster ?? clusterOverride ?? cluster ?? null;
   const axisLabel = resolvedDailyPathConfig
@@ -1304,7 +1302,7 @@ function DailyPathCompletedCard({
       <p className="text-sm text-[var(--omni-ink)]/80">{copy.body}</p>
       <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
         {showArenasCta ? (
-          <OmniCtaButton as="link" href="/training/arenas">
+          <OmniCtaButton as="link" href="/arenas">
             {copy.arenas}
           </OmniCtaButton>
         ) : null}

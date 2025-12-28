@@ -111,5 +111,6 @@ export type ProgressFact = {
     actionsCompleted?: number;
     lastDailySessionAt?: Date | FireTs | null;
     lastActionAt?: Date | FireTs | null;
+    foundationDone?: boolean;
   };
 };

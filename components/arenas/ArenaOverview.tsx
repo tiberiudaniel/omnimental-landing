@@ -77,7 +77,7 @@ export function ArenaOverview() {
             </div>
             <div className="mt-4">
               <Link
-                href={`/training/arenas/${arena.id}`}
+                href={`/arenas/${arena.id}`}
                 className="inline-flex items-center justify-center rounded-xl bg-white/80 text-black text-sm font-semibold px-4 py-2 hover:bg-white/70 transition"
               >
                 Intră în arenă

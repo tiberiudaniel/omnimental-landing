@@ -20,6 +20,7 @@ export type FlowNode = {
   x: number;
   y: number;
   tags?: string[];
+  chunkId?: string;
 };
 
 export type FlowEdge = {
@@ -40,6 +41,8 @@ export type FlowDoc = {
   description?: string;
   nodes?: FlowNode[];
   edges?: FlowEdge[];
+  chunks?: FlowChunk[];
+  comments?: FlowComment[];
   version?: number;
   updatedAt?: unknown;
   createdAt?: unknown;
@@ -53,6 +56,7 @@ export type FlowNodeData = {
   labelOverrides?: LabelMap;
   tags?: string[];
   routeMismatch?: boolean;
+  chunkId?: string | null;
 };
 
 export type FlowEdgeData = {
@@ -89,4 +93,41 @@ export type FlowIssue = {
   severity: "info" | "warning";
   targetType?: "node" | "edge" | "stepNode";
   targetId?: string;
+};
+
+export type FlowChunkText = {
+  ro: string;
+  en?: string;
+};
+
+export type FlowChunkMeta = {
+  tierMin?: number;
+  menuState?: "OFF" | "MINIMAL" | "CORE" | "EXPANDED";
+  description?: FlowChunkText;
+  target?: FlowChunkText;
+  challenge?: FlowChunkText;
+  reward?: FlowChunkText;
+  proof?: FlowChunkText;
+  exitGate?: FlowChunkText;
+  routeGroups?: string[];
+  routePrefixes?: string[];
+} & Record<string, unknown>;
+
+export type FlowChunk = {
+  id: string;
+  title: string;
+  order: number;
+  color?: string;
+  collapsedByDefault?: boolean;
+  meta?: FlowChunkMeta;
+};
+
+export type FlowComment = {
+  id: string;
+  targetType: "node" | "chunk";
+  targetId: string;
+  author?: string | null;
+  message: string;
+  createdAt: string;
+  resolved?: boolean;
 };

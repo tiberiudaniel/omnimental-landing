@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import type { Edge, Node } from "reactflow";
 import type { CopyFields } from "@/lib/useCopy";
-import type { FlowEdgeData, FlowIssue, FlowNodeData, LabelMap, RouteDoc } from "@/lib/flowStudio/types";
+import type { FlowChunk, FlowComment, FlowEdgeData, FlowIssue, FlowNodeData, LabelMap, RouteDoc } from "@/lib/flowStudio/types";
 import { getStepManifestForRoute, type StepManifest } from "@/lib/stepManifests";
 import type { ObservedEvent } from "@/lib/flowStudio/observed";
 import { StepStatusBadge, type StepAvailability } from "./StepStatusBadge";
@@ -64,6 +64,14 @@ type InspectorPanelProps = {
     isExpanded: boolean;
     stepNodeCountForHost: number;
   } | null;
+  chunks: FlowChunk[];
+  defaultChunkId: string;
+  onNodeChunkChange: (nodeId: string, chunkId: string) => void;
+  onAutoAssignChunks: () => void;
+  nodeComments: FlowComment[];
+  onAddNodeComment: (message: string) => void;
+  onDeleteNodeComment: (commentId: string) => void;
+  onToggleNodeCommentResolved: (commentId: string) => void;
 };
 
 export function InspectorPanel({
@@ -95,6 +103,14 @@ export function InspectorPanel({
   observedEnabled,
   observedEvents,
   debugInfo,
+  chunks,
+  defaultChunkId,
+  onNodeChunkChange,
+  onAutoAssignChunks,
+  nodeComments,
+  onAddNodeComment,
+  onDeleteNodeComment,
+  onToggleNodeCommentResolved,
 }: InspectorPanelProps) {
   const resolvedRoutePath = selectedNode ? routeMap.get(selectedNode.data.routeId)?.routePath ?? selectedNode.data.routePath ?? null : null;
   const manifestFallback = resolvedRoutePath ? getStepManifestForRoute(resolvedRoutePath, {}) : null;
@@ -213,6 +229,14 @@ export function InspectorPanel({
           setCopyError={setCopyError}
           onLabelChange={onLabelChange}
           stepStatus={stepStatus}
+          chunks={chunks}
+          defaultChunkId={defaultChunkId}
+          onChunkChange={onNodeChunkChange}
+          onAutoAssignChunks={onAutoAssignChunks}
+          comments={nodeComments}
+          onAddComment={onAddNodeComment}
+          onDeleteComment={onDeleteNodeComment}
+          onToggleCommentResolved={onToggleNodeCommentResolved}
         />
       ) : selectedEdge ? (
         <EdgeInspector edge={selectedEdge} onFieldChange={onEdgeFieldChange} onApplyColorGroup={onApplyEdgeColorToGroup} />
@@ -345,6 +369,14 @@ type NodeInspectorProps = {
   setCopyError: (value: string | null) => void;
   onLabelChange: (nodeId: string, locale: "ro" | "en", value: string) => void;
   stepStatus: StepAvailability;
+  chunks: FlowChunk[];
+  defaultChunkId: string;
+  onChunkChange: (nodeId: string, chunkId: string) => void;
+  onAutoAssignChunks: () => void;
+  comments: FlowComment[];
+  onAddComment: (message: string) => void;
+  onDeleteComment: (commentId: string) => void;
+  onToggleCommentResolved: (commentId: string) => void;
 };
 
 function NodeInspector({
@@ -358,8 +390,17 @@ function NodeInspector({
   setCopyError,
   onLabelChange,
   stepStatus,
+  chunks,
+  defaultChunkId,
+  onChunkChange,
+  onAutoAssignChunks,
+  comments,
+  onAddComment,
+  onDeleteComment,
+  onToggleCommentResolved,
 }: NodeInspectorProps) {
   const route = routeMap.get(node.data.routeId);
+  const [commentDraft, setCommentDraft] = useState("");
   return (
     <div className="space-y-4">
       <div>
@@ -382,6 +423,84 @@ function NodeInspector({
             onChange={(event) => onLabelChange(node.id, locale, event.target.value)}
           />
         ))}
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Chunk</p>
+        <select
+          className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
+          value={node.data.chunkId ?? defaultChunkId}
+          onChange={(event) => onChunkChange(node.id, event.target.value)}
+        >
+          {chunks.map((chunk) => (
+            <option key={chunk.id} value={chunk.id}>
+              {chunk.title}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="rounded-full border border-dashed border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold"
+          onClick={onAutoAssignChunks}
+        >
+          Auto-assign după route.group
+        </button>
+        <p className="text-[11px] text-[var(--omni-muted)]">Completează doar nodurile fără chunk asignat.</p>
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Notițe</p>
+        {comments.length ? (
+          <ul className="space-y-2 text-[12px]">
+            {comments.map((comment) => (
+              <li key={comment.id} className="rounded-xl border border-[var(--omni-border-soft)] bg-white p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-[var(--omni-ink)]">{comment.author ?? "Anonim"}</span>
+                  <span className="text-[10px] text-[var(--omni-muted)]">
+                    {comment.createdAt ? new Date(comment.createdAt).toLocaleString("ro-RO", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" }) : null}
+                  </span>
+                </div>
+                <p className="mt-1 whitespace-pre-wrap text-[var(--omni-ink)]">{comment.message}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px]">
+                  <button
+                    type="button"
+                    className={clsx(
+                      "rounded-full border px-2 py-0.5",
+                      comment.resolved ? "border-emerald-200 text-emerald-700" : "border-amber-200 text-amber-700",
+                    )}
+                    onClick={() => onToggleCommentResolved(comment.id)}
+                  >
+                    {comment.resolved ? "Rezolvat" : "Deschis"}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-full border border-rose-200 px-2 py-0.5 text-rose-600"
+                    onClick={() => onDeleteComment(comment.id)}
+                  >
+                    Șterge
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[11px] text-[var(--omni-muted)]">Nu există note pentru acest nod.</p>
+        )}
+        <textarea
+          className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-2 py-1 text-sm"
+          placeholder="Adaugă notă"
+          value={commentDraft}
+          onChange={(event) => setCommentDraft(event.target.value)}
+        />
+        <button
+          type="button"
+          className="rounded-full bg-[var(--omni-ink)] px-3 py-1 text-sm font-semibold text-white disabled:opacity-50"
+          onClick={() => {
+            onAddComment(commentDraft);
+            setCommentDraft("");
+          }}
+          disabled={!commentDraft.trim()}
+        >
+          Salvează notă
+        </button>
       </div>
       <div className="space-y-2">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Copy override</p>

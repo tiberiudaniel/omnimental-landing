@@ -3,7 +3,7 @@
 import type { StepManifest } from "./types";
 
 const arenaRunManifest: StepManifest = {
-  routePath: "/training/arenas/[arenaId]/[moduleId]/run",
+  routePath: "/arenas/[arenaId]/[moduleId]/run",
   startNodeId: "briefing",
   terminalNodeIds: ["exit"],
   nodes: [

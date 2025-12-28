@@ -1202,3 +1202,14 @@ export async function recordActionCompletion(ownerId?: string | null) {
     ownerId,
   );
 }
+
+export async function recordFoundationCycleComplete(ownerId?: string | null) {
+  return mergeProgressFact(
+    {
+      stats: {
+        foundationDone: true,
+      },
+    },
+    ownerId,
+  );
+}

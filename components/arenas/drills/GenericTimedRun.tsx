@@ -81,7 +81,7 @@ export function GenericTimedRun({ module, lang, duration }: GenericTimedRunProps
 
   const handleDurationChange = (nextDuration: ArenaDrillDuration) => {
     router.replace(
-      `/training/arenas/${module.arena}/${module.id}/run?duration=${nextDuration}&lang=${lang}`,
+      `/arenas/${module.arena}/${module.id}/run?duration=${nextDuration}&lang=${lang}`,
     );
   };
 
@@ -131,7 +131,7 @@ export function GenericTimedRun({ module, lang, duration }: GenericTimedRunProps
         availableDurations={availableDurations}
         onReplay={handleReplay}
         onSelectDuration={handleDurationChange}
-        onBackToArena={() => router.push(`/training/arenas/${module.arena}`)}
+        onBackToArena={() => router.push(`/arenas/${module.arena}`)}
         onSubmit={(value) => {
           if (runIdRef.current) {
             updateArenaRun(runIdRef.current, { selfReport: value });
