@@ -174,6 +174,7 @@ export default function FlowStudioPage() {
   const [focusedChunkId, setFocusedChunkId] = useState<string | null>(null);
   const [comments, setComments] = useState<FlowComment[]>([]);
   const [commentFilter, setCommentFilter] = useState<"all" | "open" | "nodes" | "chunks">("open");
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdgeData>([]);
@@ -449,6 +450,12 @@ export default function FlowStudioPage() {
     },
     [viewMode],
   );
+  const handleToggleTagFilter = useCallback((tag: string) => {
+    setTagFilters((prev) => (prev.includes(tag) ? prev.filter((entry) => entry !== tag) : [...prev, tag]));
+  }, []);
+  const handleResetTagFilters = useCallback(() => {
+    setTagFilters([]);
+  }, []);
 
   const handleAddComment = useCallback(
     (targetType: FlowComment["targetType"], targetId: string, message: string) => {
@@ -516,11 +523,47 @@ export default function FlowStudioPage() {
   }, [nodeCommentsMap]);
   const selectedScreenId = selectedNode?.data.screenId ?? null;
   const selectedNodeComments = selectedNode ? nodeCommentsMap.get(selectedNode.id) ?? [] : [];
-  const focusedNodeIdSet = useMemo(() => {
+  const chunkFocusedNodeIdSet = useMemo(() => {
     if (!focusedChunkId) return null;
     const ids = nodes.filter((node) => (node.data.chunkId ?? UNGROUPED_CHUNK_ID) === focusedChunkId).map((node) => node.id);
     return new Set(ids);
   }, [focusedChunkId, nodes]);
+  const tagVocabulary = useMemo(() => {
+    const set = new Set<string>();
+    nodes.forEach((node) => {
+      node.data.tags?.forEach((tag) => {
+        if (tag) {
+          set.add(tag);
+        }
+      });
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [nodes]);
+  useEffect(() => {
+    setTagFilters((prev) => prev.filter((tag) => tagVocabulary.includes(tag)));
+  }, [tagVocabulary]);
+  const tagFilteredNodeIdSet = useMemo(() => {
+    if (!tagFilters.length) return null;
+    const ids = nodes
+      .filter((node) => {
+        const tags = node.data.tags ?? [];
+        return tagFilters.every((filter) => tags.includes(filter));
+      })
+      .map((node) => node.id);
+    return new Set(ids);
+  }, [nodes, tagFilters]);
+  const filteredNodeIdSet = useMemo(() => {
+    if (chunkFocusedNodeIdSet && tagFilteredNodeIdSet) {
+      const intersection = new Set<string>();
+      chunkFocusedNodeIdSet.forEach((id) => {
+        if (tagFilteredNodeIdSet.has(id)) {
+          intersection.add(id);
+        }
+      });
+      return intersection;
+    }
+    return chunkFocusedNodeIdSet ?? tagFilteredNodeIdSet;
+  }, [chunkFocusedNodeIdSet, tagFilteredNodeIdSet]);
   const nodeManifestMap = useMemo(() => {
     const map = new Map<string, StepManifest | null>();
     nodes.forEach((node) => {
@@ -633,7 +676,7 @@ export default function FlowStudioPage() {
   const stepNodes = useMemo<Node<StepNodeRenderData>[]>(() => {
     const list: Node<StepNodeRenderData>[] = [];
     expandedStepRenderData.forEach((data, hostId) => {
-      if (focusedNodeIdSet && !focusedNodeIdSet.has(hostId)) return;
+      if (filteredNodeIdSet && !filteredNodeIdSet.has(hostId)) return;
       data.nodes.forEach((node) => {
         list.push({
           ...node,
@@ -642,15 +685,15 @@ export default function FlowStudioPage() {
       });
     });
     return list;
-  }, [expandedStepRenderData, focusedNodeIdSet, selectedStepNodeId]);
+  }, [expandedStepRenderData, filteredNodeIdSet, selectedStepNodeId]);
   const stepEdgesList = useMemo(() => {
     const list: Edge<FlowEdgeData>[] = [];
     expandedStepRenderData.forEach((data, hostId) => {
-      if (focusedNodeIdSet && !focusedNodeIdSet.has(hostId)) return;
+      if (filteredNodeIdSet && !filteredNodeIdSet.has(hostId)) return;
       list.push(...data.edges);
     });
     return list;
-  }, [expandedStepRenderData, focusedNodeIdSet]);
+  }, [expandedStepRenderData, filteredNodeIdSet]);
   const chunkLayoutOptions = useMemo(() => {
     const compact = chunkLayoutDensity === "compact";
     return {
@@ -680,18 +723,18 @@ export default function FlowStudioPage() {
     if (viewMode === "chunks") {
       return chunkNodesForView;
     }
-    if (!focusedNodeIdSet) {
+    if (!filteredNodeIdSet) {
       return [...nodes, ...stepNodes];
     }
     const decoratedNodes = nodes.map((node) => {
-      const shouldHide = !focusedNodeIdSet.has(node.id);
+      const shouldHide = !filteredNodeIdSet.has(node.id);
       if ((node.hidden ?? false) === shouldHide) {
         return node;
       }
       return { ...node, hidden: shouldHide };
     });
     return [...decoratedNodes, ...stepNodes];
-  }, [chunkNodesForView, focusedNodeIdSet, nodes, stepNodes, viewMode]);
+  }, [chunkNodesForView, filteredNodeIdSet, nodes, stepNodes, viewMode]);
   useEffect(() => {
     if (viewMode !== "chunks" || !reactFlowInstance || !chunkGraph.nodes.length) return;
     const raf = requestAnimationFrame(() => {
@@ -900,8 +943,8 @@ export default function FlowStudioPage() {
   const baseDisplayEdges = useMemo(() => {
     return edges.map((edge) => {
       let workingEdge: Edge<FlowEdgeData> = edge;
-      if (viewMode === "nodes" && focusedNodeIdSet) {
-        const shouldHide = !focusedNodeIdSet.has(edge.source) || !focusedNodeIdSet.has(edge.target);
+      if (viewMode === "nodes" && filteredNodeIdSet) {
+        const shouldHide = !filteredNodeIdSet.has(edge.source) || !filteredNodeIdSet.has(edge.target);
         if ((edge.hidden ?? false) !== shouldHide) {
           workingEdge = { ...edge, hidden: shouldHide };
         }
@@ -943,7 +986,7 @@ export default function FlowStudioPage() {
       }
       return workingEdge;
     });
-  }, [edgeIssueMap, edges, focusedNodeIdSet, nodeRouteById, observedEdgeStatsMap, observedEnabled, viewMode]);
+  }, [edgeIssueMap, edges, filteredNodeIdSet, nodeRouteById, observedEdgeStatsMap, observedEnabled, viewMode]);
   const edgesForCanvas = useMemo(() => {
     if (viewMode === "chunks") {
       return chunkGraph.edges;
@@ -2007,6 +2050,41 @@ export default function FlowStudioPage() {
   const canvasHeaderActions = (
     <div className="flex flex-wrap items-center gap-3">
       {viewToggle}
+      {viewMode === "nodes" && tagVocabulary.length ? (
+        <div className="flex flex-1 flex-wrap items-center gap-2 rounded-full border border-[var(--omni-border-soft)] bg-white/80 p-1 text-xs shadow-sm">
+          <span className="px-2 text-[10px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">Tag filters</span>
+          <div className="flex flex-wrap gap-1">
+            {tagVocabulary.map((tag) => {
+              const active = tagFilters.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  className={clsx(
+                    "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition",
+                    active
+                      ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white"
+                      : "border-[var(--omni-border-soft)] text-[var(--omni-muted)] hover:text-[var(--omni-ink)]",
+                  )}
+                  onClick={() => handleToggleTagFilter(tag)}
+                  title={`Filtrează după ${tag}`}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+          {tagFilters.length ? (
+            <button
+              type="button"
+              className="rounded-full border border-dashed border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--omni-ink)]"
+              onClick={handleResetTagFilters}
+            >
+              Curăță
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {viewMode === "chunks" ? (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <div className="flex items-center gap-1 rounded-full border border-[var(--omni-border-soft)] bg-white p-0.5 text-xs">

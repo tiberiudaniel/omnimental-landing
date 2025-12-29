@@ -32,6 +32,27 @@ export function FlowNodeCard({
 }: FlowNodeCardProps) {
   const label = data.labelOverrides?.ro ?? data.routePath;
   const isStart = Boolean(data.tags?.includes("start"));
+  const tagHighlights =
+    data.tags
+      ?.map((tag) => {
+        const [category, ...rest] = tag.split(":");
+        if (!category || rest.length === 0) return null;
+        if (!["engine", "surface", "type"].includes(category)) return null;
+        return { category, value: rest.join(":"), raw: tag };
+      })
+      .filter((entry): entry is { category: string; value: string; raw: string } => Boolean(entry)) ?? [];
+  const resolveTagClasses = (category: string) => {
+    switch (category) {
+      case "engine":
+        return "bg-amber-100 text-amber-800 border-amber-200";
+      case "surface":
+        return "bg-sky-100 text-sky-800 border-sky-200";
+      case "type":
+        return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      default:
+        return "bg-slate-100 text-slate-700 border-slate-200";
+    }
+  };
   return (
     <div className="relative">
       <Handle type="target" position={Position.Left} id="target-left" className={`${handleStyleBase} bg-[var(--omni-ink)]`} />
@@ -106,6 +127,21 @@ export function FlowNodeCard({
             Copy
           </button>
         </div>
+        {tagHighlights.length ? (
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            {tagHighlights.map((tag) => (
+              <span
+                key={`${id}-${tag.raw}`}
+                className={clsx(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                  resolveTagClasses(tag.category),
+                )}
+              >
+                {tag.category}:{tag.value}
+              </span>
+            ))}
+          </div>
+        ) : null}
         {observedEnabled && observedStats ? (
           <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-emerald-700">
             {typeof observedStats.views === "number" ? <span>Vizualizări: {observedStats.views}</span> : null}
