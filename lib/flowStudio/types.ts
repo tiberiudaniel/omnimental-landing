@@ -21,6 +21,7 @@ export type FlowNode = {
   y: number;
   tags?: string[];
   chunkId?: string;
+  portal?: FlowNodePortalConfig | null;
 };
 
 export type FlowEdge = {
@@ -57,6 +58,7 @@ export type FlowNodeData = {
   tags?: string[];
   routeMismatch?: boolean;
   chunkId?: string | null;
+  portal?: FlowNodePortalConfig | null;
 };
 
 export type FlowEdgeData = {
@@ -81,6 +83,14 @@ export type StepNodeRenderData = {
 export type FlowReactNode = ReactFlowNode<FlowNodeData>;
 export type FlowReactEdge = ReactFlowEdge<FlowEdgeData>;
 
+export type FlowNodePortalConfig = {
+  targetType: "route" | "node";
+  targetNodeId?: string;
+  targetRouteId?: string;
+  targetRoutePath?: string;
+  label?: string;
+};
+
 export type CopyOverrideDoc = {
   ro?: CopyFields;
   en?: CopyFields;
@@ -91,7 +101,7 @@ export type FlowIssue = {
   id: string;
   message: string;
   severity: "info" | "warning";
-  targetType?: "node" | "edge" | "stepNode";
+  targetType?: "node" | "edge" | "stepNode" | "chunk";
   targetId?: string;
 };
 

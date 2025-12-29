@@ -311,7 +311,7 @@ export function buildChunkGraph(
   return { nodes: chunkNodes, edges: chunkEdges, countsByChunk, chunks };
 }
 
-function computeReachableNodeIds(nodes: Node<FlowNodeData>[], edges: Edge<FlowEdgeData>[]) {
+export function computeReachableNodeIds(nodes: Node<FlowNodeData>[], edges: Edge<FlowEdgeData>[]) {
   const incomingCounts = new Map<string, number>();
   edges.forEach((edge) => {
     incomingCounts.set(edge.target, (incomingCounts.get(edge.target) ?? 0) + 1);

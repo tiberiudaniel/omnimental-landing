@@ -32,6 +32,14 @@ export function FlowNodeCard({
 }: FlowNodeCardProps) {
   const label = data.labelOverrides?.ro ?? data.routePath;
   const isStart = Boolean(data.tags?.includes("start"));
+  const labelIsPortal = Boolean(label?.toUpperCase().startsWith("PORTAL"));
+  const hasPortalTag = Boolean(data.tags?.includes("type:portal"));
+  const isPortalNode = hasPortalTag || labelIsPortal;
+  const portalTarget = isPortalNode ? data.portal : null;
+  const portalTargetLabel =
+    portalTarget?.targetType === "route"
+      ? portalTarget.targetRoutePath ?? portalTarget.targetRouteId ?? portalTarget.label ?? ""
+      : portalTarget?.targetNodeId ?? "";
   const tagHighlights =
     data.tags
       ?.map((tag) => {
@@ -140,6 +148,16 @@ export function FlowNodeCard({
                 {tag.category}:{tag.value}
               </span>
             ))}
+          </div>
+        ) : null}
+        {isPortalNode ? (
+          <div
+            className={clsx(
+              "mt-2 rounded-xl px-3 py-1 text-[11px] font-semibold",
+              portalTargetLabel ? "bg-emerald-50 text-emerald-700" : "border border-amber-200 bg-amber-50 text-amber-800",
+            )}
+          >
+            {portalTargetLabel ? `Portal → ${portalTargetLabel}` : "Portal fără target"}
           </div>
         ) : null}
         {observedEnabled && observedStats ? (

@@ -4,7 +4,16 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import type { Edge, Node } from "reactflow";
 import type { CopyFields } from "@/lib/useCopy";
-import type { FlowChunk, FlowComment, FlowEdgeData, FlowIssue, FlowNodeData, LabelMap, RouteDoc } from "@/lib/flowStudio/types";
+import type {
+  FlowChunk,
+  FlowComment,
+  FlowEdgeData,
+  FlowIssue,
+  FlowNodeData,
+  FlowNodePortalConfig,
+  LabelMap,
+  RouteDoc,
+} from "@/lib/flowStudio/types";
 import { getStepManifestForRoute, type StepManifest } from "@/lib/stepManifests";
 import type { ObservedEvent } from "@/lib/flowStudio/observed";
 import { StepStatusBadge, type StepAvailability } from "./StepStatusBadge";
@@ -51,6 +60,7 @@ type InspectorPanelProps = {
   selectedNode: Node<FlowNodeData> | null;
   selectedEdge: Edge<FlowEdgeData> | null;
   onLabelChange: (nodeId: string, locale: "ro" | "en", value: string) => void;
+  onPortalChange: (nodeId: string, portal: FlowNodePortalConfig | null) => void;
   onEdgeFieldChange: (edgeId: string, updates: Partial<FlowEdgeData>) => void;
   onApplyEdgeColorToGroup: (edgeId: string, color: string) => void;
   onCollapse: () => void;
@@ -69,6 +79,8 @@ type InspectorPanelProps = {
   onNodeChunkChange: (nodeId: string, chunkId: string) => void;
   onAutoAssignChunks: () => void;
   nodeComments: FlowComment[];
+  routeOptions: RouteDoc[];
+  portalNodeOptions: PortalNodeOption[];
   onAddNodeComment: (message: string) => void;
   onDeleteNodeComment: (commentId: string) => void;
   onToggleNodeCommentResolved: (commentId: string) => void;
@@ -97,6 +109,7 @@ export function InspectorPanel({
   selectedNode,
   selectedEdge,
   onLabelChange,
+  onPortalChange,
   onEdgeFieldChange,
   onApplyEdgeColorToGroup,
   onCollapse,
@@ -108,6 +121,8 @@ export function InspectorPanel({
   onNodeChunkChange,
   onAutoAssignChunks,
   nodeComments,
+  routeOptions,
+  portalNodeOptions,
   onAddNodeComment,
   onDeleteNodeComment,
   onToggleNodeCommentResolved,
@@ -219,6 +234,8 @@ export function InspectorPanel({
       <FlowDiagnosticsPanel issues={diagnostics} onSelectIssue={onSelectIssue} flowStats={flowStats} />
       {selectedNode ? (
         <NodeInspector
+          routeOptions={routeOptions}
+          portalNodeOptions={portalNodeOptions}
           node={selectedNode}
           routeMap={routeMap}
           copyDraft={copyDraft}
@@ -228,6 +245,7 @@ export function InspectorPanel({
           copyError={copyError}
           setCopyError={setCopyError}
           onLabelChange={onLabelChange}
+          onPortalChange={onPortalChange}
           stepStatus={stepStatus}
           chunks={chunks}
           defaultChunkId={defaultChunkId}
@@ -358,7 +376,14 @@ function MissingManifestPanel({
   );
 }
 
+type PortalNodeOption = {
+  id: string;
+  label: string;
+};
+
 type NodeInspectorProps = {
+  routeOptions: RouteDoc[];
+  portalNodeOptions: PortalNodeOption[];
   node: Node<FlowNodeData>;
   routeMap: Map<string, RouteDoc>;
   copyDraft: { ro: CopyFields; en: CopyFields };
@@ -368,6 +393,7 @@ type NodeInspectorProps = {
   copyError: string | null;
   setCopyError: (value: string | null) => void;
   onLabelChange: (nodeId: string, locale: "ro" | "en", value: string) => void;
+  onPortalChange: (nodeId: string, portal: FlowNodePortalConfig | null) => void;
   stepStatus: StepAvailability;
   chunks: FlowChunk[];
   defaultChunkId: string;
@@ -380,6 +406,8 @@ type NodeInspectorProps = {
 };
 
 function NodeInspector({
+  routeOptions,
+  portalNodeOptions,
   node,
   routeMap,
   copyDraft,
@@ -389,6 +417,7 @@ function NodeInspector({
   copyError,
   setCopyError,
   onLabelChange,
+  onPortalChange,
   stepStatus,
   chunks,
   defaultChunkId,
@@ -401,6 +430,15 @@ function NodeInspector({
 }: NodeInspectorProps) {
   const route = routeMap.get(node.data.routeId);
   const [commentDraft, setCommentDraft] = useState("");
+  const [portalRouteValue, setPortalRouteValue] = useState(node.data.portal?.targetRoutePath ?? "");
+  useEffect(() => {
+    setPortalRouteValue(node.data.portal?.targetRoutePath ?? "");
+  }, [node.data.portal?.targetRoutePath, node.id]);
+  const portalTargetType: FlowNodePortalConfig["targetType"] = node.data.portal?.targetType ?? "route";
+  const portalTargetNodeId = node.data.portal?.targetNodeId ?? "";
+  const portalLabelCandidate = node.data.labelOverrides?.ro ?? node.data.labelOverrides?.en ?? node.data.routePath ?? node.id;
+  const isPortalNode = Boolean(node.data.tags?.includes("type:portal")) || portalLabelCandidate.toUpperCase().startsWith("PORTAL");
+  const routeListId = `portal-route-options-${node.id}`;
   return (
     <div className="space-y-4">
       <div>
@@ -445,6 +483,87 @@ function NodeInspector({
           Auto-assign după route.group
         </button>
         <p className="text-[11px] text-[var(--omni-muted)]">Completează doar nodurile fără chunk asignat.</p>
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Portal</p>
+        {isPortalNode ? (
+          <>
+            <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-[var(--omni-ink)]">
+              {(["route", "node"] as Array<FlowNodePortalConfig["targetType"]>).map((targetType) => (
+                <label key={targetType} className="inline-flex items-center gap-1">
+                  <input
+                    type="radio"
+                    className="h-3 w-3"
+                    checked={portalTargetType === targetType}
+                    onChange={() => {
+                      if (targetType === "route") {
+                        onPortalChange(node.id, { targetType: "route", targetRoutePath: portalRouteValue });
+                      } else {
+                        onPortalChange(node.id, { targetType: "node", targetNodeId: portalTargetNodeId });
+                      }
+                    }}
+                  />
+                  <span>{targetType === "route" ? "Route" : "Node"}</span>
+                </label>
+              ))}
+            </div>
+            {portalTargetType === "route" ? (
+              <>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
+                  placeholder="/today"
+                  list={routeListId}
+                  value={portalRouteValue}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setPortalRouteValue(value);
+                    onPortalChange(node.id, { targetType: "route", targetRoutePath: value });
+                  }}
+                />
+                <datalist id={routeListId}>
+                  {routeOptions.map((route) => (
+                    <option key={route.id} value={route.routePath}>
+                      {route.routePath}
+                    </option>
+                  ))}
+                </datalist>
+              </>
+            ) : (
+              <select
+                className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
+                value={portalTargetNodeId}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  onPortalChange(node.id, value ? { targetType: "node", targetNodeId: value } : null);
+                }}
+              >
+                <option value="">Selectează nod</option>
+                {portalNodeOptions
+                  .filter((option) => option.id !== node.id)
+                  .map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+              </select>
+            )}
+            <button
+              type="button"
+              className="rounded-full border border-dashed border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold"
+              onClick={() => {
+                setPortalRouteValue("");
+                onPortalChange(node.id, null);
+              }}
+            >
+              Reset portal target
+            </button>
+          </>
+        ) : (
+          <p className="text-[11px] text-[var(--omni-muted)]">
+            Adaugă tag-ul <code>type:portal</code> și prefixează numele cu „PORTAL:” pentru a activa configurarea.
+          </p>
+        )}
       </div>
       <div className="space-y-2">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Notițe</p>

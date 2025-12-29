@@ -1,5 +1,5 @@
 import type { XYPosition } from "reactflow";
-import type { FlowChunk, FlowComment, LabelMap } from "@/lib/flowStudio/types";
+import type { FlowChunk, FlowComment, FlowNodePortalConfig, LabelMap } from "@/lib/flowStudio/types";
 import { normalizeChunks, UNGROUPED_CHUNK_ID } from "@/lib/flowStudio/chunkUtils";
 
 export type FlowSpecNode = {
@@ -11,6 +11,7 @@ export type FlowSpecNode = {
   isStart?: boolean;
   tags?: string[];
   chunkId?: string;
+  portal?: FlowNodePortalConfig | null;
 };
 
 export type FlowSpecEdge = {
@@ -98,7 +99,8 @@ export function normalizeFlowSpecPayload(payload: unknown): FlowSpecPreview {
       warnings.push(`Nodul ${id} refera chunk necunoscut (${rawChunkId}). Mutat in Ungrouped.`);
     }
     nodeIdSet.push(id);
-    return {
+    const portal = normalizeSpecPortal(nodeRaw.portal);
+    const normalizedNode: FlowSpecNode = {
       id,
       routeId,
       routePath,
@@ -108,6 +110,10 @@ export function normalizeFlowSpecPayload(payload: unknown): FlowSpecPreview {
       tags,
       chunkId,
     };
+    if (portal) {
+      normalizedNode.portal = portal;
+    }
+    return normalizedNode;
   });
 
   const edges: FlowSpecEdge[] = edgesInput.map((edgeRaw, index) => {
@@ -158,6 +164,32 @@ export function normalizeSpecTags(tags?: string[] | null, isStart?: boolean): st
   }
   const unique = Array.from(new Set(normalized));
   return unique.length ? unique : undefined;
+}
+
+function normalizeSpecPortal(portal: unknown): FlowNodePortalConfig | undefined {
+  if (!isPlainObject(portal)) return undefined;
+  const targetType = portal.targetType === "route" || portal.targetType === "node" ? portal.targetType : null;
+  if (!targetType) return undefined;
+  const normalized: FlowNodePortalConfig = {
+    targetType,
+  };
+  if (targetType === "route") {
+    if (typeof portal.targetRoutePath === "string" && portal.targetRoutePath.trim()) {
+      normalized.targetRoutePath = portal.targetRoutePath.trim();
+    }
+    if (typeof portal.targetRouteId === "string" && portal.targetRouteId.trim()) {
+      normalized.targetRouteId = portal.targetRouteId.trim();
+    }
+  }
+  if (targetType === "node") {
+    if (typeof portal.targetNodeId === "string" && portal.targetNodeId.trim()) {
+      normalized.targetNodeId = portal.targetNodeId.trim();
+    }
+  }
+  if (typeof portal.label === "string" && portal.label.trim()) {
+    normalized.label = portal.label.trim();
+  }
+  return normalized;
 }
 
 export function formatTimestamp(value: unknown): string | null {

@@ -40,6 +40,7 @@ import type {
   FlowIssue,
   FlowNode,
   FlowNodeData,
+  FlowNodePortalConfig,
   RouteDoc,
   StepNodeRenderData,
 } from "@/lib/flowStudio/types";
@@ -59,6 +60,7 @@ import {
   autoAssignChunksByRouteGroup,
   buildChunkAutoAssignMap,
   buildChunkGraph,
+  computeReachableNodeIds,
   ensureNodesHaveValidChunks,
   normalizeChunks,
   UNGROUPED_CHUNK_ID,
@@ -488,6 +490,7 @@ export default function FlowStudioPage() {
   }, []);
 
   const nodeRouteById = useMemo(() => new Map(nodes.map((node) => [node.id, node.data.routePath ?? ""])), [nodes]);
+  const nodeChunkIdMap = useMemo(() => new Map(nodes.map((node) => [node.id, node.data.chunkId ?? UNGROUPED_CHUNK_ID])), [nodes]);
   const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedNodeId) ?? null, [nodes, selectedNodeId]);
   const selectedNodeResolvedRoutePath = selectedNode ? resolveNodeRoutePath(selectedNode) : null;
   const selectedEdge = useMemo(() => edges.find((edge) => edge.id === selectedEdgeId) ?? null, [edges, selectedEdgeId]);
@@ -521,6 +524,14 @@ export default function FlowStudioPage() {
     });
     return map;
   }, [nodeCommentsMap]);
+  const portalNodeOptions = useMemo(
+    () =>
+      nodes.map((node) => ({
+        id: node.id,
+        label: node.data.labelOverrides?.ro ?? node.data.labelOverrides?.en ?? node.data.routePath ?? node.id,
+      })),
+    [nodes],
+  );
   const selectedScreenId = selectedNode?.data.screenId ?? null;
   const selectedNodeComments = selectedNode ? nodeCommentsMap.get(selectedNode.id) ?? [] : [];
   const chunkFocusedNodeIdSet = useMemo(() => {
@@ -902,7 +913,7 @@ export default function FlowStudioPage() {
       pendingFitNodeRef.current = fixableRouteMappings[0].nodeId;
     }
   }, [fixableRouteMappings, setNodes, setStepFixError]);
-  const flowDiagnostics = useMemo(() => computeFlowDiagnostics(nodes, edges, routeMap), [edges, nodes, routeMap]);
+  const flowDiagnostics = useMemo(() => computeFlowDiagnostics(nodes, edges, routeMap, chunks), [chunks, edges, nodes, routeMap]);
   const stepDiagnostics = useMemo(() => {
     const issues: FlowIssue[] = [];
     nodes.forEach((node) => {
@@ -1530,6 +1541,9 @@ export default function FlowStudioPage() {
       stored.chunkId = node.data.chunkId ?? UNGROUPED_CHUNK_ID;
       if (label) stored.label = label;
       if (tags) stored.tags = tags;
+      if (node.data.portal) {
+        stored.portal = { ...node.data.portal };
+      }
       return stored;
     });
     const storedEdges: FlowEdge[] = edges.map((edge) => {
@@ -1649,6 +1663,7 @@ export default function FlowStudioPage() {
       isStart: Boolean(node.data.tags?.includes("start")),
       tags: node.data.tags ?? [],
       chunkId: node.data.chunkId ?? UNGROUPED_CHUNK_ID,
+      portal: node.data.portal ?? undefined,
     }));
     const specEdges: FlowSpecEdge[] = edges.map((edge) => ({
       id: edge.id,
@@ -1708,6 +1723,71 @@ export default function FlowStudioPage() {
     link.click();
     URL.revokeObjectURL(link.href);
   }, [buildFlowSpec]);
+  const buildAuditSnapshot = useCallback(() => {
+    if (!selectedFlowId) return null;
+    const reachableIds = computeReachableNodeIds(nodes, edges);
+    const chunkSummary = chunks.map((chunk) => {
+      const chunkNodes = nodes.filter((node) => (node.data.chunkId ?? UNGROUPED_CHUNK_ID) === chunk.id);
+      const mapNode = (node: Node<FlowNodeData>) => ({
+        id: node.id,
+        label: node.data.labelOverrides?.ro ?? node.data.labelOverrides?.en ?? node.data.routePath ?? node.id,
+        routePath: node.data.routePath,
+      });
+      return {
+        chunkId: chunk.id,
+        title: chunk.title,
+        nodeCount: chunkNodes.length,
+        startNodes: chunkNodes.filter((node) => node.data.tags?.includes("start")).map(mapNode),
+        unreachableNodes: chunkNodes.filter((node) => !reachableIds.has(node.id)).map(mapNode),
+      };
+    });
+    const crossChunkEdges = edges
+      .filter(
+        (edge) =>
+          (nodeChunkIdMap.get(edge.source) ?? UNGROUPED_CHUNK_ID) !==
+          (nodeChunkIdMap.get(edge.target) ?? UNGROUPED_CHUNK_ID),
+      )
+      .map((edge) => ({
+        id: edge.id,
+        source: {
+          nodeId: edge.source,
+          routePath: nodeRouteById.get(edge.source) ?? "",
+          chunkId: nodeChunkIdMap.get(edge.source) ?? UNGROUPED_CHUNK_ID,
+        },
+        target: {
+          nodeId: edge.target,
+          routePath: nodeRouteById.get(edge.target) ?? "",
+          chunkId: nodeChunkIdMap.get(edge.target) ?? UNGROUPED_CHUNK_ID,
+        },
+      }));
+    const flowName = flowNameDraft.trim() || flowDoc?.name || "Flow";
+    return {
+      generatedAt: new Date().toISOString(),
+      flow: {
+        id: selectedFlowId,
+        name: flowName,
+      },
+      stats: {
+        nodes: nodes.length,
+        edges: edges.length,
+      },
+      chunkSummary,
+      crossChunkEdges,
+      lintWarnings: diagnostics.filter((issue) => issue.severity === "warning"),
+    };
+  }, [chunks, diagnostics, edges, flowDoc?.name, flowNameDraft, nodeChunkIdMap, nodeRouteById, nodes, selectedFlowId]);
+  const handleExportAuditSnapshot = useCallback(() => {
+    const snapshot = buildAuditSnapshot();
+    if (!snapshot) return;
+    const json = JSON.stringify(snapshot, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    const safeName = (snapshot.flow.name ?? "flow").replace(/\s+/g, "_");
+    link.download = `${safeName}-audit.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }, [buildAuditSnapshot]);
 
   const handleSaveFlow = useCallback(async () => {
     if (!selectedFlowId || !flowNameDraft.trim()) return;
@@ -1861,6 +1941,9 @@ export default function FlowStudioPage() {
       if (tags) {
         normalized.tags = tags;
       }
+      if (node.portal) {
+        normalized.portal = node.portal;
+      }
       return normalized;
     });
     const normalizedEdges: FlowEdge[] = importSpecPreview.edges.map((edge, index) => {
@@ -1978,6 +2061,47 @@ export default function FlowStudioPage() {
       );
     },
     [setNodes],
+  );
+  const handleNodePortalChange = useCallback(
+    (nodeId: string, portalDraft: FlowNodePortalConfig | null) => {
+      setNodes((existing) =>
+        existing.map((node) => {
+          if (node.id !== nodeId) return node;
+          let resolvedPortal: FlowNodePortalConfig | null = null;
+          if (portalDraft) {
+            if (portalDraft.targetType === "route") {
+              const routePath = portalDraft.targetRoutePath?.trim();
+              if (routePath) {
+                const route = routeByPath.get(routePath);
+                resolvedPortal = {
+                  targetType: "route",
+                  targetRoutePath: routePath,
+                  targetRouteId: route?.id,
+                  label: portalDraft.label ?? route?.routePath ?? routePath,
+                };
+              }
+            } else if (portalDraft.targetType === "node") {
+              const targetNodeId = portalDraft.targetNodeId?.trim();
+              if (targetNodeId) {
+                resolvedPortal = {
+                  targetType: "node",
+                  targetNodeId,
+                  label: portalDraft.label,
+                };
+              }
+            }
+          }
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              portal: resolvedPortal,
+            },
+          };
+        }),
+      );
+    },
+    [routeByPath, setNodes],
   );
 
   const handleEdgeFieldChange = useCallback(
@@ -2275,6 +2399,11 @@ export default function FlowStudioPage() {
   const handleSelectIssue = useCallback(
     (issue: FlowIssue) => {
       setViewMode("nodes");
+      if (issue.targetType === "chunk" && issue.targetId) {
+        handleFocusChunk(issue.targetId);
+        setSelectedChunkId(issue.targetId);
+        return;
+      }
       handleFocusChunk(null);
       if (!reactFlowInstance) return;
       if (issue.targetType === "node" && issue.targetId) {
@@ -2300,7 +2429,17 @@ export default function FlowStudioPage() {
         }
       }
     },
-    [edges, handleFocusChunk, openStepsForNode, reactFlowInstance, setSelectedStepNodeId, setViewMode, setSingleEdgeSelection, setSingleNodeSelection],
+    [
+      edges,
+      handleFocusChunk,
+      openStepsForNode,
+      reactFlowInstance,
+      setSelectedChunkId,
+      setSelectedStepNodeId,
+      setViewMode,
+      setSingleEdgeSelection,
+      setSingleNodeSelection,
+    ],
   );
   const handleSelectMissingManifestNode = useCallback(
     (nodeId: string) => {
@@ -2405,6 +2544,14 @@ export default function FlowStudioPage() {
                   disabled={!selectedFlowId}
                 >
                   Download spec
+                </button>
+                <button
+                  type="button"
+                  className="rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm disabled:opacity-50"
+                  onClick={handleExportAuditSnapshot}
+                  disabled={!selectedFlowId}
+                >
+                  Export Audit Snapshot
                 </button>
                 <button
                   type="button"
@@ -2631,6 +2778,7 @@ export default function FlowStudioPage() {
                   selectedNode={selectedNode}
                   selectedEdge={selectedEdge}
                   onLabelChange={handleNodeLabelChange}
+                  onPortalChange={handleNodePortalChange}
                   onEdgeFieldChange={handleEdgeFieldChange}
                   onApplyEdgeColorToGroup={handleApplyEdgeColorToGroup}
                   observedEnabled={observedEnabled}
@@ -2642,6 +2790,8 @@ export default function FlowStudioPage() {
                   onNodeChunkChange={handleNodeChunkChange}
                   onAutoAssignChunks={handleAutoAssignChunks}
                   nodeComments={selectedNodeComments}
+                  routeOptions={routes}
+                  portalNodeOptions={portalNodeOptions}
                   onAddNodeComment={(message) => {
                     if (selectedNode) {
                       handleAddComment("node", selectedNode.id, message);
@@ -2766,6 +2916,7 @@ function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeB
       tags: stored.tags ?? [],
       routeMismatch,
       chunkId: stored.chunkId ?? UNGROUPED_CHUNK_ID,
+      portal: stored.portal ?? null,
     },
   };
 }
