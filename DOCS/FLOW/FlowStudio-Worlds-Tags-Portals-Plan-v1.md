@@ -1,88 +1,157 @@
-# FlowStudio Worlds, Tags & Portals — Canon Plan v1
+# OmniMental: Worlds + Tags + Portals — Canon & Implementation Plan (v1)
 
-Am nevoie să pornim o săptămână de lucru pe baza unui CANON clar (worlds/tags/portals + Today hub). Te rog urmează exact pașii de mai jos, fără interpretări care duc la duplicare.
+## Goal
+Stabilizează arhitectura Flow Studio + user journey pentru 1–2 săptămâni de implementare, fără duplicări și fără haos:
+- **Chunks = Worlds (experiențe/stage)**, max 8–12
+- **Tags = Engines/Surface/Cluster/Gate/Type**
+- **Portal nodes** pentru reutilizare cross-world (nu duplicăm pagini)
+- **Today = Session Hub** (Quick/Deep/Explore), daily loop = default session (nu limită)
+- **Gating** are o singură sursă de adevăr (runtime), nu “meta” în chunks
 
-0) Creează branch nou: feat/canon-worlds-tags-portals
+---
 
-1) În primul commit, creează un document canonic:
-- Fișier: DOCS/FLOW/FlowStudio-Worlds-Tags-Portals-Plan-v1.md
-- Conținut: îl iau exact din mesajul meu (îl copiez mai jos / sau îmi confirmi că l-ai copiat).
-Scop: acest MD devine “contractul” pentru implementare + acceptance criteria. Tot ce implementezi trebuie să fie trasabil la acest doc.
+## Canon (non-negotiable rules)
 
-2) Implementare Layer 1 — Flow Studio discipline (cel mai important multiplier)
-2.1 Tags UX
-- Folosește FlowNodeData.tags (există deja) ca vocabular standard.
-- Adaugă badge-uri vizibile pe node-card (engine/surface/type), ca să pot scana rapid.
-- Adaugă filtre multi-select după tags în Nodes view.
-  Exemple: engine:vocab, engine:assessment, type:portal, surface:today etc.
+### R1 — Chunks are Worlds only
+Chunks reprezintă “lumi/levels” (unități de experiență user). Nu le folosim pentru a categorisi engines.
 
-2.2 Portal nodes (alias/bridge)
-- Convenție: node name începe cu “PORTAL: …”
-- Portal node trebuie să aibă tag “type:portal”.
-- Portal node trebuie să aibă un target (route sau nodeId). Target-ul trebuie afișat clar în UI.
-- Portal nodes sunt folosite pentru reutilizare cross-world: NU duplicăm ecrane reale în mai multe chunks.
+Worlds (target list, <=12):
+- public
+- entry_intro
+- guided_day1
+- onboarding
+- daily_loop
+- progress_map
+- training_arenas
+- curriculum_library
+- module_hubs
+- advanced_wizard
+- account_admin_legacy
+(recommendation rămâne engine; devine world doar dacă există un “Quest Board” distinct, persistent)
 
-2.3 Lint/validations + Audit export
-- Warnings:
-  - node fără chunkId
-  - portal fără target
-  - duplicate nodes care reprezintă același route
-  - world fără entry/exit (minim info/warn)
-- Adaugă “Export Audit Snapshot” (JSON) din Flow Studio:
-  - chunks summary (count, start nodes, unreachable)
-  - cross-chunk edges list
-  - lint warnings list
-Obiectiv: să pot vedea rapid unde e haosul fără să ghicesc.
+### R2 — Single Source of Route/Screen
+Un route/ecran real există ca **un singur node real** în Flow Studio.
+Orice reutilizare în alte worlds se face prin **Portal nodes** (alias/bridge), nu prin duplicare.
 
-3) Implementare Layer 2 — Today = Session Hub (nu “cage”)
-3.1 Today hub trebuie să ofere explicit:
-- Quick Loop (10–20 min) = daily loop standard (default)
-- Deep Loop (30–60 min) = același engine dar playlist extins
-- Explore = portal către Arenas / Library / Wizard / Map (în funcție de membership/gating)
+### R3 — Tags define Engines + Surface + Cluster + Gate + Type
+Folosim `FlowNodeData.tags` cu un vocabular mic, stabil.
 
-3.2 Regula: Daily loop este default session, NU limită de acces.
-- User premium trebuie să poată consuma 1 oră în ziua respectivă (Deep + Explore), fără să “spargă” streak/XP.
-- Streak se acordă pentru orice sesiune validă (loop/arena/wizard) peste prag minim; daily loop poate avea bonus, dar nu monopol.
+Tag vocabulary (standard):
+- `engine:dailypath | vocab | assessment | arena | rewards | recommendation | sessionPlan`
+- `surface:today | onboarding | library | map | wizard | arenas`
+- `cluster:clarity | energy | flex | ...`
+- `gate:progressTier>=0..5` (sau gate:tier0..tier5, dar consistent)
+- `gate:membership=free|premium` (dacă e nevoie)
+- `type:portal`
+- `state:legacy` (pentru rute vechi)
 
-3.3 Convergență prin portal nodes (fără duplicare)
-- guided_day1 se termină cu “PORTAL: To Today” (nu duplicăm Today node în guided_day1)
-- onboarding se termină cu “PORTAL: To Today”
-- arenas/library/wizard au “PORTAL: Back to Today” (și/sau Map unde e cazul)
+### R4 — Canonical entry + canonical converge
+- Există un “Front Door” canonic (intrarea principală).
+- Guided Day1 + Onboarding trebuie să **converge** în `daily_loop` prin portal node către Today hub.
+- Worlds de explorare (Arenas/Library/Wizard/Map) au întoarcere explicită (Portal back to Today/Map).
 
-4) Implementare Layer 3 — MindPacing persistence (personalizare reală)
-- MindPacing NU rămâne doar localStorage. Persistă un semnal minim în progress facts/profil.
-- După refresh, semnalul rămâne.
-- Semnalul influențează măcar recommended next / sessionPlan selection.
+### R5 — Gating source-of-truth (runtime)
+Nu bazăm gating runtime pe chunk meta. Chunk meta poate fi documentație, dar gating-ul real e determinist și centralizat.
 
-5) Implementare Layer 4 — Tier semantics cleanup
-În cod există ambiguitate între:
-- progressTier (0..5, deblocat prin progres)
-- membershipTier (free/premium, plan/plată)
-Te rog separă clar numele și folosește sursa corectă în gating selectors + UI.
+### R6 — Daily loop is default session, not a limit
+Daily loop nu blochează userul să facă mai mult.
+“Today” trebuie să fie un **Session Hub**:
+- Quick Loop (10–20 min)
+- Deep Loop (30–60 min)
+- Explore / Free Play (Arenas, Library, Wizard, Map)
 
-6) Tests (Layer 5) — minim ca să nu regresăm
+Streak/XP:
+- Streak se acordă pentru **orice sesiune validă** (loop/arena/wizard) peste un prag minim.
+- Daily loop poate avea bonus, dar nu monopol.
+
+---
+
+## Implementation Plan (layered)
+
+### Layer 1 — Flow Studio discipline (Tags + Portals + Filters)
+1) Add UI support for tags:
+- badge display pentru tags importante (engine/surface/type)
+- filter multi-select by tags
+
+2) Portal nodes:
+- Naming convention: `PORTAL: To Today`, `PORTAL: Back to Today`, etc.
+- Must have `type:portal` tag.
+- Must specify target route/node.
+- Portal must be visually distinct (badge + shows target).
+
+3) Lint validations in Flow Studio:
+- Node without chunkId => warning
+- Portal without target => warning
+- Duplicate nodes that represent same route => warning
+- World with no entry/exit => warning (or info)
+
+4) Audit snapshot export:
+- chunks summary (counts, start nodes, unreachable)
+- cross-chunk edges list
+- lint warnings list
+- export as JSON (and optionally MD)
+
+Acceptance:
+- Poți filtra: `engine:vocab` și vezi toate nodurile relevante indiferent de world.
+- Poți identifica portal nodes rapid și target-ul lor.
+- Export audit funcționează fără Firestore.
+
+### Layer 2 — Today = Session Hub (Product)
+1) Implement Today hub UI + routing:
+- Quick (default)
+- Deep
+- Explore
+
+2) Ensure no “hard lock”:
+- Free user: Quick + limitat Explore (după plan)
+- Premium: Quick + Deep + full Explore
+
+3) Converge flows:
+- guided_day1 ends with `PORTAL: To Today`
+- onboarding ends with `PORTAL: To Today`
+- wizard/library/arenas have `PORTAL: Back to Today`
+
+Acceptance:
+- User poate face Quick și apoi încă 1h în Explore fără blocaj.
+- Today hub devine “home base” dar nu “cage”.
+
+### Layer 3 — Persistent personalization (MindPacing)
+- MindPacing must persist signal in progress facts/profile (nu doar localStorage).
+- Signal is used for recommendation/sessionPlan selection.
+
+Acceptance:
+- refresh / new session păstrează semnalul.
+- selection influențează cel puțin “recommended next”.
+
+### Layer 4 — Tier semantics cleanup
+Clarifică ambiguitatea:
+- `progressTier` = 0..5 (deblocat prin progres)
+- `membershipTier` = free/premium (plan/plată)
+
+Acceptance:
+- codul nu folosește același câmp/nume pentru ambele.
+
+### Layer 5 — Tests
 Unit:
 - gating selectors
-- derive progressTier vs membership
+- tier derivation
+
 E2E (Playwright):
 - Free: entry → guided day1 → today quick
 - Premium: today → deep + explore
 - Wizard: enter → return to Today
 - MindPacing persists after refresh
 
-7) PR discipline
-Commits mici, în ordinea:
-1) docs: add canon md
+---
+
+## Working Agreement (PR discipline)
+Branch: `feat/canon-worlds-tags-portals`
+
+Commit order suggestion:
+1) docs: add this canon + vocab tags
 2) flow-studio: tags badges + filters
 3) flow-studio: portal node + lint + audit export
-4) product: today session hub
+4) product: today session hub (quick/deep/explore)
 5) flows: converge via portals (remove duplicates)
 6) progress: mindpacing persistence
 7) tests: unit + e2e
-
-IMPORTANT:
-- Nu introduce duplicări de pagini/nodes pentru confort vizual.
-- Dacă ai nevoie de “apare în două locuri”, folosești portal nodes + tags.
-- Dacă ceva din MD nu se potrivește cu implementarea curentă, actualizezi MD și notezi clar decizia înainte de cod.
-
-Începe cu doc-ul MD și Flow Studio Layer 1 (tags/portals/audit). Fără astea, restul săptămânii e haos.

@@ -14,6 +14,7 @@ type FlowNodeCardProps = NodeProps<FlowNodeData> & {
   canExpandSteps: boolean;
   onExpandSteps?: (nodeId: string) => void;
   commentCount?: number;
+  dimmed?: boolean;
 };
 
 const handleStyleBase = "h-2 w-2 border-none";
@@ -29,10 +30,11 @@ export function FlowNodeCard({
   canExpandSteps,
   onExpandSteps,
   commentCount,
+  dimmed = false,
 }: FlowNodeCardProps) {
   const label = data.labelOverrides?.ro ?? data.routePath;
   const isStart = Boolean(data.tags?.includes("start"));
-  const labelIsPortal = Boolean(label?.toUpperCase().startsWith("PORTAL"));
+  const labelIsPortal = Boolean(label?.toUpperCase().startsWith("PORTAL:"));
   const hasPortalTag = Boolean(data.tags?.includes("type:portal"));
   const isPortalNode = hasPortalTag || labelIsPortal;
   const portalTarget = isPortalNode ? data.portal : null;
@@ -61,6 +63,15 @@ export function FlowNodeCard({
         return "bg-slate-100 text-slate-700 border-slate-200";
     }
   };
+  const cardToneClass = (() => {
+    if (selected) {
+      return isPortalNode ? "bg-sky-50 border-[var(--omni-energy)]" : "bg-white border-[var(--omni-energy)]";
+    }
+    if (isPortalNode) {
+      return "bg-sky-50 border-sky-300";
+    }
+    return "bg-white/90 border-[var(--omni-border-soft)]";
+  })();
   return (
     <div className="relative">
       <Handle type="target" position={Position.Left} id="target-left" className={`${handleStyleBase} bg-[var(--omni-ink)]`} />
@@ -75,7 +86,8 @@ export function FlowNodeCard({
       <div
         className={clsx(
           "rounded-2xl border px-4 py-2 text-sm font-semibold text-[var(--omni-ink)] shadow-md",
-          selected ? "bg-white border-[var(--omni-energy)]" : "bg-white/90 border-[var(--omni-border-soft)]",
+          cardToneClass,
+          dimmed ? "opacity-40" : "",
           issueCount ? "ring-2 ring-amber-400" : "",
         )}
       >

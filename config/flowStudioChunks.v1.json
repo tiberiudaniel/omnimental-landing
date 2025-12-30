@@ -92,27 +92,9 @@
       }
     },
     {
-      "id": "recommendation",
-      "title": "Recommendation Gateway",
-      "order": 60,
-      "colorToken": "recommendation",
-      "collapsedByDefault": true,
-      "meta": {
-        "tierMin": 1,
-        "menuState": "MINIMAL",
-        "description": { "ro": "«Next best step» fără explorare liberă (reduce choice paralysis)." },
-        "target": { "ro": "Crești repetarea: decizie zero, acțiune imediată." },
-        "challenge": { "ro": "«Nu știu ce să fac» → risc de abandon." },
-        "reward": { "ro": "O recomandare clară + motiv scurt + Start." },
-        "proof": { "ro": "User începe sesiunea fără să se plimbe prin meniu." },
-        "exitGate": { "ro": "User pornește acțiunea recomandată (de obicei Today/Run)." },
-        "routeGroups": ["recommendation"]
-      }
-    },
-    {
       "id": "progress_map",
       "title": "OS / Progress",
-      "order": 70,
+      "order": 60,
       "colorToken": "progress",
       "collapsedByDefault": true,
       "meta": {
@@ -130,7 +112,7 @@
     {
       "id": "training_arenas",
       "title": "Training / Arenas",
-      "order": 80,
+      "order": 70,
       "colorToken": "training",
       "collapsedByDefault": true,
       "meta": {
@@ -148,7 +130,7 @@
     {
       "id": "curriculum_library",
       "title": "Curriculum / Library",
-      "order": 90,
+      "order": 80,
       "colorToken": "library",
       "collapsedByDefault": true,
       "meta": {
@@ -166,7 +148,7 @@
     {
       "id": "module_hubs",
       "title": "Module Hubs",
-      "order": 100,
+      "order": 90,
       "colorToken": "hubs",
       "collapsedByDefault": true,
       "meta": {
@@ -184,7 +166,7 @@
     {
       "id": "advanced_wizard",
       "title": "Advanced / Wizard / Coaching",
-      "order": 110,
+      "order": 100,
       "colorToken": "advanced",
       "collapsedByDefault": true,
       "meta": {
@@ -202,7 +184,7 @@
     {
       "id": "account_admin_legacy",
       "title": "Account / Billing / Admin / Legacy",
-      "order": 120,
+      "order": 110,
       "colorToken": "account",
       "collapsedByDefault": true,
       "meta": {

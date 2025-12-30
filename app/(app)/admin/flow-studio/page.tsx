@@ -41,6 +41,8 @@ import type {
   FlowNode,
   FlowNodeData,
   FlowNodePortalConfig,
+  FlowOverlay,
+  FlowOverlayStep,
   RouteDoc,
   StepNodeRenderData,
 } from "@/lib/flowStudio/types";
@@ -53,7 +55,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { RoutesPanel, type RouteDragHandler } from "@/components/admin/flowStudio/RoutesPanel";
 import { FlowCanvas } from "@/components/admin/flowStudio/FlowCanvas";
-import { InspectorPanel, type FlowStats, type MissingManifestNode } from "@/components/admin/flowStudio/InspectorPanel";
+import { InspectorPanel, type FlowStats, type MissingManifestNode, type InspectorTab } from "@/components/admin/flowStudio/InspectorPanel";
 import { buildEdgeGroupKey, filterEdgesByNodeSet } from "@/lib/flowStudio/edgeUtils";
 import { ChunkPanel, CHUNK_SELECTION_MIME } from "@/components/admin/flowStudio/ChunkPanel";
 import {
@@ -105,6 +107,28 @@ const DEFAULT_EDGE_COLOR = "#0f172a";
 const AUTOSAVE_INTERVAL_MS = 3 * 60 * 1000;
 const AUTOSAVE_DOC_ID = "autosave";
 const autosaveTimeFormatter = new Intl.DateTimeFormat("ro-RO", { hour: "2-digit", minute: "2-digit" });
+const VIEW_MODE_STORAGE_KEY = "flowStudio:viewMode";
+const FOCUSED_CHUNK_STORAGE_KEY = "flowStudio:focusedChunkId";
+const SELECTED_CHUNK_STORAGE_KEY = "flowStudio:selectedChunkId";
+const TAG_FILTERS_STORAGE_KEY = "flowStudio:tagFilters";
+const CHUNK_FOCUS_HIDE_STORAGE_KEY = "flowStudio:focusHide";
+const stripUndefinedDeep = <T,>(value: T): T => {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefinedDeep(item)).filter((item) => item !== undefined) as unknown as T;
+  }
+  if (value && typeof value === "object") {
+    const result: Record<string, unknown> = {};
+    Object.entries(value as Record<string, unknown>).forEach(([key, entry]) => {
+      if (entry === undefined) return;
+      const cleaned = stripUndefinedDeep(entry);
+      if (cleaned !== undefined) {
+        result[key] = cleaned;
+      }
+    });
+    return result as T;
+  }
+  return value;
+};
 
 type FlowDraftDoc = {
   name?: string;
@@ -112,12 +136,25 @@ type FlowDraftDoc = {
   edges?: FlowEdge[];
   chunks?: FlowChunk[];
   comments?: FlowComment[];
+  overlays?: FlowOverlay[];
   updatedAt?: unknown;
   updatedAtMs?: number;
+  consumedAt?: unknown;
+  consumedAtMs?: number;
 };
 
 type AddRouteOptions = {
   markAsStart?: boolean;
+  labelOverride?: string | null;
+  tags?: string[];
+  chunkId?: string | null;
+  portal?: FlowNodePortalConfig | null;
+};
+
+type PortalDraftState = {
+  label: string;
+  targetRouteId: string;
+  chunkId: string;
 };
 
 type FlowViewMode = "nodes" | "chunks";
@@ -168,15 +205,32 @@ export default function FlowStudioPage() {
   const [lastAutosaveAt, setLastAutosaveAt] = useState<Date | null>(null);
   const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "error">("idle");
   const [autosaveError, setAutosaveError] = useState<string | null>(null);
+  const [lastFlowSaveAt, setLastFlowSaveAt] = useState<Date | null>(null);
+  const [lastChunkSaveAt, setLastChunkSaveAt] = useState<Date | null>(null);
   const [chunks, setChunks] = useState<FlowChunk[]>(() => normalizeChunks());
   const [viewMode, setViewMode] = useState<FlowViewMode>("nodes");
   const [chunkLayoutOrientation, setChunkLayoutOrientation] = useState<"vertical" | "horizontal">("vertical");
   const [chunkLayoutDensity, setChunkLayoutDensity] = useState<"compact" | "spacious">("compact");
   const [selectedChunkId, setSelectedChunkId] = useState<string | null>(null);
   const [focusedChunkId, setFocusedChunkId] = useState<string | null>(null);
+  const [chunkFocusHideOthers, setChunkFocusHideOthers] = useState(false);
   const [comments, setComments] = useState<FlowComment[]>([]);
   const [commentFilter, setCommentFilter] = useState<"all" | "open" | "nodes" | "chunks">("open");
   const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const [tagSearch, setTagSearch] = useState("");
+  const [portalCreatorOpen, setPortalCreatorOpen] = useState(false);
+  const [portalDraft, setPortalDraft] = useState<PortalDraftState>(() => ({
+    label: "PORTAL: To Today",
+    targetRouteId: "",
+    chunkId: UNGROUPED_CHUNK_ID,
+  }));
+  const [portalError, setPortalError] = useState<string | null>(null);
+  const [autosaveToast, setAutosaveToast] = useState<{ id: number; type: "success" | "error"; message: string } | null>(null);
+  const [chunkSaveStatus, setChunkSaveStatus] = useState<"idle" | "pending" | "saving" | "error">("idle");
+  const [chunkSaveError, setChunkSaveError] = useState<string | null>(null);
+  const [overlays, setOverlays] = useState<FlowOverlay[]>([]);
+  const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
+  const [inspectorTabRequest, setInspectorTabRequest] = useState<{ tab: InspectorTab; nonce: number } | null>(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdgeData>([]);
@@ -209,7 +263,35 @@ export default function FlowStudioPage() {
   const autosavePromptedRef = useRef<string | null>(null);
   const chunkAutosaveTimeoutRef = useRef<number | null>(null);
   const chunkAutosaveInitializedRef = useRef(false);
+  const autosaveToastTimeoutRef = useRef<number | null>(null);
+  const viewModeRestoredRef = useRef(false);
+  const focusRestoredRef = useRef(false);
+  const selectedChunkRestoredRef = useRef(false);
+  const tagFiltersRestoredRef = useRef(false);
+  const focusHideRestoredRef = useRef(false);
   const latestChunksRef = useRef<FlowChunk[]>(chunks);
+  const formatStatusTime = (value: Date | null) => (value ? autosaveTimeFormatter.format(value) : "—");
+
+useEffect(() => {
+  if (typeof window === "undefined") return;
+  let rafId: number | null = null;
+  const run = () => {
+    if (!overlays.length) {
+      setSelectedOverlayId(null);
+      return;
+    }
+    setSelectedOverlayId((prev) => {
+      if (prev && overlays.some((overlay) => overlay.id === prev)) {
+        return prev;
+      }
+      return overlays[0]?.id ?? null;
+    });
+  };
+  rafId = window.requestAnimationFrame(run);
+  return () => {
+    if (rafId) window.cancelAnimationFrame(rafId);
+  };
+}, [overlays]);
 
   const setSingleNodeSelection = useCallback((nodeId: string | null) => {
     setSelectedNodeId(nodeId);
@@ -263,23 +345,114 @@ export default function FlowStudioPage() {
     return () => unsub();
   }, [db, isAdmin]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(LAST_FLOW_KEY);
-    if (stored) {
-      startTransition(() => setSelectedFlowId(stored));
-    }
-  }, [setSelectedFlowId]);
+useEffect(() => {
+  if (typeof window === "undefined") return;
+  const stored = window.localStorage.getItem(LAST_FLOW_KEY);
+  if (stored) {
+    startTransition(() => setSelectedFlowId(stored));
+  }
+}, [setSelectedFlowId]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (selectedFlowId) {
-      window.localStorage.setItem(LAST_FLOW_KEY, selectedFlowId);
-    } else {
-      window.localStorage.removeItem(LAST_FLOW_KEY);
+    if (typeof window === "undefined" || viewModeRestoredRef.current) return;
+    const stored = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    if (stored === "nodes" || stored === "chunks") {
+      const raf = window.requestAnimationFrame(() => setViewMode(stored));
+      viewModeRestoredRef.current = true;
+      return () => window.cancelAnimationFrame(raf);
     }
-    chunkAutosaveInitializedRef.current = false;
-  }, [selectedFlowId]);
+    viewModeRestoredRef.current = true;
+  }, []);
+
+useEffect(() => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+}, [viewMode]);
+
+useEffect(() => {
+  if (typeof window === "undefined") return;
+  if (selectedFlowId) {
+    window.localStorage.setItem(LAST_FLOW_KEY, selectedFlowId);
+  } else {
+    window.localStorage.removeItem(LAST_FLOW_KEY);
+  }
+  chunkAutosaveInitializedRef.current = false;
+  selectedChunkRestoredRef.current = false;
+  focusHideRestoredRef.current = false;
+}, [selectedFlowId]);
+
+useEffect(() => {
+  focusRestoredRef.current = false;
+}, [selectedFlowId]);
+
+useEffect(() => {
+  if (!selectedFlowId || focusRestoredRef.current) return;
+  if (typeof window === "undefined") return;
+  const key = `${FOCUSED_CHUNK_STORAGE_KEY}:${selectedFlowId}`;
+  const stored = window.localStorage.getItem(key);
+  if (stored && chunks.some((chunk) => chunk.id === stored)) {
+    const raf = window.requestAnimationFrame(() => setFocusedChunkId(stored));
+    focusRestoredRef.current = true;
+    return () => window.cancelAnimationFrame(raf);
+  }
+  focusRestoredRef.current = true;
+}, [chunks, selectedFlowId]);
+
+useEffect(() => {
+  if (!selectedFlowId || typeof window === "undefined") return;
+  const key = `${FOCUSED_CHUNK_STORAGE_KEY}:${selectedFlowId}`;
+  if (focusedChunkId) {
+    window.localStorage.setItem(key, focusedChunkId);
+  } else {
+    window.localStorage.removeItem(key);
+  }
+}, [focusedChunkId, selectedFlowId]);
+
+useEffect(() => {
+  if (!selectedFlowId || focusHideRestoredRef.current) return;
+  if (typeof window === "undefined") return;
+  const key = `${CHUNK_FOCUS_HIDE_STORAGE_KEY}:${selectedFlowId}`;
+  const stored = window.localStorage.getItem(key);
+  if (stored) {
+    const raf = window.requestAnimationFrame(() => setChunkFocusHideOthers(stored === "1"));
+    focusHideRestoredRef.current = true;
+    return () => window.cancelAnimationFrame(raf);
+  }
+  focusHideRestoredRef.current = true;
+}, [selectedFlowId]);
+
+useEffect(() => {
+  if (!selectedFlowId || typeof window === "undefined") return;
+  const key = `${CHUNK_FOCUS_HIDE_STORAGE_KEY}:${selectedFlowId}`;
+  if (focusedChunkId) {
+    window.localStorage.setItem(key, chunkFocusHideOthers ? "1" : "0");
+  } else {
+    window.localStorage.removeItem(key);
+  }
+}, [chunkFocusHideOthers, focusedChunkId, selectedFlowId]);
+
+useEffect(() => {
+  if (!selectedFlowId || selectedChunkRestoredRef.current) return;
+  if (typeof window === "undefined") return;
+  const key = `${SELECTED_CHUNK_STORAGE_KEY}:${selectedFlowId}`;
+  const stored = window.localStorage.getItem(key);
+  if (stored && chunks.some((chunk) => chunk.id === stored)) {
+    const raf = window.requestAnimationFrame(() => setSelectedChunkId(stored));
+    selectedChunkRestoredRef.current = true;
+    return () => window.cancelAnimationFrame(raf);
+  }
+  selectedChunkRestoredRef.current = true;
+}, [chunks, selectedFlowId]);
+
+useEffect(() => {
+  if (!selectedFlowId || typeof window === "undefined") return;
+  const key = `${SELECTED_CHUNK_STORAGE_KEY}:${selectedFlowId}`;
+  if (selectedChunkId) {
+    window.localStorage.setItem(key, selectedChunkId);
+  } else {
+    window.localStorage.removeItem(key);
+  }
+}, [selectedChunkId, selectedFlowId]);
 
   const routeMap = useMemo(() => new Map(routes.map((route) => [route.id, route])), [routes]);
   const routeByPath = useMemo(() => new Map(routes.map((route) => [route.routePath, route])), [routes]);
@@ -296,10 +469,11 @@ export default function FlowStudioPage() {
         setEdges([]);
         setFlowNameDraft("");
         setChunks(normalizeChunks());
-        setViewMode("nodes");
         setSelectedChunkId(null);
         setFocusedChunkId(null);
         setComments([]);
+        setOverlays([]);
+        setSelectedOverlayId(null);
         setSingleNodeSelection(null);
         setSingleEdgeSelection(null);
         setSelectedNodeIds([]);
@@ -315,10 +489,11 @@ export default function FlowStudioPage() {
         setEdges([]);
         setFlowNameDraft("");
         setChunks(normalizeChunks());
-        setViewMode("nodes");
         setSelectedChunkId(null);
         setFocusedChunkId(null);
         setComments([]);
+        setOverlays([]);
+        setSelectedOverlayId(null);
         setSingleNodeSelection(null);
         setSingleEdgeSelection(null);
         setSelectedNodeIds([]);
@@ -330,8 +505,15 @@ export default function FlowStudioPage() {
       }
       const data = snapshot.data() as FlowDoc;
       setFlowDoc(data);
+      const docUpdatedAtMs = typeof data.updatedAtMs === "number" ? data.updatedAtMs : getTimestampMillis(data.updatedAt);
+      if (docUpdatedAtMs) {
+        const docDate = new Date(docUpdatedAtMs);
+        setLastFlowSaveAt(docDate);
+        setLastChunkSaveAt(docDate);
+      }
       setFlowNameDraft(data.name ?? "");
       setChunks(normalizeChunks(data.chunks));
+      setOverlays(Array.isArray(data.overlays) ? data.overlays : []);
       setComments(Array.isArray(data.comments) ? data.comments : []);
       const builtNodes = (data.nodes ?? []).map((stored) => buildFlowNode(stored, routeMap, routeByPath));
       const initialEdges = (data.edges ?? []).map(buildFlowEdge);
@@ -357,25 +539,27 @@ export default function FlowStudioPage() {
         if (cancelled || !snapshot.exists()) return;
         const draft = snapshot.data() as FlowDraftDoc;
         const draftMs = typeof draft.updatedAtMs === "number" ? draft.updatedAtMs : getTimestampMillis(draft.updatedAt);
-        const flowMs = getTimestampMillis(flowDoc.updatedAt);
-        if (!draftMs || !flowMs || draftMs <= flowMs) return;
+        const flowMs = typeof flowDoc.updatedAtMs === "number" ? flowDoc.updatedAtMs : getTimestampMillis(flowDoc.updatedAt);
+        const consumedMs = typeof draft.consumedAtMs === "number" ? draft.consumedAtMs : getTimestampMillis(draft.consumedAt);
+        if (!draftMs || !flowMs || draftMs <= flowMs || (consumedMs && consumedMs >= draftMs)) return;
         const shouldRestore = window.confirm(`Exista un autosave din ${autosaveTimeFormatter.format(new Date(draftMs))}. Vrei sa il incarci?`);
         if (!shouldRestore) return;
-        const restoredNodes = (draft.nodes ?? []).map((stored) => buildFlowNode(stored, routeMap, routeByPath));
-        const rawEdges = (draft.edges ?? []).map(buildFlowEdge);
+        const nodeSource = draft.nodes ?? flowDoc.nodes ?? [];
+        const edgeSource = draft.edges ?? flowDoc.edges ?? [];
+        const chunkSource = draft.chunks ?? flowDoc.chunks ?? [];
+        const commentSource = draft.comments ?? flowDoc.comments ?? [];
+        const overlaySource = draft.overlays ?? flowDoc.overlays ?? [];
+        const restoredNodes = nodeSource.map((stored) => buildFlowNode(stored, routeMap, routeByPath));
+        const rawEdges = edgeSource.map(buildFlowEdge);
         const validIds = new Set(restoredNodes.map((node) => node.id));
         const restoredEdges = filterEdgesByNodeSet(rawEdges, validIds);
         setNodes(restoredNodes);
         setEdges(restoredEdges);
-        if (draft.chunks) {
-          setChunks(normalizeChunks(draft.chunks));
-        }
-        if (draft.comments) {
-          setComments(draft.comments);
-        }
-        if (draft.name) {
-          setFlowNameDraft(draft.name);
-        }
+        setChunks(normalizeChunks(chunkSource));
+        setComments(Array.isArray(commentSource) ? commentSource : []);
+        setOverlays(Array.isArray(overlaySource) ? overlaySource : []);
+        setFlowNameDraft(draft.name ?? flowDoc.name ?? "");
+        void setDoc(draftRef, { consumedAt: serverTimestamp(), consumedAtMs: Date.now() }, { merge: true });
       })
       .catch((error) => {
         console.warn("[FlowStudio] failed to load autosave draft", error);
@@ -395,24 +579,34 @@ export default function FlowStudioPage() {
   useEffect(() => {
     if (focusedChunkId && !chunks.some((chunk) => chunk.id === focusedChunkId)) {
       logEffect("clearFocusedChunkMissing", { focusedChunkId, chunkCount: chunks.length });
-      startTransition(() => setFocusedChunkId(null));
+      startTransition(() => {
+        setFocusedChunkId(null);
+        setChunkFocusHideOthers(false);
+      });
     }
   }, [chunks, focusedChunkId]);
 
   const persistChunksOnly = useCallback(async () => {
     if (!selectedFlowId) return;
-    const storedChunks = latestChunksRef.current.map((chunk, index) => ({ ...chunk, order: index }));
+    const storedChunks = latestChunksRef.current.map((chunk, index) => serializeChunkForSave(chunk, index));
     try {
+      setChunkSaveStatus("saving");
+      setChunkSaveError(null);
       await setDoc(
         doc(db, "adminFlows", selectedFlowId),
         {
           chunks: storedChunks,
           updatedAt: serverTimestamp(),
+          updatedAtMs: Date.now(),
         },
         { merge: true },
       );
+      setChunkSaveStatus("idle");
+      setLastChunkSaveAt(new Date());
     } catch (error) {
       console.warn("[FlowStudio] failed to persist chunk changes", error);
+      setChunkSaveStatus("error");
+      setChunkSaveError(error instanceof Error ? error.message : "Nu am putut salva worlds");
     }
   }, [db, selectedFlowId]);
 
@@ -452,11 +646,112 @@ export default function FlowStudioPage() {
     },
     [viewMode],
   );
-  const handleToggleTagFilter = useCallback((tag: string) => {
-    setTagFilters((prev) => (prev.includes(tag) ? prev.filter((entry) => entry !== tag) : [...prev, tag]));
-  }, []);
+  const tagVocabulary = useMemo(() => {
+    const set = new Set<string>();
+    nodes.forEach((node) => {
+      node.data.tags?.forEach((tag) => {
+        if (tag) {
+          set.add(tag);
+        }
+      });
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [nodes]);
+  const filterValidTags = useCallback(
+    (list: string[]) => list.filter((tag) => tagVocabulary.includes(tag)),
+    [tagVocabulary],
+  );
+  const resolvedTagFilters = useMemo(() => filterValidTags(tagFilters), [filterValidTags, tagFilters]);
+  const filteredTagOptions = useMemo(() => {
+    const needle = tagSearch.trim().toLowerCase();
+    if (!needle) return tagVocabulary;
+    return tagVocabulary.filter((tag) => tag.toLowerCase().includes(needle));
+  }, [tagSearch, tagVocabulary]);
+  const handleToggleTagFilter = useCallback(
+    (tag: string) => {
+      setTagFilters((prev) => {
+        const cleaned = filterValidTags(prev);
+        if (cleaned.includes(tag)) {
+          return cleaned.filter((entry) => entry !== tag);
+        }
+        return [...cleaned, tag];
+      });
+    },
+    [filterValidTags],
+  );
   const handleResetTagFilters = useCallback(() => {
     setTagFilters([]);
+  }, []);
+  const handleApplyTagSearch = useCallback(() => {
+    const normalized = tagSearch.trim();
+    if (!normalized) return;
+    handleToggleTagFilter(normalized);
+    setTagSearch("");
+  }, [handleToggleTagFilter, tagSearch]);
+  const handleOpenPortalCreator = useCallback(() => {
+    if (!selectedFlowId) return;
+    const fallbackChunk = focusedChunkId ?? selectedChunkId ?? UNGROUPED_CHUNK_ID;
+    setPortalDraft({
+      label: "PORTAL: To Today",
+      targetRouteId: "",
+      chunkId: fallbackChunk,
+    });
+    setPortalError(null);
+    setPortalCreatorOpen(true);
+  }, [focusedChunkId, selectedChunkId, selectedFlowId]);
+  const handleClosePortalCreator = useCallback(() => {
+    setPortalCreatorOpen(false);
+    setPortalError(null);
+  }, []);
+  const pushAutosaveToast = useCallback((type: "success" | "error", message: string) => {
+    setAutosaveToast({ id: Date.now(), type, message });
+    if (autosaveToastTimeoutRef.current) {
+      window.clearTimeout(autosaveToastTimeoutRef.current);
+    }
+    autosaveToastTimeoutRef.current = window.setTimeout(() => {
+      setAutosaveToast(null);
+      autosaveToastTimeoutRef.current = null;
+    }, 3500);
+  }, []);
+
+useEffect(() => {
+  return () => {
+    if (autosaveToastTimeoutRef.current) {
+      window.clearTimeout(autosaveToastTimeoutRef.current);
+    }
+  };
+}, []);
+
+useEffect(() => {
+  if (tagFiltersRestoredRef.current || typeof window === "undefined") return;
+  const stored = window.localStorage.getItem(TAG_FILTERS_STORAGE_KEY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        const raf = window.requestAnimationFrame(() =>
+          setTagFilters(parsed.filter((tag): tag is string => typeof tag === "string")),
+        );
+        tagFiltersRestoredRef.current = true;
+        return () => window.cancelAnimationFrame(raf);
+      }
+    } catch {
+      // ignore invalid
+    }
+  }
+  tagFiltersRestoredRef.current = true;
+}, []);
+
+useEffect(() => {
+  if (!tagFiltersRestoredRef.current || typeof window === "undefined") return;
+  window.localStorage.setItem(TAG_FILTERS_STORAGE_KEY, JSON.stringify(tagFilters));
+}, [tagFilters]);
+  const handleDismissAutosaveToast = useCallback(() => {
+    setAutosaveToast(null);
+    if (autosaveToastTimeoutRef.current) {
+      window.clearTimeout(autosaveToastTimeoutRef.current);
+      autosaveToastTimeoutRef.current = null;
+    }
   }, []);
 
   const handleAddComment = useCallback(
@@ -539,42 +834,73 @@ export default function FlowStudioPage() {
     const ids = nodes.filter((node) => (node.data.chunkId ?? UNGROUPED_CHUNK_ID) === focusedChunkId).map((node) => node.id);
     return new Set(ids);
   }, [focusedChunkId, nodes]);
-  const tagVocabulary = useMemo(() => {
-    const set = new Set<string>();
-    nodes.forEach((node) => {
-      node.data.tags?.forEach((tag) => {
-        if (tag) {
-          set.add(tag);
-        }
-      });
-    });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [nodes]);
-  useEffect(() => {
-    setTagFilters((prev) => prev.filter((tag) => tagVocabulary.includes(tag)));
-  }, [tagVocabulary]);
   const tagFilteredNodeIdSet = useMemo(() => {
-    if (!tagFilters.length) return null;
+    if (!resolvedTagFilters.length) return null;
     const ids = nodes
       .filter((node) => {
         const tags = node.data.tags ?? [];
-        return tagFilters.every((filter) => tags.includes(filter));
+        return resolvedTagFilters.every((filter) => tags.includes(filter));
       })
       .map((node) => node.id);
     return new Set(ids);
-  }, [nodes, tagFilters]);
+  }, [nodes, resolvedTagFilters]);
+  const chunkHideFilterSet = useMemo(() => {
+    if (!chunkFocusHideOthers || !chunkFocusedNodeIdSet || !focusedChunkId) return null;
+    return chunkFocusedNodeIdSet;
+  }, [chunkFocusHideOthers, chunkFocusedNodeIdSet, focusedChunkId]);
   const filteredNodeIdSet = useMemo(() => {
-    if (chunkFocusedNodeIdSet && tagFilteredNodeIdSet) {
-      const intersection = new Set<string>();
-      chunkFocusedNodeIdSet.forEach((id) => {
-        if (tagFilteredNodeIdSet.has(id)) {
-          intersection.add(id);
-        }
-      });
-      return intersection;
-    }
-    return chunkFocusedNodeIdSet ?? tagFilteredNodeIdSet;
-  }, [chunkFocusedNodeIdSet, tagFilteredNodeIdSet]);
+    const filters: Array<Set<string>> = [];
+    if (chunkHideFilterSet) filters.push(chunkHideFilterSet);
+    if (tagFilteredNodeIdSet) filters.push(tagFilteredNodeIdSet);
+    if (!filters.length) return null;
+    if (filters.length === 1) return filters[0];
+    const [first, ...rest] = filters;
+    const intersection = new Set<string>();
+    first.forEach((id) => {
+      if (rest.every((set) => set.has(id))) {
+        intersection.add(id);
+      }
+    });
+    return intersection;
+  }, [chunkHideFilterSet, tagFilteredNodeIdSet]);
+  const chunkHighlightNodeIdSet = useMemo(() => {
+    if (!focusedChunkId || !chunkFocusedNodeIdSet) return null;
+    return chunkFocusedNodeIdSet;
+  }, [chunkFocusedNodeIdSet, focusedChunkId]);
+  const chunkHighlightActive = useMemo(() => Boolean(chunkHighlightNodeIdSet && viewMode === "nodes"), [chunkHighlightNodeIdSet, viewMode]);
+  const chunkHighlightDimOthers = chunkHighlightActive && !chunkFocusHideOthers;
+  const chunkDimmedNodeIdSet = useMemo(() => {
+    if (!chunkHighlightDimOthers || !chunkHighlightNodeIdSet) return null;
+    const dimmed = new Set<string>();
+    nodes.forEach((node) => {
+      if (!chunkHighlightNodeIdSet.has(node.id)) {
+        dimmed.add(node.id);
+      }
+    });
+    return dimmed;
+  }, [chunkHighlightDimOthers, chunkHighlightNodeIdSet, nodes]);
+  const selectedOverlay = selectedOverlayId ? overlays.find((overlay) => overlay.id === selectedOverlayId) ?? null : null;
+  const overlayNodeIdSet = useMemo(() => {
+    if (!selectedOverlay?.steps?.length) return null;
+    const ids = selectedOverlay.steps.map((step) => step.nodeId).filter(Boolean);
+    if (!ids.length) return null;
+    return new Set(ids);
+  }, [selectedOverlay]);
+  const overlayHighlightActive = useMemo(() => Boolean(overlayNodeIdSet && viewMode === "nodes"), [overlayNodeIdSet, viewMode]);
+  const overlayDimmedNodeIdSet = useMemo(() => {
+    if (!overlayHighlightActive || !overlayNodeIdSet) return null;
+    const dimmed = new Set<string>();
+    nodes.forEach((node) => {
+      if (!overlayNodeIdSet.has(node.id)) {
+        dimmed.add(node.id);
+      }
+    });
+    return dimmed;
+  }, [nodes, overlayHighlightActive, overlayNodeIdSet]);
+  const overlayHighlightDimOthers = overlayHighlightActive;
+  const activeHighlightNodeIdSet = overlayHighlightActive ? overlayNodeIdSet : chunkHighlightNodeIdSet;
+  const highlightDimOthers = overlayHighlightActive ? overlayHighlightDimOthers : chunkHighlightDimOthers;
+  const activeDimmedNodeIdSet = overlayHighlightActive ? overlayDimmedNodeIdSet : chunkDimmedNodeIdSet;
   const nodeManifestMap = useMemo(() => {
     const map = new Map<string, StepManifest | null>();
     nodes.forEach((node) => {
@@ -587,6 +913,18 @@ export default function FlowStudioPage() {
     });
     return map;
   }, [nodes, resolveNodeRoutePath]);
+  const nodeLabelMap = useMemo(() => {
+    const map = new Map<string, string>();
+    nodes.forEach((node) => {
+      const label =
+        node.data.labelOverrides?.ro ??
+        node.data.labelOverrides?.en ??
+        node.data.routePath ??
+        node.id;
+      map.set(node.id, label);
+    });
+    return map;
+  }, [nodes]);
   const nodeCanExpandSteps = useMemo(() => {
     const map = new Map<string, boolean>();
     nodeManifestMap.forEach((manifest, nodeId) => {
@@ -701,10 +1039,17 @@ export default function FlowStudioPage() {
     const list: Edge<FlowEdgeData>[] = [];
     expandedStepRenderData.forEach((data, hostId) => {
       if (filteredNodeIdSet && !filteredNodeIdSet.has(hostId)) return;
-      list.push(...data.edges);
+      const dimmed = highlightDimOthers && activeHighlightNodeIdSet && !activeHighlightNodeIdSet.has(hostId);
+      data.edges.forEach((edge) => {
+        if (dimmed) {
+          list.push({ ...edge, style: { ...(edge.style ?? {}), opacity: 0.25 } });
+        } else {
+          list.push(edge);
+        }
+      });
     });
     return list;
-  }, [expandedStepRenderData, filteredNodeIdSet]);
+  }, [activeHighlightNodeIdSet, expandedStepRenderData, filteredNodeIdSet, highlightDimOthers]);
   const chunkLayoutOptions = useMemo(() => {
     const compact = chunkLayoutDensity === "compact";
     return {
@@ -846,30 +1191,6 @@ export default function FlowStudioPage() {
     },
     [collapseNodeSteps, expandedStepsMap, openStepsForNode],
   );
-  const handleNodeDoubleClick = useCallback(
-    (node: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>) => {
-      if (DEBUG_STEPS) {
-        console.log("[FlowStudio] double-click on node", {
-          nodeId: node.id,
-          type: node.type,
-          routePath:
-            node.type === "stepNode" || node.type === "chunkNode"
-              ? null
-              : (node.data as FlowNodeData).routePath,
-        });
-      }
-      if (node.type === "chunkNode") {
-        return;
-      }
-      if (node.type === "stepNode") {
-        const stepData = node.data as StepNodeRenderData;
-        openStepsForNode(stepData.parentNodeId, node.id);
-        return;
-      }
-      handleRequestExpandSteps(node.id);
-    },
-    [handleRequestExpandSteps, openStepsForNode],
-  );
   const toggleSelectedNodeSteps = useCallback(() => {
     if (!selectedNode) return;
     handleRequestExpandSteps(selectedNode.id);
@@ -913,7 +1234,10 @@ export default function FlowStudioPage() {
       pendingFitNodeRef.current = fixableRouteMappings[0].nodeId;
     }
   }, [fixableRouteMappings, setNodes, setStepFixError]);
-  const flowDiagnostics = useMemo(() => computeFlowDiagnostics(nodes, edges, routeMap, chunks), [chunks, edges, nodes, routeMap]);
+  const flowDiagnostics = useMemo(
+    () => computeFlowDiagnostics(nodes, edges, routeMap, chunks, overlays),
+    [chunks, edges, nodes, overlays, routeMap],
+  );
   const stepDiagnostics = useMemo(() => {
     const issues: FlowIssue[] = [];
     nodes.forEach((node) => {
@@ -960,6 +1284,16 @@ export default function FlowStudioPage() {
           workingEdge = { ...edge, hidden: shouldHide };
         }
       }
+      if (highlightDimOthers && activeHighlightNodeIdSet && viewMode === "nodes") {
+        const inFocus = activeHighlightNodeIdSet.has(edge.source) && activeHighlightNodeIdSet.has(edge.target);
+        workingEdge = {
+          ...workingEdge,
+          style: {
+            ...(workingEdge.style ?? {}),
+            opacity: inFocus ? 1 : 0.25,
+          },
+        };
+      }
       const issues = edgeIssueMap.get(edge.id) ?? 0;
       if (issues) {
         workingEdge = {
@@ -997,7 +1331,17 @@ export default function FlowStudioPage() {
       }
       return workingEdge;
     });
-  }, [edgeIssueMap, edges, filteredNodeIdSet, nodeRouteById, observedEdgeStatsMap, observedEnabled, viewMode]);
+  }, [
+    activeHighlightNodeIdSet,
+    edgeIssueMap,
+    edges,
+    filteredNodeIdSet,
+    highlightDimOthers,
+    nodeRouteById,
+    observedEdgeStatsMap,
+    observedEnabled,
+    viewMode,
+  ]);
   const edgesForCanvas = useMemo(() => {
     if (viewMode === "chunks") {
       return chunkGraph.edges;
@@ -1035,21 +1379,59 @@ export default function FlowStudioPage() {
     setChunks((existing) => normalizeChunks(existing.map((chunk) => (chunk.id === chunkId ? { ...chunk, ...updates } : chunk))));
   }, [setChunks]);
   const handleFocusChunk = useCallback(
-    (chunkId: string | null) => {
+    (chunkId: string | null, options?: { drillIntoNodes?: boolean }) => {
       if (!chunkId) {
         setFocusedChunkId(null);
-        setSelectedChunkId(null);
+        setChunkFocusHideOthers(false);
         return;
       }
       setFocusedChunkId(chunkId);
-      setSelectedChunkId(chunkId);
-      setViewMode("nodes");
+      setChunkFocusHideOthers(false);
+      if (options?.drillIntoNodes) {
+        setViewMode("nodes");
+      }
     },
-    [],
+    [setViewMode],
+  );
+  const handleFocusSelectedChunk = useCallback(() => {
+    if (!selectedChunkId) return;
+    handleFocusChunk(selectedChunkId, { drillIntoNodes: true });
+  }, [handleFocusChunk, selectedChunkId]);
+  const handleClearChunkFocus = useCallback(() => {
+    handleFocusChunk(null);
+  }, [handleFocusChunk]);
+  const handleToggleChunkFocusHide = useCallback(() => {
+    setChunkFocusHideOthers((prev) => !prev);
+  }, []);
+  const handleNodeDoubleClick = useCallback(
+    (node: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>) => {
+      if (DEBUG_STEPS) {
+        console.log("[FlowStudio] double-click on node", {
+          nodeId: node.id,
+          type: node.type,
+          routePath:
+            node.type === "stepNode" || node.type === "chunkNode"
+              ? null
+              : (node.data as FlowNodeData).routePath,
+        });
+      }
+      if (node.type === "chunkNode") {
+        const chunkData = node.data as ChunkNodeData;
+        handleFocusChunk(chunkData.chunkId, { drillIntoNodes: true });
+        return;
+      }
+      if (node.type === "stepNode") {
+        const stepData = node.data as StepNodeRenderData;
+        openStepsForNode(stepData.parentNodeId, node.id);
+        return;
+      }
+      handleRequestExpandSteps(node.id);
+    },
+    [handleFocusChunk, handleRequestExpandSteps, openStepsForNode],
   );
   const handleCreateChunkFromSelection = useCallback(() => {
     if (!selectedNodeIds.length) {
-      window.alert("Selectează cel puțin un nod pentru a crea un chunk.");
+      window.alert("Selectează cel puțin un nod pentru a crea un world.");
       return;
     }
     const baseName = `Chunk ${chunks.length + 1}`;
@@ -1062,17 +1444,15 @@ export default function FlowStudioPage() {
     };
     setChunks((existing) => normalizeChunks([...existing, nextChunk]));
     handleAssignNodesToChunk(selectedNodeIds, newChunkId);
+    setSelectedChunkId(newChunkId);
     handleFocusChunk(newChunkId);
-    const rename = window.prompt("Nume chunk", baseName)?.trim();
+    const rename = window.prompt("Nume world", baseName)?.trim();
     if (rename) {
       setChunks((existing) => existing.map((chunk) => (chunk.id === newChunkId ? { ...chunk, title: rename } : chunk)));
     }
   }, [chunks.length, handleAssignNodesToChunk, handleFocusChunk, selectedNodeIds]);
 
   const handleSeedCanonicalChunks = useCallback(() => {
-    const confirmSeed =
-      typeof window !== "undefined" ? window.confirm("Aplici presetul strategic (nu șterge custom chunks)?") : true;
-    if (!confirmSeed) return;
     const seededChunks = normalizeChunks(mergeChunksWithSeed(latestChunksRef.current, FLOW_STUDIO_CHUNK_SEED_V1));
     setChunks(seededChunks);
     const lookup = buildChunkAutoAssignMap(seededChunks);
@@ -1117,17 +1497,14 @@ export default function FlowStudioPage() {
   }, [setChunks]);
   const handleSelectChunkFromPanel = useCallback(
     (chunkId: string | null) => {
-      if (chunkId) {
-        handleFocusChunk(chunkId);
-      } else {
-        handleFocusChunk(null);
-      }
+      setSelectedChunkId(chunkId);
     },
-    [handleFocusChunk],
+    [],
   );
   const handleCommentFocus = useCallback(
     (comment: FlowComment) => {
       if (comment.targetType === "chunk") {
+        setSelectedChunkId(comment.targetId);
         handleFocusChunk(comment.targetId);
         return;
       }
@@ -1230,15 +1607,6 @@ export default function FlowStudioPage() {
     const rafId = requestAnimationFrame(() => setStepFixError(null));
     return () => cancelAnimationFrame(rafId);
   }, [setStepFixError, selectedNodeId]);
-
-  useEffect(() => {
-    if (viewMode === "chunks") {
-      if (focusedChunkId) {
-        logEffect("clearFocusedChunkOnViewToggle", { focusedChunkId });
-      }
-      startTransition(() => setFocusedChunkId(null));
-    }
-  }, [focusedChunkId, viewMode]);
 
   useEffect(() => {
     if (!reactFlowInstance || !focusedChunkId || viewMode !== "nodes") return;
@@ -1350,9 +1718,21 @@ export default function FlowStudioPage() {
   const addRouteNode = useCallback(
     (route: RouteDoc, position?: XYPosition, options?: AddRouteOptions) => {
       if (!selectedFlowId) return;
-      const label = route.routePath === "/" ? "root" : route.routePath;
+      const defaultLabel = route.routePath === "/" ? "root" : route.routePath;
+      const labelOverride = options?.labelOverride?.trim();
+      const label = labelOverride && labelOverride.length ? labelOverride : defaultLabel;
       const screenId = getScreenIdForRoute(route.routePath);
       const nodeId = `node_${randomId()}`;
+      const baseTags = options?.tags ? [...options.tags] : [];
+      const tags =
+        options?.markAsStart && !baseTags.includes("start")
+          ? [...baseTags, "start"]
+          : baseTags.length
+            ? baseTags
+            : options?.markAsStart
+              ? ["start"]
+              : [];
+      const chunkId = options?.chunkId ?? UNGROUPED_CHUNK_ID;
       setNodes((existing) => [
         ...existing,
         {
@@ -1369,8 +1749,9 @@ export default function FlowStudioPage() {
             filePath: route.filePath,
             screenId,
             labelOverrides: { ro: label, en: label },
-            tags: options?.markAsStart ? ["start"] : [],
-            chunkId: UNGROUPED_CHUNK_ID,
+            tags,
+            chunkId,
+            portal: options?.portal ?? null,
           },
         },
       ]);
@@ -1415,6 +1796,35 @@ export default function FlowStudioPage() {
     },
     [addRouteNode, nodes, reactFlowInstance],
   );
+  const handleCreatePortalFromDraft = useCallback(() => {
+    if (!portalDraft.targetRouteId) {
+      setPortalError("Selectează ruta țintă.");
+      return;
+    }
+    const route = routes.find((entry) => entry.id === portalDraft.targetRouteId);
+    if (!route) {
+      setPortalError("Ruta selectată nu mai este disponibilă.");
+      return;
+    }
+    const rawLabel = portalDraft.label.trim();
+    const normalizedLabel =
+      rawLabel.length === 0
+        ? `PORTAL: ${route.routePath}`
+        : rawLabel.toUpperCase().startsWith("PORTAL:")
+          ? rawLabel
+          : `PORTAL: ${rawLabel}`;
+    const chunkExists = chunks.some((chunk) => chunk.id === portalDraft.chunkId);
+    const chunkId = chunkExists ? portalDraft.chunkId : UNGROUPED_CHUNK_ID;
+    const portalConfig: FlowNodePortalConfig = {
+      targetType: "route",
+      targetRouteId: route.id,
+      targetRoutePath: route.routePath,
+      label: normalizedLabel,
+    };
+    handleQuickAddRoute(route, { labelOverride: normalizedLabel, tags: ["type:portal"], chunkId, portal: portalConfig });
+    setPortalCreatorOpen(false);
+    setPortalError(null);
+  }, [chunks, handleQuickAddRoute, portalDraft, routes]);
   const handleDeleteSelection = useCallback(() => {
     if (selectedNodeIds.length) {
       const idSet = new Set(selectedNodeIds);
@@ -1562,23 +1972,7 @@ export default function FlowStudioPage() {
       if (edge.data?.command) stored.command = edge.data.command;
       return stored;
     });
-    const storedChunks = chunks.map((chunk, index) => {
-      const entry: FlowChunk = {
-        id: chunk.id,
-        title: chunk.title,
-        order: index,
-      };
-      if (typeof chunk.color === "string") {
-        entry.color = chunk.color;
-      }
-      if (typeof chunk.collapsedByDefault === "boolean") {
-        entry.collapsedByDefault = chunk.collapsedByDefault;
-      }
-       if (chunk.meta) {
-         entry.meta = { ...chunk.meta };
-       }
-      return entry;
-    });
+    const storedChunks = chunks.map((chunk, index) => serializeChunkForSave(chunk, index));
     const storedComments = comments.map((comment) => ({
       id: comment.id,
       targetType: comment.targetType,
@@ -1588,8 +1982,31 @@ export default function FlowStudioPage() {
       createdAt: comment.createdAt ?? new Date().toISOString(),
       resolved: Boolean(comment.resolved),
     }));
-    return { storedNodes, storedEdges, storedChunks, storedComments };
-  }, [chunks, comments, edges, nodes]);
+    const storedOverlays = overlays.map((overlay) => {
+      const id = overlay.id || randomId();
+      const steps = (overlay.steps ?? [])
+        .filter((step) => step.nodeId)
+        .map((step) =>
+          stripUndefinedDeep({
+            nodeId: step.nodeId,
+            gateTag: step.gateTag ? step.gateTag : undefined,
+            tags: step.tags && step.tags.length ? step.tags : undefined,
+          }),
+        );
+      const edgesList = overlay.edges
+        ?.filter((edge) => edge.fromNodeId && edge.toNodeId)
+        .map((edge) => ({ fromNodeId: edge.fromNodeId, toNodeId: edge.toNodeId }));
+      return stripUndefinedDeep({
+        id,
+        name: overlay.name ?? "Overlay",
+        description: overlay.description,
+        status: overlay.status,
+        steps,
+        edges: edgesList && edgesList.length ? edgesList : undefined,
+      });
+    });
+    return { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays };
+  }, [chunks, comments, edges, nodes, overlays]);
 
   const serializedFlow = useMemo(() => serializeFlow(), [serializeFlow]);
 
@@ -1599,6 +2016,7 @@ export default function FlowStudioPage() {
       nodes: serializedFlow.storedNodes,
       edges: serializedFlow.storedEdges,
       comments: serializedFlow.storedComments,
+      overlays: serializedFlow.storedOverlays,
     });
   }, [flowNameDraft, serializedFlow]);
 
@@ -1611,31 +2029,72 @@ export default function FlowStudioPage() {
       nodes: flowDoc.nodes ?? [],
       edges: flowDoc.edges ?? [],
       comments: flowDoc.comments ?? [],
+      overlays: flowDoc.overlays ?? [],
     });
   }, [flowDoc, selectedFlowId]);
 
   const persistedChunkSignature = useMemo(() => {
     if (!selectedFlowId || !flowDoc) return "";
-    return JSON.stringify(flowDoc.chunks ?? []);
+    const normalized = normalizeChunks(flowDoc.chunks);
+    const stored = normalized.map((chunk, index) => serializeChunkForSave(chunk, index));
+    return JSON.stringify(stored);
   }, [flowDoc, selectedFlowId]);
 
   const hasFlowUnsavedChanges = useMemo(() => {
-    if (!selectedFlowId) return false;
+    if (!selectedFlowId || !persistedFlowSignature) return false;
     return persistedFlowSignature !== flowGraphSignature;
   }, [flowGraphSignature, persistedFlowSignature, selectedFlowId]);
 
   const hasChunkUnsavedChanges = useMemo(() => {
-    if (!selectedFlowId) return false;
+    if (!selectedFlowId || !persistedChunkSignature) return false;
     return persistedChunkSignature !== chunkSignature;
   }, [chunkSignature, persistedChunkSignature, selectedFlowId]);
 
   useEffect(() => {
-    if (!selectedFlowId) return undefined;
+    let rafId: number | null = null;
+    const scheduleStatusUpdate = (status: typeof chunkSaveStatus, error: string | null) => {
+      if (typeof window === "undefined") {
+        setChunkSaveStatus(status);
+        setChunkSaveError(error);
+        return;
+      }
+      rafId = window.requestAnimationFrame(() => {
+        setChunkSaveStatus(status);
+        setChunkSaveError(error);
+        rafId = null;
+      });
+    };
+    if (!selectedFlowId) {
+      scheduleStatusUpdate("idle", null);
+      return () => {
+        if (chunkAutosaveTimeoutRef.current) {
+          window.clearTimeout(chunkAutosaveTimeoutRef.current);
+        }
+        if (rafId) {
+          window.cancelAnimationFrame(rafId);
+        }
+      };
+    }
     if (!chunkAutosaveInitializedRef.current) {
       chunkAutosaveInitializedRef.current = true;
-      return undefined;
+      return () => {
+        if (rafId) {
+          window.cancelAnimationFrame(rafId);
+        }
+      };
     }
-    if (!hasChunkUnsavedChanges) return undefined;
+    if (!hasChunkUnsavedChanges) {
+      scheduleStatusUpdate("idle", null);
+      return () => {
+        if (chunkAutosaveTimeoutRef.current) {
+          window.clearTimeout(chunkAutosaveTimeoutRef.current);
+        }
+        if (rafId) {
+          window.cancelAnimationFrame(rafId);
+        }
+      };
+    }
+    scheduleStatusUpdate("pending", chunkSaveError);
     if (chunkAutosaveTimeoutRef.current) {
       window.clearTimeout(chunkAutosaveTimeoutRef.current);
     }
@@ -1647,10 +2106,11 @@ export default function FlowStudioPage() {
       if (chunkAutosaveTimeoutRef.current) {
         window.clearTimeout(chunkAutosaveTimeoutRef.current);
       }
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
     };
-  }, [chunks, hasChunkUnsavedChanges, persistChunksOnly, selectedFlowId]);
-
-  const hasUnsavedChanges = hasFlowUnsavedChanges || hasChunkUnsavedChanges;
+  }, [chunkSaveError, chunks, hasChunkUnsavedChanges, persistChunksOnly, selectedFlowId]);
 
   const buildFlowSpec = useCallback((): FlowSpec | null => {
     if (!selectedFlowId) return null;
@@ -1761,6 +2221,15 @@ export default function FlowStudioPage() {
         },
       }));
     const flowName = flowNameDraft.trim() || flowDoc?.name || "Flow";
+    const overlaySummary = overlays.map((overlay) => ({
+      id: overlay.id,
+      name: overlay.name ?? "Overlay",
+      stepCount: overlay.steps?.length ?? 0,
+      nodes: overlay.steps?.map((step) => ({
+        nodeId: step.nodeId,
+        routePath: nodeRouteById.get(step.nodeId) ?? "",
+      })),
+    }));
     return {
       generatedAt: new Date().toISOString(),
       flow: {
@@ -1774,8 +2243,9 @@ export default function FlowStudioPage() {
       chunkSummary,
       crossChunkEdges,
       lintWarnings: diagnostics.filter((issue) => issue.severity === "warning"),
+      overlays: overlaySummary,
     };
-  }, [chunks, diagnostics, edges, flowDoc?.name, flowNameDraft, nodeChunkIdMap, nodeRouteById, nodes, selectedFlowId]);
+  }, [chunks, diagnostics, edges, flowDoc?.name, flowNameDraft, nodeChunkIdMap, nodeRouteById, nodes, overlays, selectedFlowId]);
   const handleExportAuditSnapshot = useCallback(() => {
     const snapshot = buildAuditSnapshot();
     if (!snapshot) return;
@@ -1791,7 +2261,7 @@ export default function FlowStudioPage() {
 
   const handleSaveFlow = useCallback(async () => {
     if (!selectedFlowId || !flowNameDraft.trim()) return;
-    const { storedNodes, storedEdges, storedChunks, storedComments } = serializeFlow();
+    const { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays } = serializeFlow();
     setSaveStatus("saving");
     setSaveMessage(null);
     try {
@@ -1803,13 +2273,17 @@ export default function FlowStudioPage() {
           edges: storedEdges,
           chunks: storedChunks,
           comments: storedComments,
+          overlays: storedOverlays,
           updatedAt: serverTimestamp(),
+          updatedAtMs: Date.now(),
           version: (flowDoc?.version ?? 0) + 1,
         },
         { merge: true },
       );
       setSaveStatus("success");
       setSaveMessage("Salvat");
+      const now = new Date();
+      setLastFlowSaveAt(now);
       setAutosaveError(null);
       window.setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (error) {
@@ -1826,6 +2300,7 @@ export default function FlowStudioPage() {
       name,
       nodes: [],
       edges: [],
+      overlays: [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       version: 1,
@@ -1835,7 +2310,7 @@ export default function FlowStudioPage() {
 
   const handleDuplicateFlow = useCallback(async () => {
     if (!selectedFlowId) return;
-    const { storedNodes, storedEdges, storedChunks, storedComments } = serializeFlow();
+    const { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays } = serializeFlow();
     const name = flowNameDraft ? `${flowNameDraft} (copy)` : `${flowDoc?.name ?? "Flow"} (copy)`;
     const docRef = await addDoc(collection(db, "adminFlows"), {
       name,
@@ -1844,6 +2319,7 @@ export default function FlowStudioPage() {
       edges: storedEdges,
       chunks: storedChunks,
       comments: storedComments,
+      overlays: storedOverlays,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       version: (flowDoc?.version ?? 0) + 1,
@@ -1857,7 +2333,7 @@ export default function FlowStudioPage() {
     try {
       setAutosaveStatus("saving");
       setAutosaveError(null);
-      const { storedNodes, storedEdges, storedChunks, storedComments } = serializeFlow();
+      const { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays } = serializeFlow();
       await setDoc(
         doc(db, "adminFlows", selectedFlowId, "drafts", AUTOSAVE_DOC_ID),
         {
@@ -1866,19 +2342,23 @@ export default function FlowStudioPage() {
           edges: storedEdges,
           chunks: storedChunks,
           comments: storedComments,
+          overlays: storedOverlays,
           updatedAt: serverTimestamp(),
           updatedAtMs: Date.now(),
         },
         { merge: true },
       );
-      setLastAutosaveAt(new Date());
+      const timestamp = new Date();
+      setLastAutosaveAt(timestamp);
       setAutosaveStatus("idle");
+      pushAutosaveToast("success", `Autosalvat la ${autosaveTimeFormatter.format(timestamp)}`);
     } catch (error) {
       console.error("[FlowStudio] autosave failed", error);
       setAutosaveStatus("error");
       setAutosaveError(error instanceof Error ? error.message : "Autosave esuat");
+      pushAutosaveToast("error", "Autosave eșuat");
     }
-  }, [db, flowNameDraft, hasFlowUnsavedChanges, selectedFlowId, serializeFlow]);
+  }, [db, flowNameDraft, hasFlowUnsavedChanges, pushAutosaveToast, selectedFlowId, serializeFlow]);
 
   useEffect(() => {
     if (!selectedFlowId) return undefined;
@@ -2062,6 +2542,25 @@ export default function FlowStudioPage() {
     },
     [setNodes],
   );
+  const handleNodeTagsChange = useCallback(
+    (nodeId: string, tags: string[]) => {
+      const normalized = Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
+      setNodes((existing) =>
+        existing.map((node) =>
+          node.id === nodeId
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  tags: normalized,
+                },
+              }
+            : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
   const handleNodePortalChange = useCallback(
     (nodeId: string, portalDraft: FlowNodePortalConfig | null) => {
       setNodes((existing) =>
@@ -2149,6 +2648,116 @@ export default function FlowStudioPage() {
     [setEdges],
   );
 
+  const mutateOverlay = useCallback((overlayId: string, mutator: (overlay: FlowOverlay) => FlowOverlay | null) => {
+    setOverlays((existing) => {
+      let changed = false;
+      const next: FlowOverlay[] = [];
+      existing.forEach((overlay) => {
+        if (overlay.id !== overlayId) {
+          next.push(overlay);
+          return;
+        }
+        const updated = mutator(overlay);
+        changed = true;
+        if (updated) {
+          next.push(updated);
+        }
+      });
+      return changed ? next : existing;
+    });
+  }, []);
+
+  const handleCreateOverlay = useCallback((name: string) => {
+    const overlay: FlowOverlay = {
+      id: randomId(),
+      name: name.trim() || "Overlay",
+      steps: [],
+    };
+    setOverlays((existing) => [...existing, overlay]);
+    setSelectedOverlayId(overlay.id);
+  }, []);
+
+  const handleDeleteOverlay = useCallback(
+    (overlayId: string) => {
+      setOverlays((existing) => existing.filter((overlay) => overlay.id !== overlayId));
+      setSelectedOverlayId((prev) => (prev === overlayId ? null : prev));
+    },
+    [],
+  );
+
+  const handleOverlayMetadataChange = useCallback(
+    (overlayId: string, updates: Partial<Pick<FlowOverlay, "name" | "description" | "status">>) => {
+      mutateOverlay(overlayId, (overlay) => ({
+        ...overlay,
+        ...updates,
+      }));
+    },
+    [mutateOverlay],
+  );
+
+  const handleOverlayAddNodes = useCallback(
+    (overlayId: string, nodeIds: string[]) => {
+      if (!nodeIds.length) return;
+      mutateOverlay(overlayId, (overlay) => {
+        const existingSteps = overlay.steps ?? [];
+        const existingIds = new Set(existingSteps.map((step) => step.nodeId));
+        const nextSteps = [...existingSteps];
+        nodeIds.forEach((nodeId) => {
+          if (!nodeId || existingIds.has(nodeId)) return;
+          existingIds.add(nodeId);
+          nextSteps.push({ nodeId });
+        });
+        return { ...overlay, steps: nextSteps };
+      });
+    },
+    [mutateOverlay],
+  );
+
+  const handleOverlayRemoveStep = useCallback(
+    (overlayId: string, index: number) => {
+      mutateOverlay(overlayId, (overlay) => {
+        if (!overlay.steps?.length || index < 0 || index >= overlay.steps.length) return overlay;
+        const nextSteps = overlay.steps.filter((_, stepIndex) => stepIndex !== index);
+        return { ...overlay, steps: nextSteps };
+      });
+    },
+    [mutateOverlay],
+  );
+
+  const handleOverlayReorderSteps = useCallback(
+    (overlayId: string, fromIndex: number, toIndex: number) => {
+      mutateOverlay(overlayId, (overlay) => {
+        const steps = overlay.steps ?? [];
+        if (fromIndex < 0 || fromIndex >= steps.length || toIndex < 0 || toIndex >= steps.length) {
+          return overlay;
+        }
+        const nextSteps = [...steps];
+        const [moved] = nextSteps.splice(fromIndex, 1);
+        nextSteps.splice(toIndex, 0, moved);
+        return { ...overlay, steps: nextSteps };
+      });
+    },
+    [mutateOverlay],
+  );
+
+  const handleOverlayStepUpdate = useCallback(
+    (overlayId: string, index: number, updates: Partial<FlowOverlayStep>) => {
+      mutateOverlay(overlayId, (overlay) => {
+        if (!overlay.steps?.length || index < 0 || index >= overlay.steps.length) return overlay;
+        const nextSteps = overlay.steps.map((step, stepIndex) =>
+          stepIndex === index
+            ? {
+                ...step,
+                ...updates,
+              }
+            : step,
+        );
+        return { ...overlay, steps: nextSteps };
+      });
+    },
+    [mutateOverlay],
+  );
+
   const flowsTabDisabled = !selectedFlowId;
   const hasSelection = Boolean(selectedNode || selectedEdge);
   const canvasNodeCount = viewMode === "chunks" ? chunkGraph.nodes.length : nodes.length;
@@ -2166,20 +2775,124 @@ export default function FlowStudioPage() {
           )}
           onClick={() => setViewMode(mode)}
         >
-          {mode === "nodes" ? "Nodes" : "Chunks"}
+          {mode === "nodes" ? "Nodes" : "World Map"}
         </button>
       ))}
     </div>
   );
+  const handleOpenOverlayManager = useCallback(() => {
+    setInspectorCollapsed(false);
+    setInspectorTabRequest({ tab: "overlays", nonce: Date.now() });
+  }, []);
+  const overlaySelector = (
+    <div className="flex items-center gap-2 rounded-full border border-[var(--omni-border-soft)] bg-white px-3 py-1 text-xs font-semibold shadow-sm">
+      <span className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Overlay</span>
+      <select
+        className="rounded-full border border-[var(--omni-border-soft)] bg-white px-2 py-1 text-xs font-semibold text-[var(--omni-ink)]"
+        value={selectedOverlayId ?? ""}
+        onChange={(event) => setSelectedOverlayId(event.target.value || null)}
+      >
+        <option value="">None</option>
+        {overlays.map((overlay) => (
+          <option key={overlay.id} value={overlay.id}>
+            {overlay.name ?? "Overlay"}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="rounded-full border border-[var(--omni-border-soft)] px-2 py-1 text-[10px] font-semibold"
+        onClick={handleOpenOverlayManager}
+      >
+        Manage
+      </button>
+    </div>
+  );
   const canvasHeaderActions = (
     <div className="flex flex-wrap items-center gap-3">
+      {overlaySelector}
       {viewToggle}
-      {viewMode === "nodes" && tagVocabulary.length ? (
-        <div className="flex flex-1 flex-wrap items-center gap-2 rounded-full border border-[var(--omni-border-soft)] bg-white/80 p-1 text-xs shadow-sm">
-          <span className="px-2 text-[10px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">Tag filters</span>
-          <div className="flex flex-wrap gap-1">
-            {tagVocabulary.map((tag) => {
-              const active = tagFilters.includes(tag);
+      <button
+        type="button"
+        className={clsx(
+          "rounded-full border px-3 py-1 text-xs font-semibold",
+          selectedChunkId ? "border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "cursor-not-allowed border-dashed text-[var(--omni-muted)]",
+        )}
+        onClick={handleFocusSelectedChunk}
+        disabled={!selectedChunkId}
+        title={selectedChunkId ? "Activează focus pe world-ul selectat" : "Selectează un world din panel"}
+      >
+        Focus World
+      </button>
+      {focusedChunk ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-900">
+          <span>WORLD FOCUS: {focusedChunk.title}</span>
+          <button
+            type="button"
+            className={clsx(
+              "rounded-full border px-2 py-0.5 text-[10px] uppercase",
+              chunkFocusHideOthers ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white" : "border-sky-300 text-sky-800",
+            )}
+            onClick={handleToggleChunkFocusHide}
+          >
+            {chunkFocusHideOthers ? "Show all" : "Hide others"}
+          </button>
+          <button
+            type="button"
+            className="text-[10px] uppercase text-sky-800 underline"
+            onClick={handleClearChunkFocus}
+          >
+            Clear World Focus
+          </button>
+        </div>
+      ) : null}
+      <div className="flex min-w-[260px] flex-1 flex-col gap-2 rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 p-2 text-xs shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="px-2 text-[10px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">Filtre tags</span>
+          <span className="text-[10px] text-[var(--omni-muted)]">engine / surface / cluster / gate / type</span>
+          <div className="flex flex-1 items-center gap-1">
+            <input
+              type="text"
+              list="flow-studio-tag-options"
+              className="flex-1 rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[var(--omni-ink)]"
+              placeholder="Caută sau tastează tag"
+              value={tagSearch}
+              onChange={(event) => setTagSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  handleApplyTagSearch();
+                }
+              }}
+            />
+            <datalist id="flow-studio-tag-options">
+              {tagVocabulary.map((tag) => (
+                <option key={tag} value={tag} />
+              ))}
+            </datalist>
+            <button
+              type="button"
+              className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold text-[var(--omni-ink)]"
+              onClick={handleApplyTagSearch}
+              disabled={!tagSearch.trim()}
+            >
+              Adaugă
+            </button>
+            {resolvedTagFilters.length ? (
+              <button
+                type="button"
+                className="rounded-full border border-dashed border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold text-[var(--omni-ink)]"
+                onClick={handleResetTagFilters}
+              >
+                Curăță
+              </button>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {filteredTagOptions.length ? (
+            filteredTagOptions.map((tag) => {
+              const active = resolvedTagFilters.includes(tag);
               return (
                 <button
                   key={tag}
@@ -2196,19 +2909,25 @@ export default function FlowStudioPage() {
                   {tag}
                 </button>
               );
-            })}
-          </div>
-          {tagFilters.length ? (
-            <button
-              type="button"
-              className="rounded-full border border-dashed border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--omni-ink)]"
-              onClick={handleResetTagFilters}
-            >
-              Curăță
-            </button>
-          ) : null}
+            })
+          ) : tagVocabulary.length ? (
+            <span className="px-2 py-0.5 text-[11px] text-[var(--omni-muted)]">Niciun tag pentru filtrul curent.</span>
+          ) : (
+            <span className="px-2 py-0.5 text-[11px] text-[var(--omni-muted)]">Nu există tag-uri sincronizate.</span>
+          )}
         </div>
-      ) : null}
+      </div>
+      <button
+        type="button"
+        className={clsx(
+          "rounded-full border px-3 py-1 text-xs font-semibold",
+          selectedFlowId ? "border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "cursor-not-allowed border-dashed border-[var(--omni-border-soft)] text-[var(--omni-muted)]",
+        )}
+        onClick={handleOpenPortalCreator}
+        disabled={!selectedFlowId}
+      >
+        + Portal
+      </button>
       {viewMode === "chunks" ? (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <div className="flex items-center gap-1 rounded-full border border-[var(--omni-border-soft)] bg-white p-0.5 text-xs">
@@ -2547,14 +3266,6 @@ export default function FlowStudioPage() {
                 </button>
                 <button
                   type="button"
-                  className="rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm disabled:opacity-50"
-                  onClick={handleExportAuditSnapshot}
-                  disabled={!selectedFlowId}
-                >
-                  Export Audit Snapshot
-                </button>
-                <button
-                  type="button"
                   className="rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
                   onClick={handleOpenImportModal}
                 >
@@ -2581,16 +3292,52 @@ export default function FlowStudioPage() {
                     {saveMessage}
                   </span>
                 ) : null}
-                {hasUnsavedChanges ? (
-                  <span className="text-xs font-semibold text-amber-600">Modificari nesalvate</span>
-                ) : lastAutosaveAt ? (
-                  <span className="text-xs text-[var(--omni-muted)]">Autosalvat la {autosaveTimeFormatter.format(lastAutosaveAt)}</span>
-                ) : null}
-                {autosaveStatus === "saving" ? (
-                  <span className="text-xs text-[var(--omni-muted)]">Autosalvare…</span>
-                ) : autosaveStatus === "error" && autosaveError ? (
-                  <span className="text-xs font-semibold text-rose-500">{autosaveError}</span>
-                ) : null}
+                <div className="flex flex-col gap-1 text-xs">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="font-semibold text-[var(--omni-ink)]">Flow:</span>
+                    <span
+                      className={clsx(
+                        hasFlowUnsavedChanges
+                          ? "font-semibold text-amber-600"
+                          : saveStatus === "saving"
+                            ? "text-[var(--omni-muted)]"
+                            : saveStatus === "error"
+                              ? "text-rose-500"
+                              : "text-[var(--omni-muted)]",
+                      )}
+                    >
+                      {saveStatus === "saving"
+                        ? "Saving…"
+                        : saveStatus === "error"
+                          ? saveMessage ?? "Save failed"
+                          : hasFlowUnsavedChanges
+                            ? "Modificări locale"
+                            : `Saved at ${formatStatusTime(lastFlowSaveAt)}`}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="font-semibold text-[var(--omni-ink)]">Draft autosave:</span>
+                    {autosaveStatus === "saving" ? (
+                      <span className="text-[var(--omni-muted)]">Autosave în curs…</span>
+                    ) : autosaveStatus === "error" && autosaveError ? (
+                      <span className="font-semibold text-rose-500">{autosaveError}</span>
+                    ) : (
+                      <span className="text-[var(--omni-muted)]">Ultimul draft la {formatStatusTime(lastAutosaveAt)}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="font-semibold text-[var(--omni-ink)]">Worlds:</span>
+                    {chunkSaveStatus === "saving" ? (
+                      <span className="text-[var(--omni-muted)]">Salvăm worlds…</span>
+                    ) : chunkSaveStatus === "error" && chunkSaveError ? (
+                      <span className="font-semibold text-rose-500">{chunkSaveError}</span>
+                    ) : hasChunkUnsavedChanges ? (
+                      <span className="font-semibold text-amber-600">Worlds: modificări locale</span>
+                    ) : (
+                      <span className="text-[var(--omni-muted)]">Sincronizate la {formatStatusTime(lastChunkSaveAt)}</span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--omni-muted)]">
@@ -2678,7 +3425,7 @@ export default function FlowStudioPage() {
                     setSingleNodeSelection(null);
                     setSingleEdgeSelection(null);
                     setSelectedStepNodeId(null);
-                    handleFocusChunk(chunkData.chunkId);
+                    setSelectedChunkId(chunkData.chunkId);
                     return;
                   }
                   if (node.type === "stepNode") {
@@ -2718,6 +3465,8 @@ export default function FlowStudioPage() {
                 nodeCommentCounts={nodeCommentCountMap}
                 onNodeDoubleClick={handleNodeDoubleClick}
                 onRequestNodeSteps={(nodeId) => handleRequestExpandSteps(nodeId)}
+                highlightNodeIds={activeHighlightNodeIdSet}
+                dimmedNodeIds={activeDimmedNodeIdSet}
               />
               <ChunkPanel
                 chunks={chunks}
@@ -2731,7 +3480,7 @@ export default function FlowStudioPage() {
                 selectedChunkId={selectedChunkId}
                 disabled={flowsTabDisabled}
                 defaultChunkId={UNGROUPED_CHUNK_ID}
-                onClearFocus={() => handleFocusChunk(null)}
+                onClearFocus={handleClearChunkFocus}
                 focusActive={Boolean(focusedChunkId)}
                 selectedNodeIds={selectedNodeIds}
                 onSelectionDragStart={handleSelectionDragStart}
@@ -2743,6 +3492,8 @@ export default function FlowStudioPage() {
                 onFocusComment={handleCommentFocus}
                 onCreateChunkFromSelection={handleCreateChunkFromSelection}
                 onImportChunks={handleImportChunkPayload}
+                focusedChunkId={focusedChunkId}
+                onFocusChunk={(chunkId) => handleFocusChunk(chunkId, { drillIntoNodes: true })}
               />
               <OpenIssuesPanel
                 comments={comments}
@@ -2778,6 +3529,7 @@ export default function FlowStudioPage() {
                   selectedNode={selectedNode}
                   selectedEdge={selectedEdge}
                   onLabelChange={handleNodeLabelChange}
+                  onNodeTagsChange={handleNodeTagsChange}
                   onPortalChange={handleNodePortalChange}
                   onEdgeFieldChange={handleEdgeFieldChange}
                   onApplyEdgeColorToGroup={handleApplyEdgeColorToGroup}
@@ -2799,6 +3551,20 @@ export default function FlowStudioPage() {
                   }}
                   onDeleteNodeComment={handleDeleteComment}
                   onToggleNodeCommentResolved={handleToggleCommentResolved}
+                  onExportAuditSnapshot={handleExportAuditSnapshot}
+                  overlays={overlays}
+                  selectedOverlayId={selectedOverlayId}
+                  onSelectOverlay={setSelectedOverlayId}
+                  onCreateOverlay={handleCreateOverlay}
+                  onDeleteOverlay={handleDeleteOverlay}
+                  onOverlayMetadataChange={handleOverlayMetadataChange}
+                  onOverlayAddNodes={handleOverlayAddNodes}
+                  onOverlayRemoveStep={handleOverlayRemoveStep}
+                  onOverlayReorderSteps={handleOverlayReorderSteps}
+                  onOverlayStepUpdate={handleOverlayStepUpdate}
+                  selectedNodeIds={selectedNodeIds}
+                  nodeLabelMap={nodeLabelMap}
+                  overlayTabRequest={inspectorTabRequest}
                 />
               </div>
             ) : null}
@@ -2806,6 +3572,87 @@ export default function FlowStudioPage() {
         </div>
       </div>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+      {portalCreatorOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 text-sm shadow-2xl">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Portal</p>
+                <h2 className="text-xl font-semibold text-[var(--omni-ink)]">Adaugă portal</h2>
+              </div>
+              <button
+                type="button"
+                className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold text-[var(--omni-muted)]"
+                onClick={handleClosePortalCreator}
+              >
+                Închide
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                Label portal
+                <input
+                  type="text"
+                  className="rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-ink)]"
+                  placeholder="PORTAL: To Today"
+                  value={portalDraft.label}
+                  onChange={(event) => setPortalDraft((prev) => ({ ...prev, label: event.target.value }))}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                Ruta țintă
+                <select
+                  className="rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-ink)]"
+                  value={portalDraft.targetRouteId}
+                  onChange={(event) => setPortalDraft((prev) => ({ ...prev, targetRouteId: event.target.value }))}
+                >
+                  <option value="">Selectează route</option>
+                  {routes.map((route) => (
+                    <option key={route.id} value={route.id}>
+                      {route.routePath}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                Chunk
+                <select
+                  className="rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-ink)]"
+                  value={portalDraft.chunkId}
+                  onChange={(event) => setPortalDraft((prev) => ({ ...prev, chunkId: event.target.value }))}
+                >
+                  {chunks.map((chunk) => (
+                    <option key={chunk.id} value={chunk.id}>
+                      {chunk.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {portalError ? <p className="text-xs font-semibold text-rose-600">{portalError}</p> : null}
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-[var(--omni-border-soft)] px-4 py-2 text-xs font-semibold text-[var(--omni-muted)]"
+                onClick={handleClosePortalCreator}
+              >
+                Renunță
+              </button>
+              <button
+                type="button"
+                className={clsx(
+                  "rounded-full px-4 py-2 text-xs font-semibold text-white",
+                  portalDraft.targetRouteId ? "bg-[var(--omni-ink)]" : "bg-[var(--omni-muted)]/60 cursor-not-allowed",
+                )}
+                disabled={!portalDraft.targetRouteId}
+                onClick={handleCreatePortalFromDraft}
+              >
+                Creează portal
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {importModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
           <div className="w-full max-w-3xl rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 text-sm shadow-2xl">
@@ -2885,8 +3732,66 @@ export default function FlowStudioPage() {
           </div>
         </div>
       ) : null}
+      {autosaveToast ? (
+        <div className="fixed bottom-6 right-6 z-50">
+          <div
+            className={clsx(
+              "flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold shadow-xl",
+              autosaveToast.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                : "border-rose-200 bg-rose-50 text-rose-900",
+            )}
+          >
+            <span>{autosaveToast.message}</span>
+            <button
+              type="button"
+              className="rounded-full border border-white/40 px-2 py-0.5 text-xs uppercase tracking-wide"
+              onClick={handleDismissAutosaveToast}
+            >
+              Închide
+            </button>
+          </div>
+        </div>
+      ) : null}
     </AppShell>
   );
+}
+
+function serializeChunkForSave(chunk: FlowChunk, order: number): FlowChunk {
+  const entry: FlowChunk = {
+    id: chunk.id,
+    title: chunk.title ?? "Chunk",
+    order,
+  };
+  if (typeof chunk.color === "string") {
+    entry.color = chunk.color;
+  }
+  if (typeof chunk.collapsedByDefault === "boolean") {
+    entry.collapsedByDefault = chunk.collapsedByDefault;
+  }
+  if (chunk.meta) {
+    const cleanedMeta = stripUndefinedDeep(chunk.meta);
+    if (cleanedMeta && Object.keys(cleanedMeta).length) {
+      entry.meta = cleanedMeta;
+    }
+  }
+  return entry;
+}
+
+const LEGACY_RECOMMENDATION_CHUNK_IDS = new Set(["recommendation", "ch06_recommendation"]);
+
+function migrateLegacyWorldAssignment(
+  chunkId: string | null | undefined,
+  tags: string[],
+): { chunkId: string | null | undefined; tags: string[] } {
+  if (!chunkId) return { chunkId, tags };
+  const normalized = chunkId.toLowerCase();
+  if (!LEGACY_RECOMMENDATION_CHUNK_IDS.has(normalized)) {
+    return { chunkId, tags };
+  }
+  const nextChunkId = chunkId.startsWith("CH") ? "CH05_daily_loop" : "daily_loop";
+  const nextTags = tags.includes("engine:recommendation") ? tags : [...tags, "engine:recommendation"];
+  return { chunkId: nextChunkId, tags: nextTags };
 }
 
 function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeByPath: Map<string, RouteDoc>): Node<FlowNodeData> {
@@ -2903,6 +3808,10 @@ function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeB
     }
   }
   const routePath = stored.routePath ?? route?.routePath ?? fallbackPathCandidate;
+  const rawTags = Array.isArray(stored.tags) ? [...stored.tags] : [];
+  const migration = migrateLegacyWorldAssignment(stored.chunkId, rawTags);
+  const resolvedChunkId = migration.chunkId ?? stored.chunkId;
+  const normalizedChunkId = resolvedChunkId ?? UNGROUPED_CHUNK_ID;
   return {
     id: stored.id,
     type: "flowNode",
@@ -2913,9 +3822,9 @@ function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeB
       filePath: route?.filePath ?? "",
       screenId: getScreenIdForRoute(routePath),
       labelOverrides: stored.label ?? {},
-      tags: stored.tags ?? [],
+      tags: migration.tags,
       routeMismatch,
-      chunkId: stored.chunkId ?? UNGROUPED_CHUNK_ID,
+      chunkId: normalizedChunkId,
       portal: stored.portal ?? null,
     },
   };

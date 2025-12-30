@@ -12,7 +12,6 @@ export type AppChunkId =
   | "guided_day1"
   | "onboarding"
   | "daily_loop"
-  | "recommendation"
   | "progress_map"
   | "training_arenas"
   | "curriculum_library"
@@ -131,25 +130,8 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
   },
 
   {
-    id: "recommendation",
-    order: 60,
-    title: { ro: "Recommendation Gateway" },
-    colorToken: "recommendation",
-    collapsedByDefault: true,
-    tierMin: 1,
-    menuState: "MINIMAL",
-    description: { ro: "«Next best step» fără explorare liberă (reduce choice paralysis)." },
-    target: { ro: "Crești repetarea: decizie zero, acțiune imediată." },
-    challenge: { ro: "«Nu știu ce să fac» → risc de abandon." },
-    reward: { ro: "O recomandare clară + motiv scurt + Start." },
-    proof: { ro: "User începe sesiunea fără să se plimbe prin meniu." },
-    exitGate: { ro: "User pornește acțiunea recomandată (de obicei Today/Run)." },
-    routeGroups: ["recommendation"],
-  },
-
-  {
     id: "progress_map",
-    order: 70,
+    order: 60,
     title: { ro: "OS / Progress" },
     colorToken: "progress",
     collapsedByDefault: true,
@@ -166,7 +148,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
 
   {
     id: "training_arenas",
-    order: 80,
+    order: 70,
     title: { ro: "Training / Arenas" },
     colorToken: "training",
     collapsedByDefault: true,
@@ -183,7 +165,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
 
   {
     id: "curriculum_library",
-    order: 90,
+    order: 80,
     title: { ro: "Curriculum / Library" },
     colorToken: "library",
     collapsedByDefault: true,
@@ -200,7 +182,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
 
   {
     id: "module_hubs",
-    order: 100,
+    order: 90,
     title: { ro: "Module Hubs" },
     colorToken: "hubs",
     collapsedByDefault: true,
@@ -217,7 +199,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
 
   {
     id: "advanced_wizard",
-    order: 110,
+    order: 100,
     title: { ro: "Advanced / Wizard / Coaching" },
     colorToken: "advanced",
     collapsedByDefault: true,
@@ -234,7 +216,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
 
   {
     id: "account_admin_legacy",
-    order: 120,
+    order: 110,
     title: { ro: "Account / Billing / Admin / Legacy" },
     colorToken: "account",
     collapsedByDefault: true,

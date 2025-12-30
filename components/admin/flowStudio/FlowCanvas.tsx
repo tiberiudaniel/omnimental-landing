@@ -43,6 +43,8 @@ type FlowNodeContextValue = {
   nodeCanExpandSteps: Map<string, boolean>;
   onRequestNodeSteps?: (nodeId: string) => void;
   commentCountMap: Map<string, number>;
+  highlightNodeIds: Set<string> | null;
+  dimmedNodeIds: Set<string> | null;
 };
 
 const FlowNodeContext = createContext<FlowNodeContextValue | null>(null);
@@ -100,6 +102,7 @@ function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
   const availability = ctx.nodeStepAvailability.get(props.id) ?? "unknown";
   const manifestAvailable = Boolean(ctx.nodeCanExpandSteps.get(props.id));
   const canExpand = true; // Temporarily expose Steps for all nodes while diagnostics parity is validated
+  const dimmed = ctx.dimmedNodeIds ? ctx.dimmedNodeIds.has(props.id) : false;
   if (DEBUG_STEPS) {
     console.log("[FlowCanvas] render FlowNodeCard", {
       nodeId: props.id,
@@ -119,6 +122,7 @@ function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
       canExpandSteps={canExpand}
       onExpandSteps={(nodeId) => ctx.onRequestNodeSteps?.(nodeId)}
       commentCount={ctx.commentCountMap.get(props.id) ?? 0}
+      dimmed={dimmed}
     />
   );
 }
@@ -217,6 +221,8 @@ type FlowCanvasProps = {
   autoLayoutDisabled?: boolean;
   onSelectionChange?: (params: { nodes: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>[]; edges: Edge<FlowEdgeData>[] }) => void;
   nodeCommentCounts: Map<string, number>;
+  highlightNodeIds?: Set<string> | null;
+  dimmedNodeIds?: Set<string> | null;
 };
 
 export function FlowCanvas({
@@ -247,6 +253,8 @@ export function FlowCanvas({
   autoLayoutDisabled,
   onSelectionChange,
   nodeCommentCounts,
+  highlightNodeIds = null,
+  dimmedNodeIds = null,
 }: FlowCanvasProps) {
   const decoratedEdges = useMemo(() => {
     if (!edges.length) return edges;
@@ -307,8 +315,20 @@ export function FlowCanvas({
       nodeCanExpandSteps,
       onRequestNodeSteps,
       commentCountMap: nodeCommentCounts,
+      highlightNodeIds,
+      dimmedNodeIds,
     }),
-    [nodeCanExpandSteps, nodeCommentCounts, nodeIssueMap, nodeStepAvailability, observedEnabled, observedNodeStats, onRequestNodeSteps],
+    [
+      dimmedNodeIds,
+      highlightNodeIds,
+      nodeCanExpandSteps,
+      nodeCommentCounts,
+      nodeIssueMap,
+      nodeStepAvailability,
+      observedEnabled,
+      observedNodeStats,
+      onRequestNodeSteps,
+    ],
   );
   const nodeTypes = useMemo<NodeTypes>(() => ({ flowNode: FlowNodeRenderer, stepNode: StepNodeRenderer, chunkNode: ChunkNodeCard }), []);
   const edgeTypes = useMemo<EdgeTypes>(() => ({ parallel: ParallelEdge }), []);

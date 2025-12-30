@@ -34,22 +34,58 @@ function hasFoundationMilestone(progress?: ProgressFact | null): boolean {
   return Boolean(stats?.foundationDone);
 }
 
-export function deriveAccessTier({ progress }: AccessTierInput): AccessTierResult {
+export type ProgressTier = 0 | 1 | 2 | 3 | 4 | 5;
+type MembershipSource =
+  | string
+  | null
+  | undefined
+  | {
+      subscription?: { status?: string | null } | null;
+      subscriptionStatus?: string | null;
+      status?: string | null;
+    };
+export type MembershipTier = "free" | "premium";
+
+export function deriveProgressTier(progress?: ProgressFact | null): ProgressTier {
   const sessionsCompleted = getTotalDailySessionsCompleted(progress);
   const foundationComplete = hasFoundationMilestone(progress);
 
-  let tier = 0;
   if (sessionsCompleted >= 31) {
-    tier = 5;
-  } else if (sessionsCompleted >= 12) {
-    tier = 4;
-  } else if (foundationComplete) {
-    tier = 3;
-  } else if (sessionsCompleted >= 3) {
-    tier = 2;
-  } else if (sessionsCompleted >= 1) {
-    tier = 1;
+    return 5;
   }
+  if (sessionsCompleted >= 12) {
+    return 4;
+  }
+  if (foundationComplete) {
+    return 3;
+  }
+  if (sessionsCompleted >= 3) {
+    return 2;
+  }
+  if (sessionsCompleted >= 1) {
+    return 1;
+  }
+  return 0;
+}
+
+function resolveMembershipStatus(source: MembershipSource): string | null {
+  if (!source) return null;
+  if (typeof source === "string") return source;
+  if (typeof source === "object") {
+    if (typeof source.subscription?.status === "string") return source.subscription.status;
+    if (typeof source.subscriptionStatus === "string") return source.subscriptionStatus;
+    if (typeof source.status === "string") return source.status;
+  }
+  return null;
+}
+
+export function deriveMembershipTier(source?: MembershipSource): MembershipTier {
+  const status = resolveMembershipStatus(source);
+  return status?.toLowerCase() === "premium" ? "premium" : "free";
+}
+
+export function deriveAccessTier({ progress }: AccessTierInput): AccessTierResult {
+  const tier = deriveProgressTier(progress);
 
   const flags: AccessTierFlags = {
     showMenu: tier >= tierBoundaries.minimalMenu,

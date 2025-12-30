@@ -49,7 +49,7 @@ export function OpenIssuesPanel({
               { key: "open", label: "Neînchise" },
               { key: "all", label: "Toate" },
               { key: "nodes", label: "Nodes" },
-              { key: "chunks", label: "Chunks" },
+              { key: "chunks", label: "Worlds" },
             ] as Array<{ key: CommentFilter; label: string }>
           ).map((option) => (
             <button
@@ -75,7 +75,7 @@ export function OpenIssuesPanel({
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold text-[var(--omni-muted)]">
-                      {comment.targetType === "chunk" ? "Chunk" : "Node"} · {comment.targetId}
+                      {comment.targetType === "chunk" ? "World" : "Node"} · {comment.targetId}
                     </p>
                     <p className="text-base font-semibold text-[var(--omni-ink)]">{comment.message}</p>
                     <p className="text-[11px] text-[var(--omni-muted)]">{comment.author ?? "Anonim"}</p>

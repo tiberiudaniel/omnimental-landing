@@ -10,13 +10,12 @@ const CANONICAL_CHUNK_PRESETS: FlowChunk[] = [
   { id: "CH03_guided_day1", title: "Guided Day-1", order: 3, color: "#fef3c7" },
   { id: "CH04_onboarding", title: "Onboarding / Calibration", order: 4, color: "#fee2e2" },
   { id: "CH05_daily_loop", title: "Daily Loop (Today)", order: 5, color: "#dcfce7" },
-  { id: "CH06_recommendation", title: "Recommendation Gateway", order: 6, color: "#ede9fe" },
-  { id: "CH07_progress_map", title: "OS / Progress", order: 7, color: "#e0f2fe" },
-  { id: "CH08_training_arenas", title: "Training / Arenas", order: 8, color: "#ffe4e6" },
-  { id: "CH09_curriculum_library", title: "Curriculum / Library", order: 9, color: "#ddd6fe" },
-  { id: "CH10_module_hubs", title: "Module Hubs", order: 10, color: "#f3e8ff" },
-  { id: "CH11_advanced_wizard", title: "Advanced / Wizard / Coaching", order: 11, color: "#fde68a" },
-  { id: "CH12_account_admin_legacy", title: "Account / Billing / Admin / Legacy", order: 12, color: "#fed7aa" },
+  { id: "CH07_progress_map", title: "OS / Progress", order: 6, color: "#e0f2fe" },
+  { id: "CH08_training_arenas", title: "Training / Arenas", order: 7, color: "#ffe4e6" },
+  { id: "CH09_curriculum_library", title: "Curriculum / Library", order: 8, color: "#ddd6fe" },
+  { id: "CH10_module_hubs", title: "Module Hubs", order: 9, color: "#f3e8ff" },
+  { id: "CH11_advanced_wizard", title: "Advanced / Wizard / Coaching", order: 10, color: "#fde68a" },
+  { id: "CH12_account_admin_legacy", title: "Account / Billing / Admin / Legacy", order: 11, color: "#fed7aa" },
 ];
 
 const CANONICAL_CHUNK_ID_SET = new Set(CANONICAL_CHUNK_PRESETS.map((chunk) => chunk.id));
@@ -28,7 +27,7 @@ const ROUTE_GROUP_TO_CANONICAL_CHUNK_ID: Record<string, string> = {
   onboarding: "CH04_onboarding",
   "experience-onboarding": "CH03_guided_day1",
   today: "CH05_daily_loop",
-  recommendation: "CH06_recommendation",
+  recommendation: "CH05_daily_loop",
   progress: "CH07_progress_map",
   os: "CH07_progress_map",
   "mission-map": "CH07_progress_map",
@@ -111,9 +110,10 @@ function mergeCanonicalChunks(input?: FlowChunk[] | null): FlowChunk[] {
     return {
       id: preset.id,
       title: existing.title?.trim() || preset.title,
-      order: preset.order,
-      color: existing.color ?? preset.color,
-      collapsedByDefault: existing.collapsedByDefault ?? preset.collapsedByDefault,
+      order: typeof existing.order === "number" ? existing.order : preset.order,
+      color: typeof existing.color === "string" ? existing.color : preset.color,
+      collapsedByDefault:
+        typeof existing.collapsedByDefault === "boolean" ? existing.collapsedByDefault : preset.collapsedByDefault,
       meta: existing.meta ?? preset.meta,
     };
   });
@@ -130,12 +130,18 @@ function mergeCanonicalChunks(input?: FlowChunk[] | null): FlowChunk[] {
 export function normalizeChunks(input?: FlowChunk[] | null): FlowChunk[] {
   const seen = new Set<string>();
   const baseList = mergeCanonicalChunks(input);
+  let nextExtraOrder = CANONICAL_CHUNK_PRESETS.length + 1;
   const sanitized: FlowChunk[] = baseList
     .filter((entry): entry is FlowChunk => Boolean(entry?.id))
     .map((entry) => ({
       id: entry.id.trim(),
       title: entry.title?.trim() || "Chunk",
-      order: typeof entry.order === "number" ? entry.order : 0,
+      order:
+        typeof entry.order === "number"
+          ? entry.order
+          : typeof CANONICAL_ORDER_MAP.get(entry.id) === "number"
+            ? (CANONICAL_ORDER_MAP.get(entry.id) as number)
+            : nextExtraOrder++,
       color: entry.color,
       collapsedByDefault: entry.collapsedByDefault,
       meta: cloneChunkMeta(entry.meta),
@@ -153,13 +159,6 @@ export function normalizeChunks(input?: FlowChunk[] | null): FlowChunk[] {
     .sort((a, b) => {
       if (a.id === UNGROUPED_CHUNK_ID) return -1;
       if (b.id === UNGROUPED_CHUNK_ID) return 1;
-      const aIsCanonical = CANONICAL_CHUNK_ID_SET.has(a.id);
-      const bIsCanonical = CANONICAL_CHUNK_ID_SET.has(b.id);
-      if (aIsCanonical && bIsCanonical) {
-        return (CANONICAL_ORDER_MAP.get(a.id) ?? 0) - (CANONICAL_ORDER_MAP.get(b.id) ?? 0);
-      }
-      if (aIsCanonical) return -1;
-      if (bIsCanonical) return 1;
       if (a.order !== b.order) return a.order - b.order;
       return a.title.localeCompare(b.title);
     })

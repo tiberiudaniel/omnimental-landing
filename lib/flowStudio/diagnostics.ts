@@ -1,21 +1,26 @@
 "use client";
 
 import { UNGROUPED_CHUNK_ID } from "@/lib/flowStudio/chunkUtils";
-import type { FlowChunk, FlowIssue, FlowReactEdge, FlowReactNode } from "./types";
+import type { FlowChunk, FlowIssue, FlowOverlay, FlowReactEdge, FlowReactNode } from "./types";
 
 type MinimalRouteMap = Map<string, { routePath?: string }>;
 
 const getNodeLabel = (node: FlowReactNode) =>
-  node.data?.labelOverrides?.ro ??
-  node.data?.labelOverrides?.en ??
-  node.data?.routePath ??
-  node.id;
+  node.data?.labelOverrides?.ro ?? node.data?.labelOverrides?.en ?? node.data?.routePath ?? node.id;
+
+const labelLooksLikePortal = (label: string) => label.trim().toUpperCase().startsWith("PORTAL:");
+
+const nodeLooksLikePortal = (node: FlowReactNode) => {
+  const nodeLabel = getNodeLabel(node);
+  return Boolean(node.data?.tags?.includes("type:portal") || labelLooksLikePortal(nodeLabel));
+};
 
 export function computeFlowDiagnostics(
   nodes: FlowReactNode[],
   edges: FlowReactEdge[],
   routeMap?: MinimalRouteMap,
   chunks?: FlowChunk[],
+  overlays?: FlowOverlay[],
 ): FlowIssue[] {
   const issues: FlowIssue[] = [];
 
@@ -55,6 +60,7 @@ export function computeFlowDiagnostics(
 
   const routeBuckets = new Map<string, FlowReactNode[]>();
   nodes.forEach((node) => {
+    if (nodeLooksLikePortal(node)) return;
     const routeKey = node.data?.routePath ?? node.data?.routeId;
     if (!routeKey) return;
     routeBuckets.set(routeKey, [...(routeBuckets.get(routeKey) ?? []), node]);
@@ -94,7 +100,7 @@ export function computeFlowDiagnostics(
     }
     const nodeLabel = getNodeLabel(node);
     const hasPortalTag = node.data?.tags?.includes("type:portal") ?? false;
-    const labelIsPortal = nodeLabel.toUpperCase().startsWith("PORTAL");
+    const labelIsPortal = labelLooksLikePortal(nodeLabel);
     const isPortal = hasPortalTag || labelIsPortal;
     if (hasPortalTag && !labelIsPortal) {
       issues.push({
@@ -190,6 +196,33 @@ export function computeFlowDiagnostics(
           targetId: chunkId,
         });
       }
+    });
+  }
+
+  if (overlays?.length) {
+    const nodeIds = new Set(nodes.map((node) => node.id));
+    overlays.forEach((overlay) => {
+      if (!overlay.steps?.length) {
+        issues.push({
+          id: `overlay-${overlay.id}-empty`,
+          message: `Overlay ${overlay.name} nu are pași definiți.`,
+          severity: "info",
+          targetType: "overlay",
+          targetId: overlay.id,
+        });
+        return;
+      }
+      overlay.steps.forEach((step, index) => {
+        if (!nodeIds.has(step.nodeId)) {
+          issues.push({
+            id: `overlay-${overlay.id}-missing-${index}`,
+            message: `Overlay ${overlay.name} face referire la un nod inexistent (${step.nodeId}).`,
+            severity: "warning",
+            targetType: "overlay",
+            targetId: overlay.id,
+          });
+        }
+      });
     });
   }
 

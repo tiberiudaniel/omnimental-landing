@@ -37,6 +37,26 @@ export type FlowEdge = {
   command?: string;
 };
 
+export type FlowOverlayStep = {
+  nodeId: string;
+  gateTag?: string | null;
+  tags?: string[];
+};
+
+export type FlowOverlayEdge = {
+  fromNodeId: string;
+  toNodeId: string;
+};
+
+export type FlowOverlay = {
+  id: string;
+  name: string;
+  description?: string;
+  status?: "draft" | "active" | "archived";
+  steps: FlowOverlayStep[];
+  edges?: FlowOverlayEdge[];
+};
+
 export type FlowDoc = {
   name: string;
   description?: string;
@@ -44,8 +64,10 @@ export type FlowDoc = {
   edges?: FlowEdge[];
   chunks?: FlowChunk[];
   comments?: FlowComment[];
+  overlays?: FlowOverlay[];
   version?: number;
   updatedAt?: unknown;
+  updatedAtMs?: number;
   createdAt?: unknown;
 };
 
@@ -101,7 +123,8 @@ export type FlowIssue = {
   id: string;
   message: string;
   severity: "info" | "warning";
-  targetType?: "node" | "edge" | "stepNode" | "chunk";
+  type?: string;
+  targetType?: "node" | "edge" | "stepNode" | "chunk" | "overlay";
   targetId?: string;
 };
 

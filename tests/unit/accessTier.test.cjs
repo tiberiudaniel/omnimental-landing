@@ -3,7 +3,9 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { loadTsModule } = require("../helpers/load-ts-module.cjs");
 
-const { deriveAccessTier } = loadTsModule(path.resolve(__dirname, "../../lib/accessTier.ts"));
+const { deriveAccessTier, deriveProgressTier, deriveMembershipTier } = loadTsModule(
+  path.resolve(__dirname, "../../lib/accessTier.ts"),
+);
 
 test("deriveAccessTier returns tier 0 for new users", () => {
   const result = deriveAccessTier({ progress: null });
@@ -47,4 +49,25 @@ test("tier 5 provides full access once wizard threshold is met", () => {
   assert.equal(result.tier, 5);
   assert.equal(result.flags.showMenu, true);
   assert.equal(result.flags.canWizard, true);
+});
+
+test("deriveProgressTier respects thresholds", () => {
+  assert.equal(deriveProgressTier(null), 0);
+  assert.equal(deriveProgressTier({ stats: { dailySessionsCompleted: 1 } }), 1);
+  assert.equal(deriveProgressTier({ stats: { dailySessionsCompleted: 3 } }), 2);
+  assert.equal(deriveProgressTier({ stats: { foundationDone: true } }), 3);
+  assert.equal(deriveProgressTier({ stats: { dailySessionsCompleted: 12 } }), 4);
+  assert.equal(deriveProgressTier({ stats: { dailySessionsCompleted: 31 } }), 5);
+});
+
+test("deriveMembershipTier maps subscription status", () => {
+  assert.equal(deriveMembershipTier(), "free");
+  assert.equal(deriveMembershipTier("premium"), "premium");
+  assert.equal(deriveMembershipTier({ subscriptionStatus: "premium" }), "premium");
+  assert.equal(
+    deriveMembershipTier({
+      subscription: { status: "free" },
+    }),
+    "free",
+  );
 });
