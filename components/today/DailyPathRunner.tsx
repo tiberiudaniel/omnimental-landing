@@ -8,7 +8,6 @@ import MenuOverlay from "@/components/MenuOverlay";
 import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useAuth } from "@/components/AuthProvider";
-import { useProfile } from "@/components/ProfileProvider";
 import DailyPath from "@/components/daily/DailyPath";
 import { CurrentArcCard } from "@/components/today/CurrentArcCard";
 import { ArcStateDebugPanel } from "@/components/debug/ArcStateDebugPanel";
@@ -220,9 +219,8 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const { profile } = useProfile();
   const navLinks = useNavigationLinks();
-  const { accessTier } = useUserAccessTier();
+  const { accessTier, membershipTier } = useUserAccessTier();
   const foundationDone = accessTier.flags.canArenas;
   const goToAuth = useCallback(() => {
     router.push(`/auth?returnTo=${authReturnTo}`);
@@ -270,7 +268,7 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
   const moduleOverride = rawModuleParam && rawModuleParam.length > 0 ? rawModuleParam : null;
 
   const decisionLang: DailyPathLanguage = langOverride ?? "ro";
-  const isPremiumMember = Boolean(profile?.isPremium);
+  const isPremiumMember = membershipTier === "premium";
   const hasQaOverrideParams =
     Boolean(clusterOverride || langOverride || modeOverride || moduleOverride) ||
     Boolean(searchParams?.get("qa"));
@@ -690,6 +688,13 @@ useEffect(() => {
       vocabId: vocabPrimer.vocabId,
       axisId: vocabPrimer.axisId,
       surface: "today_pre",
+    });
+    void recordDailyRunnerEvent({
+      type: "vocab_completed",
+      optionId: vocabPrimer.vocabId,
+      label: vocabPrimer.vocabId,
+      mode: "primer",
+      context: "today_vocab",
     });
   }, [vocabPrimer]);
 

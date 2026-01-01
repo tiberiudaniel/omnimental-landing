@@ -8,7 +8,7 @@ import {
   type Connection,
   type Edge,
   type EdgeChange,
-  type Node,
+  type Node as ReactFlowNode,
   type NodeChange,
   type ReactFlowInstance,
   type XYPosition,
@@ -112,6 +112,8 @@ const FOCUSED_CHUNK_STORAGE_KEY = "flowStudio:focusedChunkId";
 const SELECTED_CHUNK_STORAGE_KEY = "flowStudio:selectedChunkId";
 const TAG_FILTERS_STORAGE_KEY = "flowStudio:tagFilters";
 const CHUNK_FOCUS_HIDE_STORAGE_KEY = "flowStudio:focusHide";
+const LEFT_SIDEBAR_COLLAPSED_KEY = "flowStudio:leftSidebarCollapsed";
+const INSPECTOR_COLLAPSED_KEY = "flowStudio:inspectorCollapsed";
 const stripUndefinedDeep = <T,>(value: T): T => {
   if (Array.isArray(value)) {
     return value.map((item) => stripUndefinedDeep(item)).filter((item) => item !== undefined) as unknown as T;
@@ -158,6 +160,7 @@ type PortalDraftState = {
 };
 
 type FlowViewMode = "nodes" | "chunks";
+type LeftSidebarTab = "routes" | "worlds" | "issues";
 
 const randomId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -190,8 +193,9 @@ export default function FlowStudioPage() {
   const { config, loading: configLoading } = useFlowStudioConfig();
   const isAdmin = isAdminUser(user?.email ?? null, config);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [routesCollapsed, setRoutesCollapsed] = useState(false);
-  const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(true);
+  const [leftSidebarTab, setLeftSidebarTab] = useState<LeftSidebarTab>("routes");
+  const [inspectorCollapsed, setInspectorCollapsed] = useState(true);
   const db = useMemo(() => getDb(), []);
   const [routes, setRoutes] = useState<RouteDoc[]>([]);
   const [routeSearch, setRouteSearch] = useState("");
@@ -202,11 +206,11 @@ export default function FlowStudioPage() {
   const [flowNameDraft, setFlowNameDraft] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [lastAutosaveAt, setLastAutosaveAt] = useState<Date | null>(null);
-  const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "error">("idle");
-  const [autosaveError, setAutosaveError] = useState<string | null>(null);
+  const [, setLastAutosaveAt] = useState<Date | null>(null);
+  const [, setAutosaveStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [, setAutosaveError] = useState<string | null>(null);
   const [lastFlowSaveAt, setLastFlowSaveAt] = useState<Date | null>(null);
-  const [lastChunkSaveAt, setLastChunkSaveAt] = useState<Date | null>(null);
+  const [, setLastChunkSaveAt] = useState<Date | null>(null);
   const [chunks, setChunks] = useState<FlowChunk[]>(() => normalizeChunks());
   const [viewMode, setViewMode] = useState<FlowViewMode>("nodes");
   const [chunkLayoutOrientation, setChunkLayoutOrientation] = useState<"vertical" | "horizontal">("vertical");
@@ -226,11 +230,27 @@ export default function FlowStudioPage() {
   }));
   const [portalError, setPortalError] = useState<string | null>(null);
   const [autosaveToast, setAutosaveToast] = useState<{ id: number; type: "success" | "error"; message: string } | null>(null);
-  const [chunkSaveStatus, setChunkSaveStatus] = useState<"idle" | "pending" | "saving" | "error">("idle");
+  type ChunkSaveStatus = "idle" | "pending" | "saving" | "error";
+  const [, setChunkSaveStatus] = useState<ChunkSaveStatus>("idle");
   const [chunkSaveError, setChunkSaveError] = useState<string | null>(null);
   const [overlays, setOverlays] = useState<FlowOverlay[]>([]);
   const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
+  const [overlayFocusHideOthers, setOverlayFocusHideOthers] = useState(true);
   const [inspectorTabRequest, setInspectorTabRequest] = useState<{ tab: InspectorTab; nonce: number } | null>(null);
+  const selectOverlay = useCallback(
+    (overlayId: string | null, options?: { enforceViewMode?: boolean }) => {
+      setSelectedOverlayId(overlayId);
+      if (overlayId) {
+        const shouldSwitchView = options?.enforceViewMode ?? true;
+        if (shouldSwitchView) {
+          setViewMode("nodes");
+        }
+      } else {
+        setOverlayFocusHideOthers(true);
+      }
+    },
+    [setOverlayFocusHideOthers, setSelectedOverlayId, setViewMode],
+  );
 
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdgeData>([]);
@@ -245,31 +265,44 @@ export default function FlowStudioPage() {
   const [observedEnabled, setObservedEnabled] = useState(false);
   const [observedWindow, setObservedWindow] = useState<ObservedWindowKey>("1h");
   const [observedSegment, setObservedSegment] = useState<ObservedSegmentKey>("all");
-  const [observedLoading, setObservedLoading] = useState(false);
+  const [, setObservedLoading] = useState(false);
   const [observedSnapshot, setObservedSnapshot] = useState<ObservedSnapshot | null>(null);
   const [expandedStepsMap, setExpandedStepsMap] = useState<Record<string, boolean>>({});
   const [selectedStepNodeId, setSelectedStepNodeId] = useState<string | null>(null);
+  const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importSpecText, setImportSpecText] = useState("");
   const [importSpecPreview, setImportSpecPreview] = useState<FlowSpecPreview | null>(null);
   const [importSpecError, setImportSpecError] = useState<string | null>(null);
   const [importUpdateCurrent, setImportUpdateCurrent] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [commandSearch, setCommandSearch] = useState("");
+  const [pendingFocusTarget, setPendingFocusTarget] = useState<"map" | "journey" | null>(null);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [diagnosticsBannerVisible, setDiagnosticsBannerVisible] = useState(true);
   const [stepFixError, setStepFixError] = useState<string | null>(null);
   const [autoLayoutRunning, setAutoLayoutRunning] = useState(false);
   const [zoomingToFit, setZoomingToFit] = useState(false);
   const [centeringSelection, setCenteringSelection] = useState(false);
   const canvasWrapperRef = useRef<HTMLDivElement | null>(null);
+  const headerMenuRef = useRef<HTMLDivElement | null>(null);
   const pendingFitNodeRef = useRef<string | null>(null);
   const autosavePromptedRef = useRef<string | null>(null);
   const chunkAutosaveTimeoutRef = useRef<number | null>(null);
   const chunkAutosaveInitializedRef = useRef(false);
   const autosaveToastTimeoutRef = useRef<number | null>(null);
+  const overlayAutoFitKeyRef = useRef<string | null>(null);
+  const overlayScrollRestoreRef = useRef<number | null>(null);
   const viewModeRestoredRef = useRef(false);
   const focusRestoredRef = useRef(false);
+  const leftSidebarRestoredRef = useRef(false);
+  const inspectorRestoredRef = useRef(false);
   const selectedChunkRestoredRef = useRef(false);
   const tagFiltersRestoredRef = useRef(false);
   const focusHideRestoredRef = useRef(false);
   const latestChunksRef = useRef<FlowChunk[]>(chunks);
+  const flowSelectRef = useRef<HTMLSelectElement | null>(null);
+  const journeySelectRef = useRef<HTMLSelectElement | null>(null);
   const formatStatusTime = (value: Date | null) => (value ? autosaveTimeFormatter.format(value) : "—");
 
 useEffect(() => {
@@ -277,7 +310,7 @@ useEffect(() => {
   let rafId: number | null = null;
   const run = () => {
     if (!overlays.length) {
-      setSelectedOverlayId(null);
+      selectOverlay(null, { enforceViewMode: false });
       return;
     }
     setSelectedOverlayId((prev) => {
@@ -291,7 +324,82 @@ useEffect(() => {
   return () => {
     if (rafId) window.cancelAnimationFrame(rafId);
   };
-}, [overlays]);
+}, [overlays, selectOverlay]);
+
+useEffect(() => {
+  if (!filtersDrawerOpen) return;
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      setFiltersDrawerOpen(false);
+    }
+  };
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [filtersDrawerOpen]);
+
+useEffect(() => {
+  if (!selectedFlowId && filtersDrawerOpen) {
+    const raf = window.requestAnimationFrame(() => setFiltersDrawerOpen(false));
+    return () => window.cancelAnimationFrame(raf);
+  }
+  return undefined;
+}, [filtersDrawerOpen, selectedFlowId]);
+
+useEffect(() => {
+  const handleGlobalShortcut = (event: KeyboardEvent) => {
+    const key = event.key.toLowerCase();
+    if ((event.ctrlKey || event.metaKey) && key === "k") {
+      event.preventDefault();
+      setCommandPaletteOpen(true);
+      setCommandSearch("");
+    }
+  };
+  window.addEventListener("keydown", handleGlobalShortcut);
+  return () => window.removeEventListener("keydown", handleGlobalShortcut);
+}, []);
+
+useEffect(() => {
+  if (!commandPaletteOpen) return;
+  const handleEscape = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setCommandPaletteOpen(false);
+    }
+  };
+  window.addEventListener("keydown", handleEscape);
+  return () => window.removeEventListener("keydown", handleEscape);
+}, [commandPaletteOpen]);
+
+useEffect(() => {
+  if (!headerMenuOpen) return;
+  const handleClickOutside = (event: MouseEvent) => {
+    if (!headerMenuRef.current) return;
+    const target = event.target;
+    if (typeof window !== "undefined" && target instanceof window.Node && !headerMenuRef.current.contains(target)) {
+      setHeaderMenuOpen(false);
+    }
+  };
+  const handleEscape = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setHeaderMenuOpen(false);
+    }
+  };
+  window.addEventListener("mousedown", handleClickOutside);
+  window.addEventListener("keydown", handleEscape);
+  return () => {
+    window.removeEventListener("mousedown", handleClickOutside);
+    window.removeEventListener("keydown", handleEscape);
+  };
+}, [headerMenuOpen]);
+
+useEffect(() => {
+  if (!commandPaletteOpen && commandSearch) {
+    const raf = window.requestAnimationFrame(() => setCommandSearch(""));
+    return () => window.cancelAnimationFrame(raf);
+  }
+  return undefined;
+}, [commandPaletteOpen, commandSearch]);
 
   const setSingleNodeSelection = useCallback((nodeId: string | null) => {
     setSelectedNodeId(nodeId);
@@ -368,6 +476,46 @@ useEffect(() => {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
 }, [viewMode]);
+
+useEffect(() => {
+  if (overlayScrollRestoreRef.current == null) return;
+  if (typeof window === "undefined") return;
+  const target = overlayScrollRestoreRef.current;
+  overlayScrollRestoreRef.current = null;
+  window.requestAnimationFrame(() => window.scrollTo({ top: target }));
+}, [selectedOverlayId]);
+
+useEffect(() => {
+  if (typeof window === "undefined" || leftSidebarRestoredRef.current) return;
+  const stored = window.localStorage.getItem(LEFT_SIDEBAR_COLLAPSED_KEY);
+  if (stored === "0" || stored === "1") {
+    const raf = window.requestAnimationFrame(() => setLeftSidebarCollapsed(stored === "1"));
+    leftSidebarRestoredRef.current = true;
+    return () => window.cancelAnimationFrame(raf);
+  }
+  leftSidebarRestoredRef.current = true;
+}, []);
+
+useEffect(() => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LEFT_SIDEBAR_COLLAPSED_KEY, leftSidebarCollapsed ? "1" : "0");
+}, [leftSidebarCollapsed]);
+
+useEffect(() => {
+  if (typeof window === "undefined" || inspectorRestoredRef.current) return;
+  const stored = window.localStorage.getItem(INSPECTOR_COLLAPSED_KEY);
+  if (stored === "0" || stored === "1") {
+    const raf = window.requestAnimationFrame(() => setInspectorCollapsed(stored === "1"));
+    inspectorRestoredRef.current = true;
+    return () => window.cancelAnimationFrame(raf);
+  }
+  inspectorRestoredRef.current = true;
+}, []);
+
+useEffect(() => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(INSPECTOR_COLLAPSED_KEY, inspectorCollapsed ? "1" : "0");
+}, [inspectorCollapsed]);
 
 useEffect(() => {
   if (typeof window === "undefined") return;
@@ -457,7 +605,7 @@ useEffect(() => {
   const routeMap = useMemo(() => new Map(routes.map((route) => [route.id, route])), [routes]);
   const routeByPath = useMemo(() => new Map(routes.map((route) => [route.routePath, route])), [routes]);
   const resolveNodeRoutePath = useCallback(
-    (node: Node<FlowNodeData>) => routeMap.get(node.data.routeId)?.routePath ?? node.data.routePath ?? null,
+    (node: ReactFlowNode<FlowNodeData>) => routeMap.get(node.data.routeId)?.routePath ?? node.data.routePath ?? null,
     [routeMap],
   );
 
@@ -473,7 +621,7 @@ useEffect(() => {
         setFocusedChunkId(null);
         setComments([]);
         setOverlays([]);
-        setSelectedOverlayId(null);
+        selectOverlay(null, { enforceViewMode: false });
         setSingleNodeSelection(null);
         setSingleEdgeSelection(null);
         setSelectedNodeIds([]);
@@ -493,7 +641,7 @@ useEffect(() => {
         setFocusedChunkId(null);
         setComments([]);
         setOverlays([]);
-        setSelectedOverlayId(null);
+        selectOverlay(null, { enforceViewMode: false });
         setSingleNodeSelection(null);
         setSingleEdgeSelection(null);
         setSelectedNodeIds([]);
@@ -526,7 +674,7 @@ useEffect(() => {
         setExpandedStepsMap({});
     });
     return () => unsub();
-  }, [db, isAdmin, routeByPath, routeMap, selectedFlowId, setEdges, setNodes, setSingleEdgeSelection, setSingleNodeSelection]);
+  }, [db, isAdmin, routeByPath, routeMap, selectOverlay, selectedFlowId, setEdges, setNodes, setSingleEdgeSelection, setSingleNodeSelection]);
 
   useEffect(() => {
     if (!selectedFlowId || !flowDoc) return;
@@ -635,7 +783,7 @@ useEffect(() => {
   }, [effectiveRouteGroup, routeSearch, routes]);
 
   const handleSelectionChange = useCallback(
-    (params: { nodes: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>[]; edges: Edge<FlowEdgeData>[] }) => {
+    (params: { nodes: ReactFlowNode<FlowNodeData | StepNodeRenderData | ChunkNodeData>[]; edges: Edge<FlowEdgeData>[] }) => {
       if (viewMode !== "nodes") {
         return;
       }
@@ -879,16 +1027,46 @@ useEffect(() => {
     });
     return dimmed;
   }, [chunkHighlightDimOthers, chunkHighlightNodeIdSet, nodes]);
+  const nodeByIdMap = useMemo(() => {
+    const map = new Map<string, ReactFlowNode<FlowNodeData>>();
+    nodes.forEach((node) => map.set(node.id, node));
+    return map;
+  }, [nodes]);
   const selectedOverlay = selectedOverlayId ? overlays.find((overlay) => overlay.id === selectedOverlayId) ?? null : null;
-  const overlayNodeIdSet = useMemo(() => {
+  const overlayIntegrity = useMemo(() => {
     if (!selectedOverlay?.steps?.length) return null;
-    const ids = selectedOverlay.steps.map((step) => step.nodeId).filter(Boolean);
-    if (!ids.length) return null;
-    return new Set(ids);
-  }, [selectedOverlay]);
+    const resolvedNodeIds: string[] = [];
+    let missingNodeIdCount = 0;
+    let unresolvedNodeCount = 0;
+    selectedOverlay.steps.forEach((step) => {
+      const candidate = typeof step?.nodeId === "string" ? step.nodeId.trim() : "";
+      if (!candidate) {
+        missingNodeIdCount += 1;
+        return;
+      }
+      if (!nodeByIdMap.has(candidate)) {
+        unresolvedNodeCount += 1;
+        return;
+      }
+      resolvedNodeIds.push(candidate);
+    });
+    return {
+      resolvedNodeIds,
+      missingNodeIdCount,
+      unresolvedNodeCount,
+    };
+  }, [nodeByIdMap, selectedOverlay]);
+  const overlayNodeIdSet = useMemo(() => {
+    if (!overlayIntegrity?.resolvedNodeIds?.length) return null;
+    return new Set(overlayIntegrity.resolvedNodeIds);
+  }, [overlayIntegrity]);
+  const overlayFocusNodes = useMemo(() => {
+    if (!overlayNodeIdSet?.size) return [];
+    return nodes.filter((node) => overlayNodeIdSet.has(node.id));
+  }, [nodes, overlayNodeIdSet]);
   const overlayHighlightActive = useMemo(() => Boolean(overlayNodeIdSet && viewMode === "nodes"), [overlayNodeIdSet, viewMode]);
   const overlayDimmedNodeIdSet = useMemo(() => {
-    if (!overlayHighlightActive || !overlayNodeIdSet) return null;
+    if (!overlayHighlightActive || !overlayNodeIdSet || !overlayFocusHideOthers) return null;
     const dimmed = new Set<string>();
     nodes.forEach((node) => {
       if (!overlayNodeIdSet.has(node.id)) {
@@ -896,11 +1074,46 @@ useEffect(() => {
       }
     });
     return dimmed;
-  }, [nodes, overlayHighlightActive, overlayNodeIdSet]);
-  const overlayHighlightDimOthers = overlayHighlightActive;
+  }, [nodes, overlayFocusHideOthers, overlayHighlightActive, overlayNodeIdSet]);
+  const overlayHighlightDimOthers = overlayHighlightActive && overlayFocusHideOthers;
   const activeHighlightNodeIdSet = overlayHighlightActive ? overlayNodeIdSet : chunkHighlightNodeIdSet;
   const highlightDimOthers = overlayHighlightActive ? overlayHighlightDimOthers : chunkHighlightDimOthers;
   const activeDimmedNodeIdSet = overlayHighlightActive ? overlayDimmedNodeIdSet : chunkDimmedNodeIdSet;
+  const overlayChunkHighlightMap = useMemo(() => {
+    if (!overlayNodeIdSet?.size) return null;
+    const map = new Map<string, number>();
+    overlayNodeIdSet.forEach((nodeId) => {
+      const node = nodeByIdMap.get(nodeId);
+      if (!node) return;
+      const chunkId = node.data.chunkId || UNGROUPED_CHUNK_ID;
+      map.set(chunkId, (map.get(chunkId) ?? 0) + 1);
+    });
+    return map;
+  }, [nodeByIdMap, overlayNodeIdSet]);
+  useEffect(() => {
+    if (!selectedOverlayId || viewMode !== "nodes") {
+      overlayAutoFitKeyRef.current = null;
+      return;
+    }
+    if (!reactFlowInstance || !overlayFocusNodes.length) return;
+    const signature = overlayFocusNodes
+      .map((node) => `${node.id}:${Math.round(node.position.x)}:${Math.round(node.position.y)}`)
+      .join("|");
+    if (!signature || overlayAutoFitKeyRef.current === signature) return;
+    overlayAutoFitKeyRef.current = signature;
+    requestAnimationFrame(() => {
+      reactFlowInstance.fitView({ nodes: overlayFocusNodes, padding: 0.25, duration: 350 });
+    });
+  }, [overlayFocusNodes, reactFlowInstance, selectedOverlayId, viewMode]);
+  const nodeByRoutePathMap = useMemo(() => {
+    const map = new Map<string, string>();
+    nodes.forEach((node) => {
+      if (node.data.routePath) {
+        map.set(node.data.routePath, node.id);
+      }
+    });
+    return map;
+  }, [nodes]);
   const nodeManifestMap = useMemo(() => {
     const map = new Map<string, StepManifest | null>();
     nodes.forEach((node) => {
@@ -1022,8 +1235,8 @@ useEffect(() => {
     const stepNodeCountForHost = expandedStepRenderData.get(hostNodeId)?.nodes.length ?? 0;
     return { hostNodeId, routePath, routeMismatch, hasManifest, isExpanded, stepNodeCountForHost };
   }, [expandedStepRenderData, expandedStepsMap, nodeManifestMap, selectedNode, selectedNodeResolvedRoutePath]);
-  const stepNodes = useMemo<Node<StepNodeRenderData>[]>(() => {
-    const list: Node<StepNodeRenderData>[] = [];
+  const stepNodes = useMemo<ReactFlowNode<StepNodeRenderData>[]>(() => {
+    const list: ReactFlowNode<StepNodeRenderData>[] = [];
     expandedStepRenderData.forEach((data, hostId) => {
       if (filteredNodeIdSet && !filteredNodeIdSet.has(hostId)) return;
       data.nodes.forEach((node) => {
@@ -1035,6 +1248,21 @@ useEffect(() => {
     });
     return list;
   }, [expandedStepRenderData, filteredNodeIdSet, selectedStepNodeId]);
+  const selectedStepDetails = useMemo(() => {
+    if (!selectedStepNodeId) return null;
+    const parsed = parseStepNodeReactId(selectedStepNodeId);
+    if (!parsed) return null;
+    const hostNode = nodeByIdMap.get(parsed.hostNodeId) ?? null;
+    const renderData = expandedStepRenderData.get(parsed.hostNodeId);
+    const manifestNode = renderData?.meta.get(selectedStepNodeId)?.manifestNode ?? null;
+    return {
+      hostNodeId: parsed.hostNodeId,
+      hostLabel: hostNode?.data.labelOverrides?.ro ?? hostNode?.data.routePath ?? hostNode?.id ?? null,
+      stepId: parsed.stepId,
+      stepLabel: manifestNode?.label ?? parsed.stepId,
+      stepKind: manifestNode?.kind ?? null,
+    };
+  }, [expandedStepRenderData, nodeByIdMap, selectedStepNodeId]);
   const stepEdgesList = useMemo(() => {
     const list: Edge<FlowEdgeData>[] = [];
     expandedStepRenderData.forEach((data, hostId) => {
@@ -1064,18 +1292,24 @@ useEffect(() => {
   const chunkNodesForView = useMemo(() => {
     return chunkGraph.nodes.map((node) => {
       const chunkId = node.data.chunkId;
+      const overlayStepCount = overlayChunkHighlightMap?.get(chunkId) ?? 0;
+      const overlayHighlighted = Boolean(selectedOverlayId && overlayStepCount);
+      const overlayDimmed = Boolean(selectedOverlayId && overlayChunkHighlightMap && !overlayHighlighted);
       return {
         ...node,
         selected: Boolean(selectedChunkId && selectedChunkId === chunkId) || Boolean(focusedChunkId && focusedChunkId === chunkId),
         data: {
           ...node.data,
           commentCount: chunkCommentCountMap.get(chunkId) ?? 0,
+          overlayStepCount,
+          overlayHighlighted,
+          overlayDimmed,
         },
       };
     });
-  }, [chunkCommentCountMap, chunkGraph.nodes, focusedChunkId, selectedChunkId]);
+  }, [chunkCommentCountMap, chunkGraph.nodes, focusedChunkId, overlayChunkHighlightMap, selectedChunkId, selectedOverlayId]);
   const focusedChunk = focusedChunkId ? chunks.find((chunk) => chunk.id === focusedChunkId) ?? null : null;
-  const nodesForCanvas = useMemo<Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>[]>(() => {
+  const nodesForCanvas = useMemo<ReactFlowNode<FlowNodeData | StepNodeRenderData | ChunkNodeData>[]>(() => {
     if (viewMode === "chunks") {
       return chunkNodesForView;
     }
@@ -1404,7 +1638,7 @@ useEffect(() => {
     setChunkFocusHideOthers((prev) => !prev);
   }, []);
   const handleNodeDoubleClick = useCallback(
-    (node: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>) => {
+    (node: ReactFlowNode<FlowNodeData | StepNodeRenderData | ChunkNodeData>) => {
       if (DEBUG_STEPS) {
         console.log("[FlowStudio] double-click on node", {
           nodeId: node.id,
@@ -1551,8 +1785,9 @@ useEffect(() => {
     [selectedNodeIds],
   );
   const handleNodeChunkChange = useCallback(
-    (nodeId: string, chunkId: string) => {
-      const validChunkId = chunks.some((chunk) => chunk.id === chunkId) ? chunkId : UNGROUPED_CHUNK_ID;
+    (nodeId: string, chunkId: string | null) => {
+      const resolved = chunkId ?? UNGROUPED_CHUNK_ID;
+      const validChunkId = chunks.some((chunk) => chunk.id === resolved) ? resolved : UNGROUPED_CHUNK_ID;
       setNodes((existing) =>
         existing.map((node) => (node.id === nodeId ? { ...node, data: { ...node.data, chunkId: validChunkId } } : node)),
       );
@@ -1915,6 +2150,50 @@ useEffect(() => {
     }
     window.setTimeout(() => setCenteringSelection(false), 420);
   }, [nodes, reactFlowInstance, selectedEdge, selectedNode, setCenteringSelection]);
+  const handleMarkDivergenceNodes = useCallback(() => {
+    const targetIds = selectedNodeIds.filter((id) => !id.startsWith("step:"));
+    if (!targetIds.length) return;
+    setNodes((current) =>
+      current.map((node) => {
+        if (!targetIds.includes(node.id)) return node;
+        let tags = node.data.tags ?? [];
+        if (!tags.includes("journey:branch")) {
+          tags = [...tags.filter((tag) => tag !== "journey:divergence"), "journey:branch"];
+        }
+        return { ...node, data: { ...node.data, tags } };
+      }),
+    );
+  }, [selectedNodeIds, setNodes]);
+  const handleCenterOnNodeId = useCallback(
+    (nodeId: string) => {
+      const target = nodeByIdMap.get(nodeId);
+      if (!target || !reactFlowInstance) return;
+      setViewMode("nodes");
+      setSingleEdgeSelection(null);
+      setSingleNodeSelection(nodeId);
+      setSelectedStepNodeId(null);
+      const centerX = target.position.x + DAGRE_NODE_WIDTH / 2;
+      const centerY = target.position.y + DAGRE_NODE_HEIGHT / 2;
+      reactFlowInstance.setCenter(centerX, centerY, { zoom: 1.1, duration: 360 });
+    },
+    [nodeByIdMap, reactFlowInstance, setSelectedStepNodeId, setSingleEdgeSelection, setSingleNodeSelection, setViewMode],
+  );
+  const handleOverlayStepFocus = useCallback(
+    (nodeId: string) => {
+      handleCenterOnNodeId(nodeId);
+    },
+    [handleCenterOnNodeId],
+  );
+
+  useEffect(() => {
+    if (!pendingFocusTarget) return;
+    const target = pendingFocusTarget === "map" ? flowSelectRef.current : journeySelectRef.current;
+    if (target) {
+      target.focus();
+    }
+    const timeout = window.setTimeout(() => setPendingFocusTarget(null), 0);
+    return () => window.clearTimeout(timeout);
+  }, [pendingFocusTarget]);
 
   const handleConnect = useCallback(
     (connection: Connection) => {
@@ -1931,6 +2210,25 @@ useEffect(() => {
         type: "parallel",
       };
       setEdges((eds) => [...eds, newEdge]);
+    },
+    [setEdges, viewMode],
+  );
+  const handleEdgeUpdate = useCallback(
+    (oldEdge: Edge<FlowEdgeData>, newConnection: Connection) => {
+      if (viewMode !== "nodes") return;
+      if (!newConnection.source || !newConnection.target) return;
+      setEdges((eds) =>
+        eds.map((edge) => {
+          if (edge.id !== oldEdge.id) return edge;
+          return {
+            ...edge,
+            source: newConnection.source ?? edge.source,
+            target: newConnection.target ?? edge.target,
+            sourceHandle: newConnection.sourceHandle ?? edge.sourceHandle,
+            targetHandle: newConnection.targetHandle ?? edge.targetHandle,
+          };
+        }),
+      );
     },
     [setEdges, viewMode],
   );
@@ -1998,7 +2296,7 @@ useEffect(() => {
         .map((edge) => ({ fromNodeId: edge.fromNodeId, toNodeId: edge.toNodeId }));
       return stripUndefinedDeep({
         id,
-        name: overlay.name ?? "Overlay",
+        name: overlay.name ?? "Journey",
         description: overlay.description,
         status: overlay.status,
         steps,
@@ -2052,7 +2350,7 @@ useEffect(() => {
 
   useEffect(() => {
     let rafId: number | null = null;
-    const scheduleStatusUpdate = (status: typeof chunkSaveStatus, error: string | null) => {
+    const scheduleStatusUpdate = (status: ChunkSaveStatus, error: string | null) => {
       if (typeof window === "undefined") {
         setChunkSaveStatus(status);
         setChunkSaveError(error);
@@ -2160,17 +2458,6 @@ useEffect(() => {
     };
   }, [chunks, comments, diagnostics.length, edges, flowDoc?.name, flowDoc?.updatedAt, flowDoc?.version, flowNameDraft, flowStats, nodes, selectedFlowId]);
 
-  const handleCopyFlowSpec = useCallback(async () => {
-    const spec = buildFlowSpec();
-    if (!spec) return;
-    const json = JSON.stringify(spec, null, 2);
-    try {
-      await navigator.clipboard.writeText(json);
-    } catch {
-      // clipboard unavailable
-    }
-  }, [buildFlowSpec]);
-
   const handleDownloadFlowSpec = useCallback(() => {
     const spec = buildFlowSpec();
     if (!spec) return;
@@ -2188,7 +2475,7 @@ useEffect(() => {
     const reachableIds = computeReachableNodeIds(nodes, edges);
     const chunkSummary = chunks.map((chunk) => {
       const chunkNodes = nodes.filter((node) => (node.data.chunkId ?? UNGROUPED_CHUNK_ID) === chunk.id);
-      const mapNode = (node: Node<FlowNodeData>) => ({
+      const mapNode = (node: ReactFlowNode<FlowNodeData>) => ({
         id: node.id,
         label: node.data.labelOverrides?.ro ?? node.data.labelOverrides?.en ?? node.data.routePath ?? node.id,
         routePath: node.data.routePath,
@@ -2223,7 +2510,7 @@ useEffect(() => {
     const flowName = flowNameDraft.trim() || flowDoc?.name || "Flow";
     const overlaySummary = overlays.map((overlay) => ({
       id: overlay.id,
-      name: overlay.name ?? "Overlay",
+      name: overlay.name ?? "Journey",
       stepCount: overlay.steps?.length ?? 0,
       nodes: overlay.steps?.map((step) => ({
         nodeId: step.nodeId,
@@ -2289,12 +2576,12 @@ useEffect(() => {
     } catch (error) {
       console.error("Failed to save flow", error);
       setSaveStatus("error");
-      setSaveMessage(error instanceof Error ? error.message : "Nu am putut salva flow-ul");
+      setSaveMessage(error instanceof Error ? error.message : "Nu am putut salva map-ul");
     }
   }, [db, flowDoc, flowNameDraft, selectedFlowId, serializeFlow]);
 
   const handleCreateFlow = useCallback(async () => {
-    const name = prompt("Nume flow nou")?.trim();
+    const name = prompt("Nume map nou")?.trim();
     if (!name) return;
     const docRef = await addDoc(collection(db, "adminFlows"), {
       name,
@@ -2397,7 +2684,7 @@ useEffect(() => {
       return;
     }
     if (importUpdateCurrent && !selectedFlowId) {
-      setImportSpecError("Selecteaza un flow pentru actualizare sau importa ca unul nou.");
+      setImportSpecError("Selecteaza un map pentru actualizare sau importa ca unul nou.");
       return;
     }
     const normalizedNodes: FlowNode[] = importSpecPreview.nodes.map((node, index) => {
@@ -2443,7 +2730,7 @@ useEffect(() => {
     });
     const normalizedChunks = normalizeChunks(importSpecPreview.chunks);
     const normalizedComments = Array.isArray(importSpecPreview.comments) ? importSpecPreview.comments : [];
-    const flowName = importSpecPreview.flow?.name?.trim() || "Imported flow";
+    const flowName = importSpecPreview.flow?.name?.trim() || "Imported map";
     const incomingVersion = importSpecPreview.flow?.version ?? 1;
     const payload = {
       name: flowName,
@@ -2667,20 +2954,29 @@ useEffect(() => {
     });
   }, []);
 
-  const handleCreateOverlay = useCallback((name: string) => {
-    const overlay: FlowOverlay = {
-      id: randomId(),
-      name: name.trim() || "Overlay",
-      steps: [],
-    };
-    setOverlays((existing) => [...existing, overlay]);
-    setSelectedOverlayId(overlay.id);
-  }, []);
+  const handleCreateOverlay = useCallback(
+    (name: string) => {
+      const overlay: FlowOverlay = {
+        id: randomId(),
+        name: name.trim() || "Journey",
+        steps: [],
+      };
+      setOverlays((existing) => [...existing, overlay]);
+      selectOverlay(overlay.id);
+    },
+    [selectOverlay],
+  );
 
   const handleDeleteOverlay = useCallback(
     (overlayId: string) => {
       setOverlays((existing) => existing.filter((overlay) => overlay.id !== overlayId));
-      setSelectedOverlayId((prev) => (prev === overlayId ? null : prev));
+      setSelectedOverlayId((prev) => {
+        if (prev === overlayId) {
+          setOverlayFocusHideOthers(true);
+          return null;
+        }
+        return prev;
+      });
     },
     [],
   );
@@ -2758,7 +3054,88 @@ useEffect(() => {
     [mutateOverlay],
   );
 
+  const handleRepairSelectedOverlaySteps = useCallback(() => {
+    if (!selectedOverlay) return;
+    let repairedCount = 0;
+    mutateOverlay(selectedOverlay.id, (overlay) => {
+      if (!overlay.steps?.length) return overlay;
+      let changed = false;
+      const repairedSteps = overlay.steps.map((step) => {
+        const normalizedId = typeof step.nodeId === "string" ? step.nodeId.trim() : "";
+        if (normalizedId && nodeByIdMap.has(normalizedId)) {
+          if (normalizedId === step.nodeId) {
+            return step;
+          }
+          changed = true;
+          repairedCount += 1;
+          return { ...step, nodeId: normalizedId };
+        }
+        const legacy = step as FlowOverlayStep & Record<string, unknown>;
+        const idCandidates = [
+          typeof legacy.id === "string" ? legacy.id : null,
+          typeof legacy.node === "string" ? legacy.node : null,
+          typeof legacy.targetNodeId === "string" ? legacy.targetNodeId : null,
+        ].filter((value): value is string => Boolean(value));
+        let resolvedId: string | null = null;
+        for (const candidate of idCandidates) {
+          if (nodeByIdMap.has(candidate)) {
+            resolvedId = candidate;
+            break;
+          }
+        }
+        if (!resolvedId) {
+          const routeCandidates = [
+            typeof legacy.routePath === "string" ? legacy.routePath : null,
+            typeof legacy.targetRoutePath === "string" ? legacy.targetRoutePath : null,
+            typeof legacy.path === "string" ? legacy.path : null,
+          ].filter((value): value is string => Boolean(value));
+          for (const routeCandidate of routeCandidates) {
+            const mappedId = nodeByRoutePathMap.get(routeCandidate);
+            if (mappedId) {
+              resolvedId = mappedId;
+              break;
+            }
+          }
+        }
+        if (!resolvedId) {
+          return step;
+        }
+        changed = true;
+        repairedCount += 1;
+        return { ...step, nodeId: resolvedId };
+      });
+      if (!changed) return overlay;
+      return { ...overlay, steps: repairedSteps };
+    });
+    if (repairedCount > 0) {
+      pushAutosaveToast("success", `Am reparat ${repairedCount} pași pentru ${selectedOverlay.name ?? "Journey"}.`);
+    } else {
+      pushAutosaveToast("error", "Nu am reușit să repar pașii acestui Journey. Verifică manual.");
+    }
+  }, [mutateOverlay, nodeByIdMap, nodeByRoutePathMap, pushAutosaveToast, selectedOverlay]);
+  const handleClearOverlayFocus = useCallback(() => {
+    selectOverlay(null, { enforceViewMode: false });
+  }, [selectOverlay]);
+  const handleToggleOverlayFocusHide = useCallback(() => {
+    setOverlayFocusHideOthers((prev) => {
+      const next = !prev;
+      if (next) {
+        setViewMode("nodes");
+      }
+      return next;
+    });
+  }, [setViewMode]);
+  const handleOverlayFitView = useCallback(() => {
+    if (!reactFlowInstance || !overlayFocusNodes.length) return;
+    setViewMode("nodes");
+    requestAnimationFrame(() => {
+      if (!reactFlowInstance) return;
+      reactFlowInstance.fitView({ nodes: overlayFocusNodes, padding: 0.25, duration: 350 });
+    });
+  }, [overlayFocusNodes, reactFlowInstance, setViewMode]);
+
   const flowsTabDisabled = !selectedFlowId;
+  const autoLayoutDisabled = autoLayoutRunning || viewMode === "chunks" || flowsTabDisabled;
   const hasSelection = Boolean(selectedNode || selectedEdge);
   const canvasNodeCount = viewMode === "chunks" ? chunkGraph.nodes.length : nodes.length;
   const zoomButtonDisabled = flowsTabDisabled || !canvasNodeCount || zoomingToFit;
@@ -2780,22 +3157,32 @@ useEffect(() => {
       ))}
     </div>
   );
+  const handleOverlaySelectChange = useCallback(
+    (overlayId: string | null) => {
+      if (typeof window !== "undefined") {
+        overlayScrollRestoreRef.current = window.scrollY;
+      }
+      selectOverlay(overlayId);
+    },
+    [selectOverlay],
+  );
   const handleOpenOverlayManager = useCallback(() => {
     setInspectorCollapsed(false);
     setInspectorTabRequest({ tab: "overlays", nonce: Date.now() });
   }, []);
   const overlaySelector = (
     <div className="flex items-center gap-2 rounded-full border border-[var(--omni-border-soft)] bg-white px-3 py-1 text-xs font-semibold shadow-sm">
-      <span className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Overlay</span>
+      <span className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Journey</span>
       <select
+        ref={journeySelectRef}
         className="rounded-full border border-[var(--omni-border-soft)] bg-white px-2 py-1 text-xs font-semibold text-[var(--omni-ink)]"
         value={selectedOverlayId ?? ""}
-        onChange={(event) => setSelectedOverlayId(event.target.value || null)}
+        onChange={(event) => handleOverlaySelectChange(event.target.value || null)}
       >
         <option value="">None</option>
         {overlays.map((overlay) => (
           <option key={overlay.id} value={overlay.id}>
-            {overlay.name ?? "Overlay"}
+            {overlay.name ?? "Journey"}
           </option>
         ))}
       </select>
@@ -2804,29 +3191,82 @@ useEffect(() => {
         className="rounded-full border border-[var(--omni-border-soft)] px-2 py-1 text-[10px] font-semibold"
         onClick={handleOpenOverlayManager}
       >
-        Manage
+        Journeys
       </button>
     </div>
   );
-  const canvasHeaderActions = (
-    <div className="flex flex-wrap items-center gap-3">
-      {overlaySelector}
-      {viewToggle}
+  const unresolvedOverlayStepCount = (overlayIntegrity?.missingNodeIdCount ?? 0) + (overlayIntegrity?.unresolvedNodeCount ?? 0);
+  const overlayNeedsRepair = unresolvedOverlayStepCount > 0;
+  const overlayFocusChip = selectedOverlay ? (
+    <div className="flex flex-wrap items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-900">
+      <span className="text-[10px] uppercase tracking-[0.3em] text-indigo-600">
+        Journey tools
+        <span className="sr-only"> pentru {selectedOverlay.name ?? selectedOverlay.id}</span>
+      </span>
+      {overlayNeedsRepair ? (
+        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-800">
+          {unresolvedOverlayStepCount} pași lipsă
+        </span>
+      ) : null}
+      <button
+        type="button"
+        className="rounded-full border border-indigo-300 px-2 py-0.5 text-[10px] font-semibold"
+        disabled={!overlayFocusNodes.length}
+        onClick={handleOverlayFitView}
+      >
+        Fit
+      </button>
+          <button
+            type="button"
+            className={clsx(
+              "rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+              overlayFocusHideOthers ? "border-indigo-400 text-indigo-900" : "border-dashed border-indigo-300 text-indigo-600",
+            )}
+            onClick={handleToggleOverlayFocusHide}
+            disabled={!overlayFocusNodes.length}
+          >
+            {overlayFocusHideOthers ? "Hide others" : "Show all"}
+          </button>
+      {overlayNeedsRepair ? (
+        <button
+          type="button"
+          className="rounded-full border border-amber-300 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+          onClick={handleRepairSelectedOverlaySteps}
+        >
+          Repair steps
+        </button>
+      ) : null}
+      <button
+        type="button"
+        className="rounded-full border border-indigo-300 px-2 py-0.5 text-[10px] font-semibold text-indigo-900"
+        onClick={handleClearOverlayFocus}
+      >
+        Clear
+      </button>
+    </div>
+  ) : null;
+  const worldFocusControls = (
+    <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
         className={clsx(
-          "rounded-full border px-3 py-1 text-xs font-semibold",
+          "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold",
           selectedChunkId ? "border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "cursor-not-allowed border-dashed text-[var(--omni-muted)]",
         )}
         onClick={handleFocusSelectedChunk}
         disabled={!selectedChunkId}
-        title={selectedChunkId ? "Activează focus pe world-ul selectat" : "Selectează un world din panel"}
+        title={selectedChunkId ? "Focus pe world-ul selectat" : "Selectează un world din tab"}
       >
-        Focus World
+        🌍 Focus World
       </button>
       {focusedChunk ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-900">
-          <span>WORLD FOCUS: {focusedChunk.title}</span>
+        <div className="flex flex-wrap items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-900">
+          <span className="flex items-center gap-1">
+            <span role="img" aria-hidden>
+              🎯
+            </span>
+            {focusedChunk.title}
+          </span>
           <button
             type="button"
             className={clsx(
@@ -2834,89 +3274,221 @@ useEffect(() => {
               chunkFocusHideOthers ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white" : "border-sky-300 text-sky-800",
             )}
             onClick={handleToggleChunkFocusHide}
+            title={chunkFocusHideOthers ? "Afișează toate worlds" : "Estompează restul"}
           >
-            {chunkFocusHideOthers ? "Show all" : "Hide others"}
+            {chunkFocusHideOthers ? "Show all" : "Hide"}
           </button>
-          <button
-            type="button"
-            className="text-[10px] uppercase text-sky-800 underline"
-            onClick={handleClearChunkFocus}
-          >
-            Clear World Focus
+          <button type="button" className="text-[10px] uppercase text-sky-800 underline" onClick={handleClearChunkFocus}>
+            Clear
           </button>
         </div>
       ) : null}
-      <div className="flex min-w-[260px] flex-1 flex-col gap-2 rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 p-2 text-xs shadow-sm">
-        <div className="flex flex-wrap items-center gap-2">
+    </div>
+  );
+
+  const handleAutoLayout = useCallback(() => {
+    if (viewMode !== "nodes") return;
+    setAutoLayoutRunning(true);
+    setNodes((current) => {
+      if (!current.length) return current;
+      const graph = new dagre.graphlib.Graph();
+      graph.setGraph({ rankdir: "LR", nodesep: 140, ranksep: 160 });
+      graph.setDefaultEdgeLabel(() => ({}));
+      current.forEach((node) => {
+        graph.setNode(node.id, { width: DAGRE_NODE_WIDTH, height: DAGRE_NODE_HEIGHT });
+      });
+      edges.forEach((edge) => {
+        graph.setEdge(edge.source, edge.target);
+      });
+      dagre.layout(graph);
+      return current.map((node) => {
+        const layout = graph.node(node.id);
+        if (!layout) return node;
+        return {
+          ...node,
+          position: {
+            x: layout.x - DAGRE_NODE_WIDTH / 2,
+            y: layout.y - DAGRE_NODE_HEIGHT / 2,
+          },
+        };
+      });
+    });
+    requestAnimationFrame(() => {
+      reactFlowInstance?.fitView({ padding: 0.2, duration: 500 });
+      window.setTimeout(() => setAutoLayoutRunning(false), 550);
+    });
+  }, [edges, reactFlowInstance, setNodes, viewMode]);
+
+  const viewZoomControls = (
+    <div className="flex flex-wrap items-center gap-2">
+      {viewToggle}
+      <button
+        type="button"
+        className={clsx(
+          "flex h-9 w-9 items-center justify-center rounded-full border border-[var(--omni-border-soft)] text-base",
+          zoomButtonDisabled ? "cursor-not-allowed opacity-50" : "",
+          zoomingToFit ? "bg-[var(--omni-ink)] text-white" : "",
+        )}
+        title="Zoom to fit"
+        aria-label="Zoom to fit"
+        disabled={zoomButtonDisabled}
+        onClick={handleZoomToFit}
+      >
+        <span className="sr-only">{zoomingToFit ? "Se ajustează..." : "Zoom to fit"}</span>
+        <span aria-hidden>{zoomingToFit ? "⏳" : "🔍"}</span>
+      </button>
+      <button
+        type="button"
+        className={clsx(
+          "flex h-9 w-9 items-center justify-center rounded-full border border-[var(--omni-border-soft)] text-base",
+          centerButtonDisabled ? "cursor-not-allowed opacity-50" : "",
+          centeringSelection ? "bg-[var(--omni-ink)] text-white" : "",
+        )}
+        title="Centreaza selecția"
+        aria-label="Centreaza selecția"
+        disabled={centerButtonDisabled}
+        onClick={handleCenterOnSelection}
+      >
+        <span className="sr-only">{centeringSelection ? "Centrez..." : "Centreaza selectia"}</span>
+        <span aria-hidden>{centeringSelection ? "⏳" : "🎯"}</span>
+      </button>
+    </div>
+  );
+  const filtersControls = filtersDrawerOpen ? (
+    <div className="flex min-w-[260px] flex-1 flex-col gap-2 rounded-2xl border border-[var(--omni-border-soft)] bg-white/90 p-3 text-xs shadow-lg">
+      <div className="flex items-center justify-between gap-2">
+        <div>
           <span className="px-2 text-[10px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">Filtre tags</span>
-          <span className="text-[10px] text-[var(--omni-muted)]">engine / surface / cluster / gate / type</span>
-          <div className="flex flex-1 items-center gap-1">
-            <input
-              type="text"
-              list="flow-studio-tag-options"
-              className="flex-1 rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[var(--omni-ink)]"
-              placeholder="Caută sau tastează tag"
-              value={tagSearch}
-              onChange={(event) => setTagSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  handleApplyTagSearch();
-                }
-              }}
-            />
-            <datalist id="flow-studio-tag-options">
-              {tagVocabulary.map((tag) => (
-                <option key={tag} value={tag} />
-              ))}
-            </datalist>
-            <button
-              type="button"
-              className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold text-[var(--omni-ink)]"
-              onClick={handleApplyTagSearch}
-              disabled={!tagSearch.trim()}
-            >
-              Adaugă
-            </button>
-            {resolvedTagFilters.length ? (
-              <button
-                type="button"
-                className="rounded-full border border-dashed border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold text-[var(--omni-ink)]"
-                onClick={handleResetTagFilters}
-              >
-                Curăță
-              </button>
-            ) : null}
-          </div>
+          <p className="text-[10px] text-[var(--omni-muted)]">engine / surface / cluster / gate / type</p>
         </div>
-        <div className="flex flex-wrap gap-1">
-          {filteredTagOptions.length ? (
-            filteredTagOptions.map((tag) => {
-              const active = resolvedTagFilters.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  className={clsx(
-                    "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition",
-                    active
-                      ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white"
-                      : "border-[var(--omni-border-soft)] text-[var(--omni-muted)] hover:text-[var(--omni-ink)]",
-                  )}
-                  onClick={() => handleToggleTagFilter(tag)}
-                  title={`Filtrează după ${tag}`}
-                >
-                  {tag}
-                </button>
-              );
-            })
-          ) : tagVocabulary.length ? (
-            <span className="px-2 py-0.5 text-[11px] text-[var(--omni-muted)]">Niciun tag pentru filtrul curent.</span>
-          ) : (
-            <span className="px-2 py-0.5 text-[11px] text-[var(--omni-muted)]">Nu există tag-uri sincronizate.</span>
-          )}
-        </div>
+        <button
+          type="button"
+          className="text-[10px] uppercase text-[var(--omni-muted)] underline"
+          onClick={() => setFiltersDrawerOpen(false)}
+        >
+          Închide
+        </button>
       </div>
+      <div className="flex flex-1 items-center gap-1">
+        <input
+          type="text"
+          list="flow-studio-tag-options"
+          className="flex-1 rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[var(--omni-ink)]"
+          placeholder="Caută sau tastează tag"
+          value={tagSearch}
+          onChange={(event) => setTagSearch(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handleApplyTagSearch();
+            }
+          }}
+        />
+        <datalist id="flow-studio-tag-options">
+          {tagVocabulary.map((tag) => (
+            <option key={tag} value={tag} />
+          ))}
+        </datalist>
+        <button
+          type="button"
+          className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold text-[var(--omni-ink)]"
+          onClick={handleApplyTagSearch}
+          disabled={!tagSearch.trim()}
+        >
+          Adaugă
+        </button>
+        {resolvedTagFilters.length ? (
+          <button
+            type="button"
+            className="rounded-full border border-dashed border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold text-[var(--omni-ink)]"
+            onClick={handleResetTagFilters}
+          >
+            Curăță
+          </button>
+        ) : null}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {filteredTagOptions.length ? (
+          filteredTagOptions.map((tag) => {
+            const active = resolvedTagFilters.includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                className={clsx(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition",
+                  active
+                    ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white"
+                    : "border-[var(--omni-border-soft)] text-[var(--omni-muted)] hover:text-[var(--omni-ink)]",
+                )}
+                onClick={() => handleToggleTagFilter(tag)}
+                title={`Filtrează după ${tag}`}
+              >
+                {tag}
+              </button>
+            );
+          })
+        ) : tagVocabulary.length ? (
+          <span className="px-2 py-0.5 text-[11px] text-[var(--omni-muted)]">Niciun tag pentru filtrul curent.</span>
+        ) : (
+          <span className="px-2 py-0.5 text-[11px] text-[var(--omni-muted)]">Nu există tag-uri sincronizate.</span>
+        )}
+      </div>
+    </div>
+  ) : (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold text-[var(--omni-ink)]"
+        onClick={() => setFiltersDrawerOpen(true)}
+        disabled={!selectedFlowId}
+      >
+        {`Filtre tags${resolvedTagFilters.length ? ` (${resolvedTagFilters.length})` : ""}`}
+      </button>
+      {resolvedTagFilters.length ? (
+        <div className="flex flex-wrap items-center gap-1">
+          {resolvedTagFilters.slice(0, 3).map((tag) => (
+            <span key={tag} className="rounded-full bg-[var(--omni-bg-paper)] px-2 py-0.5 text-[10px] font-semibold text-[var(--omni-muted)]">
+              {tag}
+            </span>
+          ))}
+          {resolvedTagFilters.length > 3 ? (
+            <span className="rounded-full bg-[var(--omni-bg-paper)] px-2 py-0.5 text-[10px] font-semibold text-[var(--omni-muted)]">
+              +{resolvedTagFilters.length - 3}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+  const addSelectionToJourneyControl =
+    selectedOverlayId && selectedNodeIds.length
+      ? (
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-full border border-indigo-300 px-3 py-1 text-xs font-semibold text-indigo-900"
+          onClick={() => handleOverlayAddNodes(selectedOverlayId, selectedNodeIds)}
+        >
+          ➕ Journey ({selectedNodeIds.length})
+        </button>
+      )
+      : null;
+  const canvasPrimaryActions = (
+    <OmniCtaButton size="sm" onClick={handleSaveFlow} disabled={!selectedFlowId || !flowNameDraft.trim()}>
+      Salveaza
+    </OmniCtaButton>
+  );
+  const selectableCanvasNodeIds = useMemo(() => selectedNodeIds.filter((id) => !id.startsWith("step:")), [selectedNodeIds]);
+  const canvasHeaderActions = (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {overlaySelector}
+        {overlayFocusChip}
+        {addSelectionToJourneyControl}
+      </div>
+      {worldFocusControls}
+      {viewZoomControls}
+      {filtersControls}
       <button
         type="button"
         className={clsx(
@@ -2927,6 +3499,19 @@ useEffect(() => {
         disabled={!selectedFlowId}
       >
         + Portal
+      </button>
+      <button
+        type="button"
+        className={clsx(
+          "flex h-9 w-9 items-center justify-center rounded-full border text-lg",
+          selectableCanvasNodeIds.length ? "border-amber-300 text-amber-700" : "cursor-not-allowed border-dashed text-[var(--omni-muted)]",
+        )}
+        onClick={handleMarkDivergenceNodes}
+        disabled={!selectableCanvasNodeIds.length}
+        title="Marchează nodurile selectate ca punct de bifurcație"
+        aria-label="Marchează divergență"
+      >
+        ⤢
       </button>
       {viewMode === "chunks" ? (
         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -2990,11 +3575,11 @@ useEffect(() => {
         <button
           type="button"
           className="inline-flex items-center rounded-full border border-[var(--omni-border-soft)] px-2 py-1 text-xs font-semibold text-[var(--omni-muted)] transition hover:text-[var(--omni-ink)]"
-          onClick={() => setRoutesCollapsed((prev) => !prev)}
-          title={routesCollapsed ? "Afișează panoul de routes" : "Ascunde panoul de routes"}
+          onClick={() => setLeftSidebarCollapsed((prev) => !prev)}
+          title={leftSidebarCollapsed ? "Afișează panoul lateral" : "Ascunde panoul lateral"}
         >
-          <span aria-hidden className="text-base leading-none">{routesCollapsed ? "☰" : "⟵"}</span>
-          <span className="sr-only">{routesCollapsed ? "Arată Routes" : "Ascunde Routes"}</span>
+          <span aria-hidden className="text-base leading-none">{leftSidebarCollapsed ? "☰" : "⟵"}</span>
+          <span className="sr-only">{leftSidebarCollapsed ? "Arată panoul lateral" : "Ascunde panoul lateral"}</span>
         </button>
         <button
           type="button"
@@ -3004,30 +3589,6 @@ useEffect(() => {
         >
           <span aria-hidden className="text-base leading-none">{inspectorCollapsed ? "☰" : "⟶"}</span>
           <span className="sr-only">{inspectorCollapsed ? "Arată Inspector" : "Ascunde Inspector"}</span>
-        </button>
-        <button
-          type="button"
-          className={clsx(
-            "rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold",
-            zoomButtonDisabled ? "cursor-not-allowed opacity-60" : "",
-            zoomingToFit ? "bg-[var(--omni-ink)] text-white" : "",
-          )}
-          disabled={zoomButtonDisabled}
-          onClick={handleZoomToFit}
-        >
-          {zoomingToFit ? "Se ajustează..." : "Zoom to fit"}
-        </button>
-        <button
-          type="button"
-          className={clsx(
-            "rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold",
-            centerButtonDisabled ? "cursor-not-allowed opacity-60" : "",
-            centeringSelection ? "bg-[var(--omni-ink)] text-white" : "",
-          )}
-          disabled={centerButtonDisabled}
-          onClick={handleCenterOnSelection}
-        >
-          {centeringSelection ? "Centrez..." : "Centreaza selectia"}
         </button>
       </div>
     </div>
@@ -3081,39 +3642,6 @@ useEffect(() => {
     },
     [addRouteNode, reactFlowInstance, routes, selectedFlowId],
   );
-
-  const handleAutoLayout = useCallback(() => {
-    if (viewMode !== "nodes") return;
-    setAutoLayoutRunning(true);
-    setNodes((current) => {
-      if (!current.length) return current;
-      const graph = new dagre.graphlib.Graph();
-      graph.setGraph({ rankdir: "LR", nodesep: 140, ranksep: 160 });
-      graph.setDefaultEdgeLabel(() => ({}));
-      current.forEach((node) => {
-        graph.setNode(node.id, { width: DAGRE_NODE_WIDTH, height: DAGRE_NODE_HEIGHT });
-      });
-      edges.forEach((edge) => {
-        graph.setEdge(edge.source, edge.target);
-      });
-      dagre.layout(graph);
-      return current.map((node) => {
-        const layout = graph.node(node.id);
-        if (!layout) return node;
-        return {
-          ...node,
-          position: {
-            x: layout.x - DAGRE_NODE_WIDTH / 2,
-            y: layout.y - DAGRE_NODE_HEIGHT / 2,
-          },
-        };
-      });
-    });
-    requestAnimationFrame(() => {
-      reactFlowInstance?.fitView({ padding: 0.2, duration: 500 });
-      window.setTimeout(() => setAutoLayoutRunning(false), 550);
-    });
-  }, [edges, reactFlowInstance, setNodes, viewMode]);
 
   const handleSelectIssue = useCallback(
     (issue: FlowIssue) => {
@@ -3179,6 +3707,196 @@ useEffect(() => {
     [handleFocusChunk, nodes, reactFlowInstance, setViewMode, setSingleEdgeSelection, setSingleNodeSelection],
   );
 
+  const runCommandAndClose = useCallback(
+    (action: () => void) => {
+      action();
+      setCommandPaletteOpen(false);
+    },
+    [setCommandPaletteOpen],
+  );
+
+  const commandActions = useMemo<Array<{ id: string; label: string; icon: string; disabled?: boolean; run: () => void }>>(
+    () => [
+      {
+        id: "select-map",
+        label: "Select Map",
+        icon: "🗺️",
+        disabled: !flowOptions.length,
+        run: () => runCommandAndClose(() => setPendingFocusTarget("map")),
+      },
+      {
+        id: "select-journey",
+        label: "Select Journey",
+        icon: "🧭",
+        disabled: overlays.length === 0,
+        run: () => runCommandAndClose(() => setPendingFocusTarget("journey")),
+      },
+      {
+        id: "focus-world",
+        label: "Focus World",
+        icon: "🎯",
+        disabled: !selectedChunkId,
+        run: () => runCommandAndClose(() => handleFocusSelectedChunk()),
+      },
+      {
+        id: "zoom-fit",
+        label: "Zoom to fit",
+        icon: "🔎",
+        disabled: zoomButtonDisabled,
+        run: () => runCommandAndClose(() => handleZoomToFit()),
+      },
+      {
+        id: "auto-layout",
+        label: "Auto-layout",
+        icon: "✨",
+        disabled: autoLayoutDisabled,
+        run: () => runCommandAndClose(() => handleAutoLayout()),
+      },
+      {
+        id: "export-spec",
+        label: "Export spec",
+        icon: "📤",
+        disabled: !selectedFlowId,
+        run: () => runCommandAndClose(() => handleDownloadFlowSpec()),
+      },
+      {
+        id: "import-spec",
+        label: "Import spec",
+        icon: "📥",
+        run: () => runCommandAndClose(() => handleOpenImportModal()),
+      },
+    ],
+    [
+      autoLayoutDisabled,
+      flowOptions.length,
+      handleAutoLayout,
+      handleDownloadFlowSpec,
+      handleFocusSelectedChunk,
+      handleOpenImportModal,
+      handleZoomToFit,
+      overlays.length,
+      selectedChunkId,
+      selectedFlowId,
+      zoomButtonDisabled,
+      runCommandAndClose,
+      setPendingFocusTarget,
+    ],
+  );
+  const filteredCommandActions = useMemo(() => {
+    const query = commandSearch.trim().toLowerCase();
+    if (!query) return commandActions;
+    return commandActions.filter((action) => action.label.toLowerCase().includes(query));
+  }, [commandActions, commandSearch]);
+  const headerMenu = headerMenuOpen ? (
+    <div
+      ref={headerMenuRef}
+      className="absolute right-0 top-full z-20 mt-2 w-64 rounded-2xl border border-[var(--omni-border-soft)] bg-white/95 p-3 shadow-xl"
+    >
+      <div className="space-y-1">
+        <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Map actions</p>
+        <button
+          type="button"
+          className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-left text-sm font-semibold text-[var(--omni-ink)]"
+          onClick={() => {
+            setHeaderMenuOpen(false);
+            handleCreateFlow();
+          }}
+        >
+          Creeaza nou
+        </button>
+        <button
+          type="button"
+          className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-left text-sm disabled:opacity-40"
+          onClick={() => {
+            setHeaderMenuOpen(false);
+            handleDuplicateFlow();
+          }}
+          disabled={!selectedFlowId}
+        >
+          Duplica map
+        </button>
+        <button
+          type="button"
+          className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-left text-sm"
+          onClick={() => {
+            setHeaderMenuOpen(false);
+            handleOpenImportModal();
+          }}
+        >
+          Importa spec
+        </button>
+        <button
+          type="button"
+          className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-left text-sm disabled:opacity-40"
+          onClick={() => {
+            setHeaderMenuOpen(false);
+            handleDownloadFlowSpec();
+          }}
+          disabled={!selectedFlowId}
+        >
+          Exporta spec
+        </button>
+        <button
+          type="button"
+          className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-left text-sm disabled:opacity-40"
+          onClick={() => {
+            setHeaderMenuOpen(false);
+            handleFixAllRouteMappings();
+          }}
+          disabled={!fixableRouteMappings.length}
+        >
+          Fix legacy mappings ({fixableRouteMappings.length})
+        </button>
+      </div>
+      <div className="mt-3 space-y-2 border-t border-[var(--omni-border-soft)] pt-3">
+        <label className="flex items-center justify-between text-xs font-semibold text-[var(--omni-muted)]">
+          Observed analytics
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-[var(--omni-border-soft)]"
+            checked={observedEnabled}
+            onChange={(event) => setObservedEnabled(event.target.checked)}
+          />
+        </label>
+        {observedEnabled ? (
+          <div className="space-y-2 text-xs">
+            <select
+              className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-2 py-1"
+              value={observedWindow}
+              onChange={(event) => setObservedWindow(event.target.value as ObservedWindowKey)}
+            >
+              {OBSERVED_WINDOWS.map((window) => (
+                <option key={window.key} value={window.key}>
+                  {window.label}
+                </option>
+              ))}
+            </select>
+            <select
+              className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-2 py-1"
+              value={observedSegment}
+              onChange={(event) => setObservedSegment(event.target.value as ObservedSegmentKey)}
+            >
+              {OBSERVED_SEGMENTS.map((segment) => (
+                <option key={segment.key} value={segment.key}>
+                  {segment.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+        <label className="mt-2 flex items-center justify-between text-xs font-semibold text-[var(--omni-muted)]">
+          Diagnostics banner
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-[var(--omni-border-soft)]"
+            checked={diagnosticsBannerVisible}
+            onChange={(event) => setDiagnosticsBannerVisible(event.target.checked)}
+          />
+        </label>
+      </div>
+    </div>
+  ) : null;
+
   if (!authReady || configLoading) {
     return <div className="min-h-screen bg-[var(--omni-bg-main)]" />;
   }
@@ -3195,220 +3913,177 @@ useEffect(() => {
 
   return (
     <AppShell>
-      <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-8 text-[var(--omni-ink)] sm:px-6 lg:px-10">
-        <div className="flex w-full flex-col gap-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Admin</p>
-              <h1 className="text-3xl font-semibold tracking-tight">Flow Studio</h1>
-            </div>
-            <button
-              type="button"
-              className="rounded-full border border-[var(--omni-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--omni-ink)] shadow-sm"
-              onClick={() => setMenuOpen(true)}
-            >
-              Meniu
-            </button>
-          </div>
-          <section className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 shadow-[0_25px_60px_rgba(0,0,0,0.08)]">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <select
-                className="rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
-                value={selectedFlowId ?? ""}
-                onChange={(event) => setSelectedFlowId(event.target.value || null)}
+      <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 pb-10 pt-6 text-[var(--omni-ink)] sm:px-6 lg:px-10">
+        <div className="flex w-full flex-col gap-5">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Map management</p>
+              <button
+                type="button"
+                className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1.5 text-sm font-semibold text-[var(--omni-ink)] shadow-sm"
+                onClick={() => setMenuOpen(true)}
               >
-                <option value="">Selecteaza flow</option>
-                {flowOptions.map((flow) => (
-                  <option key={flow.id} value={flow.id}>
-                    {flow.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="text"
-                className="flex-1 rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
-                placeholder="Titlu flow"
-                value={flowNameDraft}
-                onChange={(event) => setFlowNameDraft(event.target.value)}
-                disabled={!selectedFlowId}
-              />
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-                  onClick={handleCreateFlow}
-                >
-                  Creeaza
-                </button>
-                <button
-                  type="button"
-                  className="rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm disabled:opacity-50"
-                  onClick={handleDuplicateFlow}
-                  disabled={!selectedFlowId}
-                >
-                  Duplica
-                </button>
-                <button
-                  type="button"
-                  className="rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm disabled:opacity-50"
-                  onClick={handleCopyFlowSpec}
-                  disabled={!selectedFlowId}
-                >
-                  Copiere spec
-                </button>
-                <button
-                  type="button"
-                  className="rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm disabled:opacity-50"
-                  onClick={handleDownloadFlowSpec}
-                  disabled={!selectedFlowId}
-                >
-                  Download spec
-                </button>
-                <button
-                  type="button"
-                  className="rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-                  onClick={handleOpenImportModal}
-                >
-                  Importa spec
-                </button>
-                <button
-                  type="button"
-                  className="rounded-2xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm disabled:opacity-50"
-                  onClick={handleFixAllRouteMappings}
-                  disabled={!fixableRouteMappings.length}
-                >
-                  Fix legacy mappings ({fixableRouteMappings.length})
-                </button>
-                <OmniCtaButton size="sm" onClick={handleSaveFlow} disabled={!selectedFlowId}>
-                  Salveaza
-                </OmniCtaButton>
-                {saveMessage ? (
-                  <span
-                    className={clsx(
-                      "text-xs font-semibold",
-                      saveStatus === "success" ? "text-emerald-500" : saveStatus === "error" ? "text-rose-500" : "text-[var(--omni-muted)]",
-                    )}
-                  >
-                    {saveMessage}
-                  </span>
-                ) : null}
-                <div className="flex flex-col gap-1 text-xs">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="font-semibold text-[var(--omni-ink)]">Flow:</span>
-                    <span
+                Meniu
+              </button>
+            </div>
+            <section className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-4 py-3 shadow-[0_12px_35px_rgba(0,0,0,0.06)]">
+              <div className="relative space-y-3">
+                <div className="grid items-end gap-3 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,0.85fr)_auto]">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Map</span>
+                    <select
+                      ref={flowSelectRef}
+                      className="w-full rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
+                      value={selectedFlowId ?? ""}
+                      onChange={(event) => setSelectedFlowId(event.target.value || null)}
+                    >
+                      <option value="">Alege map</option>
+                      {flowOptions.map((flow) => (
+                        <option key={flow.id} value={flow.id}>
+                          {flow.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Nume map</span>
+                    <input
+                      type="text"
+                      className="w-full rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
+                      placeholder="Titlu map"
+                      value={flowNameDraft}
+                      onChange={(event) => setFlowNameDraft(event.target.value)}
+                      disabled={!selectedFlowId}
+                    />
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Status</span>
+                    <p
                       className={clsx(
+                        "rounded-2xl border px-3 py-2 text-[11px] font-semibold",
                         hasFlowUnsavedChanges
-                          ? "font-semibold text-amber-600"
+                          ? "border-amber-200 bg-amber-50 text-amber-700"
                           : saveStatus === "saving"
-                            ? "text-[var(--omni-muted)]"
+                            ? "border-[var(--omni-border-soft)] bg-white text-[var(--omni-muted)]"
                             : saveStatus === "error"
-                              ? "text-rose-500"
-                              : "text-[var(--omni-muted)]",
+                              ? "border-rose-200 bg-rose-50 text-rose-600"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-700",
                       )}
                     >
                       {saveStatus === "saving"
-                        ? "Saving…"
+                        ? "Se salvează..."
                         : saveStatus === "error"
-                          ? saveMessage ?? "Save failed"
+                          ? saveMessage ?? "Eroare la salvare"
                           : hasFlowUnsavedChanges
                             ? "Modificări locale"
-                            : `Saved at ${formatStatusTime(lastFlowSaveAt)}`}
-                    </span>
+                            : `Salvat la ${formatStatusTime(lastFlowSaveAt)}`}
+                    </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="font-semibold text-[var(--omni-ink)]">Draft autosave:</span>
-                    {autosaveStatus === "saving" ? (
-                      <span className="text-[var(--omni-muted)]">Autosave în curs…</span>
-                    ) : autosaveStatus === "error" && autosaveError ? (
-                      <span className="font-semibold text-rose-500">{autosaveError}</span>
-                    ) : (
-                      <span className="text-[var(--omni-muted)]">Ultimul draft la {formatStatusTime(lastAutosaveAt)}</span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="font-semibold text-[var(--omni-ink)]">Worlds:</span>
-                    {chunkSaveStatus === "saving" ? (
-                      <span className="text-[var(--omni-muted)]">Salvăm worlds…</span>
-                    ) : chunkSaveStatus === "error" && chunkSaveError ? (
-                      <span className="font-semibold text-rose-500">{chunkSaveError}</span>
-                    ) : hasChunkUnsavedChanges ? (
-                      <span className="font-semibold text-amber-600">Worlds: modificări locale</span>
-                    ) : (
-                      <span className="text-[var(--omni-muted)]">Sincronizate la {formatStatusTime(lastChunkSaveAt)}</span>
-                    )}
+                  <div className="flex flex-wrap items-end justify-end gap-2">
+                    <button
+                      type="button"
+                      className="rounded-full border border-[var(--omni-border-soft)] px-3 py-2 text-sm font-semibold text-[var(--omni-ink)]"
+                      onClick={() => setHeaderMenuOpen((prev) => !prev)}
+                      aria-haspopup="menu"
+                      aria-expanded={headerMenuOpen}
+                    >
+                      More ▾
+                    </button>
                   </div>
                 </div>
+                {headerMenu}
               </div>
-            </div>
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--omni-muted)]">
-              <span className={clsx("rounded-full px-3 py-1 text-[11px] font-semibold", diagnostics.length ? "bg-amber-900/60 text-amber-200" : "bg-emerald-900/40 text-emerald-200")}>
-                {diagnostics.length ? `${diagnostics.length} avertizari` : "Fara avertizari"}
-              </span>
-              <span>Trage rute din panoul din stanga sau foloseste &quot;Auto layout&quot; pentru aranjare rapida.</span>
-            </div>
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
-              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Observed</label>
-              <button
-                type="button"
-                className={clsx(
-                  "rounded-full border px-3 py-1 text-xs font-semibold",
-                  observedEnabled ? "border-[var(--omni-energy)] text-[var(--omni-energy)]" : "border-[var(--omni-border-soft)] text-[var(--omni-muted)]",
-                )}
-                onClick={() => setObservedEnabled((prev) => !prev)}
-              >
-                {observedEnabled ? "Activ" : "Inactiv"}
-              </button>
-              <select
-                className="rounded-full border border-[var(--omni-border-soft)] bg-white px-3 py-1 text-xs"
-                value={observedWindow}
-                disabled={!observedEnabled}
-                onChange={(event) => setObservedWindow(event.target.value as ObservedWindowKey)}
-              >
-                {OBSERVED_WINDOWS.map((window) => (
-                  <option key={window.key} value={window.key}>
-                    {window.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="rounded-full border border-[var(--omni-border-soft)] bg-white px-3 py-1 text-xs"
-                value={observedSegment}
-                disabled={!observedEnabled}
-                onChange={(event) => setObservedSegment(event.target.value as ObservedSegmentKey)}
-              >
-                {OBSERVED_SEGMENTS.map((segment) => (
-                  <option key={segment.key} value={segment.key}>
-                    {segment.label}
-                  </option>
-                ))}
-              </select>
-              {observedEnabled ? (
-                observedLoading ? (
-                  <span className="text-xs text-[var(--omni-muted)]">Se incarca...</span>
-                ) : (
-                  <span className="text-xs text-[var(--omni-muted)]">
-                    Evenimente: {observedSnapshot?.events.length ?? 0}
-                  </span>
-                )
-              ) : null}
-            </div>
-          </section>
+            </section>
+          </div>
 
           <div className="flex flex-col gap-5 xl:flex-row">
-            {!routesCollapsed ? (
-              <div className="w-full xl:w-[320px]">
-                <RoutesPanel
-                  routes={filteredRoutes}
-                  search={routeSearch}
-                  onSearchChange={setRouteSearch}
-                  groupFilter={effectiveRouteGroup}
-                  groupOptions={routeGroupOptions}
-                  onGroupFilterChange={setRouteGroup}
-                  onQuickAddRoute={handleQuickAddRoute}
-                  hasActiveFlow={Boolean(selectedFlowId)}
-                  onRouteDragStart={handleRouteDragStart}
-                  onCollapse={() => setRoutesCollapsed(true)}
-                />
+            {!leftSidebarCollapsed ? (
+              <div className="w-full space-y-3 xl:w-[340px] xl:space-y-4 xl:sticky xl:top-[180px] xl:max-h-[calc(100vh-220px)] xl:overflow-y-auto">
+                <div className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-xs font-semibold shadow-[0_25px_60px_rgba(0,0,0,0.08)]">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-1 items-center gap-2">
+                      {[
+                        { key: "routes", label: "Routes" },
+                        { key: "worlds", label: "Worlds" },
+                        { key: "issues", label: "Issues" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          className={clsx(
+                            "flex-1 rounded-full border px-3 py-1 text-center text-[11px]",
+                            leftSidebarTab === tab.key
+                              ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white"
+                              : "border-[var(--omni-border-soft)] text-[var(--omni-muted)]",
+                          )}
+                          onClick={() => setLeftSidebarTab(tab.key as LeftSidebarTab)}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="inline-flex items-center rounded-full border border-[var(--omni-border-soft)] px-2 py-1 text-[10px] text-[var(--omni-muted)] hover:text-[var(--omni-ink)]"
+                      onClick={() => setLeftSidebarCollapsed(true)}
+                      title="Ascunde panoul lateral"
+                    >
+                      ⤫
+                    </button>
+                  </div>
+                </div>
+                {leftSidebarTab === "routes" ? (
+                  <RoutesPanel
+                    routes={filteredRoutes}
+                    search={routeSearch}
+                    onSearchChange={setRouteSearch}
+                    groupFilter={effectiveRouteGroup}
+                    groupOptions={routeGroupOptions}
+                    onGroupFilterChange={setRouteGroup}
+                    onQuickAddRoute={handleQuickAddRoute}
+                    hasActiveFlow={Boolean(selectedFlowId)}
+                    onRouteDragStart={handleRouteDragStart}
+                  />
+                ) : null}
+                {leftSidebarTab === "worlds" ? (
+                  <ChunkPanel
+                    chunks={chunks}
+                    countsByChunk={chunkCountsById}
+                    onAddChunk={handleAddChunk}
+                    onSeedCanonicalChunks={handleSeedCanonicalChunks}
+                    onImportChunks={handleImportChunkPayload}
+                    onUpdateChunk={handleUpdateChunk}
+                    onDeleteChunk={handleDeleteChunk}
+                    onMoveChunk={handleMoveChunk}
+                    onSelectChunk={handleSelectChunkFromPanel}
+                    selectedChunkId={selectedChunkId}
+                    disabled={flowsTabDisabled}
+                    defaultChunkId={UNGROUPED_CHUNK_ID}
+                    onClearFocus={handleClearChunkFocus}
+                    focusActive={Boolean(focusedChunkId)}
+                    selectedNodeIds={selectedNodeIds}
+                    onSelectionDragStart={handleSelectionDragStart}
+                    onMoveSelectionToChunk={(chunkId, nodeIds) => handleMoveSelectionToChunk(chunkId, nodeIds)}
+                    chunkComments={chunkCommentsMap}
+                    onAddComment={(chunkId, message) => handleAddComment("chunk", chunkId, message)}
+                    onDeleteComment={handleDeleteComment}
+                    onToggleCommentResolved={handleToggleCommentResolved}
+                    onFocusComment={handleCommentFocus}
+                    onCreateChunkFromSelection={handleCreateChunkFromSelection}
+                    focusedChunkId={focusedChunkId}
+                    onFocusChunk={(chunkId) => handleFocusChunk(chunkId, { drillIntoNodes: true })}
+                  />
+                ) : null}
+                {leftSidebarTab === "issues" ? (
+                  <OpenIssuesPanel
+                    comments={comments}
+                    filter={commentFilter}
+                    onFilterChange={setCommentFilter}
+                    onSelectComment={handleCommentFocus}
+                    onToggleResolved={handleToggleCommentResolved}
+                    onDeleteComment={handleDeleteComment}
+                  />
+                ) : null}
               </div>
             ) : null}
             <div className="order-first flex-1 space-y-5 xl:order-none">
@@ -3434,6 +4109,8 @@ useEffect(() => {
                     setSelectedStepNodeId(node.id);
                     setSingleEdgeSelection(null);
                     ensureNodeStepsExpanded(stepData.parentNodeId);
+                    setInspectorCollapsed(false);
+                    setInspectorTabRequest({ tab: "basics", nonce: Date.now() });
                   } else {
                     setSingleNodeSelection(node.id);
                     setSingleEdgeSelection(null);
@@ -3455,7 +4132,9 @@ useEffect(() => {
                 onCanvasDragOver={handleCanvasDragOver}
                 onCanvasDrop={handleCanvasDrop}
                 onAutoLayout={handleAutoLayout}
+                primaryHeaderActions={canvasPrimaryActions}
                 extraHeader={canvasHeaderActions}
+                onEdgeUpdate={handleEdgeUpdate}
                 nodeStepAvailability={nodeStepAvailability}
                 nodeCanExpandSteps={nodeCanExpandSteps}
                 autoLayoutRunning={autoLayoutRunning}
@@ -3468,45 +4147,21 @@ useEffect(() => {
                 highlightNodeIds={activeHighlightNodeIdSet}
                 dimmedNodeIds={activeDimmedNodeIdSet}
               />
-              <ChunkPanel
-                chunks={chunks}
-                countsByChunk={chunkCountsById}
-                onAddChunk={handleAddChunk}
-                onSeedCanonicalChunks={handleSeedCanonicalChunks}
-                onUpdateChunk={handleUpdateChunk}
-                onDeleteChunk={handleDeleteChunk}
-                onMoveChunk={handleMoveChunk}
-                onSelectChunk={handleSelectChunkFromPanel}
-                selectedChunkId={selectedChunkId}
-                disabled={flowsTabDisabled}
-                defaultChunkId={UNGROUPED_CHUNK_ID}
-                onClearFocus={handleClearChunkFocus}
-                focusActive={Boolean(focusedChunkId)}
-                selectedNodeIds={selectedNodeIds}
-                onSelectionDragStart={handleSelectionDragStart}
-                onMoveSelectionToChunk={(chunkId, nodeIds) => handleMoveSelectionToChunk(chunkId, nodeIds)}
-                chunkComments={chunkCommentsMap}
-                onAddComment={(chunkId, message) => handleAddComment("chunk", chunkId, message)}
-                onDeleteComment={handleDeleteComment}
-                onToggleCommentResolved={handleToggleCommentResolved}
-                onFocusComment={handleCommentFocus}
-                onCreateChunkFromSelection={handleCreateChunkFromSelection}
-                onImportChunks={handleImportChunkPayload}
-                focusedChunkId={focusedChunkId}
-                onFocusChunk={(chunkId) => handleFocusChunk(chunkId, { drillIntoNodes: true })}
-              />
-              <OpenIssuesPanel
-                comments={comments}
-                filter={commentFilter}
-                onFilterChange={setCommentFilter}
-                onSelectComment={handleCommentFocus}
-                onToggleResolved={handleToggleCommentResolved}
-                onDeleteComment={handleDeleteComment}
-              />
             </div>
-            {!inspectorCollapsed ? (
-              <div className="w-full xl:w-[360px]">
-                <InspectorPanel
+      {!inspectorCollapsed ? (
+        <div className="w-full space-y-3 xl:w-[360px]">
+          {diagnosticsBannerVisible ? (
+            <div className="rounded-3xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-xs text-[var(--omni-muted)] shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
+              <div className="flex items-center justify-between gap-2">
+                <span className={clsx("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]", diagnostics.length ? "bg-amber-200/90 text-amber-800" : "bg-emerald-100 text-emerald-700")}>
+                  {diagnostics.length ? `${diagnostics.length} avertizari` : "Fara avertizari"}
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">Inspector</span>
+              </div>
+              <p className="mt-1 text-[11px]">Deschide tab-ul „Diagnostics” pentru detalii și export audit.</p>
+            </div>
+          ) : null}
+          <InspectorPanel
                   diagnostics={diagnostics}
                   onSelectIssue={handleSelectIssue}
                   missingManifestNodes={missingManifestNodes}
@@ -3531,12 +4186,13 @@ useEffect(() => {
                   onLabelChange={handleNodeLabelChange}
                   onNodeTagsChange={handleNodeTagsChange}
                   onPortalChange={handleNodePortalChange}
-                  onEdgeFieldChange={handleEdgeFieldChange}
-                  onApplyEdgeColorToGroup={handleApplyEdgeColorToGroup}
-                  observedEnabled={observedEnabled}
-                  observedEvents={observedEventsForSelection}
-                  debugInfo={selectedNodeDebugInfo}
-                  onCollapse={() => setInspectorCollapsed(true)}
+                onEdgeFieldChange={handleEdgeFieldChange}
+                onApplyEdgeColorToGroup={handleApplyEdgeColorToGroup}
+                observedEnabled={observedEnabled}
+                observedEvents={observedEventsForSelection}
+                debugInfo={selectedNodeDebugInfo}
+                selectedStepDetails={selectedStepDetails}
+                onCollapse={() => setInspectorCollapsed(true)}
                   chunks={chunks}
                   defaultChunkId={UNGROUPED_CHUNK_ID}
                   onNodeChunkChange={handleNodeChunkChange}
@@ -3554,7 +4210,7 @@ useEffect(() => {
                   onExportAuditSnapshot={handleExportAuditSnapshot}
                   overlays={overlays}
                   selectedOverlayId={selectedOverlayId}
-                  onSelectOverlay={setSelectedOverlayId}
+                  onSelectOverlay={handleOverlaySelectChange}
                   onCreateOverlay={handleCreateOverlay}
                   onDeleteOverlay={handleDeleteOverlay}
                   onOverlayMetadataChange={handleOverlayMetadataChange}
@@ -3562,6 +4218,8 @@ useEffect(() => {
                   onOverlayRemoveStep={handleOverlayRemoveStep}
                   onOverlayReorderSteps={handleOverlayReorderSteps}
                   onOverlayStepUpdate={handleOverlayStepUpdate}
+                  onRepairOverlaySteps={handleRepairSelectedOverlaySteps}
+                  onOverlayStepFocus={handleOverlayStepFocus}
                   selectedNodeIds={selectedNodeIds}
                   nodeLabelMap={nodeLabelMap}
                   overlayTabRequest={inspectorTabRequest}
@@ -3572,6 +4230,70 @@ useEffect(() => {
         </div>
       </div>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+      {commandPaletteOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 px-4 py-16"
+          onClick={() => setCommandPaletteOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-[var(--omni-border-soft)] bg-white p-4 text-sm shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">Command palette</p>
+              <button
+                type="button"
+                className="text-[10px] uppercase text-[var(--omni-muted)] underline"
+                onClick={() => setCommandPaletteOpen(false)}
+              >
+                Închide
+              </button>
+            </div>
+            <input
+              type="text"
+              className="mt-3 w-full rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm text-[var(--omni-ink)]"
+              placeholder="Tastează o comandă (Ctrl+K)"
+              value={commandSearch}
+              onChange={(event) => setCommandSearch(event.target.value)}
+              autoFocus
+            />
+            <ul className="mt-3 max-h-64 overflow-y-auto space-y-1">
+              {filteredCommandActions.length ? (
+                filteredCommandActions.map((action) => (
+                  <li key={action.id}>
+                    <button
+                      type="button"
+                      className={clsx(
+                        "flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition",
+                        action.disabled
+                          ? "cursor-not-allowed border-dashed border-[var(--omni-border-soft)] text-[var(--omni-muted)]"
+                          : "border-[var(--omni-border-soft)] text-[var(--omni-ink)] hover:border-[var(--omni-ink)]",
+                      )}
+                      onClick={() => {
+                        if (action.disabled) return;
+                        action.run();
+                      }}
+                      disabled={action.disabled}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{action.icon}</span>
+                          {action.label}
+                        </span>
+                      {action.disabled ? (
+                        <span className="text-[10px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">Indisponibil</span>
+                      ) : null}
+                    </button>
+                  </li>
+                ))
+              ) : (
+                <li className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-muted)]">
+                  Nicio comandă găsită.
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+      ) : null}
       {portalCreatorOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
           <div className="w-full max-w-md rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 text-sm shadow-2xl">
@@ -3703,15 +4425,15 @@ useEffect(() => {
                   onChange={(event) => setImportUpdateCurrent(event.target.checked)}
                   disabled={!selectedFlowId}
                 />
-                Actualizeaza flow curent
+                Actualizeaza map curent
               </label>
-              {!selectedFlowId ? <span className="text-[10px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">Nu este selectat niciun flow</span> : null}
+              {!selectedFlowId ? <span className="text-[10px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">Nu este selectat niciun map</span> : null}
             </div>
             {importSpecPreview ? (
               <div className="mt-4 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3 text-xs text-[var(--omni-muted)]">
                 <p className="font-semibold text-[var(--omni-ink)]">Previzualizare</p>
                 <div className="mt-2 flex flex-wrap gap-3">
-                  <span className="rounded-full bg-slate-900/10 px-2 py-0.5">Flow: {importSpecPreview.flow.name ?? "-"}</span>
+                  <span className="rounded-full bg-slate-900/10 px-2 py-0.5">Map: {importSpecPreview.flow.name ?? "-"}</span>
                   <span className="rounded-full bg-slate-900/10 px-2 py-0.5">Noduri: {importSpecPreview.nodes.length}</span>
                   <span className="rounded-full bg-slate-900/10 px-2 py-0.5">Tranzitii: {importSpecPreview.edges.length}</span>
                 </div>
@@ -3794,7 +4516,7 @@ function migrateLegacyWorldAssignment(
   return { chunkId: nextChunkId, tags: nextTags };
 }
 
-function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeByPath: Map<string, RouteDoc>): Node<FlowNodeData> {
+function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeByPath: Map<string, RouteDoc>): ReactFlowNode<FlowNodeData> {
   let route = routeMap.get(stored.routeId);
   let routeMismatch = false;
   const fallbackPathCandidate = stored.routeId;
@@ -3848,7 +4570,7 @@ function buildFlowEdge(edge: FlowEdge): Edge<FlowEdgeData> {
   };
 }
 
-function applyRouteMapping(node: Node<FlowNodeData>, route: RouteDoc): Node<FlowNodeData> {
+function applyRouteMapping(node: ReactFlowNode<FlowNodeData>, route: RouteDoc): ReactFlowNode<FlowNodeData> {
   return {
     ...node,
     data: {
@@ -3862,7 +4584,7 @@ function applyRouteMapping(node: Node<FlowNodeData>, route: RouteDoc): Node<Flow
   };
 }
 
-function computeFlowStats(nodes: Node<FlowNodeData>[], edges: Edge<FlowEdgeData>[]): FlowStats {
+function computeFlowStats(nodes: ReactFlowNode<FlowNodeData>[], edges: Edge<FlowEdgeData>[]): FlowStats {
   const nodeCount = nodes.length;
   const edgeCount = edges.length;
   const startNodeIds = nodes.filter((node) => node.data.tags?.includes("start")).map((node) => node.id);
@@ -3912,13 +4634,13 @@ type StepRenderMeta = {
 };
 
 type StepRenderData = {
-  nodes: Node<StepNodeRenderData>[];
+  nodes: ReactFlowNode<StepNodeRenderData>[];
   edges: Edge<FlowEdgeData>[];
   meta: Map<string, StepRenderMeta>;
 };
 
-function buildStepRenderData(manifest: StepManifest, hostNode: Node<FlowNodeData>): StepRenderData {
-  const nodes: Node<StepNodeRenderData>[] = [];
+function buildStepRenderData(manifest: StepManifest, hostNode: ReactFlowNode<FlowNodeData>): StepRenderData {
+  const nodes: ReactFlowNode<StepNodeRenderData>[] = [];
   const edges: Edge<FlowEdgeData>[] = [];
   const meta = new Map<string, StepRenderMeta>();
   manifest.nodes.forEach((stepNode, index) => {

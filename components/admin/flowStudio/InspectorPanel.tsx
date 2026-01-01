@@ -77,9 +77,16 @@ type InspectorPanelProps = {
     isExpanded: boolean;
     stepNodeCountForHost: number;
   } | null;
+  selectedStepDetails: {
+    hostNodeId: string;
+    hostLabel: string | null;
+    stepId: string;
+    stepLabel: string;
+    stepKind: string | null;
+  } | null;
   chunks: FlowChunk[];
-  defaultChunkId: string;
-  onNodeChunkChange: (nodeId: string, chunkId: string) => void;
+  defaultChunkId: string | null;
+  onNodeChunkChange: (nodeId: string, chunkId: string | null) => void;
   onAutoAssignChunks: () => void;
   nodeComments: FlowComment[];
   routeOptions: RouteDoc[];
@@ -98,6 +105,8 @@ type InspectorPanelProps = {
   onOverlayRemoveStep: (overlayId: string, index: number) => void;
   onOverlayReorderSteps: (overlayId: string, fromIndex: number, toIndex: number) => void;
   onOverlayStepUpdate: (overlayId: string, index: number, updates: Partial<FlowOverlayStep>) => void;
+  onRepairOverlaySteps: (overlayId: string) => void;
+  onOverlayStepFocus: (nodeId: string) => void;
   selectedNodeIds: string[];
   nodeLabelMap: Map<string, string>;
   overlayTabRequest?: { tab: InspectorTab; nonce: number } | null;
@@ -136,6 +145,7 @@ export function InspectorPanel({
   observedEnabled,
   observedEvents,
   debugInfo,
+  selectedStepDetails,
   chunks,
   defaultChunkId,
   onNodeChunkChange,
@@ -157,6 +167,8 @@ export function InspectorPanel({
   onOverlayRemoveStep,
   onOverlayReorderSteps,
   onOverlayStepUpdate,
+  onRepairOverlaySteps,
+  onOverlayStepFocus,
   selectedNodeIds,
   nodeLabelMap,
   overlayTabRequest,
@@ -199,7 +211,7 @@ export function InspectorPanel({
   const tabs = [
     { key: "basics" as const, label: "Basics" },
     { key: "portal" as const, label: "Portal", disabled: !portalEligible, hidden: !portalTabVisible },
-    { key: "overlays" as const, label: "Overlays" },
+    { key: "overlays" as const, label: "Journeys" },
     { key: "diagnostics" as const, label: "Diagnostics" },
     { key: "advanced" as const, label: "Advanced", disabled: !selectedNode },
   ];
@@ -223,6 +235,9 @@ export function InspectorPanel({
             onNodeTagsChange={onNodeTagsChange}
             portalNodeOptions={portalNodeOptions}
             onPortalTabRequest={() => setActiveTab("portal")}
+            onPortalChange={onPortalChange}
+            manifest={manifestForDisplay}
+            manifestLabel={manifestLabel}
           />
         );
       case "portal":
@@ -253,6 +268,8 @@ export function InspectorPanel({
             onOverlayStepUpdate={onOverlayStepUpdate}
             selectedNodeIds={selectedNodeIds}
             nodeLabelMap={nodeLabelMap}
+            onRepairOverlaySteps={onRepairOverlaySteps}
+            onOverlayStepFocus={onOverlayStepFocus}
           />
         );
       case "diagnostics":
@@ -263,9 +280,6 @@ export function InspectorPanel({
             flowStats={flowStats}
             missingManifestNodes={missingManifestNodes}
             onSelectMissingManifestNode={onSelectMissingManifestNode}
-            stepsExpanded={stepsExpanded}
-            manifest={manifestForDisplay}
-            manifestLabel={manifestLabel}
             debugInfo={debugInfo}
             observedEnabled={observedEnabled}
             observedEvents={observedEvents}
@@ -307,6 +321,21 @@ export function InspectorPanel({
           Ascunde
         </button>
       </div>
+      {selectedStepDetails ? (
+        <div className="rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-xs shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Step selectat</p>
+            {selectedStepDetails.stepKind ? (
+              <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
+                {selectedStepDetails.stepKind}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-sm font-semibold text-[var(--omni-ink)]">{selectedStepDetails.stepLabel}</p>
+          <p className="text-[11px] text-[var(--omni-muted)]">Din: {selectedStepDetails.hostLabel ?? selectedStepDetails.hostNodeId}</p>
+          <p className="text-[10px] text-[var(--omni-muted)]">ID: {selectedStepDetails.stepId}</p>
+        </div>
+      ) : null}
       {selectedNode ? (
         <div className="rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -464,13 +493,16 @@ type NodeBasicsSectionProps = {
   node: Node<FlowNodeData>;
   routeMap: Map<string, RouteDoc>;
   chunks: FlowChunk[];
-  defaultChunkId: string;
-  onChunkChange: (nodeId: string, chunkId: string) => void;
+  defaultChunkId: string | null;
+  onChunkChange: (nodeId: string, chunkId: string | null) => void;
   onAutoAssignChunks: () => void;
   onLabelChange: (nodeId: string, locale: "ro" | "en", value: string) => void;
   onNodeTagsChange: (nodeId: string, tags: string[]) => void;
   portalNodeOptions: PortalNodeOption[];
   onPortalTabRequest: () => void;
+  onPortalChange: (nodeId: string, portal: FlowNodePortalConfig | null) => void;
+  manifest?: StepManifest | null;
+  manifestLabel?: string | null;
 };
 
 type NodePortalSectionProps = {
@@ -487,9 +519,6 @@ type DiagnosticsSectionProps = {
   flowStats: FlowStats;
   missingManifestNodes: MissingManifestNode[];
   onSelectMissingManifestNode: (nodeId: string) => void;
-  stepsExpanded: boolean;
-  manifest: StepManifest | null;
-  manifestLabel: string | null;
   debugInfo?: InspectorPanelProps["debugInfo"];
   observedEnabled: boolean;
   observedEvents: ObservedEvent[];
@@ -522,6 +551,8 @@ type OverlayManagerSectionProps = {
   onOverlayStepUpdate: (overlayId: string, index: number, updates: Partial<FlowOverlayStep>) => void;
   selectedNodeIds: string[];
   nodeLabelMap: Map<string, string>;
+  onRepairOverlaySteps: (overlayId: string) => void;
+  onOverlayStepFocus: (nodeId: string) => void;
 };
 
 function NodeBasicsSection({
@@ -535,6 +566,9 @@ function NodeBasicsSection({
   onNodeTagsChange,
   portalNodeOptions,
   onPortalTabRequest,
+  onPortalChange,
+  manifest,
+  manifestLabel,
 }: NodeBasicsSectionProps) {
   const route = routeMap.get(node.data.routeId);
   const [tagDraft, setTagDraft] = useState(node.data.tags?.join(", ") ?? "");
@@ -573,28 +607,29 @@ function NodeBasicsSection({
 
   return (
     <div className="space-y-4 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3">
+      {manifest && manifestLabel ? <ManifestPreview manifest={manifest} label={manifestLabel} /> : null}
       <div className="space-y-3 rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 p-3">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Quick actions</p>
-        <div className="space-y-2">
-          <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Label override</p>
-          {(["ro", "en"] as const).map((locale) => (
-            <input
-              key={locale}
-              type="text"
-              className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-              placeholder={`Titlu ${locale}`}
-              value={node.data.labelOverrides?.[locale] ?? ""}
-              onChange={(event) => onLabelChange(node.id, locale, event.target.value)}
-            />
-          ))}
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-2">
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-2 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3">
+            <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Label override</p>
+            {(["ro", "en"] as const).map((locale) => (
+              <input
+                key={locale}
+                type="text"
+                className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
+                placeholder={`Titlu ${locale}`}
+                value={node.data.labelOverrides?.[locale] ?? ""}
+                onChange={(event) => onLabelChange(node.id, locale, event.target.value)}
+              />
+            ))}
+          </div>
+          <div className="space-y-2 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3">
             <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">World</p>
             <select
               className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
-              value={node.data.chunkId ?? defaultChunkId}
-              onChange={(event) => onChunkChange(node.id, event.target.value)}
+              value={node.data.chunkId ?? defaultChunkId ?? ""}
+              onChange={(event) => onChunkChange(node.id, event.target.value ? event.target.value : null)}
             >
               {chunks.map((chunk) => (
                 <option key={chunk.id} value={chunk.id}>
@@ -604,29 +639,31 @@ function NodeBasicsSection({
             </select>
             <button
               type="button"
-              className="rounded-full border border-dashed border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold"
+              className="w-full rounded-full border border-dashed border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold"
               onClick={handleAutoAssignConfirm}
             >
               Auto-assign după route.group
             </button>
           </div>
-          <div className="space-y-1">
+        </div>
+        <div className="space-y-1 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3">
+          <div className="flex items-center justify-between">
             <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Tags</p>
-            <textarea
-              className="h-24 w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-              placeholder="type:portal, surface:today"
-              value={tagDraft}
-              onChange={(event) => setTagDraft(event.target.value)}
-            />
             <button
               type="button"
               className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold"
               onClick={handleTagsCommit}
             >
-              Actualizează tags
+              Actualizează
             </button>
-            <p className="text-[11px] text-[var(--omni-muted)]">Separă tag-urile cu virgulă (ex: engine:vocab, surface:today).</p>
           </div>
+          <textarea
+            className="h-28 w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
+            placeholder="type:portal, surface:today"
+            value={tagDraft}
+            onChange={(event) => setTagDraft(event.target.value)}
+          />
+          <p className="text-[11px] text-[var(--omni-muted)]">Separă tag-urile cu virgulă (ex: engine:vocab, surface:today).</p>
         </div>
         <div className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-white px-3 py-2 text-[11px]">
           <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Portal target</p>
@@ -635,13 +672,24 @@ function NodeBasicsSection({
           ) : (
             <p className="text-[var(--omni-muted)]">Nodul nu este portal.</p>
           )}
-          <button
-            type="button"
-            className="mt-2 rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold"
-            onClick={onPortalTabRequest}
-          >
-            {isPortal ? "Editează portal" : "Configurează portal"}
-          </button>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold"
+              onClick={onPortalTabRequest}
+            >
+              {isPortal ? "Editează portal" : "Configurează portal"}
+            </button>
+            {isPortal ? (
+              <button
+                type="button"
+                className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold"
+                onClick={() => onPortalChange(node.id, null)}
+              >
+                Resetează
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
       <div>
@@ -747,9 +795,6 @@ function DiagnosticsSection({
   flowStats,
   missingManifestNodes,
   onSelectMissingManifestNode,
-  stepsExpanded,
-  manifest,
-  manifestLabel,
   debugInfo,
   observedEnabled,
   observedEvents,
@@ -771,7 +816,6 @@ function DiagnosticsSection({
       {missingManifestNodes.length ? (
         <MissingManifestPanel nodes={missingManifestNodes} onSelectNode={onSelectMissingManifestNode} />
       ) : null}
-      {stepsExpanded && manifest && manifestLabel ? <ManifestPreview manifest={manifest} label={manifestLabel} /> : null}
       {DEBUG_STEPS && debugInfo ? <DebugInfoPanel info={debugInfo} /> : null}
       {observedEnabled ? <ObservedEventsPanel events={observedEvents} /> : null}
     </div>
@@ -915,6 +959,8 @@ function OverlayManagerSection({
   onOverlayStepUpdate,
   selectedNodeIds,
   nodeLabelMap,
+  onRepairOverlaySteps,
+  onOverlayStepFocus,
 }: OverlayManagerSectionProps) {
   const [newOverlayName, setNewOverlayName] = useState("");
   const activeOverlay = selectedOverlayId ? overlays.find((overlay) => overlay.id === selectedOverlayId) ?? null : null;
@@ -927,16 +973,16 @@ function OverlayManagerSection({
   return (
     <div className="space-y-4 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3 text-xs">
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Overlays</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Journeys</p>
         <select
           className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
           value={selectedOverlayId ?? ""}
           onChange={(event) => onSelectOverlay(event.target.value || null)}
         >
-          <option value="">Selectează overlay</option>
+          <option value="">Selectează journey</option>
           {overlays.map((overlay) => (
             <option key={overlay.id} value={overlay.id}>
-              {overlay.name ?? "Overlay"}
+              {overlay.name ?? "Journey"}
             </option>
           ))}
         </select>
@@ -944,7 +990,7 @@ function OverlayManagerSection({
           <input
             type="text"
             className="flex-1 rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-            placeholder="Nume overlay"
+            placeholder="Nume journey"
             value={newOverlayName}
             onChange={(event) => setNewOverlayName(event.target.value)}
           />
@@ -976,10 +1022,10 @@ function OverlayManagerSection({
             <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Descriere</label>
             <textarea
               className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-              placeholder="Rezumat overlay"
-              value={activeOverlay.description ?? ""}
-              onChange={(event) => onOverlayMetadataChange(activeOverlay.id, { description: event.target.value })}
-            />
+            placeholder="Rezumat journey"
+            value={activeOverlay.description ?? ""}
+            onChange={(event) => onOverlayMetadataChange(activeOverlay.id, { description: event.target.value })}
+          />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -998,24 +1044,51 @@ function OverlayManagerSection({
               className="rounded-full border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600"
               onClick={() => onDeleteOverlay(activeOverlay.id)}
             >
-              Șterge overlay
+              Șterge journey
             </button>
           </div>
           <div className="space-y-2">
-            <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Pași ({activeOverlay.steps?.length ?? 0})</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Pași ({activeOverlay.steps?.length ?? 0})</p>
+              {activeOverlay.steps?.length ? (
+                <button
+                  type="button"
+                  className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--omni-ink)]"
+                  onClick={() => onRepairOverlaySteps(activeOverlay.id)}
+                >
+                  Repair steps
+                </button>
+              ) : null}
+            </div>
             {activeOverlay.steps?.length ? (
               <ul className="space-y-2">
                 {activeOverlay.steps.map((step, index) => {
-                  const label = nodeLabelMap.get(step.nodeId) ?? step.nodeId;
+                  const nodeExists = Boolean(step.nodeId && nodeLabelMap.has(step.nodeId));
+                  const label = nodeExists ? nodeLabelMap.get(step.nodeId!) ?? step.nodeId : step.nodeId || "Fără nod";
                   return (
-                    <li key={`${step.nodeId}-${index}`} className="rounded-xl border border-[var(--omni-border-soft)] bg-white p-2">
+                    <li
+                      key={`${step.nodeId ?? "step"}-${index}`}
+                      className={clsx(
+                        "rounded-xl border p-2",
+                        nodeExists ? "border-[var(--omni-border-soft)] bg-white" : "border-amber-200 bg-amber-50",
+                      )}
+                    >
                       <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-[var(--omni-ink)]">
+                        <button
+                          type="button"
+                          className={clsx(
+                            "flex-1 text-left",
+                            nodeExists ? "text-[var(--omni-ink)]" : "text-amber-700",
+                          )}
+                          onClick={() => nodeExists && step.nodeId && onOverlayStepFocus(step.nodeId)}
+                          disabled={!nodeExists || !step.nodeId}
+                        >
+                          <p className="text-sm font-semibold">
                             {index + 1}. {label}
                           </p>
-                          <p className="text-[11px] text-[var(--omni-muted)]">{step.nodeId}</p>
-                        </div>
+                          <p className="text-[11px] text-[var(--omni-muted)]">{step.nodeId || "—"}</p>
+                          {!nodeExists ? <p className="text-[11px] text-amber-700">Nod inexistent — repară Journey-ul.</p> : null}
+                        </button>
                         <div className="flex items-center gap-1 text-[10px]">
                           <button
                             type="button"
@@ -1072,7 +1145,7 @@ function OverlayManagerSection({
         </div>
       ) : (
         <p className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-white p-3 text-center text-[var(--omni-muted)]">
-          Selectează sau creează un overlay pentru a începe.
+          Selectează sau creează un journey pentru a începe.
         </p>
       )}
     </div>

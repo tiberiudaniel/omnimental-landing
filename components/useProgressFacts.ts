@@ -20,6 +20,34 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
   }));
   const backfillRequested = useRef(false);
   useEffect(() => {
+    const maybeUseE2EOverride = (): ProgressFact | null => {
+      if (typeof window === "undefined") return null;
+      if (!(window as typeof window & { __OMNI_E2E__?: boolean }).__OMNI_E2E__) return null;
+      const raw = window.localStorage.getItem("e2e_progress_override");
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? (parsed as ProgressFact) : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const override = maybeUseE2EOverride();
+    if (override) {
+      const commit = () => setState({ data: override, loading: false, error: null });
+      if (typeof window === "undefined") {
+        if (typeof queueMicrotask === "function") {
+          queueMicrotask(commit);
+        } else {
+          setTimeout(commit, 0);
+        }
+        return () => {};
+      }
+      const raf = window.requestAnimationFrame(commit);
+      return () => window.cancelAnimationFrame(raf);
+    }
+
     if (!profileId) {
       const timeout = setTimeout(() => {
         setState({ data: null, loading: false, error: null });
@@ -52,7 +80,6 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
           ? ((snapshot.data().progressFacts as ProgressFact | undefined) ?? null)
           : null;
 
-        // Determine if we need backfill (intent/motivation/evaluation missing)
         const hasProfileIntent = Boolean(latestProfile?.intent);
         const hasProfileMotivation = Boolean(latestProfile?.motivation);
         const hasProfileEvaluation = Boolean(latestProfile?.evaluation);
@@ -74,7 +101,9 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
               mergeAndSet();
             })
             .catch((error) => setState((prev) => ({ data: prev.data, loading: false, error })))
-            .finally(() => { backfillRequested.current = false; });
+            .finally(() => {
+              backfillRequested.current = false;
+            });
         } else {
           mergeAndSet();
         }

@@ -67,6 +67,9 @@ export type ChunkNodeData = {
   counts: ChunkCounts;
   color?: string;
   commentCount?: number;
+  overlayStepCount?: number;
+  overlayHighlighted?: boolean;
+  overlayDimmed?: boolean;
 };
 
 export type ChunkGraphResult = {

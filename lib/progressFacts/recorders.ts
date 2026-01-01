@@ -998,7 +998,11 @@ type DailyRunnerEventType =
   | "mission_brief_bounce"
   | "soft_gate_preview"
   | "quest_map_view"
-  | "quest_complete";
+  | "quest_complete"
+  | "today_run_started"
+  | "today_run_completed"
+  | "vocab_completed"
+  | "mindpacing_completed";
 
 type DailyRunnerEventPayload = {
   type: DailyRunnerEventType;
@@ -1037,6 +1041,30 @@ export async function recordDailyRunnerEvent(payload: DailyRunnerEventPayload, o
     return mergeProgressFact({ dailyRunner: { events: arrayUnion(entry) } }, ownerId);
   } catch (error) {
     console.warn("recordDailyRunnerEvent failed", error);
+    return null;
+  }
+}
+
+export async function recordMindPacingSignal(payload: {
+  dayKey: string;
+  questionId?: string | null;
+  optionId?: string | null;
+  mindTag?: string | null;
+  axisId?: string | null;
+}) {
+  try {
+    return mergeProgressFact({
+      mindPacing: {
+        dayKey: payload.dayKey,
+        questionId: payload.questionId ?? null,
+        optionId: payload.optionId ?? null,
+        mindTag: payload.mindTag ?? null,
+        axisId: payload.axisId ?? null,
+        updatedAt: serverTimestamp(),
+      },
+    });
+  } catch (error) {
+    console.warn("recordMindPacingSignal failed", error);
     return null;
   }
 }
@@ -1212,4 +1240,21 @@ export async function recordFoundationCycleComplete(ownerId?: string | null) {
     },
     ownerId,
   );
+}
+
+export async function recordEarnedRoundState(state: { dayKey: string; credits: number; usedToday: number }) {
+  const clampValue = (value: number) => {
+    if (!Number.isFinite(value)) return 0;
+    return Math.min(Math.max(Math.round(value), 0), 3);
+  };
+  return mergeProgressFact({
+    stats: {
+      earnedRounds: {
+        dayKey: state.dayKey,
+        credits: clampValue(state.credits),
+        usedToday: clampValue(state.usedToday),
+        updatedAt: serverTimestamp(),
+      },
+    },
+  });
 }

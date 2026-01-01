@@ -20,6 +20,7 @@ import {
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth, ensureAuth } from "../lib/firebase";
+import { isE2EMode, E2E_USER_ID } from "@/lib/e2eMode";
 import { migrateAnonToUser } from "@/lib/migrateUserData";
 
 const AUTH_EMAIL_STORAGE_KEY = "omnimental_auth_email";
@@ -47,6 +48,29 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const e2eMode = isE2EMode();
+  const e2eUser = useMemo<User | null>(() => {
+    if (!e2eMode) return null;
+    return {
+      uid: E2E_USER_ID,
+      email: "e2e@omnimental.dev",
+      displayName: "E2E User",
+      emailVerified: true,
+      isAnonymous: false,
+      providerData: [],
+      refreshToken: "e2e",
+      tenantId: null,
+      delete: async () => {},
+      getIdToken: async () => "e2e-token",
+      getIdTokenResult: async () => ({ token: "e2e-token" } as never),
+      reload: async () => {},
+      toJSON: () => ({ uid: E2E_USER_ID }),
+      metadata: {} as never,
+      providerId: "firebase",
+      phoneNumber: null,
+      photoURL: null,
+    } as User;
+  }, [e2eMode]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [sendingLink, setSendingLink] = useState(false);
@@ -56,6 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pendingRememberRef = useRef<boolean>(false);
 
   useEffect(() => {
+    if (e2eMode && e2eUser) {
+      setUser(e2eUser);
+      setLoading(false);
+      setAuthReady(true);
+      return;
+    }
     const auth = getFirebaseAuth();
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
@@ -75,9 +105,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {}
     });
     return unsubscribe;
-  }, []);
+  }, [e2eMode, e2eUser]);
 
   useEffect(() => {
+    if (e2eMode) {
+      setAuthReady(true);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -91,10 +125,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [e2eMode]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+    if (e2eMode) {
       return;
     }
     const auth = getFirebaseAuth();
@@ -155,10 +192,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         });
     }
-  }, []);
+  }, [e2eMode]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+    if (e2eMode) {
       return;
     }
     if (!user) {
@@ -175,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Auto sign-out failed", error);
       });
     }
-  }, [user]);
+  }, [user, e2eMode]);
 
   const sendMagicLink = useCallback(async (email: string, remember: boolean) => {
     if (!email) {

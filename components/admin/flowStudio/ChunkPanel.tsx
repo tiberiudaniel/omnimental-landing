@@ -108,6 +108,9 @@ export function ChunkPanel({
     onAddComment(chunkId, draft);
     setCommentDrafts((prev) => ({ ...prev, [chunkId]: "" }));
   };
+  const totalWorlds = chunks.length;
+  const totalNodes = Array.from(countsByChunk.values()).reduce((sum, entry) => sum + (entry?.total ?? 0), 0);
+  const totalStarts = Array.from(countsByChunk.values()).reduce((sum, entry) => sum + (entry?.start ?? 0), 0);
 
   const handleDropOnChunk = (chunkId: string, event: ReactDragEvent<HTMLDivElement>) => {
     if (!event.dataTransfer.types.includes(CHUNK_SELECTION_MIME)) return;
@@ -156,6 +159,11 @@ export function ChunkPanel({
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Worlds</p>
           <p className="text-sm text-[var(--omni-muted)]">Organizează experiența în worlds coerente.</p>
+          <div className="mt-2 flex gap-2 text-[11px] text-[var(--omni-muted)]">
+            <span className="rounded-full bg-white/70 px-2 py-0.5 font-semibold text-[var(--omni-ink)]">🌐 {totalWorlds} worlds</span>
+            <span className="rounded-full bg-white/70 px-2 py-0.5 font-semibold text-[var(--omni-ink)]">🧩 {totalNodes} nodes</span>
+            <span className="rounded-full bg-white/70 px-2 py-0.5 font-semibold text-[var(--omni-ink)]">🚀 {totalStarts} start</span>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -303,7 +311,7 @@ export function ChunkPanel({
         ) : null}
       </div>
       {disabled ? (
-        <p className="mt-4 text-xs text-[var(--omni-muted)]">Selectează un flow pentru a edita worlds.</p>
+        <p className="mt-4 text-xs text-[var(--omni-muted)]">Selectează un map pentru a edita worlds.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {chunks.map((chunk, index) => {

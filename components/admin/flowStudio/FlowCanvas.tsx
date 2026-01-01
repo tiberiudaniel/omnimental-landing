@@ -80,11 +80,16 @@ function StepNodeCard({ data, selected, issueCount }: StepNodeCardProps) {
 }
 
 function ChunkNodeCard({ data, selected }: NodeProps<ChunkNodeData>) {
+  const overlayHighlighted = Boolean(data.overlayHighlighted);
+  const overlayDimmed = Boolean(data.overlayDimmed);
+  const overlayStepCount = data.overlayStepCount ?? 0;
   return (
     <div
       className={clsx(
-        "w-52 rounded-2xl border-2 px-3 py-2 text-left shadow-md",
+        "w-52 rounded-2xl border-2 px-3 py-2 text-left shadow-md transition",
         selected ? "shadow-[0_12px_24px_rgba(15,23,42,0.25)]" : "shadow-[0_6px_16px_rgba(15,23,42,0.15)]",
+        overlayHighlighted ? "border-indigo-400 ring-2 ring-indigo-200" : "",
+        overlayDimmed ? "opacity-30" : "",
       )}
       style={{
         borderColor: data.color ?? "var(--omni-border-soft)",
@@ -93,6 +98,7 @@ function ChunkNodeCard({ data, selected }: NodeProps<ChunkNodeData>) {
     >
       <p className="text-sm font-semibold text-[var(--omni-ink)]">{data.title}</p>
       <p className="text-xs text-[var(--omni-muted)]">Total: {data.counts.total}</p>
+      {overlayStepCount ? <p className="text-xs font-semibold text-indigo-700">Journey nodes: {overlayStepCount}</p> : null}
     </div>
   );
 }
@@ -103,6 +109,7 @@ function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
   const manifestAvailable = Boolean(ctx.nodeCanExpandSteps.get(props.id));
   const canExpand = true; // Temporarily expose Steps for all nodes while diagnostics parity is validated
   const dimmed = ctx.dimmedNodeIds ? ctx.dimmedNodeIds.has(props.id) : false;
+  const highlighted = ctx.highlightNodeIds ? ctx.highlightNodeIds.has(props.id) : false;
   if (DEBUG_STEPS) {
     console.log("[FlowCanvas] render FlowNodeCard", {
       nodeId: props.id,
@@ -123,6 +130,7 @@ function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
       onExpandSteps={(nodeId) => ctx.onRequestNodeSteps?.(nodeId)}
       commentCount={ctx.commentCountMap.get(props.id) ?? 0}
       dimmed={dimmed}
+      highlighted={highlighted}
     />
   );
 }
@@ -204,6 +212,7 @@ type FlowCanvasProps = {
   onNodeDoubleClick?: (node: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>) => void;
   onRequestNodeSteps?: (nodeId: string) => void;
   onEdgeSelect: (edgeId: string | null) => void;
+  onEdgeUpdate?: (oldEdge: Edge<FlowEdgeData>, newConnection: Connection) => void;
   onCanvasClear: () => void;
   nodeIssueMap: Map<string, number>;
   observedEnabled: boolean;
@@ -213,6 +222,7 @@ type FlowCanvasProps = {
   onCanvasDragOver: (event: ReactDragEvent<HTMLDivElement>) => void;
   onCanvasDrop: (event: ReactDragEvent<HTMLDivElement>) => void;
   onAutoLayout: () => void;
+  primaryHeaderActions?: ReactNode;
   extraHeader?: ReactNode;
   nodeStepAvailability: Map<string, StepAvailability>;
   autoLayoutRunning: boolean;
@@ -236,6 +246,7 @@ export function FlowCanvas({
   onNodeDoubleClick,
   onRequestNodeSteps,
   onEdgeSelect,
+  onEdgeUpdate,
   onCanvasClear,
   nodeIssueMap,
   observedEnabled,
@@ -245,6 +256,7 @@ export function FlowCanvas({
   onCanvasDragOver,
   onCanvasDrop,
   onAutoLayout,
+  primaryHeaderActions,
   extraHeader,
   nodeStepAvailability,
   autoLayoutRunning,
@@ -349,10 +361,9 @@ export function FlowCanvas({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--omni-border-soft)] pb-3">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Canvas</p>
-          <p className="text-sm text-[var(--omni-muted)]">Drag & drop routes aici pentru a crea noduri.</p>
         </div>
-        <div className="flex items-center gap-2">
-          {extraHeader}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {primaryHeaderActions}
           <button
             type="button"
             className={clsx(
@@ -363,13 +374,14 @@ export function FlowCanvas({
             onClick={onAutoLayout}
             disabled={layoutButtonDisabled}
             title={autoLayoutDisabled ? "Disponibil doar in modul Nodes" : undefined}
-          >
-            {autoLayoutRunning ? "Auto layout..." : "Auto layout"}
-          </button>
+            >
+              {autoLayoutRunning ? "Auto layout..." : "Auto layout"}
+            </button>
         </div>
       </div>
+      {extraHeader ? <div className="mt-3">{extraHeader}</div> : null}
       {disabled ? (
-        <p className="p-6 text-sm text-[var(--omni-muted)]">Selectează sau creează un flow pentru a edita canvas-ul.</p>
+        <p className="p-6 text-sm text-[var(--omni-muted)]">Selectează sau creează un map pentru a edita canvas-ul.</p>
       ) : (
         <FlowNodeContext.Provider value={nodeContextValue}>
           <div ref={wrapperRef} onDragOver={onCanvasDragOver} onDrop={onCanvasDrop} className="mt-4 h-[560px] rounded-2xl border border-[var(--omni-border-soft)] bg-white">
@@ -395,7 +407,11 @@ export function FlowCanvas({
                   edges: params.edges as Edge<FlowEdgeData>[],
                 })
               }
+              edgesUpdatable={viewMode === "nodes"}
+              onEdgeUpdate={viewMode === "nodes" ? onEdgeUpdate : undefined}
+              edgeUpdaterRadius={24}
               defaultEdgeOptions={defaultEdgeOptions}
+              minZoom={0.1}
             >
               <MiniMap
                 pannable

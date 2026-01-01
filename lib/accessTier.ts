@@ -21,13 +21,13 @@ export type AccessTierInput = {
   progress?: ProgressFact | null;
 };
 
-const tierBoundaries = {
+export const ACCESS_TIER_BOUNDARIES = {
   minimalMenu: 1,
   coreMenu: 2,
   arenas: 3,
   library: 4,
   wizard: 5,
-};
+} as const;
 
 function hasFoundationMilestone(progress?: ProgressFact | null): boolean {
   const stats = progress?.stats as { foundationDone?: boolean } | undefined;
@@ -84,25 +84,31 @@ export function deriveMembershipTier(source?: MembershipSource): MembershipTier 
   return status?.toLowerCase() === "premium" ? "premium" : "free";
 }
 
+export function deriveAccessFlags(tier: ProgressTier): AccessTierFlags {
+  return {
+    showMenu: tier >= ACCESS_TIER_BOUNDARIES.minimalMenu,
+    showMinimalMenu: tier >= ACCESS_TIER_BOUNDARIES.minimalMenu,
+    canProgress: tier >= ACCESS_TIER_BOUNDARIES.coreMenu,
+    canArenas: tier >= ACCESS_TIER_BOUNDARIES.arenas,
+    canLibrary: tier >= ACCESS_TIER_BOUNDARIES.library,
+    canWizard: tier >= ACCESS_TIER_BOUNDARIES.wizard,
+    canHubs: tier >= ACCESS_TIER_BOUNDARIES.arenas,
+  };
+}
+
+export function deriveNavLinksForTier(tier: ProgressTier): string[] {
+  const navLinks: string[] = [];
+  if (tier >= ACCESS_TIER_BOUNDARIES.minimalMenu) navLinks.push("today");
+  if (tier >= ACCESS_TIER_BOUNDARIES.coreMenu) navLinks.push("progress");
+  if (tier >= ACCESS_TIER_BOUNDARIES.arenas) navLinks.push("arenas");
+  if (tier >= ACCESS_TIER_BOUNDARIES.library) navLinks.push("library");
+  if (tier >= ACCESS_TIER_BOUNDARIES.wizard) navLinks.push("wizard");
+  return navLinks;
+}
+
 export function deriveAccessTier({ progress }: AccessTierInput): AccessTierResult {
   const tier = deriveProgressTier(progress);
-
-  const flags: AccessTierFlags = {
-    showMenu: tier >= tierBoundaries.minimalMenu,
-    showMinimalMenu: tier >= tierBoundaries.minimalMenu,
-    canProgress: tier >= tierBoundaries.coreMenu,
-    canArenas: tier >= tierBoundaries.arenas,
-    canLibrary: tier >= tierBoundaries.library,
-    canWizard: tier >= tierBoundaries.wizard,
-    canHubs: tier >= tierBoundaries.arenas,
-  };
-
-  const navLinks: string[] = [];
-  if (tier >= tierBoundaries.minimalMenu) navLinks.push("today");
-  if (tier >= tierBoundaries.coreMenu) navLinks.push("progress");
-  if (tier >= tierBoundaries.arenas) navLinks.push("arenas");
-  if (tier >= tierBoundaries.library) navLinks.push("library");
-  if (tier >= tierBoundaries.wizard) navLinks.push("wizard");
-
+  const flags = deriveAccessFlags(tier);
+  const navLinks = deriveNavLinksForTier(tier);
   return { tier, flags, navLinks };
 }

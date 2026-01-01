@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-12-28T16:37:35.769Z",
+  "generatedAt": "2026-01-01T23:07:23.936761Z",
   "routes": [
     {
       "routePath": "/",
@@ -81,31 +81,31 @@
     },
     {
       "routePath": "/arenas",
-      "group": "training",
+      "group": "arenas",
       "filePath": "app/(app)/arenas/page.tsx",
       "routeId": "L2FyZW5hcw"
     },
     {
       "routePath": "/arenas/[arenaId]",
-      "group": "training",
+      "group": "arenas",
       "filePath": "app/(app)/arenas/[arenaId]/page.tsx",
       "routeId": "L2FyZW5hcy9bYXJlbmFJZF0"
     },
     {
       "routePath": "/arenas/[arenaId]/[moduleId]",
-      "group": "training",
+      "group": "arenas",
       "filePath": "app/(app)/arenas/[arenaId]/[moduleId]/page.tsx",
       "routeId": "L2FyZW5hcy9bYXJlbmFJZF0vW21vZHVsZUlkXQ"
     },
     {
       "routePath": "/arenas/[arenaId]/[moduleId]/run",
-      "group": "training",
+      "group": "arenas",
       "filePath": "app/(app)/arenas/[arenaId]/[moduleId]/run/page.tsx",
       "routeId": "L2FyZW5hcy9bYXJlbmFJZF0vW21vZHVsZUlkXS9ydW4"
     },
     {
       "routePath": "/arenas/history",
-      "group": "training",
+      "group": "arenas",
       "filePath": "app/(app)/arenas/history/page.tsx",
       "routeId": "L2FyZW5hcy9oaXN0b3J5"
     },
@@ -153,7 +153,7 @@
     },
     {
       "routePath": "/experience-onboarding",
-      "group": "onboarding",
+      "group": "experience-onboarding",
       "filePath": "app/(app)/experience-onboarding/page.tsx",
       "routeId": "L2V4cGVyaWVuY2Utb25ib2FyZGluZw"
     },
@@ -285,7 +285,7 @@
     },
     {
       "routePath": "/omni-abil",
-      "group": "public",
+      "group": "omni-abil",
       "filePath": "app/(app)/omni-abil/page.tsx",
       "routeId": "L29tbmktYWJpbA"
     },
@@ -416,6 +416,12 @@
       "routeId": "L3JlcGxheS9tb2R1bGUvW21vZHVsZUlkXQ"
     },
     {
+      "routePath": "/session/complete",
+      "group": "today",
+      "filePath": "app/(app)/session/complete/page.tsx",
+      "routeId": "L3Nlc3Npb24vY29tcGxldGU"
+    },
+    {
       "routePath": "/sessions/individual",
       "group": "advanced",
       "filePath": "app/(public)/sessions/individual/page.tsx",
@@ -432,6 +438,18 @@
       "group": "today",
       "filePath": "app/(app)/today/page.tsx",
       "routeId": "L3RvZGF5"
+    },
+    {
+      "routePath": "/today/earn",
+      "group": "today",
+      "filePath": "app/(app)/today/earn/page.tsx",
+      "routeId": "L3RvZGF5L2Vhcm4"
+    },
+    {
+      "routePath": "/today/next",
+      "group": "today",
+      "filePath": "app/(app)/today/next/page.tsx",
+      "routeId": "L3RvZGF5L25leHQ"
     },
     {
       "routePath": "/today/run",

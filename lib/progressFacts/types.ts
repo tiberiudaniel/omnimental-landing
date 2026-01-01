@@ -112,5 +112,29 @@ export type ProgressFact = {
     lastDailySessionAt?: Date | FireTs | null;
     lastActionAt?: Date | FireTs | null;
     foundationDone?: boolean;
+    earnedRounds?: {
+      dayKey: string;
+      credits: number;
+      usedToday: number;
+      updatedAt?: Date | FireTs | null;
+    };
+  };
+  mindPacing?: {
+    dayKey: string;
+    questionId?: string | null;
+    optionId?: string | null;
+    mindTag?: string | null;
+    axisId?: string | null;
+    updatedAt?: Date | FireTs | null;
+  };
+  dailyRunner?: {
+    events?: Array<{
+      type: string;
+      at?: Date | number | FireTs | string;
+      label?: string | null;
+      mode?: string | null;
+      cluster?: string | null;
+      [key: string]: unknown;
+    }>;
   };
 };

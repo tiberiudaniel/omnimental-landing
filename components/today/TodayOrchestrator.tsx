@@ -14,7 +14,13 @@ import { useCopy } from "@/lib/useCopy";
 import { getScreenIdForRoute } from "@/lib/routeIds";
 
 const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
-import { getTriedExtraToday, hasCompletedToday, readLastCompletion, type DailyCompletionRecord } from "@/lib/dailyCompletion";
+import {
+  getTodayKey,
+  getTriedExtraToday,
+  hasCompletedToday,
+  readLastCompletion,
+  type DailyCompletionRecord,
+} from "@/lib/dailyCompletion";
 import { getTraitLabel, type CatAxisId } from "@/lib/profileEngine";
 import { type SessionPlan } from "@/lib/sessionRecommenderEngine";
 import { saveTodayPlan } from "@/lib/todayPlanStorage";
@@ -32,6 +38,7 @@ import {
 import { CAT_LITE_EXTENDED_AXES } from "@/lib/catLite";
 import { getAxisFromMindPacingSignal, isMindPacingSignalTag } from "@/lib/mindPacingSignals";
 import { useUserAccessTier } from "@/components/useUserAccessTier";
+import { useEarnedRoundsController } from "@/components/today/useEarnedRounds";
 
 export default function TodayOrchestrator() {
   const router = useRouter();
@@ -39,16 +46,29 @@ export default function TodayOrchestrator() {
   const navLinks = useNavigationLinks();
   const { user, authReady } = useAuth();
   const { data: progressFacts, loading: progressFactsLoading } = useProgressFacts(user?.uid ?? null);
+  const earnedRounds = useEarnedRoundsController(progressFacts ?? null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [completedToday, setCompletedToday] = useState(false);
   const [lastCompletion, setLastCompletion] = useState<DailyCompletionRecord | null>(null);
   const sourceParam = searchParams?.get("source");
   const mindpacingTagParam = searchParams?.get("mindpacingTag") ?? null;
+  const todayKey = useMemo(() => getTodayKey(), []);
+  const mindBlock = progressFacts?.mindPacing ?? null;
+  const persistedMindSignal = useMemo(() => {
+    if (!mindBlock) return null;
+    if (mindBlock.dayKey !== todayKey) return null;
+    const tag = mindBlock.mindTag;
+    return isMindPacingSignalTag(tag) ? tag : null;
+  }, [mindBlock, todayKey]);
   const forcedMindAxis = useMemo(() => {
-    if (sourceParam !== "mindpacing_safe") return null;
-    if (!isMindPacingSignalTag(mindpacingTagParam)) return null;
-    return getAxisFromMindPacingSignal(mindpacingTagParam);
-  }, [mindpacingTagParam, sourceParam]);
+    if (sourceParam === "mindpacing_safe" && isMindPacingSignalTag(mindpacingTagParam)) {
+      return getAxisFromMindPacingSignal(mindpacingTagParam);
+    }
+    if (persistedMindSignal) {
+      return getAxisFromMindPacingSignal(persistedMindSignal);
+    }
+    return null;
+  }, [mindpacingTagParam, persistedMindSignal, sourceParam]);
   const cameFromRunComplete = sourceParam === "run_complete";
   const cameFromGuided = sourceParam === "guided";
   const [triedExtraToday, setTriedExtraTodayState] = useState(false);
@@ -78,7 +98,7 @@ export default function TodayOrchestrator() {
   const wizardUnlockRef = useRef(false);
   const omniKunoUnlockRef = useRef(false);
   const buddyUnlockRef = useRef(false);
-  const { accessTier } = useUserAccessTier();
+  const { accessTier, membershipTier } = useUserAccessTier();
 
   useEffect(() => {
     if (wizardUnlocked && !wizardUnlockRef.current) {
@@ -219,7 +239,7 @@ export default function TodayOrchestrator() {
     }
   }, [accessTier.flags.showMenu, menuOpen]);
 
-  const isPremiumSubscriber = sensAiCtx?.profile.subscription.status === "premium";
+  const isPremiumMember = membershipTier === "premium";
   const freeLimitReached = hasFreeDailyLimit(sensAiCtx);
 
   const defaultHeroTitle = sessionPlan?.title ?? "Antrenamentul de azi";
@@ -230,19 +250,81 @@ export default function TodayOrchestrator() {
   const defaultPrimaryCta = freeLimitReached
     ? "Disponibil în Premium"
     : completedToday
-    ? "Completat azi"
-    : recommendedLabel;
-  const defaultSecondaryCta = "Sesiune intensivă (în curând)";
+      ? "Completat azi"
+      : recommendedLabel;
   const todayCopy = useCopy(TODAY_SCREEN_ID, "ro", {
     h1: defaultHeroTitle,
     subtitle: defaultHeroSubtitle,
     ctaPrimary: defaultPrimaryCta,
-    ctaSecondary: defaultSecondaryCta,
   });
   const heroTitle = todayCopy.h1 ?? defaultHeroTitle;
   const heroSubtitle = todayCopy.subtitle ?? defaultHeroSubtitle;
   const primaryCtaLabel = todayCopy.ctaPrimary ?? defaultPrimaryCta;
-  const secondaryCtaLabel = todayCopy.ctaSecondary ?? defaultSecondaryCta;
+
+  const explorePortal = useMemo(() => {
+    if (wizardUnlocked) {
+      return { href: "/wizard", label: "Wizard", description: "Configuratorul avansat pentru scenarii speciale." };
+    }
+    if (omniKunoUnlocked) {
+      return { href: "/omni-kuno", label: "OmniKuno", description: "Lecții intensive pentru execuție." };
+    }
+    if (accessTier.flags.canArenas) {
+      return { href: "/arenas", label: "Arenas", description: "Drills cu scor și progres măsurat." };
+    }
+    return { href: "/progress", label: "Progress Map", description: "Harta progresului tău zilnic." };
+  }, [accessTier.flags.canArenas, omniKunoUnlocked, wizardUnlocked]);
+  const goToEarnGate = useCallback(
+    (source: string) => {
+      router.push(`/today/earn?source=${source}&round=extra`);
+    },
+    [router],
+  );
+  const quickButtonLabel = completedToday ? "Completat azi" : primaryCtaLabel;
+  const quickButtonDisabled = freeLimitReached || planLoading || completedToday;
+  const quickDurationLabel = sessionPlan?.expectedDurationMinutes
+    ? `${sessionPlan.expectedDurationMinutes} min`
+    : "10–20 min";
+  const deepNeedsEarnCredit = !isPremiumMember && completedToday && !earnedRounds.canSpend;
+  const deepButtonLabel = deepNeedsEarnCredit ? "Deblochează credit Earn" : "Pornește Deep Loop";
+  const deepDescription = isPremiumMember
+    ? "Playlist extins 30–60 min pentru aceeași temă."
+    : deepNeedsEarnCredit
+      ? "Ai nevoie de un credit Earn pentru încă o rundă azi."
+      : "Credit Earn disponibil pentru 30–60 min de focus.";
+  const exploreNeedsEarnCredit = !isPremiumMember && completedToday && !earnedRounds.canSpend;
+  const exploreButtonLabel = exploreNeedsEarnCredit ? "Deblochează credit Earn" : `Intră în ${explorePortal.label}`;
+  const earnStatusLabel = isPremiumMember
+    ? "Premium activ: poți rula Deep + Explore fără limită."
+    : `Credite Earn: ${earnedRounds.state.credits}/3 · Runde extra azi: ${earnedRounds.state.usedToday}`;
+
+  const handleUpgrade = () => router.push("/upgrade");
+  const handleQuickLoop = () => {
+    if (quickButtonDisabled) {
+      if (freeLimitReached) handleUpgrade();
+      return;
+    }
+    handleStart();
+  };
+  const handleDeepLoop = () => {
+    track("today_deep_loop_selected", { premium: isPremiumMember });
+    if (deepNeedsEarnCredit) {
+      goToEarnGate("today_deep");
+      return;
+    }
+    const params = new URLSearchParams({ source: "today_hub", mode: "deep", round: "extra" });
+    router.push(`/today/next?${params.toString()}`);
+  };
+  const handleExploreLaunch = () => {
+    track("today_explore_selected", { destination: explorePortal.href, premium: isPremiumMember });
+    if (exploreNeedsEarnCredit) {
+      goToEarnGate("today_explore");
+      return;
+    }
+    router.push(explorePortal.href);
+  };
+  const handleEarnShortcut = () => {
+    goToEarnGate("today_hub");
+  };
 
   if (!sessionPlan) {
     return (
@@ -273,8 +355,6 @@ export default function TodayOrchestrator() {
     : "Primul tău antrenament de claritate";
   const xpForTrait = sensAiCtx?.profile.xpByTrait?.[sessionPlan.traitPrimary] ?? 0;
 
-  const handleUpgrade = () => router.push("/upgrade");
-
   const shellHeader = guidedGuestMode ? null : header;
 
   return (
@@ -289,26 +369,67 @@ export default function TodayOrchestrator() {
               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
                 {arcProgressLabel}
               </p>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                <OmniCtaButton
-                  className="justify-center sm:min-w-[220px]"
-                  onClick={freeLimitReached ? handleUpgrade : handleStart}
-                  disabled={completedToday || planLoading || freeLimitReached}
-                >
-                  {primaryCtaLabel}
-                </OmniCtaButton>
-                {!guidedGuestMode ? (
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                <article className="rounded-[20px] border border-[var(--omni-border-soft)] bg-white/90 px-5 py-4 shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
+                  <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                    <span>Quick Loop</span>
+                    <span>{quickDurationLabel}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{heroSubtitle}</p>
+                  <p className="mt-1 text-xs text-[var(--omni-muted)]">Ultima sesiune: {lastSessionLabel}</p>
+                  <OmniCtaButton
+                    className="mt-4 w-full justify-center"
+                    disabled={quickButtonDisabled}
+                    onClick={handleQuickLoop}
+                  >
+                    {quickButtonLabel}
+                  </OmniCtaButton>
+                </article>
+                <article className="rounded-[20px] border border-[var(--omni-border-soft)] bg-white/90 px-5 py-4 shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
+                  <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                    <span>Deep Loop</span>
+                    <span>30–60 min</span>
+                  </div>
+                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{deepDescription}</p>
+                  <OmniCtaButton
+                    className="mt-4 w-full justify-center"
+                    variant="neutral"
+                    onClick={handleDeepLoop}
+                    disabled={planLoading}
+                  >
+                    {deepButtonLabel}
+                  </OmniCtaButton>
+                </article>
+                <article className="rounded-[20px] border border-[var(--omni-border-soft)] bg-white/90 px-5 py-4 shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
+                  <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                    <span>Explore</span>
+                    <span>{explorePortal.label}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{explorePortal.description}</p>
+                  <OmniCtaButton
+                    className="mt-4 w-full justify-center"
+                    variant="secondary"
+                    onClick={handleExploreLaunch}
+                    disabled={planLoading}
+                  >
+                    {exploreButtonLabel}
+                  </OmniCtaButton>
+                </article>
+              </div>
+              <div className="mt-4 flex flex-col gap-2 rounded-[18px] border border-[var(--omni-border-soft)] bg-white/60 px-4 py-3 text-xs text-[var(--omni-muted)] sm:flex-row sm:items-center sm:justify-between">
+                <p className="font-semibold uppercase tracking-[0.35em] text-[var(--omni-ink)]">{earnStatusLabel}</p>
+                {!isPremiumMember ? (
                   <button
                     type="button"
-                    className={`rounded-[12px] border px-4 py-2 text-sm font-semibold ${isPremiumSubscriber ? "border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "border-dashed border-[var(--omni-border-soft)] text-[var(--omni-muted)]"}`}
-                    onClick={() => {
-                      if (!isPremiumSubscriber) handleUpgrade();
-                    }}
-                    disabled={!isPremiumSubscriber}
+                    className="text-[var(--omni-energy)] font-semibold"
+                    onClick={handleEarnShortcut}
+                    disabled={!earnedRounds.canEarnMore}
                   >
-                    {secondaryCtaLabel}
+                    {earnedRounds.canEarnMore ? "Deblochează un credit" : "Limită Earn atinsă azi"}
                   </button>
-                ) : null}
+                ) : (
+                  <span className="uppercase tracking-[0.35em] text-[var(--omni-muted)]">Premium ready</span>
+                )}
               </div>
               <div className="mt-5 rounded-[18px] border border-[var(--omni-border-soft)] bg-white/70 px-4 py-4 text-sm text-[var(--omni-ink)]">
                 <p className="font-semibold">Focus: {getTraitLabel(sessionPlan.traitPrimary)}</p>
@@ -390,7 +511,7 @@ export default function TodayOrchestrator() {
           }}
         />
 
-            {!isPremiumSubscriber && (completedToday || triedExtraToday || freeLimitReached) ? (
+            {!isPremiumMember && (completedToday || triedExtraToday || freeLimitReached) ? (
               <section className="rounded-[24px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-6 text-[var(--omni-ink)]">
                 <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Upgrade</p>
                 <h2 className="mt-2 text-2xl font-semibold">Vrei încă o sesiune azi?</h2>

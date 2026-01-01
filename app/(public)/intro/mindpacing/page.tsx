@@ -15,10 +15,12 @@ import {
   getLastMindPacingQuestionId,
 } from "@/lib/mindPacingStore";
 import {
+  getAxisFromMindPacingSignal,
   getMindPacingSignalFromOption,
   isMindPacingSignalTag,
   type MindPacingSignalTag,
 } from "@/lib/mindPacingSignals";
+import { recordDailyRunnerEvent, recordMindPacingSignal } from "@/lib/progressFacts/recorders";
 
 type MindPacingOption = (typeof MIND_PACING_QUESTIONS)[number]["options"][number];
 
@@ -129,6 +131,20 @@ export default function MindPacingPage() {
     setSelectedLabel(option.label[locale]);
     setMindTag(signal);
     setPhase("result");
+    const axisId = signal ? getAxisFromMindPacingSignal(signal) : null;
+    void recordMindPacingSignal({
+      dayKey,
+      questionId: question.id,
+      optionId: option.id,
+      mindTag: signal,
+      axisId,
+    });
+    void recordDailyRunnerEvent({
+      type: "mindpacing_completed",
+      optionId: option.id,
+      label: signal ?? undefined,
+      context: "mindpacing",
+    });
   };
 
   return (
@@ -145,16 +161,26 @@ export default function MindPacingPage() {
         {phase === "question" ? (
           <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 shadow-[0_15px_50px_rgba(0,0,0,0.08)]">
             <div className="space-y-3">
-              {question.options.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => handleAnswer(option)}
-                  className="w-full rounded-2xl border border-[var(--omni-border-soft)] px-4 py-3 text-left text-sm font-semibold transition hover:border-[var(--omni-ink)]/60"
-                >
-                  {option.label[locale]}
-                </button>
-              ))}
+              {question.options.map((option) => {
+                const slug =
+                  option.label[locale]
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-+|-+$/g, "") || option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    data-testid={`mindpacing-option-${slug}`}
+                    onClick={() => handleAnswer(option)}
+                    className="w-full rounded-2xl border border-[var(--omni-border-soft)] px-4 py-3 text-left text-sm font-semibold transition hover:border-[var(--omni-ink)]/60"
+                  >
+                    {option.label[locale]}
+                  </button>
+                );
+              })}
             </div>
           </section>
         ) : null}

@@ -98,6 +98,7 @@ function deriveRouteGroup(routePath: string): string {
   if (seg === "experience-onboarding") return "experience-onboarding";
   if (seg === "onboarding") return "onboarding";
   if (seg === "today") return "today";
+  if (seg === "session") return "today";
   if (seg === "recommendation") return "recommendation";
   if (["os", "progress", "mission-map", "mental-universe", "collectibles", "omni-scope", "omniscop", "omniscop-lite"].includes(seg)) {
     return "progress";

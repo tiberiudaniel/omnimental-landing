@@ -41,7 +41,7 @@ export function OpenIssuesPanel({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Open issues</p>
-          <p className="text-[var(--omni-muted)]">Note și comentarii pentru acest flow.</p>
+        <p className="text-[var(--omni-muted)]">Note și comentarii pentru acest map.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
           {(

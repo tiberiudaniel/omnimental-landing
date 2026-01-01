@@ -15,9 +15,10 @@ type FlowNodeCardProps = NodeProps<FlowNodeData> & {
   onExpandSteps?: (nodeId: string) => void;
   commentCount?: number;
   dimmed?: boolean;
+  highlighted?: boolean;
 };
 
-const handleStyleBase = "h-2 w-2 border-none";
+const handleStyleBase = "h-3 w-3 border-none";
 
 export function FlowNodeCard({
   data,
@@ -31,11 +32,13 @@ export function FlowNodeCard({
   onExpandSteps,
   commentCount,
   dimmed = false,
+  highlighted = false,
 }: FlowNodeCardProps) {
   const label = data.labelOverrides?.ro ?? data.routePath;
   const isStart = Boolean(data.tags?.includes("start"));
   const labelIsPortal = Boolean(label?.toUpperCase().startsWith("PORTAL:"));
   const hasPortalTag = Boolean(data.tags?.includes("type:portal"));
+  const taggedDivergence = Boolean(data.tags?.some((tag) => tag === "journey:divergence" || tag === "journey:branch"));
   const isPortalNode = hasPortalTag || labelIsPortal;
   const portalTarget = isPortalNode ? data.portal : null;
   const portalTargetLabel =
@@ -72,6 +75,7 @@ export function FlowNodeCard({
     }
     return "bg-white/90 border-[var(--omni-border-soft)]";
   })();
+  const highlightClasses = highlighted ? "outline outline-4 outline-sky-200 shadow-[0_18px_32px_rgba(56,189,248,0.25)]" : "";
   return (
     <div className="relative">
       <Handle type="target" position={Position.Left} id="target-left" className={`${handleStyleBase} bg-[var(--omni-ink)]`} />
@@ -83,12 +87,18 @@ export function FlowNodeCard({
       <Handle type="source" position={Position.Top} id="source-top" className={`${handleStyleBase} bg-[var(--omni-energy)]`} />
       <Handle type="source" position={Position.Right} id="source-right" className={`${handleStyleBase} bg-[var(--omni-energy)]`} />
       <Handle type="source" position={Position.Bottom} id="source-bottom" className={`${handleStyleBase} bg-[var(--omni-energy)]`} />
+      {taggedDivergence ? (
+        <span className="absolute -right-2 -top-2 rounded-full border border-amber-300 bg-amber-50 p-1 text-[11px] shadow">
+          ⤢
+        </span>
+      ) : null}
       <div
         className={clsx(
           "rounded-2xl border px-4 py-2 text-sm font-semibold text-[var(--omni-ink)] shadow-md",
           cardToneClass,
           dimmed ? "opacity-40" : "",
           issueCount ? "ring-2 ring-amber-400" : "",
+          highlightClasses,
         )}
       >
         <div className="flex flex-col gap-1">
