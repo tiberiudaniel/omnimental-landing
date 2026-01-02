@@ -8,8 +8,11 @@ import {
   setPersistence,
   signInAnonymously,
   type Auth,
+  type User,
   onAuthStateChanged,
 } from "firebase/auth";
+import { isE2EMode } from "./e2eMode";
+import { getE2EUser } from "./e2eUser";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
@@ -100,8 +103,11 @@ async function waitForExistingUser(auth: Auth) {
 }
 
 // ensureAuth guarantees a Firebase user (anonymous or full) exists before writes.
-export async function ensureAuth() {
+export async function ensureAuth(): Promise<User | null> {
   if (typeof window === "undefined") return null;
+  if (isE2EMode()) {
+    return getE2EUser();
+  }
   const auth = getFirebaseAuth();
   const existing = await waitForExistingUser(auth);
   if (existing) return existing;
@@ -125,7 +131,7 @@ export function onAuthReady(cb: (uid: string) => void) {
   return onAuthStateChanged(auth, (u) => { if (u) cb(u.uid); });
 }
 // === ensure auto anonymous auth ===
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && !isE2EMode()) {
   // Optional: allow silencing noisy Firestore logs during development
   try {
     const lvl = (process.env.NEXT_PUBLIC_FIREBASE_LOG_LEVEL || "").toLowerCase();

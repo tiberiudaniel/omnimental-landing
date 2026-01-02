@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
 import { AppShell } from "@/components/AppShell";
@@ -17,6 +18,7 @@ import {
 } from "@/lib/sessionSummary";
 import { useEarnedRoundsController } from "@/components/today/useEarnedRounds";
 import { track } from "@/lib/telemetry/track";
+import { isE2EMode } from "@/lib/e2eMode";
 
 const SUMMARY_WINDOW_MINUTES = 45;
 
@@ -25,6 +27,7 @@ const EVENT_LABELS: Record<string, string> = {
   vocab_completed: "Vocab finalizat",
   today_run_completed: "Today Run",
   arena_run_completed: "Arena Run",
+  cat_lite_completed: "CAT Lite complet",
 };
 
 function formatDurationLabel(durationMs: number): string {
@@ -66,8 +69,9 @@ function StatCard({ label, value, detail }: StatCardProps) {
   );
 }
 
-export default function SessionCompletePage() {
+function SessionCompletePageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const navLinks = useNavigationLinks();
   const { user } = useAuth();
   const { data: progressFacts } = useProgressFacts(user?.uid ?? null);
@@ -94,39 +98,71 @@ export default function SessionCompletePage() {
     track("session_complete_viewed");
   }, []);
 
+  const isE2E = isE2EMode() || searchParams?.get("e2e") === "1";
+  const withE2E = (path: string) => (isE2E ? `${path}${path.includes("?") ? "&" : "?"}e2e=1` : path);
+  const buildUrl = (basePath: string, params: Record<string, string>) => {
+    const query = new URLSearchParams(params);
+    if (isE2E) {
+      query.set("e2e", "1");
+    }
+    return `${basePath}?${query.toString()}`;
+  };
+
+  const buildNextRoute = () => {
+    const params = new URLSearchParams({ source: "session_complete", round: "extra" });
+    if (isE2E) {
+      params.set("e2e", "1");
+    }
+    return `/today/next?${params.toString()}`;
+  };
+
+  const applyNavigation = useCallback(
+    (target: string, replace = false) => {
+      if (isE2E && typeof window !== "undefined") {
+        if (replace) {
+          window.location.replace(target);
+        } else {
+          window.location.assign(target);
+        }
+        return;
+      }
+      if (replace) {
+        router.replace(target);
+      } else {
+        router.push(target);
+      }
+    },
+    [isE2E, router],
+  );
+
   const handleAnotherRound = async () => {
     if (ctaLoading) return;
     setCtaLoading(true);
-    const nextRouteParams = new URLSearchParams({ source: "session_complete", round: "extra" });
-    const nextRoute = `/today/next?${nextRouteParams.toString()}`;
+    const nextRoute = buildNextRoute();
     try {
       if (membershipTier === "premium") {
         track("session_complete_another_round", { tier: membershipTier, via: "premium" });
-        router.push(nextRoute);
+        applyNavigation(nextRoute);
         return;
       }
       if (earnedRounds.canSpend) {
         await earnedRounds.spend();
         track("session_complete_another_round", { tier: membershipTier, via: "credit" });
-        router.push(nextRoute);
+        applyNavigation(nextRoute);
         return;
       }
       track("session_complete_another_round", { tier: membershipTier, via: "earn_gate" });
-      router.push("/today/earn?source=session_complete&round=extra");
+      applyNavigation(buildUrl("/today/earn", { source: "session_complete", round: "extra" }));
     } finally {
       setCtaLoading(false);
     }
   };
 
-  const handleBackToToday = () => {
-    track("session_complete_back_today");
-    router.push("/today");
-  };
-
   const handleOpenEarnGate = () => {
     track("session_complete_go_to_earn");
-    router.push("/today/earn?source=session_complete&round=extra");
+    applyNavigation(buildUrl("/today/earn", { source: "session_complete", round: "extra" }));
   };
+  const todayHref = withE2E("/today");
 
   return (
     <>
@@ -139,7 +175,10 @@ export default function SessionCompletePage() {
           />
         }
       >
-        <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)] sm:px-6 lg:px-8">
+        <div
+          className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)] sm:px-6 lg:px-8"
+          data-testid="session-complete-root"
+        >
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
             <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-white/95 px-6 py-8 shadow-[0_24px_70px_rgba(0,0,0,0.08)] sm:px-10">
               <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Sesiune închisă</p>
@@ -161,16 +200,23 @@ export default function SessionCompletePage() {
                 <StatCard label="Unlock" value={latestUnlock ?? "—"} detail={latestUnlock ? "Activat azi" : "În pregătire"} />
               </div>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <OmniCtaButton className="justify-center sm:min-w-[220px]" onClick={handleAnotherRound} disabled={ctaLoading}>
+                <OmniCtaButton
+                  className="justify-center sm:min-w-[220px]"
+                  onClick={handleAnotherRound}
+                  disabled={ctaLoading}
+                  data-testid="session-another-round"
+                >
                   Încă o rundă
                 </OmniCtaButton>
-                <button
-                  type="button"
-                  className="rounded-[14px] border border-[var(--omni-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--omni-ink)]"
-                  onClick={handleBackToToday}
+                <Link
+                  href={todayHref}
+                  prefetch={false}
+                  className="rounded-[14px] border border-[var(--omni-border-soft)] px-4 py-2 text-center text-sm font-semibold text-[var(--omni-ink)]"
+                  data-testid="session-back-today"
+                  onClick={() => track("session_complete_back_today")}
                 >
                   Înapoi la Today
-                </button>
+                </Link>
                 {showEarnPrompt ? (
                   <button
                     type="button"
@@ -216,5 +262,13 @@ export default function SessionCompletePage() {
       </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
     </>
+  );
+}
+
+export default function SessionCompletePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--omni-bg-main)]" />}>
+      <SessionCompletePageInner />
+    </Suspense>
   );
 }

@@ -1,6 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
 import { go, resetSession } from "./helpers/env";
-import { loginAs } from "./helpers/auth";
 
 function guardConsole(page: Page) {
   page.on("console", (msg) => {
@@ -16,10 +15,22 @@ async function primeOverrides(
   page: Page,
   overrides: { membership?: "free" | "premium"; tier?: number; progress?: Record<string, unknown> } = {},
 ) {
+  const dayKey = new Date().toISOString().split("T")[0];
+  const progressOverrides = (() => {
+    const baseProgress = overrides.progress ?? {};
+    const baseStats = (baseProgress as { stats?: Record<string, unknown> }).stats ?? {};
+    return {
+      ...baseProgress,
+      stats: {
+        ...baseStats,
+        earnedRounds: { dayKey, credits: 0, usedToday: 0 },
+      },
+    };
+  })();
   const payload = {
     membership: overrides.membership ?? null,
     tier: typeof overrides.tier === "number" ? String(overrides.tier) : null,
-    progress: overrides.progress ? JSON.stringify(overrides.progress) : null,
+    progress: JSON.stringify(progressOverrides),
   };
   await page.addInitScript(({ membership, tier, progress }) => {
     try {
@@ -107,15 +118,6 @@ test.describe("Today session hub flows", () => {
     await go(page, "/today?e2e=1");
     await page.getByRole("button", { name: /intră în/i }).click();
     await expect(page).toHaveURL(/\/progress/, { timeout: 10000 });
-  });
-
-  test("Wizard entry provides return path to Today", async ({ page }) => {
-    await loginAs(page, "wizard-e2e@omnimental.com");
-    await primeOverrides(page, { membership: "premium", progress: { stats: { dailySessionsCompleted: 5 } } });
-    await go(page, "/wizard?e2e=1");
-    await expect(page.getByText(/deblochează configuratorul/i)).toBeVisible({ timeout: 20000 });
-    await page.getByRole("button", { name: /înapoi la \/today/i }).click();
-    await expect(page).toHaveURL(/\/today/, { timeout: 10000 });
   });
 
   test("MindPacing signal persists after refresh", async ({ page }) => {

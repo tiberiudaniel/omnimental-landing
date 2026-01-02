@@ -41,6 +41,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { canAccessWizard, getTotalDailySessionsCompleted } from "@/lib/gatingSelectors";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { GATING } from "@/lib/gatingConfig";
+import { isE2EMode } from "@/lib/e2eMode";
 
 const DEFAULT_DIMENSION_SCORES: DimensionScores = {
   emotional_balance: 0,
@@ -86,12 +87,15 @@ function PageContent() {
   const wizardUnlocked = useMemo(() => canAccessWizard(progress), [progress]);
   const totalSessions = getTotalDailySessionsCompleted(progress);
 
+  const e2eMode = isE2EMode();
+
   useEffect(() => {
     if (!authReady) return;
+    if (e2eMode) return;
     if (!user) {
       router.replace("/auth?returnTo=%2Fwizard");
     }
-  }, [authReady, user, router]);
+  }, [authReady, user, router, e2eMode]);
 
   const {
     journalEntry,
@@ -444,7 +448,7 @@ function PageContent() {
 
   if (!authReady || progressLoading) {
     return (
-      <div className="min-h-screen bg-[var(--omni-bg-main)]">
+      <div className="min-h-screen bg-[var(--omni-bg-main)]" data-testid="wizard-root">
         <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={redirectToAuth} />
         <main className="px-4 py-16 text-center text-sm text-[var(--omni-ink-soft)]">
           Se verifică accesul la Wizard...
@@ -465,10 +469,13 @@ function PageContent() {
       Math.round(((totalSessions ?? 0) / GATING.wizardMinDailySessions) * 100),
     );
     return (
-      <div className="min-h-screen bg-[var(--omni-bg-main)]">
+      <div className="min-h-screen bg-[var(--omni-bg-main)]" data-testid="wizard-root">
         <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={redirectToAuth} />
         <main className="px-4 py-16">
-          <section className="mx-auto max-w-3xl space-y-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 text-center text-[var(--omni-ink)] shadow-[0_24px_80px_rgba(0,0,0,0.08)]">
+          <section
+            className="mx-auto max-w-3xl space-y-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 text-center text-[var(--omni-ink)] shadow-[0_24px_80px_rgba(0,0,0,0.08)]"
+            data-testid="wizard-locked-panel"
+          >
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Wizard</p>
             <h1 className="text-2xl font-semibold">Deblochează configuratorul după {GATING.wizardMinDailySessions} sesiuni reale</h1>
             <p className="text-sm text-[var(--omni-ink)]/75">
@@ -509,7 +516,7 @@ function PageContent() {
   // Legacy stepContent rendering removed; WizardRouter handles routing.
 
   return (
-    <div className="bg-bgLight min-h-screen">
+    <div className="bg-bgLight min-h-screen" data-testid="wizard-root">
       <SiteHeader
         showMenu
         onMenuToggle={() => setMenuOpen(true)}

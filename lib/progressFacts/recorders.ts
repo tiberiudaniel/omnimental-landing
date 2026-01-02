@@ -1002,7 +1002,8 @@ type DailyRunnerEventType =
   | "today_run_started"
   | "today_run_completed"
   | "vocab_completed"
-  | "mindpacing_completed";
+  | "mindpacing_completed"
+  | "cat_lite_completed";
 
 type DailyRunnerEventPayload = {
   type: DailyRunnerEventType;

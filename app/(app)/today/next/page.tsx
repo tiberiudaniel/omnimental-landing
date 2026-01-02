@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
@@ -48,7 +48,7 @@ function resolveNextPlan(progressFacts: Parameters<typeof getRecentSessionEvents
   };
 }
 
-export default function TodayNextPage() {
+function TodayNextPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const navLinks = useNavigationLinks();
@@ -146,5 +146,13 @@ export default function TodayNextPage() {
       </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
     </>
+  );
+}
+
+export default function TodayNextPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--omni-bg-main)]" />}>
+      <TodayNextPageInner />
+    </Suspense>
   );
 }

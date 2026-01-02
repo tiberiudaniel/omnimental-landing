@@ -29,9 +29,7 @@ export function RoutesPanel({
   hasActiveFlow,
   onRouteDragStart,
 }: RoutesPanelProps) {
-  const emptyState = hasActiveFlow
-    ? "Trage cardul peste canvas sau folosește „+” (Shift = start)."
-    : "Selectează un map pentru a activa biblioteca.";
+  const emptyState = hasActiveFlow ? "" : "Selectează un map pentru a activa biblioteca.";
   return (
     <section className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-4 shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
       <div className="flex flex-col gap-2">
@@ -59,7 +57,7 @@ export function RoutesPanel({
             ))}
           </select>
         </div>
-        <p className="text-xs text-[var(--omni-muted)]">{emptyState}</p>
+        {emptyState ? <p className="text-xs text-[var(--omni-muted)]">{emptyState}</p> : null}
       </div>
       <div className="mt-3 max-h-[60vh] space-y-2 overflow-y-auto">
         {routes.length === 0 ? (
@@ -73,7 +71,7 @@ export function RoutesPanel({
               draggable={hasActiveFlow}
               onDragStart={(event) => onRouteDragStart(event, route)}
               className={clsx(
-                "rounded-2xl border border-[var(--omni-border-soft)] bg-white px-4 py-3 transition hover:border-[var(--omni-ink)]",
+                "rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 transition hover:border-[var(--omni-ink)]",
                 hasActiveFlow ? "cursor-grab" : "opacity-60",
               )}
               tabIndex={hasActiveFlow ? 0 : -1}
@@ -83,37 +81,46 @@ export function RoutesPanel({
                 onQuickAddRoute(route, { markAsStart: event.shiftKey });
               }}
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-[var(--omni-ink)]">{route.routePath}</p>
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--omni-muted)]">
+              <div className="flex flex-col gap-2">
+                <a
+                  href={route.routePath || "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="truncate text-xs font-semibold text-[var(--omni-ink)] underline decoration-dotted underline-offset-2"
+                  onClick={(event) => event.stopPropagation()}
+                  title={route.routePath}
+                >
+                  {route.routePath}
+                </a>
+                <div className="flex items-center justify-between gap-3 text-[10px] text-[var(--omni-muted)]">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <span className="rounded-full bg-[var(--omni-bg-main)] px-2 py-0.5 uppercase tracking-[0.3em]">{route.group}</span>
                     <span className="truncate">{route.filePath}</span>
                   </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--omni-ink)]"
-                    onClick={() => navigator.clipboard?.writeText(route.routePath)}
-                    title="Copiază path"
-                  >
-                    Copy
-                  </button>
-                  <button
-                    type="button"
-                    className={clsx(
-                      "rounded-full border px-2 py-1 text-xs font-semibold transition",
-                      hasActiveFlow
-                        ? "border-[var(--omni-ink)] text-[var(--omni-ink)]"
-                        : "cursor-not-allowed border-dashed border-[var(--omni-border-soft)] text-[var(--omni-muted)]",
-                    )}
-                    onClick={() => onQuickAddRoute(route)}
-                    disabled={!hasActiveFlow}
-                    title="Adaugă în map"
-                  >
-                    +
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[9px] font-semibold uppercase text-[var(--omni-ink)]"
+                      onClick={() => navigator.clipboard?.writeText(route.routePath)}
+                      title="Copiază path"
+                    >
+                      Copy
+                    </button>
+                    <button
+                      type="button"
+                      className={clsx(
+                        "rounded-full border px-2 py-1 text-[10px] font-semibold transition",
+                        hasActiveFlow
+                          ? "border-[var(--omni-ink)] text-[var(--omni-ink)]"
+                          : "cursor-not-allowed border-dashed border-[var(--omni-border-soft)] text-[var(--omni-muted)]",
+                      )}
+                      onClick={() => onQuickAddRoute(route)}
+                      disabled={!hasActiveFlow}
+                      title="Adaugă în map"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
             </article>

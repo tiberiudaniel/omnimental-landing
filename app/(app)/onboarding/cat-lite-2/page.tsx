@@ -13,6 +13,7 @@ import VocabChip from "@/components/vocab/VocabChip";
 import { getDefaultVocabForAxis } from "@/config/catVocabulary";
 import { useI18n } from "@/components/I18nProvider";
 import { setExploreCompletion } from "@/lib/intro/exploreState";
+import { recordDailyRunnerEvent } from "@/lib/progressFacts/recorders";
 import type { CatVocabTag } from "@/config/catVocabulary";
 
 type CatLitePart2ItemId =
@@ -168,6 +169,10 @@ function CatLitePart2PageInner() {
         recalibration: axisScores.recalibration ?? null,
         flexibility: axisScores.flexibility ?? null,
         adaptiveConfidence: axisScores.adaptiveConfidence ?? null,
+      });
+      void recordDailyRunnerEvent({
+        type: "cat_lite_completed",
+        context: exploreSource ?? null,
       });
       if (exploreSource === "explore") {
         setExploreCompletion("cat-lite");

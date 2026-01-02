@@ -21,33 +21,51 @@ export type MindPacingQuestion = {
 
 export const MIND_PACING_QUESTIONS: MindPacingQuestion[] = [
   {
-    id: "mind_noise",
+    id: "mind_state_primary",
     prompt: {
-      ro: "Cum este mintea ta acum?",
-      en: "How does your mind feel right now?",
+      ro: "În ultimele zile, mintea ta e mai mult:",
+      en: "Lately, your mind feels mostly:",
     },
     options: [
       {
-        id: "noise_fog",
-        label: { ro: "Parcă e ceață în cap", en: "Feels foggy" },
-        tagsPrimary: ["clarity_low"],
-        tagsSecondary: ["meta_observe"],
-      },
-      {
-        id: "noise_story",
-        label: { ro: "Îmi tot fac scenarii", en: "I keep spinning stories" },
-        tagsPrimary: ["clarity_low"],
-        tagsSecondary: ["identity_loop"],
-      },
-      {
-        id: "noise_scatter",
-        label: { ro: "Sar între 3 lucruri", en: "Jumping between tasks" },
+        id: "state_crowded",
+        label: { ro: "Aglomerată", en: "Crowded" },
         tagsPrimary: ["focus_scattered"],
       },
       {
-        id: "noise_tension",
-        label: { ro: "Simt tensiune în corp", en: "Body feels tense" },
+        id: "state_tired",
+        label: { ro: "Obosită", en: "Tired" },
+        tagsPrimary: ["energy_low"],
+      },
+      {
+        id: "state_scattered",
+        label: { ro: "Împrăștiată", en: "Scattered" },
+        tagsPrimary: ["focus_scattered"],
+      },
+      {
+        id: "state_blocked",
+        label: { ro: "Blocată", en: "Blocked" },
+        tagsPrimary: ["stuck"],
+      },
+      {
+        id: "state_rushed",
+        label: { ro: "Grăbită", en: "Rushed" },
+        tagsPrimary: ["pace_hurried"],
+      },
+      {
+        id: "state_foggy",
+        label: { ro: "În ceață", en: "Foggy" },
+        tagsPrimary: ["clarity_low"],
+      },
+      {
+        id: "state_tense",
+        label: { ro: "Încordată", en: "Tense" },
         tagsPrimary: ["tension_high"],
+      },
+      {
+        id: "state_no_drive",
+        label: { ro: "Fără chef", en: "Low drive" },
+        tagsPrimary: ["energy_low"],
       },
     ],
   },

@@ -2572,13 +2572,15 @@ useEffect(() => {
       const now = new Date();
       setLastFlowSaveAt(now);
       setAutosaveError(null);
+      pushAutosaveToast("success", `Map salvat la ${autosaveTimeFormatter.format(now)}`);
       window.setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (error) {
       console.error("Failed to save flow", error);
       setSaveStatus("error");
       setSaveMessage(error instanceof Error ? error.message : "Nu am putut salva map-ul");
+      pushAutosaveToast("error", "Eroare la salvare");
     }
-  }, [db, flowDoc, flowNameDraft, selectedFlowId, serializeFlow]);
+  }, [db, flowDoc, flowNameDraft, pushAutosaveToast, selectedFlowId, serializeFlow]);
 
   const handleCreateFlow = useCallback(async () => {
     const name = prompt("Nume map nou")?.trim();

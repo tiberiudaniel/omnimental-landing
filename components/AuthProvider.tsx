@@ -20,7 +20,8 @@ import {
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth, ensureAuth } from "../lib/firebase";
-import { isE2EMode, E2E_USER_ID } from "@/lib/e2eMode";
+import { isE2EMode } from "@/lib/e2eMode";
+import { getE2EUser } from "@/lib/e2eUser";
 import { migrateAnonToUser } from "@/lib/migrateUserData";
 
 const AUTH_EMAIL_STORAGE_KEY = "omnimental_auth_email";
@@ -49,28 +50,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const e2eMode = isE2EMode();
-  const e2eUser = useMemo<User | null>(() => {
-    if (!e2eMode) return null;
-    return {
-      uid: E2E_USER_ID,
-      email: "e2e@omnimental.dev",
-      displayName: "E2E User",
-      emailVerified: true,
-      isAnonymous: false,
-      providerData: [],
-      refreshToken: "e2e",
-      tenantId: null,
-      delete: async () => {},
-      getIdToken: async () => "e2e-token",
-      getIdTokenResult: async () => ({ token: "e2e-token" } as never),
-      reload: async () => {},
-      toJSON: () => ({ uid: E2E_USER_ID }),
-      metadata: {} as never,
-      providerId: "firebase",
-      phoneNumber: null,
-      photoURL: null,
-    } as User;
-  }, [e2eMode]);
+  const e2eUser = useMemo<User | null>(() => (e2eMode ? getE2EUser() : null), [e2eMode]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [sendingLink, setSendingLink] = useState(false);

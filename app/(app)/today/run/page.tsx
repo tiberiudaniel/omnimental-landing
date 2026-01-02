@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { track } from "@/lib/telemetry/track";
 import { useProfile } from "@/components/ProfileProvider";
@@ -21,7 +21,7 @@ import { buildPlanKpiEvent } from "@/lib/sessionTelemetry";
 import { recordDailyRunnerEvent, recordDailySessionCompletion } from "@/lib/progressFacts/recorders";
 import { useUserAccessTier } from "@/components/useUserAccessTier";
 
-export default function TodayRunPage() {
+function TodayRunPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { profile } = useProfile();
@@ -242,4 +242,12 @@ export default function TodayRunPage() {
   }
 
   return <DailyPathRunner onCompleted={handleCompleted} todayModuleKey={todayModuleKey} />;
+}
+
+export default function TodayRunPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--omni-bg-main)]" />}>
+      <TodayRunPageInner />
+    </Suspense>
+  );
 }

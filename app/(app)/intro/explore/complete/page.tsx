@@ -15,7 +15,11 @@ function ExploreCompletionInner() {
     if (axis) {
       setAxisLessonChoice(axis);
     }
-    router.replace("/intro/guided?source=explore");
+    const params = new URLSearchParams({ source: "explore" });
+    if ((searchParams.get("e2e") ?? "").toLowerCase() === "1") {
+      params.set("e2e", "1");
+    }
+    router.replace(`/intro/guided?${params.toString()}`);
   }, [router, searchParams]);
 
   return (

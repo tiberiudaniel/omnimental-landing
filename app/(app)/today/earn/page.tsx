@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
@@ -33,9 +33,10 @@ type ChoiceGroupProps = {
   options: ReadonlyArray<{ id: string; label: string }>;
   value: string | null;
   onChange: (value: string) => void;
+  testIdPrefix?: string;
 };
 
-function ChoiceGroup({ title, description, options, value, onChange }: ChoiceGroupProps) {
+function ChoiceGroup({ title, description, options, value, onChange, testIdPrefix }: ChoiceGroupProps) {
   return (
     <div>
       <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">{title}</p>
@@ -47,11 +48,13 @@ function ChoiceGroup({ title, description, options, value, onChange }: ChoiceGro
             <button
               key={option.id}
               type="button"
+              data-testid={testIdPrefix ? `${testIdPrefix}-${option.id}` : undefined}
               className={`rounded-2xl border px-4 py-3 text-left text-sm font-semibold ${
                 selected
                   ? "border-[var(--omni-energy)] bg-[var(--omni-energy)]/10 text-[var(--omni-energy)]"
                   : "border-[var(--omni-border-soft)] bg-white text-[var(--omni-ink)]"
               }`}
+              aria-pressed={selected}
               onClick={() => onChange(option.id)}
             >
               {option.label}
@@ -63,7 +66,7 @@ function ChoiceGroup({ title, description, options, value, onChange }: ChoiceGro
   );
 }
 
-export default function TodayEarnPage() {
+function TodayEarnPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const navLinks = useNavigationLinks();
@@ -92,8 +95,10 @@ export default function TodayEarnPage() {
     router.push("/upgrade");
   };
 
+  const limitReached = !earnedRounds.canEarnMore;
+
   const handleSubmit = async () => {
-    if (!feedbackChoice || !commitChoice || submitting || !earnedRounds.canEarnMore) {
+    if (!feedbackChoice || !commitChoice || submitting || limitReached) {
       return;
     }
     setSubmitting(true);
@@ -110,7 +115,7 @@ export default function TodayEarnPage() {
     }
   };
 
-  const canSubmit = Boolean(feedbackChoice && commitChoice && earnedRounds.canEarnMore && !submitting);
+  const canSubmit = Boolean(feedbackChoice && commitChoice && !submitting && !limitReached);
 
   const header = (
     <SiteHeader
@@ -120,12 +125,11 @@ export default function TodayEarnPage() {
     />
   );
 
-  const limitReached = !earnedRounds.canEarnMore;
 
   return (
     <>
       <AppShell header={header}>
-        <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)] sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)] sm:px-6 lg:px-8" data-testid="earn-root">
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
             <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-white/95 px-6 py-8 shadow-[0_24px_70px_rgba(0,0,0,0.08)] sm:px-10">
               <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Earn gate</p>
@@ -139,70 +143,82 @@ export default function TodayEarnPage() {
                   Credite disponibile: {earnedRounds.state.credits} · Credite rămase de câștigat azi: {creditsRemaining}
                 </p>
               </div>
-              {limitReached ? (
-                <div className="mt-6 space-y-4">
-                  <p className="text-sm text-[var(--omni-ink)]/80">
-                    Ai atins limita de 3 runde extra pentru azi. Revino mâine sau activează Premium pentru acces nelimitat.
-                  </p>
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <OmniCtaButton className="justify-center sm:flex-1" onClick={handleBackToToday}>
-                      Înapoi la Today
-                    </OmniCtaButton>
-                    {membershipTier === "free" ? (
-                      <OmniCtaButton variant="neutral" className="justify-center sm:flex-1" onClick={handleUpgrade}>
-                        Activează Premium
-                      </OmniCtaButton>
-                    ) : null}
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-6 space-y-6">
-                  <ChoiceGroup
-                    title="Feedback rapid"
-                    description="Cât de utilă a fost sesiunea de azi?"
-                    options={FEEDBACK_OPTIONS}
-                    value={feedbackChoice}
-                    onChange={setFeedbackChoice}
-                  />
-                  <ChoiceGroup
-                    title="Micro-angajament"
-                    description="Alege o acțiune scurtă pentru azi"
-                    options={MICRO_COMMIT_OPTIONS}
-                    value={commitChoice}
-                    onChange={setCommitChoice}
-                  />
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <OmniCtaButton
-                      className="justify-center sm:flex-1"
-                      disabled={!canSubmit}
-                      onClick={handleSubmit}
-                    >
-                      Deblochează încă o rundă
-                    </OmniCtaButton>
-                    <button
-                      type="button"
-                      className="rounded-[14px] border border-[var(--omni-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--omni-ink)] sm:flex-1"
-                      onClick={handleBackToToday}
-                    >
-                      Renunță (înapoi la Today)
-                    </button>
-                  </div>
-                  {membershipTier === "free" ? (
-                    <p className="text-xs text-[var(--omni-muted)]">
-                      Vrei acces liber la Another Round?{" "}
-                      <button type="button" className="underline" onClick={handleUpgrade}>
-                        Activează OmniMental Premium
-                      </button>
-                      .
+              <div className="mt-6 space-y-6">
+                {limitReached ? (
+                  <div className="space-y-4" data-testid="earn-limit">
+                    <p className="text-sm text-[var(--omni-ink)]/80" data-testid="earn-limit-reached">
+                      Ai atins limita de 3 runde extra pentru azi. Revino mâine sau activează Premium pentru acces nelimitat.
                     </p>
-                  ) : null}
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <OmniCtaButton className="justify-center sm:flex-1" onClick={handleBackToToday}>
+                        Înapoi la Today
+                      </OmniCtaButton>
+                      {membershipTier === "free" ? (
+                        <OmniCtaButton variant="neutral" className="justify-center sm:flex-1" onClick={handleUpgrade}>
+                          Activează Premium
+                        </OmniCtaButton>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <ChoiceGroup
+                      title="Feedback rapid"
+                      description="Cât de utilă a fost sesiunea de azi?"
+                      options={FEEDBACK_OPTIONS}
+                      value={feedbackChoice}
+                      onChange={setFeedbackChoice}
+                      testIdPrefix="earn-feedback"
+                    />
+                    <ChoiceGroup
+                      title="Micro-angajament"
+                      description="Alege o acțiune scurtă pentru azi"
+                      options={MICRO_COMMIT_OPTIONS}
+                      value={commitChoice}
+                      onChange={setCommitChoice}
+                      testIdPrefix="earn-commit"
+                    />
+                  </>
+                )}
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <OmniCtaButton
+                    className="justify-center sm:flex-1"
+                    disabled={!canSubmit}
+                    onClick={handleSubmit}
+                    data-testid="earn-submit"
+                  >
+                    Deblochează încă o rundă
+                  </OmniCtaButton>
+                  <button
+                    type="button"
+                    className="rounded-[14px] border border-[var(--omni-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--omni-ink)] sm:flex-1"
+                    onClick={handleBackToToday}
+                  >
+                    Renunță (înapoi la Today)
+                  </button>
                 </div>
-              )}
+                {membershipTier === "free" ? (
+                  <p className="text-xs text-[var(--omni-muted)]">
+                    Vrei acces liber la Another Round?{" "}
+                    <button type="button" className="underline" onClick={handleUpgrade}>
+                      Activează OmniMental Premium
+                    </button>
+                    .
+                  </p>
+                ) : null}
+              </div>
             </section>
           </div>
         </div>
       </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
     </>
+  );
+}
+export default function TodayEarnPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--omni-bg-main)]" />}>
+      <TodayEarnPageInner />
+    </Suspense>
   );
 }

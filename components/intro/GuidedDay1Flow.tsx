@@ -151,6 +151,13 @@ const CLOUD_LAYOUT_IDS = ["mind_state", "block_time", "biggest_cost"];
 const MULTI_SELECT_IDS = ["mind_state", "block_time", "biggest_cost"] as const;
 type MultiSelectId = (typeof MULTI_SELECT_IDS)[number];
 const MULTI_SELECT_SET = new Set<string>(MULTI_SELECT_IDS);
+const slugify = (value: string): string =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "option";
 
 export default function GuidedDay1Flow() {
   const router = useRouter();
@@ -304,10 +311,12 @@ export default function GuidedDay1Flow() {
                       : currentQuestion.id === "biggest_cost"
                         ? costSelections.includes(option.id)
                         : false;
+                const slug = slugify(option.label);
                 return (
                   <button
                     key={option.id}
                     type="button"
+                    data-testid={`mindpacing-option-${slug}`}
                     onClick={() =>
                       isMultiSelect
                         ? handleMultiToggle(currentQuestion.id as MultiSelectId, option.id)

@@ -33,7 +33,7 @@ export function canSpendEarnedRound(state: EarnedRoundState): boolean {
 }
 
 export function hasEarnLimitAvailable(state: EarnedRoundState): boolean {
-  return state.usedToday < MAX_EARNED_ROUND_CREDITS;
+  return state.credits + state.usedToday < MAX_EARNED_ROUND_CREDITS;
 }
 
 export function getStateAfterSpend(state: EarnedRoundState): EarnedRoundState {

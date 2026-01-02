@@ -1,29 +1,53 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { EXPLORE_AXIS_LESSONS, EXPLORE_AXIS_OPTIONS, type ExploreAxisId } from "@/lib/intro/exploreConfig";
 import { setAxisLessonChoice, setExploreCompletion } from "@/lib/intro/exploreState";
 
-type PageProps = {
-  params: { axisId: ExploreAxisId };
-};
-
-export default function ExploreAxisLessonPage({ params }: PageProps) {
+export default function ExploreAxisLessonPage() {
   const router = useRouter();
-  const lesson = EXPLORE_AXIS_LESSONS[params.axisId];
-  const axisMeta = useMemo(() => EXPLORE_AXIS_OPTIONS.find((axis) => axis.id === params.axisId) ?? null, [params.axisId]);
+  const searchParams = useSearchParams();
+  const params = useParams<{ axisId?: string | string[] }>();
+  const rawAxisId = params?.axisId;
+  const axisIdParam = Array.isArray(rawAxisId) ? rawAxisId[0] : rawAxisId;
+  const axisId = axisIdParam as ExploreAxisId | undefined;
+  const lesson = axisId ? EXPLORE_AXIS_LESSONS[axisId] : null;
+  const axisMeta = useMemo(
+    () => (axisId ? EXPLORE_AXIS_OPTIONS.find((axis) => axis.id === axisId) ?? null : null),
+    [axisId],
+  );
+  const isE2E = searchParams?.get("e2e") === "1";
+  const withE2E = (path: string) => (isE2E ? `${path}${path.includes("?") ? "&" : "?"}e2e=1` : path);
+  const guidedPath = () => {
+    const query = new URLSearchParams({ source: "explore" });
+    if (isE2E) {
+      query.set("e2e", "1");
+    }
+    return `/intro/guided?${query.toString()}`;
+  };
+  const goBackToToday = () => {
+    router.push(withE2E("/today"));
+  };
 
-  if (!lesson) {
+  if (!lesson || !axisId) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--omni-bg-main)] px-4 py-12 text-center">
+      <main
+        className="flex min-h-screen items-center justify-center bg-[var(--omni-bg-main)] px-4 py-12 text-center"
+        data-testid="explore-axis-detail-root"
+      >
         <div className="space-y-4 rounded-[24px] border border-[var(--omni-border-soft)] bg-white/90 px-6 py-8 text-[var(--omni-ink)] shadow-[0_15px_40px_rgba(0,0,0,0.1)]">
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Explorare</p>
           <h1 className="text-2xl font-semibold">Zona aleasă nu există.</h1>
-          <OmniCtaButton className="justify-center" onClick={() => router.replace("/intro/explore/axes")}>
-            Înapoi la selecție
-          </OmniCtaButton>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <OmniCtaButton className="justify-center" onClick={() => router.replace(withE2E("/intro/explore/axes"))}>
+              Înapoi la selecție
+            </OmniCtaButton>
+            <OmniCtaButton variant="neutral" className="justify-center" data-testid="explore-back-today" onClick={goBackToToday}>
+              Înapoi la Today
+            </OmniCtaButton>
+          </div>
         </div>
       </main>
     );
@@ -32,11 +56,14 @@ export default function ExploreAxisLessonPage({ params }: PageProps) {
   const handleFinish = () => {
     setAxisLessonChoice(lesson.id);
     setExploreCompletion("axis");
-    router.replace("/intro/guided?source=explore");
+    router.replace(guidedPath());
   };
 
   return (
-    <main className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-0">
+    <main
+      className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-0"
+      data-testid="explore-axis-detail-root"
+    >
       <div className="mx-auto w-full max-w-3xl space-y-6 rounded-[28px] border border-[var(--omni-border-soft)] bg-white/95 px-6 py-8 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
         <header className="space-y-3 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Lecție scurtă</p>
@@ -58,9 +85,14 @@ export default function ExploreAxisLessonPage({ params }: PageProps) {
           </ul>
         </section>
         <p className="text-sm text-[var(--omni-muted)]">{lesson.outro}</p>
-        <OmniCtaButton className="justify-center" onClick={handleFinish}>
-          Revenim în Guided
-        </OmniCtaButton>
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <OmniCtaButton className="justify-center" onClick={handleFinish}>
+            Revenim în Guided
+          </OmniCtaButton>
+          <OmniCtaButton variant="neutral" className="justify-center" data-testid="explore-back-today" onClick={goBackToToday}>
+            Înapoi la Today
+          </OmniCtaButton>
+        </div>
       </div>
     </main>
   );
