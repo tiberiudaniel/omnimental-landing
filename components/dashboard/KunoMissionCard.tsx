@@ -141,6 +141,7 @@ export default function KunoMissionCard({
           color: kunoTone.textMain,
           minHeight: "400px",
         }}
+        data-testid="dashboard-kuno-card"
       >
         <KunoMissionSummary {...summaryProps} />
         {moduleCompleted ? (

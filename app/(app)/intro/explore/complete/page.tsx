@@ -15,11 +15,11 @@ function ExploreCompletionInner() {
     if (axis) {
       setAxisLessonChoice(axis);
     }
-    const params = new URLSearchParams({ source: "explore" });
+    const params = new URLSearchParams({ mode: "short", source: "explore" });
     if ((searchParams.get("e2e") ?? "").toLowerCase() === "1") {
       params.set("e2e", "1");
     }
-    router.replace(`/intro/guided?${params.toString()}`);
+    router.replace(`/today?${params.toString()}`);
   }, [router, searchParams]);
 
   return (
@@ -27,7 +27,7 @@ function ExploreCompletionInner() {
       <div className="max-w-md space-y-3 rounded-[24px] border border-[var(--omni-border-soft)] bg-white/80 px-6 py-6 text-[var(--omni-ink)]">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Explore</p>
         <h1 className="text-2xl font-semibold">Închidem modul de explorare…</h1>
-        <p className="text-sm text-[var(--omni-muted)]">Te ducem înapoi în traseul Guided.</p>
+        <p className="text-sm text-[var(--omni-muted)]">Pregătim Today cu ce ai explorat.</p>
       </div>
     </main>
   );

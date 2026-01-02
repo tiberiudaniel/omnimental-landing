@@ -24,6 +24,7 @@ import { isE2EMode } from "@/lib/e2eMode";
 import { getE2EUser } from "@/lib/e2eUser";
 import { migrateAnonToUser } from "@/lib/migrateUserData";
 
+const IS_DEV_ENV = process.env.NODE_ENV !== "production";
 const AUTH_EMAIL_STORAGE_KEY = "omnimental_auth_email";
 const KEEP_SIGNED_IN_KEY = "omnimental_keep_signed_in_until";
 const KEEP_SIGNED_IN_DURATION_MS = 10 * 24 * 60 * 60 * 1000; // 10 days
@@ -75,7 +76,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (typeof window !== 'undefined' && firebaseUser && !firebaseUser.isAnonymous) {
           const anon = window.localStorage.getItem('OMNI_LAST_ANON_UID');
           if (anon && anon !== firebaseUser.uid) {
+            if (IS_DEV_ENV) {
+              console.info("[auth] migrating anon session", { from: anon, to: firebaseUser.uid });
+            }
             void migrateAnonToUser(anon, firebaseUser.uid)
+              .then(() => {
+                if (IS_DEV_ENV) {
+                  console.info("[auth] migrateAnonToUser success", { from: anon, to: firebaseUser.uid });
+                }
+              })
               .catch((e) => console.warn('migrateAnonToUser failed', e))
               .finally(() => {
                 try { window.localStorage.removeItem('OMNI_LAST_ANON_UID'); } catch {}

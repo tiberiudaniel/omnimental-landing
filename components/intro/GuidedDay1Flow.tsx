@@ -28,6 +28,9 @@ type Content = {
   offer: { title: string; body: string; ctaPrimary: string; ctaSecondary: string };
 };
 
+const GUIDED_ONBOARDING_KEY = "guided_onboarding_active";
+const LEGACY_GUIDED_KEY = "guided_guest_mode";
+
 const CONTENT: Record<"ro" | "en", Content> = {
   ro: {
     questions: [
@@ -192,7 +195,10 @@ export default function GuidedDay1Flow() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!initialCompleted) {
-      window.localStorage.setItem("guided_guest_mode", "1");
+      try {
+        window.localStorage.setItem(GUIDED_ONBOARDING_KEY, "1");
+        window.localStorage.removeItem(LEGACY_GUIDED_KEY);
+      } catch {}
     }
   }, [initialCompleted]);
 
@@ -253,7 +259,10 @@ export default function GuidedDay1Flow() {
       setGuidedCompleted(true);
       track("guided_day1_completed");
       if (typeof window !== "undefined") {
-        window.localStorage.setItem("guided_guest_mode", "1");
+        try {
+          window.localStorage.setItem(GUIDED_ONBOARDING_KEY, "1");
+          window.localStorage.removeItem(LEGACY_GUIDED_KEY);
+        } catch {}
       }
     }
     if (!showOfferForUser) {
@@ -279,7 +288,7 @@ export default function GuidedDay1Flow() {
             {locale === "ro" ? "Încep ghidat" : "Start guided"}
           </h1>
           <p className="text-sm text-[var(--omni-ink)]/70 sm:text-base">
-            {locale === "ro" ? "5–7 minute. Niciun progres salvat fără acord." : "5–7 minutes. Nothing saved without consent."}
+            {locale === "ro" ? "5–7 minute. Poți încerca fără cont." : "5–7 minutes. You can try it without an account."}
           </p>
         </header>
 

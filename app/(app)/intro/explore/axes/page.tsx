@@ -12,15 +12,15 @@ function ExploreAxisPickerPageInner() {
   const existingChoice = useMemo(() => getAxisLessonChoice(), []);
   const isE2E = searchParams?.get("e2e") === "1";
   const withE2E = (path: string) => (isE2E ? `${path}${path.includes("?") ? "&" : "?"}e2e=1` : path);
-  const guidedPath = () => {
-    const params = new URLSearchParams({ source: "explore" });
+  const todayPath = () => {
+    const params = new URLSearchParams({ mode: "short", source: "explore" });
     if (isE2E) {
       params.set("e2e", "1");
     }
-    return `/intro/guided?${params.toString()}`;
+    return `/today?${params.toString()}`;
   };
   const goBackToToday = () => {
-    router.push(withE2E("/today"));
+    router.push(todayPath());
   };
 
   const existingAxisLabel = useMemo(() => getExploreAxisOption(existingChoice as ExploreAxisId | null)?.title ?? null, [existingChoice]);
@@ -40,10 +40,10 @@ function ExploreAxisPickerPageInner() {
         <div className="w-full max-w-2xl space-y-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-white/90 px-6 py-8 text-center shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Explorare</p>
           <h1 className="text-2xl font-semibold">Ai ales deja zona {existingAxisLabel ?? existingChoice}.</h1>
-          <p className="text-sm text-[var(--omni-muted)]">Continuăm cu traseul Guided.</p>
+          <p className="text-sm text-[var(--omni-muted)]">Continuăm cu Today (mod scurt).</p>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <OmniCtaButton className="justify-center" onClick={() => router.replace(guidedPath())}>
-              Înapoi în Guided
+            <OmniCtaButton className="justify-center" onClick={() => router.replace(todayPath())}>
+              Înapoi la Today
             </OmniCtaButton>
             <OmniCtaButton
               className="justify-center"

@@ -14,7 +14,7 @@ import {
   type XYPosition,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { addDoc, collection, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
+import { addDoc, collection, deleteField, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
 import clsx from "clsx";
 import dagre from "dagre";
 import { getDb } from "@/lib/firebase";
@@ -139,6 +139,7 @@ type FlowDraftDoc = {
   chunks?: FlowChunk[];
   comments?: FlowComment[];
   overlays?: FlowOverlay[];
+  stepOrderOverrides?: Record<string, string[]>;
   updatedAt?: unknown;
   updatedAtMs?: number;
   consumedAt?: unknown;
@@ -185,6 +186,64 @@ const areIdListsEqual = (a: string[], b: string[]) => {
     }
   }
   return true;
+};
+
+const applyStepOrderOverrideToManifest = (manifest: StepManifest | null, override?: string[]): StepManifest | null => {
+  if (!manifest || !override?.length) return manifest;
+  const nodeMap = new Map(manifest.nodes.map((node) => [node.id, node]));
+  const orderedNodes: StepManifest["nodes"] = [];
+  let changed = false;
+  override.forEach((stepId, idx) => {
+    const node = nodeMap.get(stepId);
+    if (node) {
+      orderedNodes.push(node);
+      nodeMap.delete(stepId);
+      if (!changed && manifest.nodes[idx]?.id !== stepId) {
+        changed = true;
+      }
+    } else if (process.env.NODE_ENV !== "production") {
+      console.warn(`[FlowStudio] stepOrderOverrides has unknown step '${stepId}' for route ${manifest.routePath}`);
+      changed = true;
+    }
+  });
+  manifest.nodes.forEach((node) => {
+    if (nodeMap.has(node.id)) {
+      orderedNodes.push(node);
+      nodeMap.delete(node.id);
+    }
+  });
+  if (!changed) {
+    const sameOrder =
+      orderedNodes.length === manifest.nodes.length &&
+      orderedNodes.every((node, index) => node.id === manifest.nodes[index]?.id);
+    if (sameOrder) return manifest;
+  }
+  return { ...manifest, nodes: orderedNodes };
+};
+
+const normalizeStepOrderOverrides = (value: unknown): Record<string, string[]> => {
+  if (!value || typeof value !== "object") return {};
+  const normalized: Record<string, string[]> = {};
+  Object.entries(value as Record<string, unknown>).forEach(([routePath, list]) => {
+    if (!Array.isArray(list)) return;
+    const seen = new Set<string>();
+    const cleaned: string[] = [];
+    list.forEach((entry) => {
+      const str =
+        typeof entry === "string"
+          ? entry.trim()
+          : typeof entry === "number"
+            ? String(entry)
+            : undefined;
+      if (!str || seen.has(str)) return;
+      seen.add(str);
+      cleaned.push(str);
+    });
+    if (cleaned.length) {
+      normalized[routePath] = cleaned;
+    }
+  });
+  return normalized;
 };
 
 export default function FlowStudioPage() {
@@ -237,6 +296,7 @@ export default function FlowStudioPage() {
   const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
   const [overlayFocusHideOthers, setOverlayFocusHideOthers] = useState(true);
   const [inspectorTabRequest, setInspectorTabRequest] = useState<{ tab: InspectorTab; nonce: number } | null>(null);
+  const [stepOrderOverrides, setStepOrderOverrides] = useState<Record<string, string[]>>({});
   const selectOverlay = useCallback(
     (overlayId: string | null, options?: { enforceViewMode?: boolean }) => {
       setSelectedOverlayId(overlayId);
@@ -250,6 +310,74 @@ export default function FlowStudioPage() {
       }
     },
     [setOverlayFocusHideOthers, setSelectedOverlayId, setViewMode],
+  );
+
+  const scheduleStepOrderPersist = useCallback(
+    (nextOverrides: Record<string, string[]>) => {
+      if (!selectedFlowId) return;
+      if (stepOrderPersistTimeoutRef.current) {
+        window.clearTimeout(stepOrderPersistTimeoutRef.current);
+      }
+      stepOrderPersistTimeoutRef.current = window.setTimeout(() => {
+        stepOrderPersistTimeoutRef.current = null;
+        const hasOverrides = Object.keys(nextOverrides).length > 0;
+        const payload: Record<string, unknown> = {
+          updatedAt: serverTimestamp(),
+          updatedAtMs: Date.now(),
+        };
+        payload.stepOrderOverrides = hasOverrides ? nextOverrides : deleteField();
+        void setDoc(doc(db, "adminFlows", selectedFlowId), payload, { merge: true }).catch((error) => {
+          console.error("[FlowStudio] failed to persist step order overrides", error);
+        });
+      }, 800);
+    },
+    [db, selectedFlowId],
+  );
+
+  const updateStepOrderOverrides = useCallback(
+    (updater: (prev: Record<string, string[]>) => Record<string, string[]>) => {
+      setStepOrderOverrides((prev) => {
+        const next = updater(prev);
+        if (next === prev) return prev;
+        scheduleStepOrderPersist(next);
+        return next;
+      });
+    },
+    [scheduleStepOrderPersist],
+  );
+
+  const handleStepOrderOverrideChange = useCallback(
+    (routePath: string, nextOrder: string[] | null) => {
+      if (!routePath) return;
+      updateStepOrderOverrides((prev) => {
+        if (!nextOrder || !nextOrder.length) {
+          if (!(routePath in prev)) return prev;
+          const cloned = { ...prev };
+          delete cloned[routePath];
+          return cloned;
+        }
+        const seen = new Set<string>();
+        const normalized: string[] = [];
+        nextOrder.forEach((id) => {
+          if (typeof id !== "string") return;
+          const trimmed = id.trim();
+          if (!trimmed || seen.has(trimmed)) return;
+          seen.add(trimmed);
+          normalized.push(trimmed);
+        });
+        if (!normalized.length) {
+          if (!(routePath in prev)) return prev;
+          const cloned = { ...prev };
+          delete cloned[routePath];
+          return cloned;
+        }
+        if (areIdListsEqual(prev[routePath] ?? [], normalized)) {
+          return prev;
+        }
+        return { ...prev, [routePath]: normalized };
+      });
+    },
+    [updateStepOrderOverrides],
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNodeData>([]);
@@ -293,6 +421,7 @@ export default function FlowStudioPage() {
   const autosaveToastTimeoutRef = useRef<number | null>(null);
   const overlayAutoFitKeyRef = useRef<string | null>(null);
   const overlayScrollRestoreRef = useRef<number | null>(null);
+  const stepOrderPersistTimeoutRef = useRef<number | null>(null);
   const viewModeRestoredRef = useRef(false);
   const focusRestoredRef = useRef(false);
   const leftSidebarRestoredRef = useRef(false);
@@ -534,6 +663,21 @@ useEffect(() => {
 }, [selectedFlowId]);
 
 useEffect(() => {
+  if (stepOrderPersistTimeoutRef.current) {
+    window.clearTimeout(stepOrderPersistTimeoutRef.current);
+    stepOrderPersistTimeoutRef.current = null;
+  }
+}, [selectedFlowId]);
+
+useEffect(() => {
+  return () => {
+    if (stepOrderPersistTimeoutRef.current) {
+      window.clearTimeout(stepOrderPersistTimeoutRef.current);
+    }
+  };
+}, []);
+
+useEffect(() => {
   if (!selectedFlowId || focusRestoredRef.current) return;
   if (typeof window === "undefined") return;
   const key = `${FOCUSED_CHUNK_STORAGE_KEY}:${selectedFlowId}`;
@@ -609,24 +753,25 @@ useEffect(() => {
     [routeMap],
   );
 
-  useEffect(() => {
-    if (!isAdmin || !selectedFlowId) {
-      const rafId = requestAnimationFrame(() => {
-        setFlowDoc(null);
-        setNodes([]);
+useEffect(() => {
+  if (!isAdmin || !selectedFlowId) {
+    const rafId = requestAnimationFrame(() => {
+      setFlowDoc(null);
+      setNodes([]);
         setEdges([]);
         setFlowNameDraft("");
         setChunks(normalizeChunks());
-        setSelectedChunkId(null);
-        setFocusedChunkId(null);
-        setComments([]);
-        setOverlays([]);
-        selectOverlay(null, { enforceViewMode: false });
-        setSingleNodeSelection(null);
-        setSingleEdgeSelection(null);
-        setSelectedNodeIds([]);
-        setSelectedEdgeIds([]);
-      });
+      setSelectedChunkId(null);
+      setFocusedChunkId(null);
+      setComments([]);
+      setOverlays([]);
+      selectOverlay(null, { enforceViewMode: false });
+      setStepOrderOverrides({});
+      setSingleNodeSelection(null);
+      setSingleEdgeSelection(null);
+      setSelectedNodeIds([]);
+      setSelectedEdgeIds([]);
+    });
       return () => cancelAnimationFrame(rafId);
     }
     const flowRef = doc(db, "adminFlows", selectedFlowId);
@@ -637,22 +782,24 @@ useEffect(() => {
         setEdges([]);
         setFlowNameDraft("");
         setChunks(normalizeChunks());
-        setSelectedChunkId(null);
-        setFocusedChunkId(null);
-        setComments([]);
-        setOverlays([]);
-        selectOverlay(null, { enforceViewMode: false });
-        setSingleNodeSelection(null);
-        setSingleEdgeSelection(null);
-        setSelectedNodeIds([]);
-        setSelectedEdgeIds([]);
-        if (typeof window !== "undefined") {
+      setSelectedChunkId(null);
+      setFocusedChunkId(null);
+      setComments([]);
+      setOverlays([]);
+      selectOverlay(null, { enforceViewMode: false });
+      setStepOrderOverrides({});
+      setSingleNodeSelection(null);
+      setSingleEdgeSelection(null);
+      setSelectedNodeIds([]);
+      setSelectedEdgeIds([]);
+      if (typeof window !== "undefined") {
           window.localStorage.removeItem(LAST_FLOW_KEY);
         }
         return;
       }
       const data = snapshot.data() as FlowDoc;
-      setFlowDoc(data);
+      const normalizedOverrides = normalizeStepOrderOverrides(data.stepOrderOverrides);
+      setFlowDoc({ ...data, stepOrderOverrides: normalizedOverrides });
       const docUpdatedAtMs = typeof data.updatedAtMs === "number" ? data.updatedAtMs : getTimestampMillis(data.updatedAt);
       if (docUpdatedAtMs) {
         const docDate = new Date(docUpdatedAtMs);
@@ -663,6 +810,7 @@ useEffect(() => {
       setChunks(normalizeChunks(data.chunks));
       setOverlays(Array.isArray(data.overlays) ? data.overlays : []);
       setComments(Array.isArray(data.comments) ? data.comments : []);
+      setStepOrderOverrides(normalizedOverrides);
       const builtNodes = (data.nodes ?? []).map((stored) => buildFlowNode(stored, routeMap, routeByPath));
       const initialEdges = (data.edges ?? []).map(buildFlowEdge);
       const validNodeIds = new Set(builtNodes.map((node) => node.id));
@@ -706,6 +854,8 @@ useEffect(() => {
         setChunks(normalizeChunks(chunkSource));
         setComments(Array.isArray(commentSource) ? commentSource : []);
         setOverlays(Array.isArray(overlaySource) ? overlaySource : []);
+        const overrideSource = draft.stepOrderOverrides ?? flowDoc.stepOrderOverrides ?? {};
+        setStepOrderOverrides(normalizeStepOrderOverrides(overrideSource));
         setFlowNameDraft(draft.name ?? flowDoc.name ?? "");
         void setDoc(draftRef, { consumedAt: serverTimestamp(), consumedAtMs: Date.now() }, { merge: true });
       })
@@ -1122,10 +1272,11 @@ useEffect(() => {
         map.set(node.id, null);
         return;
       }
-      map.set(node.id, getStepManifestForRoute(path, {}));
+      const manifest = getStepManifestForRoute(path, {});
+      map.set(node.id, applyStepOrderOverrideToManifest(manifest, stepOrderOverrides[path]));
     });
     return map;
-  }, [nodes, resolveNodeRoutePath]);
+  }, [nodes, resolveNodeRoutePath, stepOrderOverrides]);
   const nodeLabelMap = useMemo(() => {
     const map = new Map<string, string>();
     nodes.forEach((node) => {
@@ -1145,7 +1296,16 @@ useEffect(() => {
     });
     return map;
   }, [nodeManifestMap]);
-  const currentStepManifest = selectedNode ? nodeManifestMap.get(selectedNode.id) ?? null : null;
+  const currentStepManifest = useMemo(() => {
+    if (!selectedNode) return null;
+    const manifest = nodeManifestMap.get(selectedNode.id) ?? null;
+    if (manifest) return manifest;
+    if (!selectedNodeResolvedRoutePath) return null;
+    return applyStepOrderOverrideToManifest(
+      getStepManifestForRoute(selectedNodeResolvedRoutePath, {}),
+      stepOrderOverrides[selectedNodeResolvedRoutePath],
+    );
+  }, [nodeManifestMap, selectedNode, selectedNodeResolvedRoutePath, stepOrderOverrides]);
   const stepsExpanded = Boolean(selectedNode && expandedStepsMap[selectedNode.id]);
   const nodeStepAvailability = useMemo(() => {
     const map = new Map<string, StepAvailability>();
@@ -2289,6 +2449,9 @@ useEffect(() => {
             nodeId: step.nodeId,
             gateTag: step.gateTag ? step.gateTag : undefined,
             tags: step.tags && step.tags.length ? step.tags : undefined,
+            urlPattern: step.urlPattern || undefined,
+            assertTestId: step.assertTestId || undefined,
+            clickTestId: step.clickTestId || undefined,
           }),
         );
       const edgesList = overlay.edges
@@ -2299,12 +2462,18 @@ useEffect(() => {
         name: overlay.name ?? "Journey",
         description: overlay.description,
         status: overlay.status,
+        entryRoutePath: overlay.entryRoutePath,
+        exitRoutePath: overlay.exitRoutePath,
         steps,
         edges: edgesList && edgesList.length ? edgesList : undefined,
       });
     });
-    return { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays };
-  }, [chunks, comments, edges, nodes, overlays]);
+    const storedStepOrderOverrides =
+      Object.keys(stepOrderOverrides).length > 0
+        ? Object.fromEntries(Object.entries(stepOrderOverrides).map(([routePath, order]) => [routePath, [...order]]))
+        : undefined;
+    return { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays, storedStepOrderOverrides };
+  }, [chunks, comments, edges, nodes, overlays, stepOrderOverrides]);
 
   const serializedFlow = useMemo(() => serializeFlow(), [serializeFlow]);
 
@@ -2315,6 +2484,7 @@ useEffect(() => {
       edges: serializedFlow.storedEdges,
       comments: serializedFlow.storedComments,
       overlays: serializedFlow.storedOverlays,
+      stepOrderOverrides: serializedFlow.storedStepOrderOverrides ?? {},
     });
   }, [flowNameDraft, serializedFlow]);
 
@@ -2328,6 +2498,7 @@ useEffect(() => {
       edges: flowDoc.edges ?? [],
       comments: flowDoc.comments ?? [],
       overlays: flowDoc.overlays ?? [],
+      stepOrderOverrides: flowDoc.stepOrderOverrides ?? {},
     });
   }, [flowDoc, selectedFlowId]);
 
@@ -2511,10 +2682,16 @@ useEffect(() => {
     const overlaySummary = overlays.map((overlay) => ({
       id: overlay.id,
       name: overlay.name ?? "Journey",
+      status: overlay.status ?? "draft",
+      entryRoutePath: overlay.entryRoutePath ?? null,
+      exitRoutePath: overlay.exitRoutePath ?? null,
       stepCount: overlay.steps?.length ?? 0,
       nodes: overlay.steps?.map((step) => ({
         nodeId: step.nodeId,
         routePath: nodeRouteById.get(step.nodeId) ?? "",
+        urlPattern: step.urlPattern ?? null,
+        assertTestId: step.assertTestId ?? null,
+        clickTestId: step.clickTestId ?? null,
       })),
     }));
     return {
@@ -2545,10 +2722,61 @@ useEffect(() => {
     link.click();
     URL.revokeObjectURL(link.href);
   }, [buildAuditSnapshot]);
+  const buildJourneysSpec = useCallback(() => {
+    if (!selectedFlowId) return null;
+    const flowName = flowNameDraft.trim() || flowDoc?.name || "Flow";
+    const journeys = overlays.map((overlay) =>
+      stripUndefinedDeep({
+        id: overlay.id,
+        name: overlay.name ?? "Journey",
+        status: overlay.status ?? "draft",
+        entryRoutePath: overlay.entryRoutePath,
+        exitRoutePath: overlay.exitRoutePath,
+        steps: (overlay.steps ?? []).map((step, index) =>
+          stripUndefinedDeep({
+            order: index + 1,
+            nodeId: step.nodeId,
+            routePath: step.nodeId ? nodeRouteById.get(step.nodeId) ?? undefined : undefined,
+            gateTag: step.gateTag || undefined,
+            tags: step.tags && step.tags.length ? step.tags : undefined,
+            urlPattern: step.urlPattern || undefined,
+            assertTestId: step.assertTestId || undefined,
+            clickTestId: step.clickTestId || undefined,
+          }),
+        ),
+        edges: overlay.edges && overlay.edges.length ? overlay.edges : undefined,
+      }),
+    );
+    return {
+      generatedAt: new Date().toISOString(),
+      flowId: selectedFlowId,
+      flowName,
+      journeys,
+    };
+  }, [flowDoc?.name, flowNameDraft, nodeRouteById, overlays, selectedFlowId]);
+  const handleExportJourneysSpec = useCallback(async () => {
+    const spec = buildJourneysSpec();
+    if (!spec) return;
+    try {
+      const response = await fetch("/api/flow-studio/export-journeys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(spec),
+      });
+      if (!response.ok) {
+        const message = await response.text().catch(() => null);
+        throw new Error(message || `Export failed (${response.status})`);
+      }
+      pushAutosaveToast("success", "Journeys spec salvat în tests/e2e/fixtures/journeys.json");
+    } catch (error) {
+      console.error("Failed to export journeys spec", error);
+      pushAutosaveToast("error", "Export Journeys eșuat");
+    }
+  }, [buildJourneysSpec, pushAutosaveToast]);
 
   const handleSaveFlow = useCallback(async () => {
     if (!selectedFlowId || !flowNameDraft.trim()) return;
-    const { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays } = serializeFlow();
+    const { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays, storedStepOrderOverrides } = serializeFlow();
     setSaveStatus("saving");
     setSaveMessage(null);
     try {
@@ -2561,6 +2789,7 @@ useEffect(() => {
           chunks: storedChunks,
           comments: storedComments,
           overlays: storedOverlays,
+          stepOrderOverrides: storedStepOrderOverrides ?? deleteField(),
           updatedAt: serverTimestamp(),
           updatedAtMs: Date.now(),
           version: (flowDoc?.version ?? 0) + 1,
@@ -2599,7 +2828,7 @@ useEffect(() => {
 
   const handleDuplicateFlow = useCallback(async () => {
     if (!selectedFlowId) return;
-    const { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays } = serializeFlow();
+    const { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays, storedStepOrderOverrides } = serializeFlow();
     const name = flowNameDraft ? `${flowNameDraft} (copy)` : `${flowDoc?.name ?? "Flow"} (copy)`;
     const docRef = await addDoc(collection(db, "adminFlows"), {
       name,
@@ -2609,6 +2838,7 @@ useEffect(() => {
       chunks: storedChunks,
       comments: storedComments,
       overlays: storedOverlays,
+      stepOrderOverrides: storedStepOrderOverrides ?? {},
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       version: (flowDoc?.version ?? 0) + 1,
@@ -2622,7 +2852,7 @@ useEffect(() => {
     try {
       setAutosaveStatus("saving");
       setAutosaveError(null);
-      const { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays } = serializeFlow();
+      const { storedNodes, storedEdges, storedChunks, storedComments, storedOverlays, storedStepOrderOverrides } = serializeFlow();
       await setDoc(
         doc(db, "adminFlows", selectedFlowId, "drafts", AUTOSAVE_DOC_ID),
         {
@@ -2632,6 +2862,7 @@ useEffect(() => {
           chunks: storedChunks,
           comments: storedComments,
           overlays: storedOverlays,
+          stepOrderOverrides: storedStepOrderOverrides ?? deleteField(),
           updatedAt: serverTimestamp(),
           updatedAtMs: Date.now(),
         },
@@ -2740,6 +2971,7 @@ useEffect(() => {
       edges: normalizedEdges,
       chunks: normalizedChunks,
       comments: normalizedComments,
+      stepOrderOverrides: importUpdateCurrent ? deleteField() : {},
       updatedAt: serverTimestamp(),
       version: incomingVersion,
     };
@@ -2754,6 +2986,7 @@ useEffect(() => {
     }
     setFlowNameDraft(flowName);
     setComments(normalizedComments);
+    setStepOrderOverrides({});
     setImportSpecText("");
     setImportSpecPreview(null);
     setImportSpecError(null);
@@ -2961,6 +3194,7 @@ useEffect(() => {
       const overlay: FlowOverlay = {
         id: randomId(),
         name: name.trim() || "Journey",
+        status: "draft",
         steps: [],
       };
       setOverlays((existing) => [...existing, overlay]);
@@ -2984,7 +3218,10 @@ useEffect(() => {
   );
 
   const handleOverlayMetadataChange = useCallback(
-    (overlayId: string, updates: Partial<Pick<FlowOverlay, "name" | "description" | "status">>) => {
+    (
+      overlayId: string,
+      updates: Partial<Pick<FlowOverlay, "name" | "description" | "status" | "entryRoutePath" | "exitRoutePath">>,
+    ) => {
       mutateOverlay(overlayId, (overlay) => ({
         ...overlay,
         ...updates,
@@ -4210,6 +4447,7 @@ useEffect(() => {
                   onDeleteNodeComment={handleDeleteComment}
                   onToggleNodeCommentResolved={handleToggleCommentResolved}
                   onExportAuditSnapshot={handleExportAuditSnapshot}
+                  onExportJourneysSpec={handleExportJourneysSpec}
                   overlays={overlays}
                   selectedOverlayId={selectedOverlayId}
                   onSelectOverlay={handleOverlaySelectChange}
@@ -4225,6 +4463,9 @@ useEffect(() => {
                   selectedNodeIds={selectedNodeIds}
                   nodeLabelMap={nodeLabelMap}
                   overlayTabRequest={inspectorTabRequest}
+                  selectedRoutePath={selectedNodeResolvedRoutePath}
+                  stepOrderOverride={selectedNodeResolvedRoutePath ? stepOrderOverrides[selectedNodeResolvedRoutePath] : undefined}
+                  onStepOrderOverrideChange={handleStepOrderOverrideChange}
                 />
               </div>
             ) : null}

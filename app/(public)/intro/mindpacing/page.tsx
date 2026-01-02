@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useMemo, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { useI18n } from "@/components/I18nProvider";
 import { getTodayKey } from "@/lib/dailyCompletion";
@@ -21,10 +21,10 @@ import {
   type MindPacingSignalTag,
 } from "@/lib/mindPacingSignals";
 import { recordDailyRunnerEvent, recordMindPacingSignal } from "@/lib/progressFacts/recorders";
+import { getIntroIntent, setIntroIntent, type IntroIntent } from "@/lib/intro/introState";
 
 type MindPacingOption = (typeof MIND_PACING_QUESTIONS)[number]["options"][number];
-
-const RETURN_TO_TODAY = "/today?mode=short&source=mindpacing_safe";
+const INTRO_INTENT_DEFAULT: IntroIntent = "today";
 
 function getPreviousDayKey(dayKey: string): string | null {
   const date = new Date(dayKey);
@@ -34,6 +34,29 @@ function getPreviousDayKey(dayKey: string): string | null {
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function isIntroIntentParam(value: string | null): value is IntroIntent {
+  return value === "guided" || value === "explore" || value === "today";
+}
+
+function buildReturnTo(intent: IntroIntent, includeE2E: boolean): string {
+  const base =
+    intent === "guided"
+      ? "/intro/guided?source=mindpacing"
+      : intent === "explore"
+        ? "/intro/explore?source=mindpacing"
+        : "/today?mode=short&source=mindpacing_safe";
+  if (!includeE2E) return base;
+  try {
+    const [path, rawQuery] = base.split("?");
+    const params = new URLSearchParams(rawQuery ?? "");
+    params.set("e2e", "1");
+    const qs = params.toString();
+    return qs ? `${path}?${qs}` : path;
+  } catch {
+    return base.includes("?") ? `${base}&e2e=1` : `${base}?e2e=1`;
+  }
 }
 
 function resolveQuestion(dayKey: string) {
@@ -57,8 +80,9 @@ function resolveQuestion(dayKey: string) {
   return question ?? MIND_PACING_QUESTIONS[0];
 }
 
-export default function MindPacingPage() {
+function MindPacingPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { lang } = useI18n();
   const locale = lang === "en" ? "en" : "ro";
   const dayKey = useMemo(() => getTodayKey(), []);
@@ -71,6 +95,20 @@ export default function MindPacingPage() {
   });
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [mindTag, setMindTag] = useState<MindPacingSignalTag | null>(null);
+  const rawIntent = searchParams?.get("intent") ?? null;
+  const isE2E = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
+  const resolvedIntent = useMemo<IntroIntent>(() => {
+    if (isIntroIntentParam(rawIntent)) {
+      return rawIntent;
+    }
+    const stored = getIntroIntent();
+    return stored ?? INTRO_INTENT_DEFAULT;
+  }, [rawIntent]);
+  useEffect(() => {
+    setIntroIntent(resolvedIntent);
+  }, [resolvedIntent]);
+  const returnToTarget = useMemo(() => buildReturnTo(resolvedIntent, isE2E), [resolvedIntent, isE2E]);
+
   useEffect(() => {
     setHydrated(true);
   }, []);
@@ -97,14 +135,14 @@ export default function MindPacingPage() {
   const vocabUrl = useMemo(() => {
     const params = new URLSearchParams({
       source: "mindpacing",
-      returnTo: RETURN_TO_TODAY,
+      returnTo: returnToTarget,
       avoid: previousDayKey ? [dayKey, previousDayKey].join(",") : dayKey,
     });
     if (mindTag) {
       params.set("mindpacingTag", mindTag);
     }
     return `/intro/vocab?${params.toString()}`;
-  }, [dayKey, previousDayKey, mindTag]);
+  }, [dayKey, previousDayKey, mindTag, returnToTarget]);
 
   const eyebrowText = locale === "ro" ? "5 secunde · 1 întrebare" : "5 seconds · 1 question";
   const helperText = locale === "ro" ? "Ne ajută să ajustăm exercițiul de azi pentru tine." : "This helps us adjust today's exercise for you.";
@@ -112,7 +150,7 @@ export default function MindPacingPage() {
 
   if (!hydrated) {
     return (
-      <div className="min-h-screen bg-[var(--omni-bg-main)] text-[var(--omni-ink)]">
+      <div className="min-h-screen bg-[var(--omni-bg-main)] text-[var(--omni-ink)]" data-testid="mindpacing-root">
         <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-6 py-12" />
       </div>
     );
@@ -148,7 +186,7 @@ export default function MindPacingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--omni-bg-main)] text-[var(--omni-ink)]">
+    <div className="min-h-screen bg-[var(--omni-bg-main)] text-[var(--omni-ink)]" data-testid="mindpacing-root">
       <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-6 py-12">
         {phase === "question" ? (
           <section className="space-y-3 text-center">
@@ -161,19 +199,12 @@ export default function MindPacingPage() {
         {phase === "question" ? (
           <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 shadow-[0_15px_50px_rgba(0,0,0,0.08)]">
             <div className="space-y-3">
-              {question.options.map((option) => {
-                const slug =
-                  option.label[locale]
-                    .toLowerCase()
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "")
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/^-+|-+$/g, "") || option.id;
+              {question.options.map((option, idx) => {
                 return (
                   <button
                     key={option.id}
                     type="button"
-                    data-testid={`mindpacing-option-${slug}`}
+                    data-testid={`mindpacing-option-${idx}`}
                     onClick={() => handleAnswer(option)}
                     className="w-full rounded-2xl border border-[var(--omni-border-soft)] px-4 py-3 text-left text-sm font-semibold transition hover:border-[var(--omni-ink)]/60"
                   >
@@ -211,7 +242,7 @@ export default function MindPacingPage() {
               )}
             </div>
             <div className="flex justify-center">
-              <OmniCtaButton className="justify-center" onClick={() => router.push(vocabUrl)}>
+              <OmniCtaButton className="justify-center" onClick={() => router.push(vocabUrl)} data-testid="mindpacing-continue">
                 {locale === "ro" ? "Continuă" : "Continue"}
               </OmniCtaButton>
             </div>
@@ -219,5 +250,19 @@ export default function MindPacingPage() {
         ) : null}
       </main>
     </div>
+  );
+}
+
+export default function MindPacingPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[var(--omni-bg-main)] px-4 py-12 text-sm text-[var(--omni-muted)]">
+          Pregătim MindPacing…
+        </main>
+      }
+    >
+      <MindPacingPageInner />
+    </Suspense>
   );
 }

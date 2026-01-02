@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2025-01-01T00:00:00.000Z",
+  "flowId": "canonical_spine",
+  "flowName": "Canonical MindPacing Spine",
+  "journeys": [
+    {
+      "id": "canonical_mindpacing_flow",
+      "name": "Intro → MindPacing → Today → Session",
+      "status": "active",
+      "entryRoutePath": "/intro?lang=ro&e2e=1",
+      "exitRoutePath": "/session/complete",
+      "steps": [
+        {
+          "order": 1,
+          "urlPattern": "/intro(.*)$",
+          "clickTestId": "intro-skip"
+        },
+        {
+          "order": 2,
+          "urlPattern": "/intro(.*)$",
+          "clickTestId": "intro-choice-today"
+        },
+        {
+          "order": 3,
+          "urlPattern": "/intro/mindpacing(.*)$",
+          "assertTestId": "mindpacing-root",
+          "clickTestId": "mindpacing-option-0"
+        },
+        {
+          "order": 4,
+          "urlPattern": "/intro/mindpacing(.*)$",
+          "assertTestId": "mindpacing-root",
+          "clickTestId": "mindpacing-continue"
+        },
+        {
+          "order": 5,
+          "urlPattern": "/intro/vocab(.*)$",
+          "assertTestId": "vocab-root",
+          "clickTestId": "vocab-continue"
+        },
+        {
+          "order": 6,
+          "urlPattern": "/today(.*)$",
+          "assertTestId": "today-root",
+          "clickTestId": "today-start-run"
+        },
+        {
+          "order": 7,
+          "urlPattern": "/today/(run|next)(.*)$"
+        },
+        {
+          "order": 8,
+          "urlPattern": "/session/complete(.*)$",
+          "assertTestId": "session-complete-root"
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { track } from "@/lib/telemetry/track";
 import { useProfile } from "@/components/ProfileProvider";
@@ -41,9 +42,16 @@ function TodayRunPageInner() {
   const runMode = runModeParam === "deep" ? "deep" : runModeParam === "quick" ? "quick" : "standard";
   const roundParam = searchParams.get("round");
   const isExtraRound = roundParam === "extra";
+  const [cookieE2E, setCookieE2E] = useState(false);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setCookieE2E(document.cookie.split(";").some((entry) => entry.trim().startsWith("omni_e2e=1")));
+  }, []);
+  const e2eMode = (searchParams.get("e2e") ?? "").toLowerCase() === "1" || cookieE2E;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (e2eMode) return;
     let alive = true;
     const timeout = window.setTimeout(() => {
       if (!alive) return;
@@ -61,11 +69,12 @@ function TodayRunPageInner() {
       alive = false;
       window.clearTimeout(timeout);
     };
-  }, []);
+  }, [e2eMode]);
 
-  const isBlocked = Boolean(membershipTier === "free" && completedToday && !isExtraRound);
+  const isBlocked = Boolean(membershipTier === "free" && completedToday && !isExtraRound && !e2eMode);
 
   useEffect(() => {
+    if (e2eMode) return;
     if (!initialized) return;
     if (isBlocked) {
       track("daily_run_blocked_free_limit");
@@ -73,9 +82,10 @@ function TodayRunPageInner() {
       return;
     }
     track("daily_run_started");
-  }, [initialized, isBlocked]);
+  }, [e2eMode, initialized, isBlocked]);
 
   useEffect(() => {
+    if (e2eMode) return;
     if (!initialized || isBlocked || runStartLoggedRef.current) return;
     runStartLoggedRef.current = true;
     void recordDailyRunnerEvent({
@@ -83,7 +93,7 @@ function TodayRunPageInner() {
       mode: runMode,
       label: runModuleId ?? undefined,
     });
-  }, [initialized, isBlocked, runMode, runModuleId]);
+  }, [e2eMode, initialized, isBlocked, runMode, runModuleId]);
 
   const logRunCompleted = (moduleKey?: string | null) => {
     const label = moduleKey ?? runModuleId ?? undefined;
@@ -94,9 +104,10 @@ function TodayRunPageInner() {
     });
   };
 
-  const navigateToSessionComplete = () => {
-    router.push("/session/complete?source=today_run");
-  };
+  const navigateToSessionComplete = useCallback(() => {
+    const target = e2eMode ? "/session/complete?e2e=1&source=today_e2e" : "/session/complete?source=today_run";
+    router.push(target);
+  }, [e2eMode, router]);
 
   const finalizeCompletion = async (moduleKey?: string | null) => {
     markDailyCompletion(moduleKey ?? null);
@@ -190,6 +201,24 @@ function TodayRunPageInner() {
     if (!storedPlan?.moduleId) return null;
     return getWowLessonDefinition(storedPlan.moduleId);
   }, [storedPlan]);
+
+  if (e2eMode) {
+    return (
+      <main
+        className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)]"
+        data-testid="today-run-e2e"
+      >
+        <p>Simulated Today Run</p>
+        <Link
+          data-testid="session-finish-button"
+          href="/session/complete?e2e=1&source=today_e2e"
+          className="rounded-full bg-[var(--omni-ink)] px-4 py-2 text-white"
+        >
+          Finalizează sesiunea
+        </Link>
+      </main>
+    );
+  }
 
   if (!initialized) {
     return null;

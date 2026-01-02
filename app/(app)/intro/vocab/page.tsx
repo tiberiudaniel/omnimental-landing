@@ -246,7 +246,10 @@ function IntroVocabPageInner() {
   const subtitleLabel = vocabCopy?.subtitle ?? vocabData.scienceLabel ?? "";
 
   return (
-    <main className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-0">
+    <main
+      className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-0"
+      data-testid="vocab-root"
+    >
       <div className="mx-auto w-full max-w-3xl space-y-6">
         <section className="space-y-3 text-center sm:text-left">
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{heroCopy.eyebrow}</p>
@@ -268,7 +271,7 @@ function IntroVocabPageInner() {
                 ))}
               </div>
               <div className="mt-6 flex justify-center sm:justify-start">
-                <OmniCtaButton className="justify-center" onClick={handleContinue}>
+                <OmniCtaButton className="justify-center" onClick={handleContinue} data-testid="vocab-continue">
                   {locale === "ro" ? "Continuă" : "Continue"}
                 </OmniCtaButton>
               </div>
@@ -286,7 +289,7 @@ function IntroVocabPageInner() {
                     : "No matching vocab right now. Continuing the guided path."}
               </p>
               <div className="flex justify-center sm:justify-start">
-                <OmniCtaButton className="justify-center" onClick={handleContinue}>
+                <OmniCtaButton className="justify-center" onClick={handleContinue} data-testid="vocab-continue">
                   {locale === "ro" ? "Continuă" : "Continue"}
                 </OmniCtaButton>
               </div>

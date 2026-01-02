@@ -35,6 +35,7 @@ export default function SiteHeader({
   const { user, signOutUser, linkSentTo, authNotice, clearAuthNotice } = useAuth();
   const { profile } = useProfile();
   const pathname = usePathname();
+  const isAnonymousUser = Boolean(user && user.isAnonymous);
   const isLoggedIn = Boolean(user && !user.isAnonymous);
   const shortUser = (() => {
     let email = "";
@@ -65,6 +66,15 @@ export default function SiteHeader({
     if (email) return email.slice(0, 5);
     return lang === "ro" ? "Oaspete" : "Guest";
   })();
+  const userStatusLabel = !user
+    ? lang === "ro"
+      ? "Neautentificat"
+      : "Not signed in"
+    : isAnonymousUser
+      ? lang === "ro"
+        ? "Sesiune guest"
+        : "Guest session"
+      : shortUser;
   // locales handled explicitly as RO-EN in the top row
   const progressLabelValue = t("headerProgressCta");
   const progressLabel =
@@ -73,10 +83,16 @@ export default function SiteHeader({
   const evaluationLabel = typeof evalLabelValue === "string" ? evalLabelValue : (lang === "ro" ? "Antrenament" : "Training");
   const signInLabelValue = t("headerSignIn");
   const signOutLabelValue = t("headerSignOut");
-  const signInLabel =
-    typeof signInLabelValue === "string" ? signInLabelValue : "Conectează-te";
   const signOutLabel =
     typeof signOutLabelValue === "string" ? signOutLabelValue : "Deconectează-te";
+  const guestCtaLabel = lang === "ro" ? "Upgrade / Autentificare" : "Upgrade / Sign in";
+  const authButtonLabel = isLoggedIn
+    ? signOutLabel
+    : isAnonymousUser
+      ? guestCtaLabel
+      : typeof signInLabelValue === "string"
+        ? (signInLabelValue as string)
+        : "Conectează-te";
   // unsubscribe link moved to footer; remove unused label
 
   const isActive = (path: string) => {
@@ -106,6 +122,18 @@ const headerPad = "px-3 py-2 md:py-4";
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
   }, [actionsOpen]);
+
+  const handlePrimaryAuthAction = () => {
+    if (isLoggedIn) {
+      void signOutUser().catch((e) => console.error("sign-out failed", e));
+      return;
+    }
+    if (onAuthRequest) {
+      onAuthRequest();
+    } else {
+      router.push("/auth?returnTo=%2Frecommendation");
+    }
+  };
 
   const handleUserChipClick = () => {
     if (isLoggedIn) {
@@ -159,7 +187,7 @@ const headerPad = "px-3 py-2 md:py-4";
       <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--omni-ink)]/10 text-sm font-bold text-[var(--omni-ink)]">
         {(shortUser?.[0] ?? "G").toUpperCase()}
       </span>
-      <span className="text-[11px] text-[var(--omni-ink)]">{shortUser}</span>
+      <span className="text-[11px] text-[var(--omni-ink)]">{userStatusLabel}</span>
       <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden className="text-[var(--omni-ink-soft)]">
         <path d="M2 3.5 5 6.5 8 3.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
       </svg>
@@ -199,27 +227,15 @@ const headerPad = "px-3 py-2 md:py-4";
       <div className="hidden items-center justify-end gap-1.5 text-[10px] text-[var(--omni-ink-soft)] md:flex">
         <button
           type="button"
-          onClick={
-            isLoggedIn
-              ? () => {
-                  void signOutUser().catch((e) => console.error("sign-out failed", e));
-                }
-              : () => {
-                  if (onAuthRequest) {
-                    onAuthRequest();
-                    return;
-                  }
-                  router.push('/progress');
-                }
-          }
+          onClick={handlePrimaryAuthAction}
           className={clsx(headerButtonBase, "text-[10px]")}
           aria-pressed={isLoggedIn}
-          title={isLoggedIn ? (typeof signOutLabel === "string" ? (signOutLabel as string) : "Sign out") : (typeof signInLabel === "string" ? (signInLabel as string) : "Sign in")}
+          title={authButtonLabel}
         >
-          {isLoggedIn ? (typeof signOutLabel === "string" ? signOutLabel : "Deconectează-te") : (typeof signInLabel === "string" ? signInLabel : "Conectează-te")}
+          {authButtonLabel}
         </button>
         <span title={user?.email ?? user?.uid ?? "guest"} className="hidden md:inline opacity-70">
-          {shortUser}
+          {userStatusLabel}
         </span>
         <div className="ml-0 flex items-center gap-0.5 text-[11px] shrink-0">
           <button

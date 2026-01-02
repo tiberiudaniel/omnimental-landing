@@ -11,6 +11,8 @@ const webServer = process.env.PW_SKIP_WEBSERVER === '1' ? undefined : {
   },
 } as const;
 
+const journeysSpecPattern = /journeys-from-flowstudio\.spec\.ts$/;
+
 export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 30_000,
@@ -25,6 +27,15 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'journeys',
+      testMatch: journeysSpecPattern,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'legacy',
+      testIgnore: journeysSpecPattern,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 });

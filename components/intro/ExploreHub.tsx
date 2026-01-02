@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { track } from "@/lib/telemetry/track";
 import { getAxisLessonChoice, getExploreCompletion } from "@/lib/intro/exploreState";
 
 export default function ExploreHub() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const exploreCompletion = useMemo(() => getExploreCompletion(), []);
   const axisChoice = useMemo(() => getAxisLessonChoice(), []);
+  const todayTarget = useMemo(() => {
+    const params = new URLSearchParams({ mode: "short", source: "explore" });
+    if ((searchParams?.get("e2e") || "").toLowerCase() === "1") {
+      params.set("e2e", "1");
+    }
+    return `/today?${params.toString()}`;
+  }, [searchParams]);
 
   useEffect(() => {
     track("explore_opened_final");
@@ -17,8 +25,8 @@ export default function ExploreHub() {
 
   useEffect(() => {
     if (!exploreCompletion) return;
-    router.replace("/intro/guided?source=explore");
-  }, [exploreCompletion, router]);
+    router.replace(todayTarget);
+  }, [exploreCompletion, router, todayTarget]);
 
   const axisDisabled = Boolean(axisChoice);
 

@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { EXPLORE_AXIS_LESSONS, EXPLORE_AXIS_OPTIONS, type ExploreAxisId } from "@/lib/intro/exploreConfig";
 import { setAxisLessonChoice, setExploreCompletion } from "@/lib/intro/exploreState";
 
-export default function ExploreAxisLessonPage() {
+function ExploreAxisLessonPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams<{ axisId?: string | string[] }>();
@@ -20,15 +20,15 @@ export default function ExploreAxisLessonPage() {
   );
   const isE2E = searchParams?.get("e2e") === "1";
   const withE2E = (path: string) => (isE2E ? `${path}${path.includes("?") ? "&" : "?"}e2e=1` : path);
-  const guidedPath = () => {
-    const query = new URLSearchParams({ source: "explore" });
+  const todayPath = () => {
+    const query = new URLSearchParams({ mode: "short", source: "explore" });
     if (isE2E) {
       query.set("e2e", "1");
     }
-    return `/intro/guided?${query.toString()}`;
+    return `/today?${query.toString()}`;
   };
   const goBackToToday = () => {
-    router.push(withE2E("/today"));
+    router.push(todayPath());
   };
 
   if (!lesson || !axisId) {
@@ -56,7 +56,7 @@ export default function ExploreAxisLessonPage() {
   const handleFinish = () => {
     setAxisLessonChoice(lesson.id);
     setExploreCompletion("axis");
-    router.replace(guidedPath());
+    router.replace(todayPath());
   };
 
   return (
@@ -87,7 +87,7 @@ export default function ExploreAxisLessonPage() {
         <p className="text-sm text-[var(--omni-muted)]">{lesson.outro}</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <OmniCtaButton className="justify-center" onClick={handleFinish}>
-            Revenim în Guided
+            Revenim în Today
           </OmniCtaButton>
           <OmniCtaButton variant="neutral" className="justify-center" data-testid="explore-back-today" onClick={goBackToToday}>
             Înapoi la Today
@@ -95,5 +95,13 @@ export default function ExploreAxisLessonPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ExploreAxisLessonPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--omni-bg-main)]" />}>
+      <ExploreAxisLessonPageInner />
+    </Suspense>
   );
 }

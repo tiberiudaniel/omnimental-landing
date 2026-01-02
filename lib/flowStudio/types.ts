@@ -41,6 +41,9 @@ export type FlowOverlayStep = {
   nodeId: string;
   gateTag?: string | null;
   tags?: string[];
+  urlPattern?: string | null;
+  assertTestId?: string | null;
+  clickTestId?: string | null;
 };
 
 export type FlowOverlayEdge = {
@@ -52,7 +55,9 @@ export type FlowOverlay = {
   id: string;
   name: string;
   description?: string;
-  status?: "draft" | "active" | "archived";
+  status?: "draft" | "active" | "deprecated" | "archived";
+  entryRoutePath?: string;
+  exitRoutePath?: string;
   steps: FlowOverlayStep[];
   edges?: FlowOverlayEdge[];
 };
@@ -65,6 +70,7 @@ export type FlowDoc = {
   chunks?: FlowChunk[];
   comments?: FlowComment[];
   overlays?: FlowOverlay[];
+  stepOrderOverrides?: Record<string, string[]>;
   version?: number;
   updatedAt?: unknown;
   updatedAtMs?: number;

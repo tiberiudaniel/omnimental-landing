@@ -34,6 +34,47 @@ export function computeFlowDiagnostics(
   }
 
   const nodeIds = new Set(nodes.map((node) => node.id));
+  const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+  const adjacency = new Map<string, string[]>();
+  edges.forEach((edge) => {
+    if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
+      return;
+    }
+    const list = adjacency.get(edge.source) ?? [];
+    list.push(edge.target);
+    adjacency.set(edge.source, list);
+  });
+  const pathCache = new Map<string, boolean>();
+  const hasPathBetweenNodes = (from: string, to: string): boolean => {
+    if (from === to) return true;
+    const key = `${from}->${to}`;
+    if (pathCache.has(key)) {
+      return pathCache.get(key)!;
+    }
+    const visited = new Set<string>();
+    const queue: string[] = [];
+    visited.add(from);
+    queue.push(from);
+    let reachable = false;
+    while (queue.length) {
+      const current = queue.shift()!;
+      const neighbors = adjacency.get(current);
+      if (!neighbors?.length) continue;
+      for (const neighbor of neighbors) {
+        if (neighbor === to) {
+          reachable = true;
+          queue.length = 0;
+          break;
+        }
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push(neighbor);
+        }
+      }
+    }
+    pathCache.set(key, reachable);
+    return reachable;
+  };
   const nodeChunkMap = new Map<string, string>();
   nodes.forEach((node) => {
     nodeChunkMap.set(node.id, node.data?.chunkId ?? UNGROUPED_CHUNK_ID);
@@ -200,7 +241,6 @@ export function computeFlowDiagnostics(
   }
 
   if (overlays?.length) {
-    const nodeIds = new Set(nodes.map((node) => node.id));
     overlays.forEach((overlay) => {
       if (!overlay.steps?.length) {
         issues.push({
@@ -212,17 +252,87 @@ export function computeFlowDiagnostics(
         });
         return;
       }
+      const overlayName = overlay.name ?? overlay.id;
+      const overlayStatus = overlay.status ?? "draft";
+      const overlaySeverity: FlowIssue["severity"] = overlayStatus === "active" ? "warning" : "info";
       overlay.steps.forEach((step, index) => {
         if (!nodeIds.has(step.nodeId)) {
           issues.push({
             id: `overlay-${overlay.id}-missing-${index}`,
-            message: `Overlay ${overlay.name} face referire la un nod inexistent (${step.nodeId}).`,
+            message: `Overlay ${overlayName} face referire la un nod inexistent (${step.nodeId || "n/a"}).`,
             severity: "warning",
             targetType: "overlay",
             targetId: overlay.id,
           });
         }
+        if (overlayStatus === "active") {
+          if (!step.urlPattern) {
+            issues.push({
+              id: `overlay-${overlay.id}-url-${index}`,
+              message: `Overlay ${overlayName} (pas ${index + 1}) nu are definit URL pattern.`,
+              severity: overlaySeverity,
+              targetType: "overlay",
+              targetId: overlay.id,
+            });
+          }
+          if (!step.assertTestId) {
+            issues.push({
+              id: `overlay-${overlay.id}-assert-${index}`,
+              message: `Overlay ${overlayName} (pas ${index + 1}) nu are assertTestId.`,
+              severity: overlaySeverity,
+              targetType: "overlay",
+              targetId: overlay.id,
+            });
+          }
+          if (!step.clickTestId) {
+            issues.push({
+              id: `overlay-${overlay.id}-click-${index}`,
+              message: `Overlay ${overlayName} (pas ${index + 1}) nu are clickTestId.`,
+              severity: overlaySeverity,
+              targetType: "overlay",
+              targetId: overlay.id,
+            });
+          }
+        }
       });
+      for (let idx = 0; idx < overlay.steps.length - 1; idx += 1) {
+        const current = overlay.steps[idx];
+        const next = overlay.steps[idx + 1];
+        const fromId = current.nodeId?.trim();
+        const toId = next.nodeId?.trim();
+        if (!fromId || !toId || !nodeIds.has(fromId) || !nodeIds.has(toId)) continue;
+        if (!hasPathBetweenNodes(fromId, toId)) {
+          const fromLabel = nodeMap.get(fromId)?.data?.routePath ?? fromId;
+          const toLabel = nodeMap.get(toId)?.data?.routePath ?? toId;
+          issues.push({
+            id: `overlay-${overlay.id}-gap-${idx}`,
+            message: `Overlay ${overlayName} nu are traseu în graf între ${fromLabel} și ${toLabel}.`,
+            severity: overlaySeverity,
+            targetType: "overlay",
+            targetId: overlay.id,
+          });
+        }
+      }
+      if (overlayStatus === "active") {
+        if (!overlay.entryRoutePath) {
+          issues.push({
+            id: `overlay-${overlay.id}-entry-missing`,
+            message: `Overlay ${overlayName} nu are entryRoutePath.`,
+            severity: overlaySeverity,
+            targetType: "overlay",
+            targetId: overlay.id,
+          });
+        }
+        if (!overlay.exitRoutePath) {
+          issues.push({
+            id: `overlay-${overlay.id}-exit-missing`,
+            message: `Overlay ${overlayName} nu are exitRoutePath.`,
+            severity: overlaySeverity,
+            targetType: "overlay",
+            targetId: overlay.id,
+          });
+        }
+      }
     });
   }
 

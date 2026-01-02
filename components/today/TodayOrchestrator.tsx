@@ -14,6 +14,8 @@ import { useCopy } from "@/lib/useCopy";
 import { getScreenIdForRoute } from "@/lib/routeIds";
 
 const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
+const GUIDED_ONBOARDING_KEY = "guided_onboarding_active";
+const LEGACY_GUIDED_KEY = "guided_guest_mode";
 import {
   getTodayKey,
   getTriedExtraToday,
@@ -71,11 +73,12 @@ export default function TodayOrchestrator() {
   }, [mindpacingTagParam, persistedMindSignal, sourceParam]);
   const cameFromRunComplete = sourceParam === "run_complete";
   const cameFromGuided = sourceParam === "guided";
+  const e2eMode = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
   const [triedExtraToday, setTriedExtraTodayState] = useState(false);
   const [sessionPlan, setSessionPlan] = useState<SessionPlan | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [sensAiCtx, setSensAiCtx] = useState<SensAiContext | null>(null);
-  const [guidedGuestMode, setGuidedGuestMode] = useState(false);
+  const [guidedOnboardingActive, setGuidedOnboardingActive] = useState(false);
   const totalDailySessionsCompleted = useMemo(() => getTotalDailySessionsCompleted(progressFacts), [progressFacts]);
   const totalActionsCompleted = useMemo(() => getTotalActionsCompleted(progressFacts), [progressFacts]);
   const wizardUnlocked = canAccessWizard(progressFacts);
@@ -124,13 +127,15 @@ export default function TodayOrchestrator() {
   useEffect(() => {
     track("today_viewed");
     if (typeof window === "undefined") return;
-    const guidedFlag = window.localStorage.getItem("guided_guest_mode") === "1";
-    const startGuidedMode = guidedFlag || cameFromGuided;
+    const storedNew = window.localStorage.getItem(GUIDED_ONBOARDING_KEY) === "1";
+    const storedLegacy = window.localStorage.getItem(LEGACY_GUIDED_KEY) === "1";
+    const startGuidedMode = storedNew || storedLegacy || cameFromGuided;
     if (startGuidedMode) {
-      setGuidedGuestMode(true);
-      if (cameFromGuided) {
-        window.localStorage.setItem("guided_guest_mode", "1");
-      }
+      setGuidedOnboardingActive(true);
+      try {
+        window.localStorage.setItem(GUIDED_ONBOARDING_KEY, "1");
+        window.localStorage.removeItem(LEGACY_GUIDED_KEY);
+      } catch {}
     }
     let alive = true;
     const timeout = window.setTimeout(() => {
@@ -149,14 +154,16 @@ export default function TodayOrchestrator() {
   }, [cameFromGuided]);
 
   useEffect(() => {
-    if (!guidedGuestMode) return;
-    if (user || (totalDailySessionsCompleted ?? 0) > 0) {
+    if (!guidedOnboardingActive) return;
+    const isRealUser = Boolean(user && !user.isAnonymous);
+    if (isRealUser || (totalDailySessionsCompleted ?? 0) > 0) {
       if (typeof window !== "undefined") {
-        window.localStorage.removeItem("guided_guest_mode");
+        window.localStorage.removeItem(GUIDED_ONBOARDING_KEY);
+        window.localStorage.removeItem(LEGACY_GUIDED_KEY);
       }
-      setGuidedGuestMode(false);
+      setGuidedOnboardingActive(false);
     }
-  }, [guidedGuestMode, totalDailySessionsCompleted, user]);
+  }, [guidedOnboardingActive, totalDailySessionsCompleted, user]);
 
   useEffect(() => {
     if (!sourceParam) return;
@@ -218,11 +225,13 @@ export default function TodayOrchestrator() {
 
   const handleStart = () => {
     track("today_primary_clicked", { completedToday });
-    if (guidedGuestMode && typeof window !== "undefined") {
-      window.localStorage.removeItem("guided_guest_mode");
-      setGuidedGuestMode(false);
+    if (guidedOnboardingActive && typeof window !== "undefined") {
+      window.localStorage.removeItem(GUIDED_ONBOARDING_KEY);
+      window.localStorage.removeItem(LEGACY_GUIDED_KEY);
+      setGuidedOnboardingActive(false);
     }
-    router.push("/today/run");
+    const runTarget = e2eMode ? "/today/run?e2e=1" : "/today/run";
+    router.push(runTarget);
   };
 
   const header = (
@@ -355,12 +364,15 @@ export default function TodayOrchestrator() {
     : "Primul tău antrenament de claritate";
   const xpForTrait = sensAiCtx?.profile.xpByTrait?.[sessionPlan.traitPrimary] ?? 0;
 
-  const shellHeader = guidedGuestMode ? null : header;
+  const shellHeader = guidedOnboardingActive ? null : header;
 
   return (
     <>
       <AppShell header={shellHeader}>
-        <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)] sm:px-6 lg:px-8">
+        <div
+          className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)] sm:px-6 lg:px-8"
+          data-testid="today-root"
+        >
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
             <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 shadow-[0_25px_80px_rgba(0,0,0,0.08)] sm:px-10">
               <p className="text-xs uppercase tracking-[0.4em] text-[var(--omni-muted)]">Astăzi</p>
@@ -381,6 +393,7 @@ export default function TodayOrchestrator() {
                     className="mt-4 w-full justify-center"
                     disabled={quickButtonDisabled}
                     onClick={handleQuickLoop}
+                    data-testid="today-start-run"
                   >
                     {quickButtonLabel}
                   </OmniCtaButton>
@@ -443,7 +456,7 @@ export default function TodayOrchestrator() {
                 <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-[var(--omni-energy)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-energy)]">
                   {`${getTraitLabel(sessionPlan.traitPrimary)}: ${xpForTrait} XP`}
                 </div>
-                {!guidedGuestMode ? (
+                {!guidedOnboardingActive ? (
                   <div className="mt-4 text-right">
                     <button
                       type="button"
@@ -466,7 +479,7 @@ export default function TodayOrchestrator() {
               ) : null}
             </section>
 
-            {!guidedGuestMode ? (
+            {!guidedOnboardingActive ? (
               <section className="rounded-[24px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-5 text-sm text-[var(--omni-ink)]/85 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Ultima sesiune</p>
@@ -532,7 +545,7 @@ export default function TodayOrchestrator() {
           </div>
         </div>
       </AppShell>
-      {!guidedGuestMode ? <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} /> : null}
+      {!guidedOnboardingActive ? <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} /> : null}
     </>
   );
 }

@@ -40,6 +40,7 @@ export function IntroCTA({
         className={`w-full justify-center ${selectedClasses}`}
         onClick={onClick}
         id={id}
+        data-testid={id}
         autoFocus={autoFocus}
       >
         {label}
