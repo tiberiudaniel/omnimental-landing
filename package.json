@@ -13,7 +13,7 @@
     "bootstrap:flowstudio": "ts-node --project tsconfig.scripts.json --transpile-only scripts/bootstrapFlowStudioConfig.ts",
     "bootstrap:defaultflows": "ts-node --project tsconfig.scripts.json --transpile-only scripts/bootstrapDefaultFlows.ts",
     "test:logic": "node --test tests/*.test.cjs",
-    "test:unit": "node --test \"tests/unit/**/*.test.cjs\"",
+    "test:unit": "node scripts/run-unit-tests.mjs",
     "test:integration": "node --test \"tests/integration/**/*.test.cjs\"",
     "test:logic:all": "npm run -s test:logic && npm run -s test:unit && npm run -s test:integration",
     "test:v4": "node --test --loader ts-node/esm \"tests/v4/**/*.test.ts\"",
@@ -28,7 +28,7 @@
     "test:smoke:3000": "node scripts/run-smoke.mjs http://localhost:3000",
     "test:e2e:3000": "node scripts/run-e2e.mjs http://localhost:3000",
     "test:e2e:failures": "node scripts/e2e-failures.mjs",
-    "validate:dailyPaths": "ts-node --transpile-only scripts/validateDailyPaths.ts",
+    "validate:dailyPaths": "ts-node --project tsconfig.scripts.json --transpile-only scripts/validateDailyPaths.ts",
     "validate:arcstate": "tsx scripts/validateArcState.ts",
     "test:all": "npm run test:logic && npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:all:3000": "npm run test:logic && npm run test:unit && npm run test:integration && node scripts/run-e2e.mjs http://localhost:3000"

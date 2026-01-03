@@ -65,6 +65,44 @@ const XP_VALUES = {
   summary: 0,
 };
 
+const REAL_WORLD_FIELDS: Record<DailyPathLanguage, NonNullable<DailyPathNodeConfig["fields"]>> = {
+  ro: [
+    {
+      id: "context",
+      label: "Contextul real unde aplic regula:",
+      placeholder: "ex: înainte să intru în call-ul de la 10:00",
+    },
+    {
+      id: "plan",
+      label: "Formulez regula clar în O propoziție:",
+      placeholder: "Când ..., fac ... timp de 5 minute.",
+    },
+  ],
+  en: [
+    {
+      id: "context",
+      label: "Real context for applying the rule:",
+      placeholder: "e.g. right before the 10:00 stand-up call",
+    },
+    {
+      id: "plan",
+      label: "My clear one-sentence rule:",
+      placeholder: "When ..., I will ... for 5 minutes.",
+    },
+  ],
+};
+
+const SUMMARY_FALLBACK_BULLETS: Record<DailyPathLanguage, string[]> = {
+  ro: [
+    "Aplic regula de azi într-un context concret.",
+    "Îmi notez ce observ și revin la ancora zilei.",
+  ],
+  en: [
+    "Apply today's rule in one real situation.",
+    "Note what you observe and return to the daily anchor.",
+  ],
+};
+
 const WOW_CONTENT_MAP = new Map(WOW_MODULE_CONTENT.map((entry) => [entry.moduleKey, entry]));
 
 const WOW_MODULE_ORDER: Array<{ cluster: AdaptiveCluster; moduleKey: string }> = [
@@ -88,6 +126,23 @@ const WOW_MODULE_ORDER: Array<{ cluster: AdaptiveCluster; moduleKey: string }> =
 function combineText(partA?: string, partB?: string): string {
   const pieces = [partA?.trim(), partB?.trim()].filter(Boolean);
   return pieces.join("\n\n");
+}
+
+function buildSummaryBullets(content: WowSectionContent, lang: DailyPathLanguage): string[] {
+  const bullets: string[] = [];
+  if (content.coreInsight) {
+    const firstLine = content.coreInsight.split("\n").map((line) => line.trim()).filter(Boolean)[0];
+    if (firstLine) {
+      bullets.push(firstLine);
+    }
+  }
+  if (content.anchorPhrase) {
+    bullets.push(content.anchorPhrase);
+  }
+  if (!bullets.length) {
+    bullets.push(...SUMMARY_FALLBACK_BULLETS[lang]);
+  }
+  return bullets.slice(0, 3);
 }
 
 function buildDeepConfig(module: WowModuleContent, lang: DailyPathLanguage): DailyPathConfig {
@@ -150,6 +205,7 @@ function buildDeepConfig(module: WowModuleContent, lang: DailyPathLanguage): Dai
       badge: "viata_reala",
       title: localeTitles.realWorld,
       description: sections.realWorld,
+      fields: REAL_WORLD_FIELDS[lang],
       xp: XP_VALUES.realWorld,
       ctaLabel: ctas.realWorld,
     },
@@ -159,6 +215,7 @@ function buildDeepConfig(module: WowModuleContent, lang: DailyPathLanguage): Dai
       shape: "circle",
       title: localeTitles.summary,
       description: sections.close ?? "",
+      bullets: buildSummaryBullets(sections, lang),
       anchorDescription: sections.anchorPhrase ?? "",
       xp: XP_VALUES.summary,
       ctaLabel: ctas.summary,
@@ -230,6 +287,7 @@ function buildShortConfig(module: WowModuleContent, lang: DailyPathLanguage): Da
       shape: "circle",
       title: localeTitles.summary,
       description: sections.close ?? "",
+      bullets: buildSummaryBullets(sections, lang),
       anchorDescription: sections.anchorPhrase ?? "",
       xp: XP_VALUES.summary,
       ctaLabel: ctas.summary,
