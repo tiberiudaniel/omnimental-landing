@@ -16,7 +16,7 @@ import type {
   LabelMap,
   RouteDoc,
 } from "@/lib/flowStudio/types";
-import type { StepManifest } from "@/lib/stepManifests";
+import { getStepManifestForRoute, type StepManifest } from "@/lib/stepManifests";
 import type { ObservedEvent } from "@/lib/flowStudio/observed";
 import { StepStatusBadge, type StepAvailability } from "./StepStatusBadge";
 
@@ -95,16 +95,14 @@ type InspectorPanelProps = {
   onDeleteNodeComment: (commentId: string) => void;
   onToggleNodeCommentResolved: (commentId: string) => void;
   onExportAuditSnapshot: () => void;
-  onExportJourneysSpec: () => void;
+  onPublishIntroStepOrder: () => void;
+  publishIntroStepOrderLoading: boolean;
   overlays: FlowOverlay[];
   selectedOverlayId: string | null;
   onSelectOverlay: (overlayId: string | null) => void;
   onCreateOverlay: (name: string) => void;
   onDeleteOverlay: (overlayId: string) => void;
-  onOverlayMetadataChange: (
-    overlayId: string,
-    updates: Partial<Pick<FlowOverlay, "name" | "description" | "status" | "entryRoutePath" | "exitRoutePath">>,
-  ) => void;
+  onOverlayMetadataChange: (overlayId: string, updates: Partial<Pick<FlowOverlay, "name" | "description" | "status">>) => void;
   onOverlayAddNodes: (overlayId: string, nodeIds: string[]) => void;
   onOverlayRemoveStep: (overlayId: string, index: number) => void;
   onOverlayReorderSteps: (overlayId: string, fromIndex: number, toIndex: number) => void;
@@ -114,9 +112,6 @@ type InspectorPanelProps = {
   selectedNodeIds: string[];
   nodeLabelMap: Map<string, string>;
   overlayTabRequest?: { tab: InspectorTab; nonce: number } | null;
-  selectedRoutePath: string | null;
-  stepOrderOverride?: string[];
-  onStepOrderOverrideChange: (routePath: string, next: string[] | null) => void;
 };
 
 export type InspectorTab = "basics" | "portal" | "diagnostics" | "overlays" | "advanced";
@@ -164,7 +159,8 @@ export function InspectorPanel({
   routeOptions,
   portalNodeOptions,
   onExportAuditSnapshot,
-  onExportJourneysSpec,
+  onPublishIntroStepOrder,
+  publishIntroStepOrderLoading,
   overlays,
   selectedOverlayId,
   onSelectOverlay,
@@ -180,11 +176,10 @@ export function InspectorPanel({
   selectedNodeIds,
   nodeLabelMap,
   overlayTabRequest,
-  selectedRoutePath,
-  stepOrderOverride,
-  onStepOrderOverrideChange,
 }: InspectorPanelProps) {
-  const manifestForDisplay = currentManifest;
+  const resolvedRoutePath = selectedNode ? routeMap.get(selectedNode.data.routeId)?.routePath ?? selectedNode.data.routePath ?? null : null;
+  const manifestFallback = resolvedRoutePath ? getStepManifestForRoute(resolvedRoutePath, {}) : null;
+  const manifestForDisplay = currentManifest ?? manifestFallback;
   const manifestLabel = selectedNode ? selectedNode.data.labelOverrides?.ro ?? selectedNode.data.routePath ?? selectedNode.id : null;
   const canExpandSteps = Boolean(selectedNode);
   const expandTitle =
@@ -247,9 +242,6 @@ export function InspectorPanel({
             onPortalChange={onPortalChange}
             manifest={manifestForDisplay}
             manifestLabel={manifestLabel}
-            routePath={selectedRoutePath}
-            stepOrderOverride={stepOrderOverride}
-            onStepOrderOverrideChange={onStepOrderOverrideChange}
           />
         );
       case "portal":
@@ -282,7 +274,6 @@ export function InspectorPanel({
             nodeLabelMap={nodeLabelMap}
             onRepairOverlaySteps={onRepairOverlaySteps}
             onOverlayStepFocus={onOverlayStepFocus}
-            onExportJourneysSpec={onExportJourneysSpec}
           />
         );
       case "diagnostics":
@@ -297,6 +288,8 @@ export function InspectorPanel({
             observedEnabled={observedEnabled}
             observedEvents={observedEvents}
             onExportAuditSnapshot={onExportAuditSnapshot}
+            onPublishIntroStepOrder={onPublishIntroStepOrder}
+            publishIntroStepOrderLoading={publishIntroStepOrderLoading}
           />
         );
       case "advanced":
@@ -516,9 +509,6 @@ type NodeBasicsSectionProps = {
   onPortalChange: (nodeId: string, portal: FlowNodePortalConfig | null) => void;
   manifest?: StepManifest | null;
   manifestLabel?: string | null;
-  routePath: string | null;
-  stepOrderOverride?: string[];
-  onStepOrderOverrideChange: (routePath: string, next: string[] | null) => void;
 };
 
 type NodePortalSectionProps = {
@@ -539,6 +529,8 @@ type DiagnosticsSectionProps = {
   observedEnabled: boolean;
   observedEvents: ObservedEvent[];
   onExportAuditSnapshot: () => void;
+  onPublishIntroStepOrder: () => void;
+  publishIntroStepOrderLoading: boolean;
 };
 
 type NodeAdvancedSectionProps = {
@@ -560,10 +552,7 @@ type OverlayManagerSectionProps = {
   onSelectOverlay: (overlayId: string | null) => void;
   onCreateOverlay: (name: string) => void;
   onDeleteOverlay: (overlayId: string) => void;
-  onOverlayMetadataChange: (
-    overlayId: string,
-    updates: Partial<Pick<FlowOverlay, "name" | "description" | "status" | "entryRoutePath" | "exitRoutePath">>,
-  ) => void;
+  onOverlayMetadataChange: (overlayId: string, updates: Partial<Pick<FlowOverlay, "name" | "description" | "status">>) => void;
   onOverlayAddNodes: (overlayId: string, nodeIds: string[]) => void;
   onOverlayRemoveStep: (overlayId: string, index: number) => void;
   onOverlayReorderSteps: (overlayId: string, fromIndex: number, toIndex: number) => void;
@@ -572,7 +561,6 @@ type OverlayManagerSectionProps = {
   nodeLabelMap: Map<string, string>;
   onRepairOverlaySteps: (overlayId: string) => void;
   onOverlayStepFocus: (nodeId: string) => void;
-  onExportJourneysSpec: () => void;
 };
 
 function NodeBasicsSection({
@@ -589,9 +577,6 @@ function NodeBasicsSection({
   onPortalChange,
   manifest,
   manifestLabel,
-  routePath,
-  stepOrderOverride,
-  onStepOrderOverrideChange,
 }: NodeBasicsSectionProps) {
   const route = routeMap.get(node.data.routeId);
   const [tagDraft, setTagDraft] = useState(node.data.tags?.join(", ") ?? "");
@@ -627,85 +612,10 @@ function NodeBasicsSection({
     const option = portalNodeOptions.find((entry) => entry.id === portalConfig.targetNodeId);
     return option?.label ?? portalConfig.targetNodeId;
   })();
-  const canEditStepOrder = Boolean(routePath && manifest && manifest.nodes.length > 0);
-  const hasCustomStepOrder = Boolean(stepOrderOverride?.length);
-  const handleStepOrderReset = () => {
-    if (!routePath) return;
-    onStepOrderOverrideChange(routePath, null);
-  };
-  const handleStepOrderMove = (index: number, direction: -1 | 1) => {
-    if (!manifest || !routePath) return;
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= manifest.nodes.length) return;
-    const nextOrder = manifest.nodes.map((step) => step.id);
-    const [removed] = nextOrder.splice(index, 1);
-    nextOrder.splice(targetIndex, 0, removed);
-    onStepOrderOverrideChange(routePath, nextOrder);
-  };
 
   return (
     <div className="space-y-4 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3">
       {manifest && manifestLabel ? <ManifestPreview manifest={manifest} label={manifestLabel} /> : null}
-      {canEditStepOrder ? (
-        <div className="space-y-3 rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 p-3">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Step order (Flow Studio only)</p>
-            <button
-              type="button"
-              className={clsx(
-                "rounded-full border px-3 py-1 text-[11px] font-semibold",
-                hasCustomStepOrder ? "border-[var(--omni-border-soft)] text-[var(--omni-ink)]" : "cursor-not-allowed border-dashed text-[var(--omni-muted)]",
-              )}
-              disabled={!hasCustomStepOrder}
-              onClick={handleStepOrderReset}
-            >
-              Reset order
-            </button>
-          </div>
-          <ul className="space-y-2">
-            {manifest?.nodes.map((step, index) => (
-              <li
-                key={step.id}
-                className="flex items-center justify-between gap-2 rounded-xl border border-[var(--omni-border-soft)] bg-white px-3 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-[var(--omni-ink)]">{step.label || step.id}</p>
-                  <p className="text-[11px] text-[var(--omni-muted)]">{step.id}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    className={clsx(
-                      "rounded-full border px-2 py-0.5 text-[10px] font-semibold",
-                      index === 0 ? "cursor-not-allowed border-dashed text-[var(--omni-muted)]" : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]",
-                    )}
-                    disabled={index === 0}
-                    onClick={() => handleStepOrderMove(index, -1)}
-                    aria-label="Move step up"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className={clsx(
-                      "rounded-full border px-2 py-0.5 text-[10px] font-semibold",
-                      !manifest || index === manifest.nodes.length - 1
-                        ? "cursor-not-allowed border-dashed text-[var(--omni-muted)]"
-                        : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]",
-                    )}
-                    disabled={!manifest || index === manifest.nodes.length - 1}
-                    onClick={() => handleStepOrderMove(index, 1)}
-                    aria-label="Move step down"
-                  >
-                    ↓
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <p className="text-[11px] text-[var(--omni-muted)]">Ordinea afectează doar Flow Studio și exporturile sale.</p>
-        </div>
-      ) : null}
       <div className="space-y-3 rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 p-3">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Quick actions</p>
         <div className="grid gap-3 md:grid-cols-2">
@@ -897,18 +807,30 @@ function DiagnosticsSection({
   observedEnabled,
   observedEvents,
   onExportAuditSnapshot,
+  onPublishIntroStepOrder,
+  publishIntroStepOrderLoading,
 }: DiagnosticsSectionProps) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Diagnostic Tools</p>
-        <button
-          type="button"
-          className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold"
-          onClick={onExportAuditSnapshot}
-        >
-          Export Audit Snapshot
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold disabled:opacity-50"
+            onClick={onPublishIntroStepOrder}
+            disabled={publishIntroStepOrderLoading}
+          >
+            {publishIntroStepOrderLoading ? "Se publică…" : "Publish intro step order"}
+          </button>
+          <button
+            type="button"
+            className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold"
+            onClick={onExportAuditSnapshot}
+          >
+            Export Audit Snapshot
+          </button>
+        </div>
       </div>
       <FlowDiagnosticsPanel issues={diagnostics} onSelectIssue={onSelectIssue} flowStats={flowStats} />
       {missingManifestNodes.length ? (
@@ -1059,7 +981,6 @@ function OverlayManagerSection({
   nodeLabelMap,
   onRepairOverlaySteps,
   onOverlayStepFocus,
-  onExportJourneysSpec,
 }: OverlayManagerSectionProps) {
   const [newOverlayName, setNewOverlayName] = useState("");
   const activeOverlay = selectedOverlayId ? overlays.find((overlay) => overlay.id === selectedOverlayId) ?? null : null;
@@ -1072,16 +993,7 @@ function OverlayManagerSection({
   return (
     <div className="space-y-4 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3 text-xs">
       <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Journeys</p>
-          <button
-            type="button"
-            className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[10px] font-semibold"
-            onClick={onExportJourneysSpec}
-          >
-            Export Journeys Spec
-          </button>
-        </div>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Journeys</p>
         <select
           className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
           value={selectedOverlayId ?? ""}
@@ -1130,50 +1042,10 @@ function OverlayManagerSection({
             <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Descriere</label>
             <textarea
               className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-              placeholder="Rezumat journey"
-              value={activeOverlay.description ?? ""}
-              onChange={(event) => onOverlayMetadataChange(activeOverlay.id, { description: event.target.value })}
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Status</label>
-              <select
-                className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-                value={activeOverlay.status ?? "draft"}
-                onChange={(event) =>
-                  onOverlayMetadataChange(activeOverlay.id, { status: event.target.value as FlowOverlay["status"] })
-                }
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="deprecated">Deprecated</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Entry route</label>
-              <input
-                type="text"
-                className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-                placeholder="/intro"
-                value={activeOverlay.entryRoutePath ?? ""}
-                onChange={(event) =>
-                  onOverlayMetadataChange(activeOverlay.id, { entryRoutePath: event.target.value || undefined })
-                }
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Exit route</label>
-              <input
-                type="text"
-                className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-                placeholder="/today"
-                value={activeOverlay.exitRoutePath ?? ""}
-                onChange={(event) =>
-                  onOverlayMetadataChange(activeOverlay.id, { exitRoutePath: event.target.value || undefined })
-                }
-              />
-            </div>
+            placeholder="Rezumat journey"
+            value={activeOverlay.description ?? ""}
+            onChange={(event) => onOverlayMetadataChange(activeOverlay.id, { description: event.target.value })}
+          />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -1282,41 +1154,6 @@ function OverlayManagerSection({
                           })
                         }
                       />
-                      <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                        <input
-                          type="text"
-                          className="rounded-xl border border-[var(--omni-border-soft)] px-3 py-1 text-sm"
-                          placeholder="URL pattern"
-                          value={step.urlPattern ?? ""}
-                          onChange={(event) =>
-                            onOverlayStepUpdate(activeOverlay.id, index, {
-                              urlPattern: event.target.value || null,
-                            })
-                          }
-                        />
-                        <input
-                          type="text"
-                          className="rounded-xl border border-[var(--omni-border-soft)] px-3 py-1 text-sm"
-                          placeholder="Assert test id"
-                          value={step.assertTestId ?? ""}
-                          onChange={(event) =>
-                            onOverlayStepUpdate(activeOverlay.id, index, {
-                              assertTestId: event.target.value || null,
-                            })
-                          }
-                        />
-                        <input
-                          type="text"
-                          className="rounded-xl border border-[var(--omni-border-soft)] px-3 py-1 text-sm"
-                          placeholder="Click test id"
-                          value={step.clickTestId ?? ""}
-                          onChange={(event) =>
-                            onOverlayStepUpdate(activeOverlay.id, index, {
-                              clickTestId: event.target.value || null,
-                            })
-                          }
-                        />
-                      </div>
                     </li>
                   );
                 })}
