@@ -33,8 +33,8 @@ type ChoiceContent = {
   body: string;
   label: string;
   subLabel: string;
-  intent: IntroChoice;
-  event: "intro_choice_explore" | "intro_choice_guided" | "intro_choice_mindpacing";
+  href: string;
+  event: "intro_choice_explore" | "intro_choice_guided";
   variant: "primary" | "secondary";
 };
 
@@ -55,6 +55,7 @@ type InitialClientState = {
 interface CinematicPlayerProps {
   allowSkip?: boolean;
   onComplete?: () => void;
+  onIntentSelect?: (intent: "guided" | "explore") => void;
 }
 
 const DEFAULT_SLIDE_DURATIONS = [6000, 10000, 12000, 12000] as const;
@@ -120,26 +121,18 @@ const CONTENT: Record<IntroLang, LocaleContent> = {
     ],
     choices: [
       {
-        body: "MindPacing (recomandat):",
-        label: "Încep (recomandat)",
-        subLabel: "30 sec. 1 întrebare + vocab, apoi începem.",
-        intent: "today",
-        event: "intro_choice_mindpacing",
-        variant: "primary",
-      },
-      {
         body: "Simplă, ghidată:",
         label: "Încep ghidat",
-        subLabel: "5–7 min. Poți încerca fără cont.",
-        intent: "guided",
+        subLabel: "5–7 min. Recomandat pentru început.",
+        href: "/intro/guided",
         event: "intro_choice_guided",
-        variant: "secondary",
+        variant: "primary",
       },
       {
         body: "Intensă, exploratoare:",
         label: "Explorează sistemul",
         subLabel: "15–17 min. Pentru cei care vor context mai profund.",
-        intent: "explore",
+        href: "/intro/explore",
         event: "intro_choice_explore",
         variant: "secondary",
       },
@@ -173,28 +166,20 @@ const CONTENT: Record<IntroLang, LocaleContent> = {
     ],
     choices: [
       {
-        body: "MindPacing (recommended):",
-        label: "Start (recommended)",
-        subLabel: "30 sec. Single question + vocab, then we begin.",
-        intent: "today",
-        event: "intro_choice_mindpacing",
-        variant: "primary",
-      },
-      {
         body: "If you want a simple guided start:",
         label: "Start guided",
-        subLabel: "5–7 min. You can try it without an account.",
-        intent: "guided",
+        subLabel: "5–7 min. Stabilization.",
+        href: "/intro/guided",
         event: "intro_choice_guided",
         variant: "secondary",
       },
       {
-        body: "If you want to understand the system fast:",
+        body: "If you want to understand the system fast and test it:",
         label: "Explore the system",
         subLabel: "15–30 min. No pressure.",
-        intent: "explore",
+        href: "/intro/explore",
         event: "intro_choice_explore",
-        variant: "secondary",
+        variant: "primary",
       },
     ],
     skipLabel: "Skip",
@@ -207,7 +192,11 @@ function detectLang(pref?: string | null): IntroLang {
   return pref.toLowerCase().startsWith("en") ? "en" : "ro";
 }
 
-export default function CinematicPlayer({ allowSkip = true, onComplete }: CinematicPlayerProps = {}) {
+export default function CinematicPlayer({
+  allowSkip = true,
+  onComplete,
+  onIntentSelect,
+}: CinematicPlayerProps = {}) {
   const { lang } = useI18n();
   const prefersReducedMotion = useReducedMotion();
   const shouldReduceMotion = Boolean(prefersReducedMotion);
@@ -243,7 +232,9 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
   const [rapidClicksCount, setRapidClicksCount] = useState(initialHeuristics?.rapidClicks ?? 0);
   const [avgDwellMs, setAvgDwellMs] = useState(initialHeuristics?.avgDwellMs ?? 0);
   const [dwellSamples, setDwellSamples] = useState(initialHeuristics?.avgDwellMs ? 1 : 0);
-  const [lastChoiceState, setLastChoiceState] = useState<IntroChoice | null>(initialState?.lastChoice ?? null);
+  const [lastChoiceState, setLastChoiceState] = useState<"explore" | "guided" | null>(
+    initialState?.lastChoice ?? null,
+  );
   const completedTrackedRef = useRef(false);
   const timerRef = useRef<number | null>(null);
   const timelineStartRef = useRef<number | null>(null);
@@ -321,8 +312,8 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
     skipPressed || rapidClicksCount >= 3 || (hasDwellData && avgDwellMs < 2200);
   const isDepletedContemplative =
     !skipPressed && hasDwellData && avgDwellMs >= 3500;
-  const heuristicsSuggested: IntroChoice = isHighLoadExplorer ? "explore" : isDepletedContemplative ? "guided" : "today";
-  const suggestedChoice: IntroChoice = lastChoiceState ?? heuristicsSuggested;
+  const suggestedChoice =
+    lastChoiceState ?? (isHighLoadExplorer ? "explore" : isDepletedContemplative ? "guided" : null);
 
   const clearActiveTimer = useCallback(() => {
     if (timerRef.current) {
@@ -391,6 +382,17 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
     };
   }, [isTimelineSlide, totalSlides, setTimelineProgress, timelineTotalMs]);
 
+  useEffect(() => {
+    if (!isFinalSlide) return;
+    const target = suggestedChoice ?? "guided";
+    const el = document.getElementById(
+      target === "explore" ? "intro-choice-explore" : "intro-choice-guided",
+    );
+    if (el instanceof HTMLElement) {
+      el.focus();
+    }
+  }, [isFinalSlide, suggestedChoice]);
+
   const handleSkip = useCallback(() => {
     track("intro_skipped", { fromSlide: slideIndex + 1 });
     setSkipPressed(true);
@@ -413,11 +415,17 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
     return () => window.removeEventListener("keydown", handleKey);
   }, [allowSkip, handleSkip, isFinalSlide]);
 
-  const handleChoice = useCallback((choice: ChoiceContent) => {
-    setLastIntroChoice(choice.intent);
-    setLastChoiceState(choice.intent);
-    track(choice.event);
-  }, []);
+  const handleChoice = useCallback(
+    (choice: ChoiceContent, choiceId: "explore" | "guided") => {
+      setLastIntroChoice(choiceId);
+      setLastChoiceState(choiceId);
+      track(choice.event);
+      if (onIntentSelect) {
+        onIntentSelect(choiceId);
+      }
+    },
+    [onIntentSelect],
+  );
 
   const handleBackdropClick = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
@@ -429,15 +437,9 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
     [allowSkip, handleSkip, isFinalSlide],
   );
 
-  const resolvedChoice = suggestedChoice;
-  useEffect(() => {
-    if (!isFinalSlide) return;
-    const targetId = `intro-choice-${resolvedChoice}`;
-    const el = document.getElementById(targetId);
-    if (el instanceof HTMLElement) {
-      el.focus();
-    }
-  }, [isFinalSlide, resolvedChoice]);
+  const resolvedChoice = suggestedChoice ?? "guided";
+  const highlightExplore = resolvedChoice === "explore";
+  const highlightGuided = resolvedChoice === "guided";
   const showProgressMeta = !isFinalSlide && !isTimelineSlide;
   const shouldPlayAudio = timelineCues.length > 0 && isTimelineSlide && !isFinalSlide;
   useEffect(() => {
@@ -451,12 +453,11 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
       onClick={handleBackdropClick}
       role="presentation"
     >
-      {allowSkip ? (
+      {!isFinalSlide && allowSkip ? (
         <button
           type="button"
           onClick={handleSkip}
           data-skip-exempt="true"
-          data-testid="intro-skip"
           className="absolute right-4 top-6 rounded-full border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)] hover:bg-[var(--omni-bg-paper)] sm:right-10 sm:top-8"
         >
           {localeContent.skipLabel}
@@ -514,24 +515,23 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
                 {isFinalSlide ? (
                   <div className="space-y-6" data-skip-exempt="true">
                     {localeContent.choices.map((choice, idx) => {
-                      const choiceId = choice.intent;
-                      const selected = resolvedChoice === choiceId;
-                      const href = `/intro/mindpacing?intent=${choice.intent}`;
+                      const choiceId = choice.event === "intro_choice_explore" ? "explore" : "guided";
+                      const selected = choiceId === "explore" ? highlightExplore : highlightGuided;
                       return (
                         <div
                           key={choice.event}
-                          className={`space-y-3 ${idx > 0 ? "border-t border-[var(--omni-border-soft)] pt-6" : ""}`}
+                          className={`space-y-3 ${idx === 1 ? "border-t border-[var(--omni-border-soft)] pt-6" : ""}`}
                         >
                           <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)] sm:text-xs">
                             {choice.body}
                           </p>
                           <IntroCTA
-                            id={`intro-choice-${choiceId}`}
+                            id={choiceId === "explore" ? "intro-choice-explore" : "intro-choice-guided"}
                             label={choice.label}
                             subLabel={choice.subLabel}
-                            href={href}
+                            href={onIntentSelect ? undefined : choice.href}
                             variant={choice.variant === "primary" ? "primary" : "secondary"}
-                            onClick={() => handleChoice(choice)}
+                            onClick={() => handleChoice(choice, choiceId)}
                             selected={selected}
                           />
                         </div>

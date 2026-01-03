@@ -2,12 +2,28 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import CinematicPlayer, { primeIntroAudio } from "@/components/intro/CinematicPlayer";
+import StepRunner from "@/components/stepRunner/StepRunner";
+import { getIntroManifest } from "@/lib/stepManifests/intro";
+import { primeIntroAudio } from "@/components/intro/CinematicPlayer";
 import { getIntroSeen } from "@/lib/introGate";
+import IntroCinematicStep from "@/components/intro/steps/IntroCinematicStep";
+import IntroMindPacingStep from "@/components/intro/steps/IntroMindPacingStep";
+import IntroVocabStep from "@/components/intro/steps/IntroVocabStep";
+import IntroHandoffStep from "@/components/intro/steps/IntroHandoffStep";
 
 export default function IntroGatePage() {
   const router = useRouter();
-  const [checkComplete, setCheckComplete] = useState(false);
+  const [gateChecked, setGateChecked] = useState(false);
+  const manifest = useMemo(() => getIntroManifest(), []);
+  const stepRegistry = useMemo(
+    () => ({
+      cinematic: IntroCinematicStep,
+      mindpacing: IntroMindPacingStep,
+      vocab: IntroVocabStep,
+      handoff: IntroHandoffStep,
+    }),
+    [],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -17,7 +33,7 @@ export default function IntroGatePage() {
       if (seen) {
         router.replace("/today");
       } else if (mounted) {
-        setCheckComplete(true);
+        setGateChecked(true);
       }
     });
     return () => {
@@ -27,25 +43,15 @@ export default function IntroGatePage() {
   }, [router]);
 
   useEffect(() => {
-    if (!checkComplete) return;
+    if (!gateChecked) return;
     void primeIntroAudio().catch((error) => {
       console.warn("[intro] primeIntroAudio failed", error);
     });
-  }, [checkComplete]);
+  }, [gateChecked]);
 
-  const allowSkip = useMemo(() => {
-    if (!checkComplete || typeof window === "undefined") return false;
-    try {
-      const url = new URL(window.location.href);
-      return url.searchParams.get("e2e") === "1";
-    } catch {
-      return false;
-    }
-  }, [checkComplete]);
-
-  if (!checkComplete) {
+  if (!gateChecked) {
     return <div className="min-h-screen bg-[#0f1116]" />;
   }
 
-  return <CinematicPlayer allowSkip={allowSkip} />;
+  return <StepRunner routePath="/intro" manifest={manifest} registry={stepRegistry} />;
 }

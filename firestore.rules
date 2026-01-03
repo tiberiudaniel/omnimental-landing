@@ -131,6 +131,11 @@ service cloud.firestore {
       allow write: if isFlowStudioAdmin();
     }
 
+    match /runtimeFlows/{flowId} {
+      allow read: if true;
+      allow write: if isFlowStudioAdmin();
+    }
+
     function isAdmin() { return signedIn() && request.auth.token.admin == true; }
 
     // Insights: public read, admin-only writes
