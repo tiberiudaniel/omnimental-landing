@@ -5,7 +5,7 @@ import type {
   DailyPathNodeConfig,
 } from "@/types/dailyPath";
 import { WOW_MODULE_CONTENT } from "./data";
-import type { WowModuleContent } from "./types";
+import type { WowModuleContent, WowSectionContent } from "./types";
 
 type ModuleVariantCollections = {
   deep: Record<DailyPathLanguage, DailyPathConfig>;
