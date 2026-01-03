@@ -114,6 +114,7 @@ const TAG_FILTERS_STORAGE_KEY = "flowStudio:tagFilters";
 const CHUNK_FOCUS_HIDE_STORAGE_KEY = "flowStudio:focusHide";
 const LEFT_SIDEBAR_COLLAPSED_KEY = "flowStudio:leftSidebarCollapsed";
 const INSPECTOR_COLLAPSED_KEY = "flowStudio:inspectorCollapsed";
+const DEFAULT_INTRO_STEP_ORDER = ["cinematic", "mindpacing", "vocab", "handoff"];
 const stripUndefinedDeep = <T,>(value: T): T => {
   if (Array.isArray(value)) {
     return value.map((item) => stripUndefinedDeep(item)).filter((item) => item !== undefined) as unknown as T;
@@ -234,6 +235,7 @@ export default function FlowStudioPage() {
   const [, setChunkSaveStatus] = useState<ChunkSaveStatus>("idle");
   const [chunkSaveError, setChunkSaveError] = useState<string | null>(null);
   const [overlays, setOverlays] = useState<FlowOverlay[]>([]);
+  const [publishIntroLoading, setPublishIntroLoading] = useState(false);
   const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
   const [overlayFocusHideOthers, setOverlayFocusHideOthers] = useState(true);
   const [inspectorTabRequest, setInspectorTabRequest] = useState<{ tab: InspectorTab; nonce: number } | null>(null);
@@ -2470,6 +2472,21 @@ useEffect(() => {
     link.click();
     URL.revokeObjectURL(link.href);
   }, [buildFlowSpec]);
+  const deriveIntroStepOrder = useCallback(() => {
+    if (!overlays.length) return DEFAULT_INTRO_STEP_ORDER;
+    for (const overlay of overlays) {
+      const taggedSteps =
+        overlay.steps
+          ?.map((step) => step.tags?.find((tag) => typeof tag === "string" && tag.toLowerCase().startsWith("step:")))
+          .filter((value): value is string => Boolean(value))
+          .map((tag) => tag.split(":").pop()?.trim() ?? "")
+          .filter((tag) => Boolean(tag)) ?? [];
+      if (taggedSteps.length) {
+        return taggedSteps;
+      }
+    }
+    return DEFAULT_INTRO_STEP_ORDER;
+  }, [overlays]);
   const buildAuditSnapshot = useCallback(() => {
     if (!selectedFlowId) return null;
     const reachableIds = computeReachableNodeIds(nodes, edges);
@@ -2545,6 +2562,28 @@ useEffect(() => {
     link.click();
     URL.revokeObjectURL(link.href);
   }, [buildAuditSnapshot]);
+  const handlePublishIntroStepOrder = useCallback(async () => {
+    setPublishIntroLoading(true);
+    try {
+      const stepOrderOverride = deriveIntroStepOrder();
+      await setDoc(
+        doc(db, "runtimeFlows", "intro"),
+        {
+          routePath: "/intro",
+          stepOrderOverride,
+          updatedAt: serverTimestamp(),
+          updatedAtMs: Date.now(),
+        },
+        { merge: true },
+      );
+      pushAutosaveToast("success", "Intro step order publicat");
+    } catch (error) {
+      console.error("[FlowStudio] publish intro step order failed", error);
+      pushAutosaveToast("error", "Publish intro step order eșuat");
+    } finally {
+      setPublishIntroLoading(false);
+    }
+  }, [db, deriveIntroStepOrder, pushAutosaveToast]);
 
   const handleSaveFlow = useCallback(async () => {
     if (!selectedFlowId || !flowNameDraft.trim()) return;
@@ -4210,6 +4249,8 @@ useEffect(() => {
                   onDeleteNodeComment={handleDeleteComment}
                   onToggleNodeCommentResolved={handleToggleCommentResolved}
                   onExportAuditSnapshot={handleExportAuditSnapshot}
+                  onPublishIntroStepOrder={handlePublishIntroStepOrder}
+                  publishIntroStepOrderLoading={publishIntroLoading}
                   overlays={overlays}
                   selectedOverlayId={selectedOverlayId}
                   onSelectOverlay={handleOverlaySelectChange}

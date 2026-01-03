@@ -95,6 +95,8 @@ type InspectorPanelProps = {
   onDeleteNodeComment: (commentId: string) => void;
   onToggleNodeCommentResolved: (commentId: string) => void;
   onExportAuditSnapshot: () => void;
+  onPublishIntroStepOrder: () => void;
+  publishIntroStepOrderLoading: boolean;
   overlays: FlowOverlay[];
   selectedOverlayId: string | null;
   onSelectOverlay: (overlayId: string | null) => void;
@@ -157,6 +159,8 @@ export function InspectorPanel({
   routeOptions,
   portalNodeOptions,
   onExportAuditSnapshot,
+  onPublishIntroStepOrder,
+  publishIntroStepOrderLoading,
   overlays,
   selectedOverlayId,
   onSelectOverlay,
@@ -284,6 +288,8 @@ export function InspectorPanel({
             observedEnabled={observedEnabled}
             observedEvents={observedEvents}
             onExportAuditSnapshot={onExportAuditSnapshot}
+            onPublishIntroStepOrder={onPublishIntroStepOrder}
+            publishIntroStepOrderLoading={publishIntroStepOrderLoading}
           />
         );
       case "advanced":
@@ -523,6 +529,8 @@ type DiagnosticsSectionProps = {
   observedEnabled: boolean;
   observedEvents: ObservedEvent[];
   onExportAuditSnapshot: () => void;
+  onPublishIntroStepOrder: () => void;
+  publishIntroStepOrderLoading: boolean;
 };
 
 type NodeAdvancedSectionProps = {
@@ -799,18 +807,30 @@ function DiagnosticsSection({
   observedEnabled,
   observedEvents,
   onExportAuditSnapshot,
+  onPublishIntroStepOrder,
+  publishIntroStepOrderLoading,
 }: DiagnosticsSectionProps) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Diagnostic Tools</p>
-        <button
-          type="button"
-          className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold"
-          onClick={onExportAuditSnapshot}
-        >
-          Export Audit Snapshot
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold disabled:opacity-50"
+            onClick={onPublishIntroStepOrder}
+            disabled={publishIntroStepOrderLoading}
+          >
+            {publishIntroStepOrderLoading ? "Se publică…" : "Publish intro step order"}
+          </button>
+          <button
+            type="button"
+            className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold"
+            onClick={onExportAuditSnapshot}
+          >
+            Export Audit Snapshot
+          </button>
+        </div>
       </div>
       <FlowDiagnosticsPanel issues={diagnostics} onSelectIssue={onSelectIssue} flowStats={flowStats} />
       {missingManifestNodes.length ? (

@@ -21,6 +21,7 @@
     "admin:seed-insights": "node scripts/seedInsightsAdmin.mjs",
     "mindpacing:simulate": "ts-node --project tsconfig.scripts.json -r tsconfig-paths/register --transpile-only scripts/simulateMindPacingVocab.ts",
     "test:e2e": "node scripts/run-playwright.mjs tests/e2e/smoke",
+    "test:e2e:intro": "node scripts/run-playwright.mjs tests/e2e/intro-step-runner.spec.ts",
     "test:e2e:ui": "node scripts/run-playwright.mjs --ui",
     "test:e2e:headed": "node scripts/run-playwright.mjs --headed",
     "test:smoke": "node scripts/run-smoke.mjs",

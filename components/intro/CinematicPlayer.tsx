@@ -55,6 +55,7 @@ type InitialClientState = {
 interface CinematicPlayerProps {
   allowSkip?: boolean;
   onComplete?: () => void;
+  onIntentSelect?: (intent: "guided" | "explore") => void;
 }
 
 const DEFAULT_SLIDE_DURATIONS = [6000, 10000, 12000, 12000] as const;
@@ -191,7 +192,11 @@ function detectLang(pref?: string | null): IntroLang {
   return pref.toLowerCase().startsWith("en") ? "en" : "ro";
 }
 
-export default function CinematicPlayer({ allowSkip = true, onComplete }: CinematicPlayerProps = {}) {
+export default function CinematicPlayer({
+  allowSkip = true,
+  onComplete,
+  onIntentSelect,
+}: CinematicPlayerProps = {}) {
   const { lang } = useI18n();
   const prefersReducedMotion = useReducedMotion();
   const shouldReduceMotion = Boolean(prefersReducedMotion);
@@ -415,8 +420,11 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
       setLastIntroChoice(choiceId);
       setLastChoiceState(choiceId);
       track(choice.event);
+      if (onIntentSelect) {
+        onIntentSelect(choiceId);
+      }
     },
-    [],
+    [onIntentSelect],
   );
 
   const handleBackdropClick = useCallback(
@@ -521,7 +529,7 @@ export default function CinematicPlayer({ allowSkip = true, onComplete }: Cinema
                             id={choiceId === "explore" ? "intro-choice-explore" : "intro-choice-guided"}
                             label={choice.label}
                             subLabel={choice.subLabel}
-                            href={choice.href}
+                            href={onIntentSelect ? undefined : choice.href}
                             variant={choice.variant === "primary" ? "primary" : "secondary"}
                             onClick={() => handleChoice(choice, choiceId)}
                             selected={selected}

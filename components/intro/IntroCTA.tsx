@@ -7,7 +7,7 @@ type IntroCTAVariant = "primary" | "secondary";
 interface IntroCTAProps {
   label: string;
   subLabel?: string;
-  href: string;
+  href?: string;
   variant?: IntroCTAVariant;
   onClick?: () => void;
   id?: string;
@@ -31,10 +31,11 @@ export function IntroCTA({
   autoFocus,
 }: IntroCTAProps) {
   const selectedClasses = selected ? "ring-2 ring-[var(--omni-ink)]" : "";
+  const shouldRenderAsLink = Boolean(href);
   return (
     <div className="space-y-2 text-center">
       <OmniCtaButton
-        as="link"
+        as={shouldRenderAsLink ? "link" : "button"}
         href={href}
         variant={CTA_VARIANT_MAP[variant]}
         className={`w-full justify-center ${selectedClasses}`}
