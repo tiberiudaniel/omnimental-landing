@@ -232,9 +232,11 @@ export default function CinematicPlayer({
   const [rapidClicksCount, setRapidClicksCount] = useState(initialHeuristics?.rapidClicks ?? 0);
   const [avgDwellMs, setAvgDwellMs] = useState(initialHeuristics?.avgDwellMs ?? 0);
   const [dwellSamples, setDwellSamples] = useState(initialHeuristics?.avgDwellMs ? 1 : 0);
-  const [lastChoiceState, setLastChoiceState] = useState<"explore" | "guided" | null>(
-    initialState?.lastChoice ?? null,
-  );
+  const initialChoice =
+    initialState?.lastChoice === "explore" || initialState?.lastChoice === "guided"
+      ? initialState.lastChoice
+      : null;
+  const [lastChoiceState, setLastChoiceState] = useState<"explore" | "guided" | null>(initialChoice);
   const completedTrackedRef = useRef(false);
   const timerRef = useRef<number | null>(null);
   const timelineStartRef = useRef<number | null>(null);
