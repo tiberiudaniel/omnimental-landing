@@ -42,10 +42,9 @@ function TodayRunPageInner() {
   const runMode = runModeParam === "deep" ? "deep" : runModeParam === "quick" ? "quick" : "standard";
   const roundParam = searchParams.get("round");
   const isExtraRound = roundParam === "extra";
-  const [cookieE2E, setCookieE2E] = useState(false);
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    setCookieE2E(document.cookie.split(";").some((entry) => entry.trim().startsWith("omni_e2e=1")));
+  const cookieE2E = useMemo(() => {
+    if (typeof document === "undefined") return false;
+    return document.cookie.split(";").some((entry) => entry.trim().startsWith("omni_e2e=1"));
   }, []);
   const e2eMode = (searchParams.get("e2e") ?? "").toLowerCase() === "1" || cookieE2E;
 

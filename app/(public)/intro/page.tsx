@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import CinematicPlayer, { primeIntroAudio } from "@/components/intro/CinematicPlayer";
 import { getIntroSeen } from "@/lib/introGate";
@@ -8,7 +8,6 @@ import { getIntroSeen } from "@/lib/introGate";
 export default function IntroGatePage() {
   const router = useRouter();
   const [checkComplete, setCheckComplete] = useState(false);
-  const [allowSkip, setAllowSkip] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -32,14 +31,15 @@ export default function IntroGatePage() {
     void primeIntroAudio().catch((error) => {
       console.warn("[intro] primeIntroAudio failed", error);
     });
-    if (typeof window !== "undefined") {
-      try {
-        const url = new URL(window.location.href);
-        const e2e = url.searchParams.get("e2e") === "1";
-        setAllowSkip(e2e);
-      } catch {
-        setAllowSkip(false);
-      }
+  }, [checkComplete]);
+
+  const allowSkip = useMemo(() => {
+    if (!checkComplete || typeof window === "undefined") return false;
+    try {
+      const url = new URL(window.location.href);
+      return url.searchParams.get("e2e") === "1";
+    } catch {
+      return false;
     }
   }, [checkComplete]);
 
