@@ -1,5 +1,3 @@
-"use client";
-
 import type { User } from "firebase/auth";
 import { E2E_USER_ID } from "./e2eMode";
 
