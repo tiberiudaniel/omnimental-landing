@@ -60,15 +60,22 @@ import { buildEdgeGroupKey, filterEdgesByNodeSet } from "@/lib/flowStudio/edgeUt
 import { ChunkPanel, CHUNK_SELECTION_MIME } from "@/components/admin/flowStudio/ChunkPanel";
 import {
   autoAssignChunksByRouteGroup,
-  buildChunkAutoAssignMap,
+  buildChunkAutoAssignLookup,
   buildChunkGraph,
   computeReachableNodeIds,
   ensureNodesHaveValidChunks,
   normalizeChunks,
+  previewChunkAssignments,
   UNGROUPED_CHUNK_ID,
+  type ChunkAssignmentPreview,
   type ChunkNodeData,
 } from "@/lib/flowStudio/chunkUtils";
-import { FLOW_STUDIO_CHUNK_SEED_V1, mergeChunksWithSeed, parseChunkImportPayload } from "@/lib/flowStudio/chunkSeed";
+import {
+  FLOW_STUDIO_CHUNK_SEED_V1,
+  mergeChunksWithSeed,
+  overwriteChunksWithSeed,
+  parseChunkImportPayload,
+} from "@/lib/flowStudio/chunkSeed";
 import {
   FlowSpec,
   FlowSpecEdge,
@@ -219,6 +226,7 @@ export default function FlowStudioPage() {
   const [selectedChunkId, setSelectedChunkId] = useState<string | null>(null);
   const [focusedChunkId, setFocusedChunkId] = useState<string | null>(null);
   const [chunkFocusHideOthers, setChunkFocusHideOthers] = useState(false);
+  const [assignmentPreview, setAssignmentPreview] = useState<ChunkAssignmentPreview | null>(null);
   const [comments, setComments] = useState<FlowComment[]>([]);
   const [commentFilter, setCommentFilter] = useState<"all" | "open" | "nodes" | "chunks">("open");
   const [tagFilters, setTagFilters] = useState<string[]>([]);
@@ -1290,7 +1298,11 @@ useEffect(() => {
   }, [chunkLayoutDensity, chunkLayoutOrientation]);
   const chunkGraph = useMemo(() => buildChunkGraph(nodes, edges, chunks, chunkLayoutOptions), [chunks, edges, nodes, chunkLayoutOptions]);
   const chunkCountsById = chunkGraph.countsByChunk;
-  const chunkLookupMap = useMemo(() => buildChunkAutoAssignMap(chunks), [chunks]);
+  const chunkLookup = useMemo(() => buildChunkAutoAssignLookup(chunks), [chunks]);
+  const assignmentChangeSample = assignmentPreview ? assignmentPreview.changes.slice(0, 25) : [];
+  const assignmentSummary = assignmentPreview?.summary ?? [];
+  const assignmentAmbiguous = assignmentPreview?.ambiguous ?? [];
+  const assignmentHasHiddenChanges = assignmentPreview ? assignmentPreview.changes.length > assignmentChangeSample.length : false;
   const chunkNodesForView = useMemo(() => {
     return chunkGraph.nodes.map((node) => {
       const chunkId = node.data.chunkId;
@@ -1691,7 +1703,15 @@ useEffect(() => {
   const handleSeedCanonicalChunks = useCallback(() => {
     const seededChunks = normalizeChunks(mergeChunksWithSeed(latestChunksRef.current, FLOW_STUDIO_CHUNK_SEED_V1));
     setChunks(seededChunks);
-    const lookup = buildChunkAutoAssignMap(seededChunks);
+    const lookup = buildChunkAutoAssignLookup(seededChunks);
+    setNodes((existing) => autoAssignChunksByRouteGroup(existing, routeMap, lookup));
+    setSelectedChunkId(null);
+    setFocusedChunkId(null);
+  }, [routeMap, setChunks, setNodes]);
+  const handleOverwriteCanonicalChunks = useCallback(() => {
+    const syncedChunks = normalizeChunks(overwriteChunksWithSeed(latestChunksRef.current, FLOW_STUDIO_CHUNK_SEED_V1));
+    setChunks(syncedChunks);
+    const lookup = buildChunkAutoAssignLookup(syncedChunks);
     setNodes((existing) => autoAssignChunksByRouteGroup(existing, routeMap, lookup));
     setSelectedChunkId(null);
     setFocusedChunkId(null);
@@ -1797,8 +1817,16 @@ useEffect(() => {
     [chunks, setNodes],
   );
   const handleAutoAssignChunks = useCallback(() => {
-    setNodes((existing) => autoAssignChunksByRouteGroup(existing, routeMap, chunkLookupMap));
-  }, [chunkLookupMap, routeMap, setNodes]);
+    setNodes((existing) => autoAssignChunksByRouteGroup(existing, routeMap, chunkLookup));
+  }, [chunkLookup, routeMap, setNodes]);
+  const handlePreviewChunkAssignment = useCallback(() => {
+    const preview = previewChunkAssignments(nodes, routeMap, chunks, chunkLookup);
+    setAssignmentPreview(preview);
+  }, [chunkLookup, chunks, nodes, routeMap]);
+  const handleApplyAssignmentPreview = useCallback(() => {
+    handleAutoAssignChunks();
+    setAssignmentPreview(null);
+  }, [handleAutoAssignChunks]);
   const handleNodesChangeWrapped = useCallback(
     (changes: NodeChange[]) => {
       if (viewMode === "chunks") return;
@@ -2291,6 +2319,9 @@ useEffect(() => {
             nodeId: step.nodeId,
             gateTag: step.gateTag ? step.gateTag : undefined,
             tags: step.tags && step.tags.length ? step.tags : undefined,
+            urlPattern: step.urlPattern ? step.urlPattern : undefined,
+            assertTestId: step.assertTestId ? step.assertTestId : undefined,
+            clickTestId: step.clickTestId ? step.clickTestId : undefined,
           }),
         );
       const edgesList = overlay.edges
@@ -2301,6 +2332,8 @@ useEffect(() => {
         name: overlay.name ?? "Journey",
         description: overlay.description,
         status: overlay.status,
+        entryRoutePath: overlay.entryRoutePath,
+        exitRoutePath: overlay.exitRoutePath,
         steps,
         edges: edgesList && edgesList.length ? edgesList : undefined,
       });
@@ -2437,6 +2470,25 @@ useEffect(() => {
       color: edge.data?.color,
       command: edge.data?.command,
     }));
+    const specOverlays = overlays.map((overlay) => ({
+      id: overlay.id,
+      name: overlay.name ?? "Journey",
+      description: overlay.description,
+      status: overlay.status ?? "draft",
+      entryRoutePath: overlay.entryRoutePath,
+      exitRoutePath: overlay.exitRoutePath,
+      steps:
+        overlay.steps?.map((step, index) => ({
+          order: index + 1,
+          nodeId: step.nodeId ?? null,
+          gateTag: step.gateTag ?? null,
+          tags: step.tags ?? [],
+          urlPattern: step.urlPattern ?? null,
+          assertTestId: step.assertTestId ?? null,
+          clickTestId: step.clickTestId ?? null,
+        })) ?? [],
+      edges: overlay.edges ?? [],
+    }));
     return {
       flow: {
         id: selectedFlowId,
@@ -2448,6 +2500,7 @@ useEffect(() => {
       edges: specEdges,
       comments: comments.map((comment) => ({ ...comment })),
       chunks: chunks.map((chunk, index) => ({ ...chunk, order: index })),
+      overlays: specOverlays,
       diagnostics: {
         issues: diagnostics.length,
         nodes: flowStats.nodeCount,
@@ -2458,7 +2511,20 @@ useEffect(() => {
         exportedAt: new Date().toISOString(),
       },
     };
-  }, [chunks, comments, diagnostics.length, edges, flowDoc?.name, flowDoc?.updatedAt, flowDoc?.version, flowNameDraft, flowStats, nodes, selectedFlowId]);
+  }, [
+    chunks,
+    comments,
+    diagnostics.length,
+    edges,
+    flowDoc?.name,
+    flowDoc?.updatedAt,
+    flowDoc?.version,
+    flowNameDraft,
+    flowStats,
+    nodes,
+    overlays,
+    selectedFlowId,
+  ]);
 
   const handleDownloadFlowSpec = useCallback(() => {
     const spec = buildFlowSpec();
@@ -2771,6 +2837,7 @@ useEffect(() => {
     });
     const normalizedChunks = normalizeChunks(importSpecPreview.chunks);
     const normalizedComments = Array.isArray(importSpecPreview.comments) ? importSpecPreview.comments : [];
+    const normalizedOverlays = Array.isArray(importSpecPreview.overlays) ? importSpecPreview.overlays : [];
     const flowName = importSpecPreview.flow?.name?.trim() || "Imported map";
     const incomingVersion = importSpecPreview.flow?.version ?? 1;
     const payload = {
@@ -2779,6 +2846,7 @@ useEffect(() => {
       edges: normalizedEdges,
       chunks: normalizedChunks,
       comments: normalizedComments,
+      overlays: normalizedOverlays,
       updatedAt: serverTimestamp(),
       version: incomingVersion,
     };
@@ -2793,6 +2861,7 @@ useEffect(() => {
     }
     setFlowNameDraft(flowName);
     setComments(normalizedComments);
+    setOverlays(normalizedOverlays);
     setImportSpecText("");
     setImportSpecPreview(null);
     setImportSpecError(null);
@@ -4087,13 +4156,15 @@ useEffect(() => {
                   />
                 ) : null}
                 {leftSidebarTab === "worlds" ? (
-                  <ChunkPanel
-                    chunks={chunks}
-                    countsByChunk={chunkCountsById}
-                    onAddChunk={handleAddChunk}
-                    onSeedCanonicalChunks={handleSeedCanonicalChunks}
-                    onImportChunks={handleImportChunkPayload}
-                    onUpdateChunk={handleUpdateChunk}
+                    <ChunkPanel
+                      chunks={chunks}
+                      countsByChunk={chunkCountsById}
+                      onAddChunk={handleAddChunk}
+                      onSeedCanonicalChunks={handleSeedCanonicalChunks}
+                      onSyncCanonicalChunks={handleOverwriteCanonicalChunks}
+                      onImportChunks={handleImportChunkPayload}
+                      onPreviewAutoAssign={handlePreviewChunkAssignment}
+                      onUpdateChunk={handleUpdateChunk}
                     onDeleteChunk={handleDeleteChunk}
                     onMoveChunk={handleMoveChunk}
                     onSelectChunk={handleSelectChunkFromPanel}
@@ -4265,6 +4336,7 @@ useEffect(() => {
                   onOverlayStepFocus={handleOverlayStepFocus}
                   selectedNodeIds={selectedNodeIds}
                   nodeLabelMap={nodeLabelMap}
+                  nodeRouteMap={nodeRouteById}
                   overlayTabRequest={inspectorTabRequest}
                 />
               </div>
@@ -4330,10 +4402,116 @@ useEffect(() => {
                 ))
               ) : (
                 <li className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] px-3 py-2 text-sm text-[var(--omni-muted)]">
-                  Nicio comandă găsită.
-                </li>
+              Nicio comandă găsită.
+            </li>
+          )}
+        </ul>
+      </div>
+    </div>
+  ) : null}
+      {assignmentPreview ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6">
+          <div className="w-full max-w-3xl rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 text-sm shadow-2xl">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Preview auto-assign</p>
+                <h2 className="text-xl font-semibold text-[var(--omni-ink)]">World assignment changes</h2>
+              </div>
+              <button
+                type="button"
+                className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold text-[var(--omni-muted)]"
+                onClick={() => setAssignmentPreview(null)}
+              >
+                Închide
+              </button>
+            </div>
+            <div className="mt-4 space-y-2">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">World counts</p>
+              <ul className="space-y-1 text-xs">
+                {assignmentSummary.map((row) => (
+                  <li
+                    key={row.chunkId}
+                    className="flex items-center justify-between rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 px-3 py-1 font-semibold text-[var(--omni-ink)]"
+                  >
+                    <span>{row.chunkId}</span>
+                    <span>
+                      {row.before} → {row.after}
+                      {row.before === row.after ? "" : row.after > row.before ? " ▲" : " ▼"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="mt-4 space-y-2">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+                Propuneri ({assignmentPreview.changes.length})
+              </p>
+              {assignmentChangeSample.length ? (
+                <ul className="space-y-1 text-xs">
+                  {assignmentChangeSample.map((change) => (
+                    <li
+                      key={change.nodeId}
+                      className="rounded-2xl border border-[var(--omni-border-soft)] bg-white/90 px-3 py-2 text-[var(--omni-ink)]"
+                    >
+                      <p className="font-semibold">
+                        {change.routePath || "Route necunoscut"} — {change.previousChunkId} → {change.suggestedChunkId}
+                      </p>
+                      <p className="text-[var(--omni-muted)]">
+                        {change.reason === "prefix"
+                          ? "Match: prefix"
+                          : change.reason === "routeGroup"
+                            ? "Match: route group"
+                            : change.reason === "fallback"
+                              ? "Match: canonical fallback"
+                              : "Match: none"}
+                      </p>
+                      {change.ambiguousCandidates?.length ? (
+                        <p className="text-rose-600">Ambiguu: {change.ambiguousCandidates.join(", ")}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] px-3 py-4 text-center text-[var(--omni-muted)]">
+                  Nicio modificare propusă — toate nodurile sunt deja mapate.
+                </p>
               )}
-            </ul>
+              {assignmentHasHiddenChanges ? (
+                <p className="text-[11px] text-[var(--omni-muted)]">
+                  {assignmentPreview.changes.length - assignmentChangeSample.length} modificări suplimentare sunt ascunse. Exportă spec-ul
+                  dacă ai nevoie de listă completă.
+                </p>
+              ) : null}
+            </div>
+            {assignmentAmbiguous.length ? (
+              <div className="mt-4 space-y-2">
+                <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Ambiguous matches</p>
+                <ul className="space-y-1 text-xs">
+                  {assignmentAmbiguous.map((entry) => (
+                    <li key={`ambiguous-${entry.nodeId}`} className="rounded-2xl border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
+                      {entry.routePath || entry.nodeId}: {entry.ambiguousCandidates?.join(", ")}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-[var(--omni-border-soft)] px-4 py-2 text-xs font-semibold text-[var(--omni-muted)]"
+                onClick={() => setAssignmentPreview(null)}
+              >
+                Anulează
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-[var(--omni-ink)] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                onClick={handleApplyAssignmentPreview}
+                disabled={!assignmentPreview.changes.length}
+              >
+                Aplică world assign
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

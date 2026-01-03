@@ -24,6 +24,13 @@ const DEBUG_STEPS = process.env.NEXT_PUBLIC_FLOW_STUDIO_DEBUG_STEPS === "true";
 
 const EDGE_COLOR_FALLBACK = "#0f172a";
 const EDGE_COLOR_PALETTE = ["#0f172a", "#0369a1", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2"];
+type JourneyStatus = NonNullable<FlowOverlay["status"]>;
+const JOURNEY_STATUS_OPTIONS: Array<{ value: JourneyStatus; label: string }> = [
+  { value: "draft", label: "Draft" },
+  { value: "active", label: "Active" },
+  { value: "deprecated", label: "Deprecated" },
+  { value: "archived", label: "Archived" },
+];
 
 export type FlowStats = {
   nodeCount: number;
@@ -102,7 +109,10 @@ type InspectorPanelProps = {
   onSelectOverlay: (overlayId: string | null) => void;
   onCreateOverlay: (name: string) => void;
   onDeleteOverlay: (overlayId: string) => void;
-  onOverlayMetadataChange: (overlayId: string, updates: Partial<Pick<FlowOverlay, "name" | "description" | "status">>) => void;
+  onOverlayMetadataChange: (
+    overlayId: string,
+    updates: Partial<Pick<FlowOverlay, "name" | "description" | "status" | "entryRoutePath" | "exitRoutePath">>,
+  ) => void;
   onOverlayAddNodes: (overlayId: string, nodeIds: string[]) => void;
   onOverlayRemoveStep: (overlayId: string, index: number) => void;
   onOverlayReorderSteps: (overlayId: string, fromIndex: number, toIndex: number) => void;
@@ -111,6 +121,7 @@ type InspectorPanelProps = {
   onOverlayStepFocus: (nodeId: string) => void;
   selectedNodeIds: string[];
   nodeLabelMap: Map<string, string>;
+  nodeRouteMap: Map<string, string>;
   overlayTabRequest?: { tab: InspectorTab; nonce: number } | null;
 };
 
@@ -175,6 +186,7 @@ export function InspectorPanel({
   onOverlayStepFocus,
   selectedNodeIds,
   nodeLabelMap,
+  nodeRouteMap,
   overlayTabRequest,
 }: InspectorPanelProps) {
   const resolvedRoutePath = selectedNode ? routeMap.get(selectedNode.data.routeId)?.routePath ?? selectedNode.data.routePath ?? null : null;
@@ -272,6 +284,7 @@ export function InspectorPanel({
             onOverlayStepUpdate={onOverlayStepUpdate}
             selectedNodeIds={selectedNodeIds}
             nodeLabelMap={nodeLabelMap}
+            nodeRouteMap={nodeRouteMap}
             onRepairOverlaySteps={onRepairOverlaySteps}
             onOverlayStepFocus={onOverlayStepFocus}
           />
@@ -552,13 +565,17 @@ type OverlayManagerSectionProps = {
   onSelectOverlay: (overlayId: string | null) => void;
   onCreateOverlay: (name: string) => void;
   onDeleteOverlay: (overlayId: string) => void;
-  onOverlayMetadataChange: (overlayId: string, updates: Partial<Pick<FlowOverlay, "name" | "description" | "status">>) => void;
+  onOverlayMetadataChange: (
+    overlayId: string,
+    updates: Partial<Pick<FlowOverlay, "name" | "description" | "status" | "entryRoutePath" | "exitRoutePath">>,
+  ) => void;
   onOverlayAddNodes: (overlayId: string, nodeIds: string[]) => void;
   onOverlayRemoveStep: (overlayId: string, index: number) => void;
   onOverlayReorderSteps: (overlayId: string, fromIndex: number, toIndex: number) => void;
   onOverlayStepUpdate: (overlayId: string, index: number, updates: Partial<FlowOverlayStep>) => void;
   selectedNodeIds: string[];
   nodeLabelMap: Map<string, string>;
+  nodeRouteMap: Map<string, string>;
   onRepairOverlaySteps: (overlayId: string) => void;
   onOverlayStepFocus: (nodeId: string) => void;
 };
@@ -979,16 +996,43 @@ function OverlayManagerSection({
   onOverlayStepUpdate,
   selectedNodeIds,
   nodeLabelMap,
+  nodeRouteMap,
   onRepairOverlaySteps,
   onOverlayStepFocus,
 }: OverlayManagerSectionProps) {
   const [newOverlayName, setNewOverlayName] = useState("");
   const activeOverlay = selectedOverlayId ? overlays.find((overlay) => overlay.id === selectedOverlayId) ?? null : null;
+  const overlayStatus = (activeOverlay?.status ?? "draft") as JourneyStatus;
+  const overlayIsActive = overlayStatus === "active";
   const handleCreateOverlay = () => {
     const value = newOverlayName.trim();
     if (!value) return;
     onCreateOverlay(value);
     setNewOverlayName("");
+  };
+  const handleAutoSuggestStep = (index: number) => {
+    if (!activeOverlay?.steps?.length) return;
+    const step = activeOverlay.steps[index];
+    if (!step?.nodeId) return;
+    const routePath = nodeRouteMap.get(step.nodeId) ?? "";
+    if (!routePath) return;
+    const slug = routePath
+      .replace(/[^a-z0-9]+/gi, "-")
+      .replace(/^-+/, "")
+      .replace(/-+$/, "") || "journey-step";
+    const updates: Partial<FlowOverlayStep> = {};
+    if (!step.urlPattern) {
+      updates.urlPattern = `${routePath}(.*)$`;
+    }
+    if (!step.assertTestId) {
+      updates.assertTestId = `${slug}-root`;
+    }
+    if (!step.clickTestId) {
+      updates.clickTestId = `${slug}-action`;
+    }
+    if (Object.keys(updates).length) {
+      onOverlayStepUpdate(activeOverlay.id, index, updates);
+    }
   };
   return (
     <div className="space-y-4 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3 text-xs">
@@ -1042,10 +1086,53 @@ function OverlayManagerSection({
             <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Descriere</label>
             <textarea
               className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
-            placeholder="Rezumat journey"
-            value={activeOverlay.description ?? ""}
-            onChange={(event) => onOverlayMetadataChange(activeOverlay.id, { description: event.target.value })}
-          />
+              placeholder="Rezumat journey"
+              value={activeOverlay.description ?? ""}
+              onChange={(event) => onOverlayMetadataChange(activeOverlay.id, { description: event.target.value })}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Status</label>
+            <select
+              className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
+              value={overlayStatus}
+              onChange={(event) =>
+                onOverlayMetadataChange(activeOverlay.id, { status: event.target.value as JourneyStatus })
+              }
+            >
+              {JOURNEY_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className={clsx("text-[11px]", overlayIsActive ? "text-rose-700" : "text-[var(--omni-muted)]")}>
+              {overlayIsActive
+                ? "Journeys ACTIVE trebuie să aibă entry/exit și contract complet (URL + testIds)."
+                : "Poți păstra status Draft până completezi contractul și validezi traseul."}
+            </p>
+          </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Entry route</label>
+              <input
+                type="text"
+                className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
+                placeholder="/intro?e2e=1"
+                value={activeOverlay.entryRoutePath ?? ""}
+                onChange={(event) => onOverlayMetadataChange(activeOverlay.id, { entryRoutePath: event.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Exit route</label>
+              <input
+                type="text"
+                className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
+                placeholder="/session/complete"
+                value={activeOverlay.exitRoutePath ?? ""}
+                onChange={(event) => onOverlayMetadataChange(activeOverlay.id, { exitRoutePath: event.target.value })}
+              />
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -1085,28 +1172,32 @@ function OverlayManagerSection({
                 {activeOverlay.steps.map((step, index) => {
                   const nodeExists = Boolean(step.nodeId && nodeLabelMap.has(step.nodeId));
                   const label = nodeExists ? nodeLabelMap.get(step.nodeId!) ?? step.nodeId : step.nodeId || "Fără nod";
+                  const routePath = step.nodeId ? nodeRouteMap.get(step.nodeId) ?? "" : "";
+                  const hasUrl = Boolean(step.urlPattern);
+                  const hasAssert = Boolean(step.assertTestId);
+                  const hasClick = Boolean(step.clickTestId);
+                  const contractComplete = hasUrl && hasAssert && hasClick;
+                  const contractWarning = overlayIsActive && !contractComplete;
                   return (
                     <li
                       key={`${step.nodeId ?? "step"}-${index}`}
                       className={clsx(
-                        "rounded-xl border p-2",
+                        "rounded-xl border p-3",
                         nodeExists ? "border-[var(--omni-border-soft)] bg-white" : "border-amber-200 bg-amber-50",
+                        contractWarning ? "ring-1 ring-rose-200" : "",
                       )}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <button
                           type="button"
-                          className={clsx(
-                            "flex-1 text-left",
-                            nodeExists ? "text-[var(--omni-ink)]" : "text-amber-700",
-                          )}
+                          className={clsx("flex-1 text-left", nodeExists ? "text-[var(--omni-ink)]" : "text-amber-700")}
                           onClick={() => nodeExists && step.nodeId && onOverlayStepFocus(step.nodeId)}
                           disabled={!nodeExists || !step.nodeId}
                         >
                           <p className="text-sm font-semibold">
                             {index + 1}. {label}
                           </p>
-                          <p className="text-[11px] text-[var(--omni-muted)]">{step.nodeId || "—"}</p>
+                          <p className="text-[11px] text-[var(--omni-muted)]">{routePath || step.nodeId || "—"}</p>
                           {!nodeExists ? <p className="text-[11px] text-amber-700">Nod inexistent — repară Journey-ul.</p> : null}
                         </button>
                         <div className="flex items-center gap-1 text-[10px]">
@@ -1154,6 +1245,70 @@ function OverlayManagerSection({
                           })
                         }
                       />
+                      <div className="mt-2 space-y-2">
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-1 text-sm"
+                          placeholder="URL pattern (ex: /intro/guided.*)"
+                          value={step.urlPattern ?? ""}
+                          onChange={(event) =>
+                            onOverlayStepUpdate(activeOverlay.id, index, {
+                              urlPattern: event.target.value || null,
+                            })
+                          }
+                        />
+                        <div className="grid gap-2 md:grid-cols-2">
+                          <input
+                            type="text"
+                            className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-1 text-sm"
+                            placeholder="Assert testId"
+                            value={step.assertTestId ?? ""}
+                            onChange={(event) =>
+                              onOverlayStepUpdate(activeOverlay.id, index, {
+                                assertTestId: event.target.value || null,
+                              })
+                            }
+                          />
+                          <input
+                            type="text"
+                            className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-1 text-sm"
+                            placeholder="CTA testId"
+                            value={step.clickTestId ?? ""}
+                            onChange={(event) =>
+                              onOverlayStepUpdate(activeOverlay.id, index, {
+                                clickTestId: event.target.value || null,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                        <span
+                          className={clsx(
+                            "rounded-full px-2 py-0.5 font-semibold",
+                            contractComplete
+                              ? "bg-emerald-100 text-emerald-800"
+                              : overlayIsActive
+                                ? "bg-rose-100 text-rose-700"
+                                : "bg-slate-100 text-slate-600",
+                          )}
+                        >
+                          {contractComplete ? "Contract complet" : overlayIsActive ? "Completează contractul" : "Contract opțional"}
+                        </span>
+                        <button
+                          type="button"
+                          className={clsx(
+                            "rounded-full border px-3 py-0.5 text-[10px] font-semibold",
+                            nodeExists && routePath
+                              ? "border-[var(--omni-border-soft)] text-[var(--omni-ink)]"
+                              : "cursor-not-allowed border-dashed text-[var(--omni-muted)]",
+                          )}
+                          onClick={() => handleAutoSuggestStep(index)}
+                          disabled={!nodeExists || !routePath}
+                        >
+                          Auto-suggest
+                        </button>
+                      </div>
                     </li>
                   );
                 })}

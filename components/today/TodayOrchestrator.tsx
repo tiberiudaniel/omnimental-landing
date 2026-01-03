@@ -12,6 +12,7 @@ import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { track } from "@/lib/telemetry/track";
 import { useCopy } from "@/lib/useCopy";
 import { getScreenIdForRoute } from "@/lib/routeIds";
+import { GuidedDayOneHero } from "@/components/today/GuidedDayOneHero";
 
 const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
 const GUIDED_ONBOARDING_KEY = "guided_onboarding_active";
@@ -53,6 +54,7 @@ export default function TodayOrchestrator() {
   const [completedToday, setCompletedToday] = useState(false);
   const [lastCompletion, setLastCompletion] = useState<DailyCompletionRecord | null>(null);
   const sourceParam = searchParams?.get("source");
+  const modeParam = searchParams?.get("mode") ?? "short";
   const mindpacingTagParam = searchParams?.get("mindpacingTag") ?? null;
   const todayKey = useMemo(() => getTodayKey(), []);
   const mindBlock = progressFacts?.mindPacing ?? null;
@@ -223,6 +225,19 @@ export default function TodayOrchestrator() {
     }
   }, [lastCompletion]);
 
+  const preserveGuidedDayOneE2E = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
+  const buildGuidedDayOneQuery = () => {
+    const params = new URLSearchParams();
+    params.set("mode", "guided_day1");
+    params.set("source", "guided_day1");
+    if (preserveGuidedDayOneE2E) {
+      params.set("e2e", "1");
+    }
+    return params.toString();
+  };
+  const handleGuidedDayOneStart = () => {
+    router.push(`/today/run?${buildGuidedDayOneQuery()}`);
+  };
   const handleStart = () => {
     track("today_primary_clicked", { completedToday });
     if (guidedOnboardingActive && typeof window !== "undefined") {
@@ -233,6 +248,10 @@ export default function TodayOrchestrator() {
     const runTarget = e2eMode ? "/today/run?e2e=1" : "/today/run";
     router.push(runTarget);
   };
+
+  const completedSessions = totalDailySessionsCompleted ?? 0;
+  const isGuestOrAnon = !user || user.isAnonymous;
+  const guidedDayOneActive = sourceParam === "guided_day1" && (isGuestOrAnon || completedSessions === 0);
 
   const header = (
     <SiteHeader
@@ -269,6 +288,18 @@ export default function TodayOrchestrator() {
   const heroTitle = todayCopy.h1 ?? defaultHeroTitle;
   const heroSubtitle = todayCopy.subtitle ?? defaultHeroSubtitle;
   const primaryCtaLabel = todayCopy.ctaPrimary ?? defaultPrimaryCta;
+
+  if (guidedDayOneActive) {
+    return (
+      <div data-testid="guided-day1-page">
+        <AppShell header={null} bodyClassName="bg-[var(--omni-bg-soft)]" mainClassName="px-0 py-10">
+          <div className="mx-auto w-full max-w-4xl px-4">
+            <GuidedDayOneHero lang="ro" onStart={handleGuidedDayOneStart} />
+          </div>
+        </AppShell>
+      </div>
+    );
+  }
 
   const explorePortal = useMemo(() => {
     if (wizardUnlocked) {

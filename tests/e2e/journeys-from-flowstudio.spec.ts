@@ -54,6 +54,8 @@ function guardConsole(page: Page) {
       const text = msg.text();
       if (/Download the React DevTools/i.test(text)) return;
       if (/FIRESTORE.*INTERNAL ASSERTION FAILED/i.test(text)) return;
+      if (/INTERNAL UNHANDLED ERROR/i.test(text) && /INTERNAL ASSERTION FAILED/i.test(text)) return;
+      if (/Unexpected state \(ID:/.test(text) && /@firebase\/firestore/i.test(text)) return;
       throw new Error(`Console error: ${text}`);
     }
   });

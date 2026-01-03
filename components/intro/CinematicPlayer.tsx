@@ -460,6 +460,7 @@ export default function CinematicPlayer({
           type="button"
           onClick={handleSkip}
           data-skip-exempt="true"
+          data-testid="intro-skip"
           className="absolute right-4 top-6 rounded-full border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)] hover:bg-[var(--omni-bg-paper)] sm:right-10 sm:top-8"
         >
           {localeContent.skipLabel}

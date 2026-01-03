@@ -28,6 +28,7 @@
     "test:smoke:3000": "node scripts/run-smoke.mjs http://localhost:3000",
     "test:e2e:3000": "node scripts/run-e2e.mjs http://localhost:3000",
     "test:e2e:failures": "node scripts/e2e-failures.mjs",
+    "journeys:generate": "ts-node --project tsconfig.scripts.json --transpile-only scripts/generateFlowJourneys.ts",
     "validate:dailyPaths": "ts-node --project tsconfig.scripts.json --transpile-only scripts/validateDailyPaths.ts",
     "validate:arcstate": "tsx scripts/validateArcState.ts",
     "test:all": "npm run test:logic && npm run test:unit && npm run test:integration && npm run test:e2e",

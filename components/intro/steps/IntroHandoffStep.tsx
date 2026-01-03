@@ -5,7 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { StepComponentProps } from "@/components/stepRunner/types";
 
 function buildTarget(intent: "guided" | "explore", preserveE2E: boolean) {
-  const base = intent === "explore" ? "/intro/explore" : "/intro/guided";
+  if (intent === "guided") {
+    const params = new URLSearchParams({ mode: "short", source: "guided_day1" });
+    if (preserveE2E) {
+      params.set("e2e", "1");
+    }
+    return `/today?${params.toString()}`;
+  }
+  const base = "/intro/explore";
   const params = new URLSearchParams({ source: "intro_spine" });
   if (preserveE2E) {
     params.set("e2e", "1");

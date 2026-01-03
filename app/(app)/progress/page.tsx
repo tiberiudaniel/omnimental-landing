@@ -51,6 +51,30 @@ function ProgressContent() {
   const autoDemo = demoVariant || e2e ? (demoVariant ?? 1) : null;
   const demoFacts = autoDemo ? getDemoProgressFacts(lang === "en" ? "en" : "ro", autoDemo as 1 | 2 | 3) : undefined;
   const factsForViz = progress ?? demoFacts ?? null;
+  const userSessionCount = Array.isArray(progress?.practiceSessions)
+    ? (progress?.practiceSessions as unknown[]).length
+    : 0;
+  const guidedSourceParam = search?.get("source") ?? null;
+  const preserveGuidedE2E = search?.get("e2e") === "1";
+  const buildGuidedDayOneParams = () => {
+    const params = new URLSearchParams();
+    params.set("mode", search?.get("mode") ?? "short");
+    params.set("source", "guided_day1");
+    if (preserveGuidedE2E) {
+      params.set("e2e", "1");
+    }
+    return params.toString();
+  };
+  const handleGuidedDayOneStart = () => {
+    router.push(`/today/run?${buildGuidedDayOneParams()}`);
+  };
+  const handleGuidedDayOneExplore = () => {
+    const params = new URLSearchParams({ source: "guided_day1" });
+    if (preserveGuidedE2E) {
+      params.set("e2e", "1");
+    }
+    router.push(`/intro/explore?${params.toString()}`);
+  };
   const hasProgressData = useMemo(() => {
     if (demoFacts) return true;
     if (!progress) return false;
@@ -218,13 +242,15 @@ function ProgressContent() {
     />
   ) : null;
 
+  // Guided Day-1 gating moved to /today route. Progress always shows full dashboard.
+
   if (!profile?.id) {
     if (demoParam || e2e) {
       const header = (
         <SiteHeader onAuthRequest={e2e ? undefined : goToAuth} onMenuToggle={() => setMenuOpen(true)} />
       );
       return (
-        <>
+        <div data-testid="progress-root">
           <AppShell header={header}>
             {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
             <div className="mx-auto max-w-5xl px-4 py-6 md:px-8">
@@ -254,23 +280,25 @@ function ProgressContent() {
             {journalDrawer}
           </AppShell>
           <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-        </>
+        </div>
       );
     }
     const header = <SiteHeader onAuthRequest={goToAuth} />;
     return (
-      <AppShell header={header}>
-        <div className="mx-auto max-w-5xl px-4 py-8">
-          <p className="text-sm text-[var(--omni-ink-soft)]">
-            {getString(t, "progress.loginToView", lang === "ro" ? "Conectează-te pentru a vedea tabloul tău de bord." : "Sign in to view your dashboard.")}
-          </p>
-        </div>
-      </AppShell>
+      <div data-testid="progress-root">
+        <AppShell header={header}>
+          <div className="mx-auto max-w-5xl px-4 py-8">
+            <p className="text-sm text-[var(--omni-ink-soft)]">
+              {getString(t, "progress.loginToView", lang === "ro" ? "Conectează-te pentru a vedea tabloul tău de bord." : "Sign in to view your dashboard.")}
+            </p>
+          </div>
+        </AppShell>
+      </div>
     );
   }
 
   return (
-    <>
+    <div data-testid="progress-root">
       <AppShell
         header={<SiteHeader onAuthRequest={goToAuth} onMenuToggle={() => setMenuOpen(true)} />}
       >
@@ -526,7 +554,7 @@ function ProgressContent() {
       </div>
       </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-    </>
+    </div>
   );
 }
 

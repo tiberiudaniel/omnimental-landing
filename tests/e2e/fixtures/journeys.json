@@ -18,23 +18,23 @@
         {
           "order": 2,
           "urlPattern": "/intro(.*)$",
-          "clickTestId": "intro-choice-today"
+          "clickTestId": "intro-choice-guided"
         },
         {
           "order": 3,
-          "urlPattern": "/intro/mindpacing(.*)$",
+          "urlPattern": "/intro(.*step=mindpacing.*)$",
           "assertTestId": "mindpacing-root",
           "clickTestId": "mindpacing-option-0"
         },
         {
           "order": 4,
-          "urlPattern": "/intro/mindpacing(.*)$",
+          "urlPattern": "/intro(.*step=mindpacing.*)$",
           "assertTestId": "mindpacing-root",
           "clickTestId": "mindpacing-continue"
         },
         {
           "order": 5,
-          "urlPattern": "/intro/vocab(.*)$",
+          "urlPattern": "/intro(.*step=vocab.*)$",
           "assertTestId": "vocab-root",
           "clickTestId": "vocab-continue"
         },

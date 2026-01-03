@@ -17,6 +17,7 @@ import type { UserCompetence, CompetenceLevel } from "@/types/competence";
 import type { ArcDefinition } from "@/types/arcs";
 import { deriveAdaptiveClusterFromCat } from "@/lib/dailyCluster";
 import { getDailyPathForCluster } from "@/config/dailyPath";
+import { resolveStarterModule } from "@/config/todayModulesMeta";
 import { getOnboardingStatus } from "@/lib/onboardingStatus";
 import type { OnboardingStatus } from "@/lib/onboardingStatus";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
@@ -251,6 +252,7 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
   }
   const vocabDayKey = runDayKeyRef.current;
   const rawSourceParam = searchParams?.get("source")?.toLowerCase() ?? "";
+  const guidedDayOneSource = rawSourceParam === "guided_day1";
   const cameFromUpgradeSuccess = rawSourceParam === "upgrade_success";
   const rawClusterParam = searchParams?.get("cluster")?.toLowerCase() ?? null;
   const clusterOverride =
@@ -440,6 +442,13 @@ useEffect(() => {
     };
   }, [onboardingReady, user?.uid, catProfile, decisionLang, qaOverrideActive]);
 
+  const guidedDayOneModuleKey = useMemo(() => {
+    if (!guidedDayOneSource) return null;
+    const candidate = dailyDecision?.moduleKey ?? todayModuleKey ?? null;
+    const targetCluster = dailyDecision?.cluster ?? clusterOverride ?? cluster ?? null;
+    return resolveStarterModule(candidate, targetCluster);
+  }, [guidedDayOneSource, dailyDecision?.moduleKey, dailyDecision?.cluster, todayModuleKey, clusterOverride, cluster]);
+
   const baseDailyPathConfig = useMemo(() => {
     if (qaOverrideActive) {
       const overrideCluster = clusterOverride ?? cluster ?? null;
@@ -460,8 +469,29 @@ useEffect(() => {
       }
     }
     if (!dailyDecision) return null;
+    if (guidedDayOneModuleKey && guidedDayOneModuleKey !== dailyDecision.moduleKey) {
+      try {
+        return getDailyPathForCluster({
+          cluster: dailyDecision.cluster,
+          mode: dailyDecision.mode,
+          lang: dailyDecision.config.lang,
+          moduleKey: guidedDayOneModuleKey,
+        });
+      } catch (error) {
+        console.warn("Failed to load guided Day1 daily path", error);
+      }
+    }
     return dailyDecision.config;
-  }, [qaOverrideActive, clusterOverride, cluster, modeOverride, langOverride, moduleOverride, dailyDecision]);
+  }, [
+    qaOverrideActive,
+    clusterOverride,
+    cluster,
+    modeOverride,
+    langOverride,
+    moduleOverride,
+    dailyDecision,
+    guidedDayOneModuleKey,
+  ]);
 
   useEffect(() => {
     setTimeModeOverride(null);
@@ -534,11 +564,14 @@ useEffect(() => {
   }, [dailyDecision, clusterOverride, modeOverride, langOverride, qaOverrideActive]);
 
   const moduleKeyForSelection = useMemo(() => {
+    if (guidedDayOneModuleKey) {
+      return guidedDayOneModuleKey;
+    }
     if (qaOverrideActive) {
       return moduleOverride ?? null;
     }
     return dailyDecision?.moduleKey ?? todayModuleKey ?? null;
-  }, [qaOverrideActive, moduleOverride, dailyDecision?.moduleKey, todayModuleKey]);
+  }, [guidedDayOneModuleKey, qaOverrideActive, moduleOverride, dailyDecision?.moduleKey, todayModuleKey]);
 
   const resolvedDailyPathConfig = useMemo(() => {
     if (!baseDailyPathConfig) return null;

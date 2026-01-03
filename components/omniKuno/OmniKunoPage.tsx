@@ -526,9 +526,11 @@ export default function OmniKunoPage() {
 
   if (!authReady || progressLoading) {
     return (
-      <AppShell header={<SiteHeader />}>
-        <div className="px-4 py-16 text-center text-sm text-[var(--omni-ink-soft)]">Se verifică accesul la OmniKuno...</div>
-      </AppShell>
+      <div data-testid="kuno-root">
+        <AppShell header={<SiteHeader />}>
+          <div className="px-4 py-16 text-center text-sm text-[var(--omni-ink-soft)]">Se verifică accesul la OmniKuno...</div>
+        </AppShell>
+      </div>
     );
   }
 
@@ -538,25 +540,28 @@ export default function OmniKunoPage() {
 
   if (!unlocked) {
     return (
-      <AppShell header={<SiteHeader />}>
-        <div className="px-4 py-12">
-          <section className="mx-auto max-w-3xl space-y-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-white px-6 py-8 text-center text-[var(--omni-ink)] shadow-[0_24px_80px_rgba(0,0,0,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">OmniKuno</p>
-            <h2 className="text-2xl font-semibold">Ai nevoie de {GATING.omniKunoMinDailySessions} sesiuni reale pentru acces</h2>
-            <p className="text-sm text-[var(--omni-ink)]/75">
-              Ai {totalSessions} sesiuni înregistrate. Continuă cu /today pentru a debloca lecțiile și testele OmniKuno.
-            </p>
-            <OmniCtaButton className="mt-4 justify-center" onClick={() => router.push("/today")}>
-              Înapoi la /today
-            </OmniCtaButton>
-          </section>
-        </div>
-      </AppShell>
+      <div data-testid="kuno-root">
+        <AppShell header={<SiteHeader />}>
+          <div className="px-4 py-12">
+            <section className="mx-auto max-w-3xl space-y-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-white px-6 py-8 text-center text-[var(--omni-ink)] shadow-[0_24px_80px_rgba(0,0,0,0.08)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">OmniKuno</p>
+              <h2 className="text-2xl font-semibold">Ai nevoie de {GATING.omniKunoMinDailySessions} sesiuni reale pentru acces</h2>
+              <p className="text-sm text-[var(--omni-ink)]/75">
+                Ai {totalSessions} sesiuni înregistrate. Continuă cu /today pentru a debloca lecțiile și testele OmniKuno.
+              </p>
+              <OmniCtaButton className="mt-4 justify-center" onClick={() => router.push("/today")}>
+                Înapoi la /today
+              </OmniCtaButton>
+            </section>
+          </div>
+        </AppShell>
+      </div>
     );
   }
 
   return (
-    <AppShell header={header}>
+    <div data-testid="kuno-root">
+      <AppShell header={header}>
       <div className="mx-auto w-full max-w-6xl px-4 py-6 text-[var(--omni-ink)]">
         <div className="space-y-6">
           <KunoContainer>
@@ -658,6 +663,7 @@ export default function OmniKunoPage() {
           </div>
         </div>
       </div>
+      </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
       {toastMsg ? (
         <Toast
@@ -674,7 +680,7 @@ export default function OmniKunoPage() {
           onClose={() => setToastMsg(null)}
         />
       ) : null}
-    </AppShell>
+    </div>
   );
 }
 

@@ -20,6 +20,8 @@ const CANONICAL_CHUNK_PRESETS: FlowChunk[] = [
 
 const CANONICAL_CHUNK_ID_SET = new Set(CANONICAL_CHUNK_PRESETS.map((chunk) => chunk.id));
 const CANONICAL_ORDER_MAP = new Map(CANONICAL_CHUNK_PRESETS.map((chunk) => [chunk.id, chunk.order]));
+const CANONICAL_ID_PREFIX = /^CH\d+_/i;
+const slugifyChunkId = (id: string) => id.replace(CANONICAL_ID_PREFIX, "").toLowerCase();
 
 const ROUTE_GROUP_TO_CANONICAL_CHUNK_ID: Record<string, string> = {
   public: "CH01_public",
@@ -70,6 +72,17 @@ export type ChunkNodeData = {
   overlayStepCount?: number;
   overlayHighlighted?: boolean;
   overlayDimmed?: boolean;
+};
+
+type ChunkPrefixEntry = {
+  prefix: string;
+  chunk: FlowChunk;
+};
+
+export type ChunkAutoAssignLookup = {
+  routeGroupMap: Map<string, FlowChunk>;
+  fallbackGroupMap: Map<string, FlowChunk>;
+  prefixEntries: ChunkPrefixEntry[];
 };
 
 export type ChunkGraphResult = {
@@ -172,36 +185,109 @@ export function getCanonicalChunks(): FlowChunk[] {
   return normalizeChunks(CANONICAL_CHUNK_PRESETS);
 }
 
-export function buildChunkAutoAssignMap(chunks: FlowChunk[]): Map<string, FlowChunk> {
-  const map = new Map<string, FlowChunk>();
-  const chunkById = new Map<string, FlowChunk>();
+export function buildChunkAutoAssignLookup(chunks: FlowChunk[]): ChunkAutoAssignLookup {
+  const routeGroupMap = new Map<string, FlowChunk>();
+  const fallbackGroupMap = new Map<string, FlowChunk>();
+  const prefixEntries: ChunkPrefixEntry[] = [];
+  const chunkByKey = new Map<string, FlowChunk>();
   chunks.forEach((chunk) => {
     const normalizedId = chunk.id.toLowerCase();
-    chunkById.set(normalizedId, chunk);
-    map.set(normalizedId, chunk);
+    chunkByKey.set(normalizedId, chunk);
+    chunkByKey.set(slugifyChunkId(chunk.id), chunk);
     if (chunk.title) {
-      map.set(chunk.title.toLowerCase(), chunk);
+      chunkByKey.set(chunk.title.toLowerCase(), chunk);
     }
     if (Array.isArray(chunk.meta?.routeGroups)) {
       chunk.meta.routeGroups.forEach((group) => {
         if (typeof group === "string" && group.trim()) {
-          map.set(group.toLowerCase(), chunk);
+          routeGroupMap.set(group.toLowerCase(), chunk);
+        }
+      });
+    }
+    if (Array.isArray(chunk.meta?.routePrefixes)) {
+      chunk.meta.routePrefixes.forEach((prefix) => {
+        if (typeof prefix === "string" && prefix.trim()) {
+          prefixEntries.push({ prefix: prefix.trim().toLowerCase(), chunk });
         }
       });
     }
   });
   Object.entries(ROUTE_GROUP_TO_CANONICAL_CHUNK_ID).forEach(([routeGroup, chunkId]) => {
-    const chunk = chunkById.get(chunkId.toLowerCase());
+    const normalizedId = chunkId.toLowerCase();
+    const slug = slugifyChunkId(chunkId);
+    const chunk = chunkByKey.get(normalizedId) ?? chunkByKey.get(slug);
     if (chunk) {
-      map.set(routeGroup.toLowerCase(), chunk);
+      fallbackGroupMap.set(routeGroup.toLowerCase(), chunk);
     }
   });
-  return map;
+  prefixEntries.sort((a, b) => b.prefix.length - a.prefix.length);
+  return {
+    routeGroupMap,
+    fallbackGroupMap,
+    prefixEntries,
+  };
 }
 
 function ensureChunkMap(chunks: FlowChunk[]): Map<string, FlowChunk> {
   return new Map(chunks.map((chunk) => [chunk.id, chunk]));
 }
+
+type ChunkMatchReason = "prefix" | "routeGroup" | "fallback";
+
+type ChunkMatchResult = {
+  chunk?: FlowChunk;
+  reason?: ChunkMatchReason;
+  key?: string;
+  prefix?: string;
+  ambiguous?: boolean;
+  candidates?: string[];
+};
+
+const matchChunkByPrefix = (routePath: string, lookup: ChunkAutoAssignLookup): ChunkMatchResult | null => {
+  const normalized = routePath.toLowerCase();
+  if (!normalized || !lookup.prefixEntries.length) return null;
+  let bestLength = -1;
+  let bestMatches: ChunkPrefixEntry[] = [];
+  lookup.prefixEntries.forEach((entry) => {
+    if (!normalized.startsWith(entry.prefix)) return;
+    if (entry.prefix.length > bestLength) {
+      bestLength = entry.prefix.length;
+      bestMatches = [entry];
+    } else if (entry.prefix.length === bestLength) {
+      bestMatches.push(entry);
+    }
+  });
+  if (bestLength <= 0 || !bestMatches.length) return null;
+  return {
+    chunk: bestMatches[0].chunk,
+    reason: "prefix",
+    prefix: bestMatches[0].prefix,
+    ambiguous: bestMatches.length > 1,
+    candidates: bestMatches.map((entry) => entry.chunk.id),
+  };
+};
+
+const resolveChunkMatch = (
+  routePath: string,
+  routeGroupKey: string | undefined,
+  lookup: ChunkAutoAssignLookup,
+): ChunkMatchResult => {
+  const prefixMatch = routePath ? matchChunkByPrefix(routePath, lookup) : null;
+  if (prefixMatch?.chunk) {
+    return prefixMatch;
+  }
+  if (routeGroupKey) {
+    const groupMatch = lookup.routeGroupMap.get(routeGroupKey);
+    if (groupMatch) {
+      return { chunk: groupMatch, reason: "routeGroup", key: routeGroupKey };
+    }
+    const fallback = lookup.fallbackGroupMap.get(routeGroupKey);
+    if (fallback) {
+      return { chunk: fallback, reason: "fallback", key: routeGroupKey };
+    }
+  }
+  return {};
+};
 
 export type ChunkLayoutOptions = {
   rankdir?: "LR" | "TB";
@@ -369,9 +455,9 @@ export function ensureNodesHaveValidChunks(nodes: Node<FlowNodeData>[], chunks: 
 export function autoAssignChunksByRouteGroup(
   nodes: Node<FlowNodeData>[],
   routeMap: Map<string, RouteDoc>,
-  chunkLookupMap: Map<string, FlowChunk>,
+  lookup: ChunkAutoAssignLookup,
 ): Node<FlowNodeData>[] {
-  if (!nodes.length || !chunkLookupMap.size) return nodes;
+  if (!nodes.length || !lookup) return nodes;
   let mutated = false;
   const next = nodes.map((node) => {
     const existing = node.data.chunkId ?? UNGROUPED_CHUNK_ID;
@@ -379,32 +465,106 @@ export function autoAssignChunksByRouteGroup(
       return node;
     }
     const route = routeMap.get(node.data.routeId);
-    const specialPath = route?.routePath ?? node.data.routePath ?? "";
-    if (specialPath && specialPath.startsWith("/intro/guided")) {
-      const guidedChunk = chunkLookupMap.get("ch03_guided_day1");
-      if (guidedChunk) {
-        mutated = true;
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            chunkId: guidedChunk.id,
-          },
-        };
-      }
-    }
+    const routePath = route?.routePath ?? node.data.routePath ?? "";
     const groupKey = route?.group?.toLowerCase?.();
-    if (!groupKey) return node;
-    const match = chunkLookupMap.get(groupKey);
-    if (!match) return node;
+    const match = resolveChunkMatch(routePath, groupKey, lookup);
+    if (!match.chunk) return node;
     mutated = true;
     return {
       ...node,
       data: {
         ...node.data,
-        chunkId: match.id,
+        chunkId: match.chunk.id,
       },
     };
   });
   return mutated ? next : nodes;
+}
+
+export type ChunkAssignmentChange = {
+  nodeId: string;
+  routePath: string;
+  previousChunkId: string;
+  suggestedChunkId: string;
+  reason?: ChunkMatchReason;
+  ambiguousCandidates?: string[];
+};
+
+export type ChunkAssignmentPreview = {
+  changes: ChunkAssignmentChange[];
+  summary: Array<{ chunkId: string; before: number; after: number }>;
+  ambiguous: ChunkAssignmentChange[];
+};
+
+const incrementCount = (map: Map<string, number>, key: string) => {
+  map.set(key, (map.get(key) ?? 0) + 1);
+};
+
+export function previewChunkAssignments(
+  nodes: Node<FlowNodeData>[],
+  routeMap: Map<string, RouteDoc>,
+  chunks: FlowChunk[],
+  lookup: ChunkAutoAssignLookup,
+): ChunkAssignmentPreview {
+  const beforeCounts = new Map<string, number>();
+  const afterCounts = new Map<string, number>();
+  chunks.forEach((chunk) => {
+    beforeCounts.set(chunk.id, 0);
+    afterCounts.set(chunk.id, 0);
+  });
+  if (!beforeCounts.has(UNGROUPED_CHUNK_ID)) {
+    beforeCounts.set(UNGROUPED_CHUNK_ID, 0);
+    afterCounts.set(UNGROUPED_CHUNK_ID, 0);
+  }
+  const changes: ChunkAssignmentChange[] = [];
+  const ambiguous: ChunkAssignmentChange[] = [];
+  nodes.forEach((node) => {
+    const currentChunkId = node.data.chunkId ?? UNGROUPED_CHUNK_ID;
+    if (!beforeCounts.has(currentChunkId)) {
+      beforeCounts.set(currentChunkId, 0);
+      afterCounts.set(currentChunkId, 0);
+    }
+    incrementCount(beforeCounts, currentChunkId);
+    const route = routeMap.get(node.data.routeId);
+    const routePath = route?.routePath ?? node.data.routePath ?? "";
+    const groupKey = route?.group?.toLowerCase?.();
+    const match = resolveChunkMatch(routePath, groupKey, lookup);
+    const suggestedChunkId = match.chunk?.id ?? currentChunkId;
+    if (!afterCounts.has(suggestedChunkId)) {
+      afterCounts.set(suggestedChunkId, 0);
+    }
+    incrementCount(afterCounts, suggestedChunkId);
+    if (suggestedChunkId !== currentChunkId || match.ambiguous) {
+      const change: ChunkAssignmentChange = {
+        nodeId: node.id,
+        routePath,
+        previousChunkId: currentChunkId,
+        suggestedChunkId,
+        reason: match.reason,
+        ambiguousCandidates: match.ambiguous ? match.candidates : undefined,
+      };
+      if (suggestedChunkId !== currentChunkId) {
+        changes.push(change);
+      }
+      if (match.ambiguous) {
+        ambiguous.push(change);
+      }
+    }
+  });
+  const chunkOrder = new Map<string, number>();
+  chunks.forEach((chunk, index) => {
+    chunkOrder.set(chunk.id, index);
+  });
+  const summary = Array.from(afterCounts.keys()).map((chunkId) => ({
+    chunkId,
+    before: beforeCounts.get(chunkId) ?? 0,
+    after: afterCounts.get(chunkId) ?? 0,
+  }));
+  summary.sort((a, b) => {
+    const orderA = chunkOrder.get(a.chunkId) ?? Number.MAX_SAFE_INTEGER;
+    const orderB = chunkOrder.get(b.chunkId) ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.chunkId.localeCompare(b.chunkId);
+  });
+  return { changes, summary, ambiguous };
 }

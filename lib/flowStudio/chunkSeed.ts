@@ -50,6 +50,8 @@ const cloneMeta = (meta?: FlowChunkMeta | null) => {
   return { ...meta };
 };
 
+const USER_META_FIELDS = ["notes"];
+
 const resolveSlug = (id: string) => id.replace(CHUNK_ID_PREFIX, "").toLowerCase();
 
 const resolveSeedColor = (seed: FlowStudioChunkSeedEntry): string | undefined => {
@@ -123,6 +125,87 @@ export function mergeChunksWithSeed(existing: FlowChunk[], payload: FlowStudioCh
     }
   });
   return next;
+}
+
+const createOverwrittenChunk = (
+  base: FlowChunk | null,
+  seed: FlowStudioChunkSeedEntry,
+  fallbackOrder: number,
+): FlowChunk => {
+  const normalizedId = seed.id;
+  const next: FlowChunk = base
+    ? {
+        ...base,
+        meta: base.meta ? { ...base.meta } : undefined,
+      }
+    : createChunkFromSeed(seed, fallbackOrder);
+  next.id = base?.id ?? normalizedId;
+  if (seed.title) {
+    next.title = seed.title;
+  } else if (!next.title) {
+    next.title = normalizedId;
+  }
+  if (typeof seed.order === "number") {
+    next.order = seed.order;
+  }
+  const resolvedColor = resolveSeedColor(seed);
+  if (resolvedColor) {
+    next.color = resolvedColor;
+  } else if (!next.color) {
+    next.color = undefined;
+  }
+  if (typeof seed.collapsedByDefault === "boolean") {
+    next.collapsedByDefault = seed.collapsedByDefault;
+  }
+  // icon is optional, defined on runtime FlowChunk even if TS type does not include it explicitly.
+  if ("icon" in seed) {
+    (next as FlowChunk & { icon?: string }).icon = (seed as FlowChunk & { icon?: string }).icon;
+  }
+  const canonicalMeta = seed.meta ? cloneMeta(seed.meta) : undefined;
+  if (canonicalMeta) {
+    USER_META_FIELDS.forEach((key) => {
+      if (base?.meta && key in base.meta) {
+        (canonicalMeta as Record<string, unknown>)[key] = (base.meta as Record<string, unknown>)[key];
+      }
+    });
+    next.meta = canonicalMeta;
+  } else if (base?.meta) {
+    const preserved: FlowChunkMeta = {};
+    USER_META_FIELDS.forEach((key) => {
+      if (key in base.meta!) {
+        (preserved as Record<string, unknown>)[key] = (base.meta as Record<string, unknown>)[key];
+      }
+    });
+    next.meta = Object.keys(preserved).length ? preserved : undefined;
+  } else {
+    next.meta = undefined;
+  }
+  return next;
+};
+
+export function overwriteChunksWithSeed(existing: FlowChunk[], payload: FlowStudioChunkSeedPayload): FlowChunk[] {
+  if (!payload?.chunks?.length) {
+    return existing;
+  }
+  const working = existing.map((chunk) => ({
+    ...chunk,
+    meta: chunk.meta ? { ...chunk.meta } : undefined,
+  })) as FlowChunk[];
+  const fallbackOffset = working.length + 1;
+  payload.chunks.forEach((seed, index) => {
+    const normalizedId = seed.id?.trim();
+    if (!normalizedId) return;
+    const matchIndex = working.findIndex(
+      (chunk) => chunk.id === normalizedId || resolveSlug(chunk.id) === normalizedId.toLowerCase(),
+    );
+    const updated = createOverwrittenChunk(matchIndex >= 0 ? working[matchIndex] : null, seed, fallbackOffset + index);
+    if (matchIndex >= 0) {
+      working[matchIndex] = updated;
+    } else {
+      working.push(updated);
+    }
+  });
+  return working;
 }
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {

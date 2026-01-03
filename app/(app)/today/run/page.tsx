@@ -39,6 +39,7 @@ function TodayRunPageInner() {
   }, [storedPlan?.moduleId, todayModuleKey]);
   const runStartLoggedRef = useRef(false);
   const runModeParam = searchParams.get("mode");
+  const runSourceParam = searchParams.get("source");
   const runMode = runModeParam === "deep" ? "deep" : runModeParam === "quick" ? "quick" : "standard";
   const roundParam = searchParams.get("round");
   const isExtraRound = roundParam === "extra";
@@ -103,10 +104,14 @@ function TodayRunPageInner() {
     });
   };
 
+  const completionSource = runSourceParam === "guided_day1" ? "guided_day1" : e2eMode ? "today_e2e" : "today_run";
   const navigateToSessionComplete = useCallback(() => {
-    const target = e2eMode ? "/session/complete?e2e=1&source=today_e2e" : "/session/complete?source=today_run";
-    router.push(target);
-  }, [e2eMode, router]);
+    const params = new URLSearchParams({ source: completionSource });
+    if (e2eMode) {
+      params.set("e2e", "1");
+    }
+    router.push(`/session/complete?${params.toString()}`);
+  }, [completionSource, e2eMode, router]);
 
   const finalizeCompletion = async (moduleKey?: string | null) => {
     markDailyCompletion(moduleKey ?? null);

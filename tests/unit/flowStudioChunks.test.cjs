@@ -6,11 +6,12 @@ const { loadTsModule } = require("../helpers/load-ts-module.cjs");
 const chunkUtils = loadTsModule(path.resolve(__dirname, "../../lib/flowStudio/chunkUtils.ts"));
 const {
   buildChunkGraph,
-  buildChunkAutoAssignMap,
+  buildChunkAutoAssignLookup,
   normalizeChunks,
   UNGROUPED_CHUNK_ID,
   ensureNodesHaveValidChunks,
   autoAssignChunksByRouteGroup,
+  previewChunkAssignments,
 } = chunkUtils;
 const { mergeChunksWithSeed } = loadTsModule(path.resolve(__dirname, "../../lib/flowStudio/chunkSeed.ts"));
 
@@ -34,8 +35,8 @@ function makeNode(id, chunkId, extra = {}) {
 
 test("buildChunkGraph aggregates nodes, counts, and edges", () => {
   const chunks = normalizeChunks([
-    { id: "chunk-alpha", title: "Alpha", order: 1 },
-    { id: "chunk-beta", title: "Beta", order: 2 },
+    { id: "chunk-alpha", title: "Alpha", order: 1, meta: { routeGroups: ["alpha"], routePrefixes: ["/one"] } },
+    { id: "chunk-beta", title: "Beta", order: 2, meta: { routeGroups: ["beta"], routePrefixes: ["/two"] } },
   ]);
   const nodes = [
     makeNode("a", "chunk-alpha", { tags: ["start"] }),
@@ -113,16 +114,55 @@ test("autoAssignChunksByRouteGroup only fills missing chunkIds", () => {
     ["r2", { id: "r2", routePath: "/two", group: "beta", filePath: "two.tsx" }],
   ]);
   const chunks = normalizeChunks([
-    { id: "chunk-alpha", title: "Alpha", order: 1 },
-    { id: "chunk-beta", title: "Beta", order: 2 },
+    { id: "chunk-alpha", title: "Alpha", order: 1, meta: { routeGroups: ["alpha"], routePrefixes: ["/one"] } },
+    { id: "chunk-beta", title: "Beta", order: 2, meta: { routeGroups: ["beta"], routePrefixes: ["/two"] } },
   ]);
-  const chunkTitleMap = buildChunkAutoAssignMap(chunks);
+  const chunkLookup = buildChunkAutoAssignLookup(chunks);
   const nodes = [makeNode("one", UNGROUPED_CHUNK_ID), makeNode("two", "chunk-beta")];
   nodes[0].data.routeId = "r1";
   nodes[1].data.routeId = "r2";
-  const assigned = autoAssignChunksByRouteGroup(nodes, routeMap, chunkTitleMap);
+  const assigned = autoAssignChunksByRouteGroup(nodes, routeMap, chunkLookup);
   assert.equal(assigned[0].data.chunkId, "chunk-alpha", "node without chunk assigned");
   assert.equal(assigned[1].data.chunkId, "chunk-beta", "existing chunk retained");
+});
+
+test("autoAssignChunksByRouteGroup prefers longest matching prefix", () => {
+  const routeMap = new Map([
+    ["intro", { id: "intro", routePath: "/intro/guided/day1", group: "intro", filePath: "intro.tsx" }],
+  ]);
+  const chunks = normalizeChunks([
+    { id: "CH02_entry_intro", title: "Intro", order: 1, meta: { routePrefixes: ["/intro"] } },
+    { id: "CH03_guided_day1", title: "Guided", order: 2, meta: { routePrefixes: ["/intro/guided"] } },
+  ]);
+  const lookup = buildChunkAutoAssignLookup(chunks);
+  const nodes = [makeNode("intro", UNGROUPED_CHUNK_ID)];
+  nodes[0].data.routeId = "intro";
+  const assigned = autoAssignChunksByRouteGroup(nodes, routeMap, lookup);
+  assert.equal(assigned[0].data.chunkId, "CH03_guided_day1");
+});
+
+test("previewChunkAssignments reports summary and ambiguous matches", () => {
+  const routeMap = new Map([
+    ["r1", { id: "r1", routePath: "/intro/example", group: "intro", filePath: "intro.tsx" }],
+    ["r2", { id: "r2", routePath: "/intro/example", group: "intro", filePath: "intro-2.tsx" }],
+  ]);
+  const chunks = normalizeChunks([
+    { id: "CH02_entry_intro", title: "Intro", order: 1, meta: { routePrefixes: ["/intro"] } },
+    {
+      id: "custom",
+      title: "Custom Intro",
+      order: 3,
+      meta: { routePrefixes: ["/intro"], routeGroups: ["intro-custom"] },
+    },
+  ]);
+  const lookup = buildChunkAutoAssignLookup(chunks);
+  const nodes = [makeNode("one", UNGROUPED_CHUNK_ID), makeNode("two", UNGROUPED_CHUNK_ID)];
+  nodes[0].data.routeId = "r1";
+  nodes[1].data.routeId = "r2";
+  const preview = previewChunkAssignments(nodes, routeMap, chunks, lookup);
+  assert.ok(preview.summary.length >= 2, "summary should be present");
+  assert.equal(preview.changes.length, 2, "both nodes receive assignments");
+  assert.ok(preview.ambiguous.length >= 1, "ambiguous matches highlighted");
 });
 
 test("mergeChunksWithSeed merges metadata for matching chunks", () => {

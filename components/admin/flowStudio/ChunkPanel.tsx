@@ -12,7 +12,9 @@ type ChunkPanelProps = {
   countsByChunk: Map<string, ChunkCounts>;
   onAddChunk: () => void;
   onSeedCanonicalChunks: () => void;
+  onSyncCanonicalChunks: () => void;
   onImportChunks: (payload: string) => Promise<{ ok: boolean; error?: string }> | { ok: boolean; error?: string };
+  onPreviewAutoAssign: () => void;
   onUpdateChunk: (chunkId: string, updates: Partial<FlowChunk>) => void;
   onDeleteChunk: (chunkId: string) => void;
   onMoveChunk: (chunkId: string, direction: "up" | "down") => void;
@@ -58,6 +60,8 @@ export function ChunkPanel({
   onFocusComment,
   onCreateChunkFromSelection,
   onSeedCanonicalChunks,
+  onSyncCanonicalChunks,
+  onPreviewAutoAssign,
   onImportChunks,
   focusedChunkId,
   onFocusChunk,
@@ -223,6 +227,34 @@ export function ChunkPanel({
               disabled={disabled}
             >
               Seed Worlds v1
+            </button>
+            <button
+              type="button"
+              className={clsx(
+                "rounded-full border border-[var(--omni-border-soft)] px-3 py-1 font-semibold",
+                disabled ? "cursor-not-allowed opacity-50" : "",
+              )}
+              onClick={() => {
+                if (disabled) return;
+                onSyncCanonicalChunks();
+              }}
+              disabled={disabled}
+            >
+              Sync Worlds (Overwrite)
+            </button>
+            <button
+              type="button"
+              className={clsx(
+                "rounded-full border border-[var(--omni-border-soft)] px-3 py-1 font-semibold",
+                disabled ? "cursor-not-allowed opacity-50" : "",
+              )}
+              onClick={() => {
+                if (disabled) return;
+                onPreviewAutoAssign();
+              }}
+              disabled={disabled}
+            >
+              Preview auto-assign
             </button>
             <button
               type="button"

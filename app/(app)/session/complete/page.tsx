@@ -19,6 +19,8 @@ import {
 import { useEarnedRoundsController } from "@/components/today/useEarnedRounds";
 import { track } from "@/lib/telemetry/track";
 import { isE2EMode } from "@/lib/e2eMode";
+import { getTotalDailySessionsCompleted } from "@/lib/gatingSelectors";
+import { isMindPacingSignalTag, type MindPacingSignalTag } from "@/lib/mindPacingSignals";
 
 const SUMMARY_WINDOW_MINUTES = 45;
 
@@ -51,6 +53,36 @@ function getEventLabel(event: SessionEvent): string {
   if (label) return label;
   if (event.label) return event.label;
   return event.type.replace(/_/g, " ");
+}
+
+const GUIDED_DAY_ONE_INSIGHTS: Record<MindPacingSignalTag | "default", { headline: string; detail: string }> = {
+  brain_fog: {
+    headline: "Starea ta nu era „lene”. Era ceață cognitivă.",
+    detail: "Ai aerisit zgomotul mental și ai ales un singur lucru real.",
+  },
+  overthinking: {
+    headline: "Blocajul a fost ruminația fără sfârșit.",
+    detail: "Ai tăiat firul overthinking și ai păstrat o singură decizie.",
+  },
+  task_switching: {
+    headline: "Zgomotul real a fost task switching-ul continuu.",
+    detail: "Ai fixat atenția pe un singur lucru cu miză.",
+  },
+  somatic_tension: {
+    headline: "Corpul ținea frâna, nu motivația.",
+    detail: "Ai redus tensiunea și ai eliberat energia pentru o decizie reală.",
+  },
+  default: {
+    headline: "Nu era lipsă de motivație.",
+    detail: "Era zgomot cognitiv și acum ai numit trigger-ul principal.",
+  },
+};
+
+function resolveGuidedInsight(tag: string | null | undefined) {
+  if (tag && isMindPacingSignalTag(tag)) {
+    return GUIDED_DAY_ONE_INSIGHTS[tag];
+  }
+  return GUIDED_DAY_ONE_INSIGHTS.default;
 }
 
 type StatCardProps = {
@@ -163,102 +195,165 @@ function SessionCompletePageInner() {
     applyNavigation(buildUrl("/today/earn", { source: "session_complete", round: "extra" }));
   };
   const todayHref = withE2E("/today");
+  const sourceParam = searchParams?.get("source");
+  const totalSessionsCompleted = useMemo(
+    () => getTotalDailySessionsCompleted(progressFacts ?? null),
+    [progressFacts],
+  );
+  const isGuestOrAnon = !user || user.isAnonymous;
+  const guidedDayOneSummaryActive = sourceParam === "guided_day1" && (isGuestOrAnon || totalSessionsCompleted <= 1);
+  const guidedInsight = useMemo(
+    () => resolveGuidedInsight(progressFacts?.mindPacing?.mindTag ?? null),
+    [progressFacts],
+  );
+  const guidedDayOneFollowUpHref = buildUrl("/today/next", { source: "guided_day1_summary", round: "integration" });
+
+  const handleGuidedDayOneContinue = () => {
+    track("guided_day1_summary_continue");
+    applyNavigation(guidedDayOneFollowUpHref);
+  };
+
+  const handleGuidedDayOneBack = () => {
+    track("guided_day1_summary_back_today");
+    applyNavigation(todayHref);
+  };
 
   return (
     <>
       <AppShell
         header={
-          <SiteHeader
-            showMenu={accessTier.flags.showMenu}
-            onMenuToggle={() => setMenuOpen(true)}
-            onAuthRequest={() => router.push("/auth?returnTo=%2Fsession%2Fcomplete")}
-          />
-        }
-      >
-        <div
-          className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)] sm:px-6 lg:px-8"
-          data-testid="session-complete-root"
-        >
-          <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
-            <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-white/95 px-6 py-8 shadow-[0_24px_70px_rgba(0,0,0,0.08)] sm:px-10">
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Sesiune închisă</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Ai terminat o rundă reală</h1>
-              <p className="mt-2 text-sm text-[var(--omni-ink)]/80">
-                Ultimele module finalizate calibrează următoarele recomandări și XP-ul tău.
-              </p>
-              <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                <StatCard
-                  label="Durată sesiune"
-                  value={durationLabel}
-                  detail={
-                    summary.startAt && summary.endAt
-                      ? `${formatTimeLabel(summary.startAt)} – ${formatTimeLabel(summary.endAt)}`
-                      : "Măsurat automat"
-                  }
+          guidedDayOneSummaryActive
+            ? null
+            : (
+                <SiteHeader
+                  showMenu={accessTier.flags.showMenu}
+                  onMenuToggle={() => setMenuOpen(true)}
+                  onAuthRequest={() => router.push("/auth?returnTo=%2Fsession%2Fcomplete")}
                 />
-                <StatCard label="Module completate" value={modules.join(", ")} detail="Ultimele 30 min" />
-                <StatCard label="Unlock" value={latestUnlock ?? "—"} detail={latestUnlock ? "Activat azi" : "În pregătire"} />
+              )
+        }
+        bodyClassName={guidedDayOneSummaryActive ? "bg-[var(--omni-bg-soft)]" : undefined}
+        mainClassName={guidedDayOneSummaryActive ? "px-0 py-10" : undefined}
+      >
+        {guidedDayOneSummaryActive ? (
+          <div className="mx-auto w-full max-w-3xl px-4" data-testid="guided-day1-summary">
+            <section className="rounded-[32px] border border-[var(--omni-border-soft)] bg-white px-6 py-10 text-center shadow-[0_24px_70px_rgba(0,0,0,0.1)] sm:px-12">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+                Prima sesiune ghidată
+              </p>
+              <h1 className="mt-3 text-3xl font-semibold text-[var(--omni-ink)] sm:text-[40px]">Ai redus zgomotul inițial</h1>
+              <p className="mt-3 text-sm text-[var(--omni-ink)]/80">Durată reală: {durationLabel}</p>
+              <div className="mt-6 rounded-[24px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-soft)] px-5 py-5 text-left">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.4em] text-[var(--omni-muted)]">Insight</p>
+                <p className="mt-2 text-lg font-semibold text-[var(--omni-ink)]">{guidedInsight.headline}</p>
+                <p className="mt-1 text-sm text-[var(--omni-ink)]/80">{guidedInsight.detail}</p>
               </div>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <OmniCtaButton
                   className="justify-center sm:min-w-[220px]"
-                  onClick={handleAnotherRound}
-                  disabled={ctaLoading}
-                  data-testid="session-another-round"
+                  onClick={handleGuidedDayOneContinue}
+                  data-testid="guided-day1-summary-continue"
                 >
-                  Încă o rundă
+                  Continuă (2 min)
                 </OmniCtaButton>
-                <Link
-                  href={todayHref}
-                  prefetch={false}
-                  className="rounded-[14px] border border-[var(--omni-border-soft)] px-4 py-2 text-center text-sm font-semibold text-[var(--omni-ink)]"
-                  data-testid="session-back-today"
-                  onClick={() => track("session_complete_back_today")}
+                <button
+                  type="button"
+                  className="rounded-[14px] border border-[var(--omni-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--omni-ink)]"
+                  onClick={handleGuidedDayOneBack}
+                  data-testid="guided-day1-summary-back"
                 >
                   Înapoi la Today
-                </Link>
-                {showEarnPrompt ? (
-                  <button
-                    type="button"
-                    className="rounded-[14px] border border-dashed border-[var(--omni-energy)]/60 px-4 py-2 text-sm font-semibold text-[var(--omni-energy)]"
-                    onClick={handleOpenEarnGate}
-                  >
-                    Deblochează o rundă
-                  </button>
-                ) : null}
+                </button>
               </div>
-              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
-                Runde extra folosite: {earnedRounds.state.usedToday}/3 · Credite disponibile: {earnedRounds.state.credits}
-              </p>
-              <p className="mt-1 text-xs text-[var(--omni-muted)]/80">Sesiuni zilnice azi: {sessionsToday}</p>
-            </section>
-
-            <section className="rounded-[24px] border border-[var(--omni-border-soft)] bg-white/90 px-6 py-6 shadow-[0_14px_45px_rgba(0,0,0,0.06)] sm:px-10">
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Cronologia ultimei sesiuni</p>
-              {summaryEvents.length ? (
-                <ul className="mt-4 space-y-3">
-                  {summaryEvents.map((event) => (
-                    <li
-                      key={`${event.type}-${event.at.getTime()}`}
-                      className="flex items-center gap-3 rounded-2xl border border-[var(--omni-border-soft)] bg-white px-4 py-3"
-                    >
-                      <div className="text-xs font-semibold text-[var(--omni-muted)]">{formatTimeLabel(event.at)}</div>
-                      <div>
-                        <p className="text-sm font-semibold text-[var(--omni-ink)]">{getEventLabel(event)}</p>
-                        {event.label ? <p className="text-xs text-[var(--omni-muted)]">{event.label}</p> : null}
-                        {event.mode ? <p className="text-xs text-[var(--omni-muted)]/80">Mod: {event.mode}</p> : null}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-4 text-sm text-[var(--omni-ink)]/70">
-                  Încă nu avem evenimente salvate pentru această sesiune. Următoarele runde vor fi urmărite în timp real.
-                </p>
-              )}
+              <p className="mt-5 text-xs text-[var(--omni-muted)]">Următorul pas: un micro-journal de 2 minute fixează decizia.</p>
             </section>
           </div>
-        </div>
+        ) : (
+          <div
+            className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)] sm:px-6 lg:px-8"
+            data-testid="session-complete-root"
+          >
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+              <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-white/95 px-6 py-8 shadow-[0_24px_70px_rgba(0,0,0,0.08)] sm:px-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Sesiune închisă</p>
+                <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Ai terminat o rundă reală</h1>
+                <p className="mt-2 text-sm text-[var(--omni-ink)]/80">
+                  Ultimele module finalizate calibrează următoarele recomandări și XP-ul tău.
+                </p>
+                <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                  <StatCard
+                    label="Durată sesiune"
+                    value={durationLabel}
+                    detail={
+                      summary.startAt && summary.endAt
+                        ? `${formatTimeLabel(summary.startAt)} – ${formatTimeLabel(summary.endAt)}`
+                        : "Măsurat automat"
+                    }
+                  />
+                  <StatCard label="Module completate" value={modules.join(", ")} detail="Ultimele 30 min" />
+                  <StatCard label="Unlock" value={latestUnlock ?? "—"} detail={latestUnlock ? "Activat azi" : "În pregătire"} />
+                </div>
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <OmniCtaButton
+                    className="justify-center sm:min-w-[220px]"
+                    onClick={handleAnotherRound}
+                    disabled={ctaLoading}
+                    data-testid="session-another-round"
+                  >
+                    Încă o rundă
+                  </OmniCtaButton>
+                  <Link
+                    href={todayHref}
+                    prefetch={false}
+                    className="rounded-[14px] border border-[var(--omni-border-soft)] px-4 py-2 text-center text-sm font-semibold text-[var(--omni-ink)]"
+                    data-testid="session-back-today"
+                    onClick={() => track("session_complete_back_today")}
+                  >
+                    Înapoi la Today
+                  </Link>
+                  {showEarnPrompt ? (
+                    <button
+                      type="button"
+                      className="rounded-[14px] border border-dashed border-[var(--omni-energy)]/60 px-4 py-2 text-sm font-semibold text-[var(--omni-energy)]"
+                      onClick={handleOpenEarnGate}
+                    >
+                      Deblochează o rundă
+                    </button>
+                  ) : null}
+                </div>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+                  Runde extra folosite: {earnedRounds.state.usedToday}/3 · Credite disponibile: {earnedRounds.state.credits}
+                </p>
+                <p className="mt-1 text-xs text-[var(--omni-muted)]/80">Sesiuni zilnice azi: {sessionsToday}</p>
+              </section>
+
+              <section className="rounded-[24px] border border-[var(--omni-border-soft)] bg-white/90 px-6 py-6 shadow-[0_14px_45px_rgba(0,0,0,0.06)] sm:px-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Cronologia ultimei sesiuni</p>
+                {summaryEvents.length ? (
+                  <ul className="mt-4 space-y-3">
+                    {summaryEvents.map((event) => (
+                      <li
+                        key={`${event.type}-${event.at.getTime()}`}
+                        className="flex items-center gap-3 rounded-2xl border border-[var(--omni-border-soft)] bg-white px-4 py-3"
+                      >
+                        <div className="text-xs font-semibold text-[var(--omni-muted)]">{formatTimeLabel(event.at)}</div>
+                        <div>
+                          <p className="text-sm font-semibold text-[var(--omni-ink)]">{getEventLabel(event)}</p>
+                          {event.label ? <p className="text-xs text-[var(--omni-muted)]">{event.label}</p> : null}
+                          {event.mode ? <p className="text-xs text-[var(--omni-muted)]/80">Mod: {event.mode}</p> : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-4 text-sm text-[var(--omni-ink)]/70">
+                    Încă nu avem evenimente salvate pentru această sesiune. Următoarele runde vor fi urmărite în timp real.
+                  </p>
+                )}
+              </section>
+            </div>
+          </div>
+        )}
       </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
     </>

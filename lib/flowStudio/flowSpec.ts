@@ -1,5 +1,5 @@
 import type { XYPosition } from "reactflow";
-import type { FlowChunk, FlowComment, FlowNodePortalConfig, LabelMap } from "@/lib/flowStudio/types";
+import type { FlowChunk, FlowComment, FlowNodePortalConfig, FlowOverlay, LabelMap } from "@/lib/flowStudio/types";
 import { normalizeChunks, UNGROUPED_CHUNK_ID } from "@/lib/flowStudio/chunkUtils";
 
 export type FlowSpecNode = {
@@ -38,6 +38,7 @@ export type FlowSpec = {
   edges: FlowSpecEdge[];
   chunks?: FlowChunk[];
   comments?: FlowComment[];
+  overlays?: FlowOverlay[];
   diagnostics?: Record<string, unknown>;
 };
 
@@ -139,6 +140,7 @@ export function normalizeFlowSpecPayload(payload: unknown): FlowSpecPreview {
     };
   });
 
+  const overlays = normalizeSpecOverlays(Array.isArray(payload.overlays) ? payload.overlays : [], new Set(nodeIdSet), warnings);
   return {
     flow: {
       id: typeof flowPayload.id === "string" ? flowPayload.id : null,
@@ -152,6 +154,7 @@ export function normalizeFlowSpecPayload(payload: unknown): FlowSpecPreview {
     diagnostics: isPlainObject(payload.diagnostics) ? (payload.diagnostics as Record<string, unknown>) : undefined,
     warnings,
     chunks,
+    overlays,
   };
 }
 
@@ -164,6 +167,66 @@ export function normalizeSpecTags(tags?: string[] | null, isStart?: boolean): st
   }
   const unique = Array.from(new Set(normalized));
   return unique.length ? unique : undefined;
+}
+
+function normalizeSpecOverlays(
+  overlaysInput: unknown[],
+  validNodeIds: Set<string>,
+  warnings: string[],
+): FlowOverlay[] {
+  const sanitized: FlowOverlay[] = [];
+  overlaysInput.forEach((overlayRaw, index) => {
+      if (!isPlainObject(overlayRaw)) {
+        warnings.push(`Journey invalid la pozitia ${index}.`);
+        return;
+      }
+      const id = typeof overlayRaw.id === "string" && overlayRaw.id.trim() ? overlayRaw.id : `overlay_${index}`;
+      const stepsInput = Array.isArray(overlayRaw.steps) ? overlayRaw.steps : [];
+      const steps: FlowOverlay["steps"] = [];
+      stepsInput.forEach((stepRaw, stepIndex) => {
+        if (!isPlainObject(stepRaw)) {
+          warnings.push(`Journey ${id} are un pas invalid la pozitia ${stepIndex}.`);
+          return;
+        }
+        const nodeId = typeof stepRaw.nodeId === "string" ? stepRaw.nodeId : null;
+        if (!nodeId) {
+          warnings.push(`Journey ${id} are un pas fara nodeId la pozitia ${stepIndex}.`);
+          return;
+        }
+        if (!validNodeIds.has(nodeId)) {
+          warnings.push(`Journey ${id} refera nod necunoscut (${nodeId}).`);
+        }
+        steps.push({
+          nodeId,
+          gateTag: typeof stepRaw.gateTag === "string" ? stepRaw.gateTag : null,
+          tags: Array.isArray(stepRaw.tags)
+            ? stepRaw.tags.filter((tag): tag is string => typeof tag === "string" && Boolean(tag.trim()))
+            : undefined,
+          urlPattern: typeof stepRaw.urlPattern === "string" ? stepRaw.urlPattern : null,
+          assertTestId: typeof stepRaw.assertTestId === "string" ? stepRaw.assertTestId : null,
+          clickTestId: typeof stepRaw.clickTestId === "string" ? stepRaw.clickTestId : null,
+        });
+      });
+      sanitized.push({
+        id,
+        name: typeof overlayRaw.name === "string" ? overlayRaw.name : "Journey",
+        description: typeof overlayRaw.description === "string" ? overlayRaw.description : undefined,
+        status: typeof overlayRaw.status === "string" ? (overlayRaw.status as FlowOverlay["status"]) : undefined,
+        entryRoutePath: typeof overlayRaw.entryRoutePath === "string" ? overlayRaw.entryRoutePath : undefined,
+        exitRoutePath: typeof overlayRaw.exitRoutePath === "string" ? overlayRaw.exitRoutePath : undefined,
+        steps,
+        edges: Array.isArray(overlayRaw.edges)
+          ? overlayRaw.edges
+              .map((edge) =>
+                isPlainObject(edge) && typeof edge.fromNodeId === "string" && typeof edge.toNodeId === "string"
+                  ? { fromNodeId: edge.fromNodeId, toNodeId: edge.toNodeId }
+                  : null,
+              )
+              .filter((edge): edge is NonNullable<FlowOverlay["edges"]>[number] => Boolean(edge))
+          : undefined,
+      });
+    });
+  return sanitized;
 }
 
 function normalizeSpecPortal(portal: unknown): FlowNodePortalConfig | undefined {

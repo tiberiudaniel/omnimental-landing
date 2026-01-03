@@ -76,6 +76,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
     proof: { ro: "Promisiune scurtă + 2 moduri ultra-clare (Guided/Explore)." },
     exitGate: { ro: "User alege mod → intră în Guided Day-1 sau Onboarding." },
     routeGroups: ["intro"],
+    routePrefixes: ["/intro"],
   },
 
   {
@@ -92,7 +93,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
     reward: { ro: "Micro-upgrade de stare + XP/stamp + 1 card util." },
     proof: { ro: "Before/After simplu + recap: ce ai făcut, ce ai câștigat." },
     exitGate: { ro: "First session complete → intrare în Today (Tier 1)." },
-    routeGroups: ["intro"],
+    routePrefixes: ["/intro/guided", "/intro/vocab", "/intro/mindpacing", "/intro/explore"],
   },
 
   {
@@ -109,7 +110,8 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
     reward: { ro: "«Mă înțelege» + recomandări relevante imediat." },
     proof: { ro: "Tag/axe/stil salvate + Today modificat pe baza lor." },
     exitGate: { ro: "Onboarding minimal complet → Today core." },
-    routeGroups: ["onboarding", "account", "intro"],
+    routeGroups: ["onboarding", "account"],
+    routePrefixes: ["/experience-onboarding", "/onboarding", "/auth", "/account"],
   },
 
   {
@@ -127,6 +129,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
     proof: { ro: "Summary clar: ce ai făcut / ce ai câștigat / ce urmează." },
     exitGate: { ro: ">=1 sesiune → meniu minimal. >=3 → OS/Progress." },
     routeGroups: ["today"],
+    routePrefixes: ["/today", "/session"],
   },
 
   {
@@ -144,6 +147,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
     proof: { ro: "Streak/XP/trend + mapă simplă cu următorul prag." },
     exitGate: { ro: ">=3 sesiuni → acces. User revine în Today." },
     routeGroups: ["progress"],
+    routePrefixes: ["/progress", "/os", "/mission-map", "/mental-universe"],
   },
 
   {
@@ -161,6 +165,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
     proof: { ro: "Run complet + scor salvat + recomandare de antrenament." },
     exitGate: { ro: "Deblocat după Foundation milestone (ex day 15)." },
     routeGroups: ["training"],
+    routePrefixes: ["/training", "/arenas"],
   },
 
   {
@@ -178,6 +183,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
     proof: { ro: "Lecție completată + practică + marker + link către aplicare." },
     exitGate: { ro: "Deblocat după >=12 sesiuni (disciplină)." },
     routeGroups: ["library"],
+    routePrefixes: ["/kuno", "/omni-kuno", "/omnicuno", "/knowledge-exam", "/replay", "/collectibles"],
   },
 
   {
@@ -195,6 +201,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
     proof: { ro: "Hub → Start/Continue/Deep → întoarcere în Today (nu browsing)." },
     exitGate: { ro: "Recomandat după Foundation (Tier 3+)." },
     routeGroups: ["hubs"],
+    routePrefixes: ["/omni-abil", "/omniflex", "/omniintel", "/omni-scope", "/omni-path", "/omniscop", "/omniscop-lite"],
   },
 
   {
@@ -212,6 +219,7 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
     proof: { ro: "Plan/quest săptămânal + măsurare aderentă (execuție)." },
     exitGate: { ro: "Deblocat la >=31 sesiuni (Tier 5)." },
     routeGroups: ["advanced"],
+    routePrefixes: ["/wizard", "/legacy"],
   },
 
   {
@@ -229,5 +237,6 @@ export const APP_CHUNKS_V1: AppChunkV1[] = [
     proof: { ro: "Upgrade/cancel clar + admin separat (nu apare în produs)." },
     exitGate: { ro: "Contextual (nu e «progress chunk»)." },
     routeGroups: ["account", "admin", "legacy"],
+    routePrefixes: ["/admin", "/upgrade", "/unsubscribe"],
   },
 ] as const;
