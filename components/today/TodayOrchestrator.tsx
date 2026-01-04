@@ -13,10 +13,21 @@ import { track } from "@/lib/telemetry/track";
 import { useCopy } from "@/lib/useCopy";
 import { getScreenIdForRoute } from "@/lib/routeIds";
 import { GuidedDayOneHero } from "@/components/today/GuidedDayOneHero";
+import { isGuidedDayOneLane } from "@/lib/guidedDayOne";
 
 const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
 const GUIDED_ONBOARDING_KEY = "guided_onboarding_active";
 const LEGACY_GUIDED_KEY = "guided_guest_mode";
+const GUIDED_REASON_BY_SIGNAL: Record<string, string> = {
+  brain_fog: "Mintea era în ceață. Azi o traducem în 1 propoziție reală.",
+  overthinking: "Te-a blocat overthinking-ul. Tăiem firul mental și rămâne o decizie.",
+  task_switching: "Task switching continuu ți-a mâncat claritatea. Fixăm o singură ancoră.",
+  somatic_tension: "Corpul ținea frâna, nu motivația. Relaxăm tensiunea și alegem un gest real.",
+};
+const GUIDED_REASON_BY_AXIS: Partial<Record<CatAxisId, string>> = {
+  clarity: "Nu e lipsă de voință, e zgomot cognitiv. Îl reducem azi.",
+  energy: "Nu erai leneș, doar descărcat. Îți aducem energie funcțională rapid.",
+};
 import {
   getTodayKey,
   getTriedExtraToday,
@@ -39,8 +50,13 @@ import {
   needsStyleProfile,
 } from "@/lib/gatingSelectors";
 import { CAT_LITE_EXTENDED_AXES } from "@/lib/catLite";
-import { getAxisFromMindPacingSignal, isMindPacingSignalTag } from "@/lib/mindPacingSignals";
+import {
+  getAxisFromMindPacingSignal,
+  getMindPacingSignalFromOption,
+  isMindPacingSignalTag,
+} from "@/lib/mindPacingSignals";
 import { useUserAccessTier } from "@/components/useUserAccessTier";
+import { getGuidedClusterParam } from "@/lib/guidedDayOne";
 import { useEarnedRoundsController } from "@/components/today/useEarnedRounds";
 
 export default function TodayOrchestrator() {
@@ -54,7 +70,6 @@ export default function TodayOrchestrator() {
   const [completedToday, setCompletedToday] = useState(false);
   const [lastCompletion, setLastCompletion] = useState<DailyCompletionRecord | null>(null);
   const sourceParam = searchParams?.get("source");
-  const modeParam = searchParams?.get("mode") ?? "short";
   const mindpacingTagParam = searchParams?.get("mindpacingTag") ?? null;
   const todayKey = useMemo(() => getTodayKey(), []);
   const mindBlock = progressFacts?.mindPacing ?? null;
@@ -62,22 +77,34 @@ export default function TodayOrchestrator() {
     if (!mindBlock) return null;
     if (mindBlock.dayKey !== todayKey) return null;
     const tag = mindBlock.mindTag;
-    return isMindPacingSignalTag(tag) ? tag : null;
+    if (isMindPacingSignalTag(tag)) {
+      return tag;
+    }
+    const fallbackSignal = getMindPacingSignalFromOption(mindBlock.optionId ?? null);
+    return fallbackSignal ?? null;
   }, [mindBlock, todayKey]);
-  const forcedMindAxis = useMemo(() => {
+  const persistedAxis = useMemo<CatAxisId | null>(() => {
+    if (!mindBlock) return null;
+    if (mindBlock.dayKey !== todayKey) return null;
+    const axis = mindBlock.axisId;
+    if (axis) return axis as CatAxisId;
+    return persistedMindSignal ? getAxisFromMindPacingSignal(persistedMindSignal) : null;
+  }, [mindBlock, persistedMindSignal, todayKey]);
+  const forcedMindAxis = useMemo<CatAxisId | null>(() => {
     if (sourceParam === "mindpacing_safe" && isMindPacingSignalTag(mindpacingTagParam)) {
       return getAxisFromMindPacingSignal(mindpacingTagParam);
     }
-    if (persistedMindSignal) {
-      return getAxisFromMindPacingSignal(persistedMindSignal);
+    if (persistedAxis) {
+      return persistedAxis;
     }
     return null;
-  }, [mindpacingTagParam, persistedMindSignal, sourceParam]);
+  }, [mindpacingTagParam, persistedAxis, sourceParam]);
   const cameFromRunComplete = sourceParam === "run_complete";
   const cameFromGuided = sourceParam === "guided";
   const e2eMode = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
   const [triedExtraToday, setTriedExtraTodayState] = useState(false);
   const [sessionPlan, setSessionPlan] = useState<SessionPlan | null>(null);
+  const [planPersisted, setPlanPersisted] = useState(false);
   const [planLoading, setPlanLoading] = useState(false);
   const [sensAiCtx, setSensAiCtx] = useState<SensAiContext | null>(null);
   const [guidedOnboardingActive, setGuidedOnboardingActive] = useState(false);
@@ -199,7 +226,10 @@ export default function TodayOrchestrator() {
   }, [authReady, user, loadPlanFromSensAi, forcedMindAxis]);
 
   useEffect(() => {
-    if (!sessionPlan) return;
+    if (!sessionPlan) {
+      setPlanPersisted(false);
+      return;
+    }
     saveTodayPlan({
       arcId: sessionPlan.arcId,
       arcDayIndex: sessionPlan.arcDayIndex,
@@ -209,6 +239,7 @@ export default function TodayOrchestrator() {
       traitSecondary: sessionPlan.traitSecondary,
       canonDomain: sessionPlan.canonDomain,
     });
+    setPlanPersisted(true);
   }, [sessionPlan]);
 
   const lastSessionLabel = useMemo(() => {
@@ -225,17 +256,28 @@ export default function TodayOrchestrator() {
     }
   }, [lastCompletion]);
 
+  const laneParam = (searchParams?.get("lane") ?? "").toLowerCase();
   const preserveGuidedDayOneE2E = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
   const buildGuidedDayOneQuery = () => {
     const params = new URLSearchParams();
-    params.set("mode", "guided_day1");
+    params.set("mode", "deep");
     params.set("source", "guided_day1");
+    params.set("lane", "guided_day1");
+    const axis = forcedMindAxis;
+    if (axis) {
+      params.set("axis", axis);
+      const clusterParam = getGuidedClusterParam(axis);
+      if (clusterParam) {
+        params.set("cluster", clusterParam);
+      }
+    }
     if (preserveGuidedDayOneE2E) {
       params.set("e2e", "1");
     }
     return params.toString();
   };
   const handleGuidedDayOneStart = () => {
+    if (!canStartGuided) return;
     router.push(`/today/run?${buildGuidedDayOneQuery()}`);
   };
   const handleStart = () => {
@@ -251,7 +293,24 @@ export default function TodayOrchestrator() {
 
   const completedSessions = totalDailySessionsCompleted ?? 0;
   const isGuestOrAnon = !user || user.isAnonymous;
-  const guidedDayOneActive = sourceParam === "guided_day1" && (isGuestOrAnon || completedSessions === 0);
+  const guidedDayOneActive = isGuidedDayOneLane(sourceParam, laneParam) && (isGuestOrAnon || completedSessions === 0);
+  const axisParamToday = searchParams?.get("axis") ?? null;
+  const clusterParamToday = searchParams?.get("cluster") ?? null;
+  const overrideSuppressedToday = Boolean(
+    ((clusterParamToday && laneParam !== "guided_day1") ||
+      ((searchParams?.get("lang") ?? null) && laneParam !== "guided_day1") ||
+      ((searchParams?.get("mode") ?? null) && laneParam !== "guided_day1") ||
+      (searchParams?.get("qa") ?? "")) &&
+      guidedDayOneActive,
+  );
+  const guidedLaneBadge = guidedDayOneActive ? (
+    <div className="fixed bottom-4 left-4 z-40 rounded-lg bg-black/80 px-3 py-2 text-[11px] text-white shadow-lg">
+      <p className="font-semibold">GuidedDay1LaneDebug</p>
+      <p>axisSource: {axisParamToday ? "query" : persistedAxis ? "storage" : "n/a"}</p>
+      <p>clusterSource: {clusterParamToday ? (laneParam === "guided_day1" ? "lane" : "query") : persistedAxis ? "storage" : "n/a"}</p>
+      <p>overrideSuppressed: {overrideSuppressedToday ? "yes" : "no"}</p>
+    </div>
+  ) : null;
 
   const header = (
     <SiteHeader
@@ -288,18 +347,20 @@ export default function TodayOrchestrator() {
   const heroTitle = todayCopy.h1 ?? defaultHeroTitle;
   const heroSubtitle = todayCopy.subtitle ?? defaultHeroSubtitle;
   const primaryCtaLabel = todayCopy.ctaPrimary ?? defaultPrimaryCta;
-
-  if (guidedDayOneActive) {
-    return (
-      <div data-testid="guided-day1-page">
-        <AppShell header={null} bodyClassName="bg-[var(--omni-bg-soft)]" mainClassName="px-0 py-10">
-          <div className="mx-auto w-full max-w-4xl px-4">
-            <GuidedDayOneHero lang="ro" onStart={handleGuidedDayOneStart} />
-          </div>
-        </AppShell>
-      </div>
-    );
-  }
+  const guidedReasonText = useMemo(() => {
+    if (persistedMindSignal && GUIDED_REASON_BY_SIGNAL[persistedMindSignal]) {
+      return GUIDED_REASON_BY_SIGNAL[persistedMindSignal];
+    }
+    if (persistedAxis && GUIDED_REASON_BY_AXIS[persistedAxis]) {
+      return GUIDED_REASON_BY_AXIS[persistedAxis] ?? null;
+    }
+    return null;
+  }, [persistedMindSignal, persistedAxis]);
+  const canStartGuided = Boolean(sessionPlan && planPersisted);
+  const guidedCtaLabel = useMemo(() => {
+    if (!sessionPlan?.expectedDurationMinutes) return null;
+    return `Pornește sesiunea (${sessionPlan.expectedDurationMinutes} min)`;
+  }, [sessionPlan?.expectedDurationMinutes]);
 
   const explorePortal = useMemo(() => {
     if (wizardUnlocked) {
@@ -319,6 +380,30 @@ export default function TodayOrchestrator() {
     },
     [router],
   );
+  if (guidedDayOneActive) {
+    const guidedTitle = sessionPlan?.title ?? null;
+    const guidedSummary = sessionPlan?.summary ?? null;
+    return (
+      <div data-testid="guided-day1-page">
+        {guidedLaneBadge}
+        <AppShell header={null} bodyClassName="bg-[var(--omni-bg-soft)]" mainClassName="px-0 py-10">
+          <div className="mx-auto w-full max-w-4xl px-4">
+            <GuidedDayOneHero
+              lang="ro"
+              onStart={handleGuidedDayOneStart}
+              title={guidedTitle}
+              reason={guidedReasonText ?? guidedSummary}
+              lessonSummary={guidedSummary}
+              ctaLabel={guidedCtaLabel ?? undefined}
+              disabled={!canStartGuided || planLoading}
+              disabledLabel="Se pregătește planul…"
+            />
+          </div>
+        </AppShell>
+      </div>
+    );
+  }
+
   const quickButtonLabel = completedToday ? "Completat azi" : primaryCtaLabel;
   const quickButtonDisabled = freeLimitReached || planLoading || completedToday;
   const quickDurationLabel = sessionPlan?.expectedDurationMinutes

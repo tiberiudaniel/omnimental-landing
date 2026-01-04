@@ -100,6 +100,7 @@ type DailyPathProps = {
   decisionReason?: string | null;
   policyReason?: string | null;
   vocabDayKey?: string | null;
+  uiMode?: "default" | "guided_day1";
 };
 
 type MissionBriefCopy = {
@@ -223,7 +224,9 @@ export default function DailyPath({
   decisionReason = null,
   policyReason = null,
   vocabDayKey = null,
+  uiMode = "default",
 }: DailyPathProps) {
+  const isGuidedMode = uiMode === "guided_day1";
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [completedNodeIds, setCompletedNodeIds] = useState<string[]>([]);
   const [softPathChosen, setSoftPathChosen] = useState(false);
@@ -499,7 +502,7 @@ useEffect(() => {
 }, [config, resetState]);
 
   useEffect(() => {
-    if (!config || !persistenceEnabled) {
+    if (!config || !persistenceEnabled || isGuidedMode) {
       missionBriefStartRef.current = null;
       missionBriefSelectionLoggedRef.current = false;
       return;
@@ -529,23 +532,33 @@ useEffect(() => {
         context: "mission_brief",
       });
     };
-  }, [config, persistenceEnabled]);
+  }, [config, isGuidedMode, persistenceEnabled]);
 
-useEffect(() => {
-  if (defaultTimeSelection != null) {
-    const id = window.setTimeout(() => {
-      setTimeAvailableMin(defaultTimeSelection);
-      setTimeSelectionLocked(true);
-    }, 0);
-    return () => window.clearTimeout(id);
-  } else {
+  useEffect(() => {
+    if (isGuidedMode) {
+      if (!config) return;
+      if (timeSelectionLocked && timeAvailableMin != null) return;
+      const fallback = defaultTimeSelection ?? (config.mode === "short" ? 7 : 15);
+      const id = window.setTimeout(() => {
+        setTimeAvailableMin(fallback);
+        setTimeSelectionLocked(true);
+        pendingStartMinutesRef.current = fallback;
+      }, 0);
+      return () => window.clearTimeout(id);
+    }
+    if (defaultTimeSelection != null) {
+      const id = window.setTimeout(() => {
+        setTimeAvailableMin(defaultTimeSelection);
+        setTimeSelectionLocked(true);
+      }, 0);
+      return () => window.clearTimeout(id);
+    }
     const id = window.setTimeout(() => {
       setTimeSelectionLocked(false);
       setTimeAvailableMin(null);
     }, 0);
     return () => window.clearTimeout(id);
-  }
-}, [defaultTimeSelection]);
+  }, [config, defaultTimeSelection, isGuidedMode, timeAvailableMin, timeSelectionLocked]);
 
   const logDebug = useCallback((...args: unknown[]) => {
     if (!IS_DEV) return;
@@ -832,6 +845,72 @@ useEffect(() => {
     markNodeCompleted(autonomyNode);
   };
 
+  const clusterSummary = config
+    ? CLUSTER_SUMMARY[config.cluster]?.[activeLang] ?? CLUSTER_SUMMARY[config.cluster]?.ro
+    : null;
+  const trainedSkill = config?.skillLabel ?? clusterSummary?.skill ?? null;
+  const completionBanner = pathFinished
+    ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-4 py-3 text-sm text-[var(--omni-ink)]">
+          <div>
+            <span>
+              {activeLang === "en" ? "You finished today's path!" : "Ai terminat traseul de azi!"} +{COMPLETION_BONUS} XP bonus.
+            </span>
+            {trainedSkill ? (
+              <p className="text-xs text-[var(--omni-muted)]">
+                {copy.skillIntro}: {trainedSkill}
+              </p>
+            ) : null}
+            {todaysReflexCopy ? (
+              <p className="text-xs text-[var(--omni-energy)]/80">
+                {todaysReflexCopy.label}: {todaysReflexCopy.command}
+              </p>
+            ) : null}
+          </div>
+          <OmniCtaButton size="sm" variant="neutral">
+            {activeLang === "en" ? "Done for today" : "Gata pe azi"}
+          </OmniCtaButton>
+        </div>
+      )
+    : null;
+  const renderNodeStack = (wrapperClassName: string) => (
+    <div className={wrapperClassName}>
+      {visibleNodes.map((node, index) => {
+        const isCompleted = completedNodeIds.includes(node.id);
+        const status: "locked" | "active" | "completed" =
+          isCompleted ? "completed" : node.id === currentActiveId ? "active" : "locked";
+        return (
+          <div
+            key={`${node.id}-${status}`}
+            ref={(el) => {
+              nodeRefs.current[node.id] = el;
+            }}
+            className="flex w-full flex-col items-center gap-2 scroll-mt-24 lg:scroll-mt-48"
+          >
+            <DailyPathNode
+              node={node}
+              status={status}
+              onSelect={() => handleNodeAction(node)}
+              isAutonomy={node.id === (config?.autonomyNodeId ?? null)}
+              showSoftLabel={node.softPathOnly === true}
+              onAutonomyChoice={handleAutonomyChoice}
+              lang={config?.lang ?? "ro"}
+            />
+            {index < visibleNodes.length - 1 ? <PathConnector /> : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+  const handleGuidedStartScroll = useCallback(() => {
+    const targetId = currentActiveId ?? visibleNodes[0]?.id ?? null;
+    if (!targetId) return;
+    const target = nodeRefs.current[targetId];
+    if (target?.scrollIntoView) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [currentActiveId, visibleNodes]);
+
   if (!config) {
     return (
       <div className="rounded-[20px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-6 text-center text-sm text-[var(--omni-muted)]">
@@ -839,9 +918,67 @@ useEffect(() => {
       </div>
     );
   }
-  const clusterSummary =
-    CLUSTER_SUMMARY[config.cluster]?.[activeLang] ?? CLUSTER_SUMMARY[config.cluster]?.ro;
-  const trainedSkill = config.skillLabel ?? clusterSummary?.skill ?? null;
+
+  if (isGuidedMode) {
+    const guidedCopy =
+      activeLang === "en"
+        ? {
+            badge: "Guided Day 1",
+            title: "Session 1 · Curated focus",
+            subtitle: (clusterLabel: string | null) =>
+              clusterLabel ? `Today we stay in ${clusterLabel}.` : "Stay present and move through the session.",
+            startCta: "Start session",
+            xpLabel: "XP gained",
+            stepsLabel: "Steps",
+          }
+        : {
+            badge: "Guided Day 1",
+            title: "Sesiunea 1 · Traseu ghidat",
+            subtitle: (clusterLabel: string | null) =>
+              clusterLabel ? `Astăzi lucrăm pe ${clusterLabel}.` : "Rămâi prezent și parcurge sesiunea ghidată.",
+            startCta: "Pornește sesiunea",
+            xpLabel: "XP acumulate",
+            stepsLabel: "Pași",
+          };
+    const clusterLabel = clusterSummary?.title ?? null;
+    return (
+      <div
+        className="mt-6 w-full rounded-[24px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.08)] sm:mt-8"
+        data-ui-mode="guided_day1"
+      >
+        <div className="mx-auto flex w-full max-w-[520px] flex-col space-y-4 px-4">
+          <div className="space-y-1">
+            <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{guidedCopy.badge}</p>
+            <h3 className="text-2xl font-semibold text-[var(--omni-ink)]">{guidedCopy.title}</h3>
+            <p className="text-sm text-[var(--omni-ink)]/80">{guidedCopy.subtitle(clusterLabel)}</p>
+            {trainedSkill ? (
+              <p className="text-xs text-[var(--omni-muted)]">
+                {copy.skillIntro}: {trainedSkill}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 rounded-[18px] bg-[var(--omni-bg-main)] px-4 py-3 text-xs text-[var(--omni-ink)]/80">
+            {totalVisibleNodes > 0 ? (
+              <span>
+                {guidedCopy.stepsLabel}: {copy.stepLabel(Math.min(displayStep, totalVisibleNodes), totalVisibleNodes)}
+              </span>
+            ) : null}
+            <span>
+              {copy.durationLabel}: {copy.durations[config.mode]}
+            </span>
+            <span>
+              {guidedCopy.xpLabel}: {xp}
+            </span>
+          </div>
+          {!pathFinished ? (
+            <OmniCtaButton onClick={handleGuidedStartScroll}>{guidedCopy.startCta}</OmniCtaButton>
+          ) : null}
+          {renderNodeStack("space-y-3")}
+          {completionBanner}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-6 w-full rounded-[24px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] py-4 shadow-[0_18px_40px_rgba(0,0,0,0.08)] sm:mt-8 sm:py-5">
@@ -1052,53 +1189,8 @@ useEffect(() => {
             </div>
           ) : null}
         </div>
-        <div className="space-y-3 lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto">
-          {visibleNodes.map((node, index) => {
-            const isCompleted = completedNodeIds.includes(node.id);
-            const status: "locked" | "active" | "completed" =
-              isCompleted ? "completed" : node.id === currentActiveId ? "active" : "locked";
-            return (
-              <div
-                key={`${node.id}-${status}`}
-                ref={(el) => {
-                  nodeRefs.current[node.id] = el;
-                }}
-                className="flex w-full flex-col items-center gap-2 scroll-mt-24 lg:scroll-mt-48"
-              >
-                <DailyPathNode
-                  node={node}
-                  status={status}
-                  onSelect={() => handleNodeAction(node)}
-                  isAutonomy={node.id === config.autonomyNodeId}
-                  showSoftLabel={node.softPathOnly === true}
-                  onAutonomyChoice={handleAutonomyChoice}
-                  lang={config.lang}
-                />
-                {index < visibleNodes.length - 1 ? <PathConnector /> : null}
-              </div>
-            );
-          })}
-        </div>
-        {pathFinished ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-4 py-3 text-sm text-[var(--omni-ink)]">
-            <div>
-              <span>Ai terminat traseul de azi! +{COMPLETION_BONUS} XP bonus.</span>
-              {trainedSkill ? (
-                <p className="text-xs text-[var(--omni-muted)]">
-                  {copy.skillIntro}: {trainedSkill}
-                </p>
-              ) : null}
-              {todaysReflexCopy ? (
-                <p className="text-xs text-[var(--omni-energy)]/80">
-                  {todaysReflexCopy.label}: {todaysReflexCopy.command}
-                </p>
-              ) : null}
-            </div>
-            <OmniCtaButton size="sm" variant="neutral">
-              Gata pe azi
-            </OmniCtaButton>
-          </div>
-        ) : null}
+        {renderNodeStack("space-y-3 lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto")}
+        {completionBanner}
       </div>
     </div>
   );

@@ -20,10 +20,12 @@ import {
   getAxisFromMindPacingSignal,
   getMindPacingSignalFromOption,
   isMindPacingSignalTag,
+  getAxisFromMindPacingTag,
   type MindPacingSignalTag,
 } from "@/lib/mindPacingSignals";
 import { recordDailyRunnerEvent, recordMindPacingSignal } from "@/lib/progressFacts/recorders";
 import type { StepComponentProps } from "@/components/stepRunner/types";
+import type { CatAxisId } from "@/lib/profileEngine";
 
 type MindPacingOption = (typeof MIND_PACING_QUESTIONS)[number]["options"][number];
 
@@ -34,6 +36,7 @@ export type IntroMindPacingResult = {
   answerTagPrimary: string;
   answerTagsSecondary: string[];
   mindTag: MindPacingSignalTag | null;
+  axisId: CatAxisId | null;
 };
 
 type MindPacingExperienceProps = {
@@ -132,18 +135,20 @@ export function MindPacingExperience({
   const handleAnswer = useCallback(
     (option: MindPacingOption) => {
       if (!option) return;
+      const primaryTag = option.tagsPrimary[0];
       const signal = getMindPacingSignalFromOption(option.id);
+      const axisId = getAxisFromMindPacingTag(primaryTag) ?? (signal ? getAxisFromMindPacingSignal(signal) : null);
       storeMindPacingAnswer(dayKey, {
         questionId: question.id,
         optionId: option.id,
-        answerTagPrimary: option.tagsPrimary[0],
+        answerTagPrimary: primaryTag,
         answerTagsSecondary: option.tagsSecondary,
         mindTag: signal,
+        axisId,
       });
       setSelectedLabel(option.label[locale]);
       setMindTag(signal);
       setPhase("result");
-      const axisId = signal ? getAxisFromMindPacingSignal(signal) : null;
       void recordMindPacingSignal({
         dayKey,
         questionId: question.id,
@@ -171,6 +176,7 @@ export function MindPacingExperience({
       answerTagPrimary: entry.answerTagPrimary,
       answerTagsSecondary: entry.answerTagsSecondary ?? [],
       mindTag: isMindPacingSignalTag(entry.mindTag) ? entry.mindTag : mindTag,
+      axisId: (entry.axisId ?? null) as CatAxisId | null,
     };
     onContinue(payload);
   }, [dayKey, mindTag, onContinue]);

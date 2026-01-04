@@ -18,6 +18,7 @@ import type { ArcDefinition } from "@/types/arcs";
 import { deriveAdaptiveClusterFromCat } from "@/lib/dailyCluster";
 import { getDailyPathForCluster } from "@/config/dailyPath";
 import { resolveStarterModule } from "@/config/todayModulesMeta";
+import { isGuidedDayOneLane } from "@/lib/guidedDayOne";
 import { getOnboardingStatus } from "@/lib/onboardingStatus";
 import type { OnboardingStatus } from "@/lib/onboardingStatus";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
@@ -25,6 +26,8 @@ import VocabCard from "@/components/vocab/VocabCard";
 import { CAT_AXES } from "@/config/catEngine";
 import type { CatAxisId as LegacyCatAxisId } from "@/config/catEngine";
 import type { CatAxisId as ProfileAxisId } from "@/lib/profileEngine";
+import { getGuidedClusterParam } from "@/lib/guidedDayOne";
+import type { GuidedClusterParam } from "@/lib/guidedDayOne";
 import type { AdaptiveCluster, DailyPathLanguage, DailyPathMode } from "@/types/dailyPath";
 import type { DailyPracticeDoc } from "@/types/dailyPractice";
 import type { NextDayDecision } from "@/lib/nextDayEngine";
@@ -88,6 +91,8 @@ const QA_LANG_OPTIONS: Array<{ value: DailyPathLanguage; label: string }> = [
   { value: "ro", label: "RO" },
   { value: "en", label: "EN" },
 ];
+
+const VALID_AXIS_IDS = new Set<ProfileAxisId>(CAT_AXES.map((axis) => axis.id as ProfileAxisId));
 
 type VocabPrimerState = {
   dayKey: string;
@@ -252,34 +257,120 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
   }
   const vocabDayKey = runDayKeyRef.current;
   const rawSourceParam = searchParams?.get("source")?.toLowerCase() ?? "";
-  const guidedDayOneSource = rawSourceParam === "guided_day1";
+  const laneParam = searchParams?.get("lane")?.toLowerCase() ?? "";
+  const guidedDayOneSource = isGuidedDayOneLane(rawSourceParam, laneParam);
   const cameFromUpgradeSuccess = rawSourceParam === "upgrade_success";
   const rawClusterParam = searchParams?.get("cluster")?.toLowerCase() ?? null;
+  const rawAxisParam = searchParams?.get("axis")?.toLowerCase() ?? null;
+  const axisOverrideParam =
+    rawAxisParam && VALID_AXIS_IDS.has(rawAxisParam as ProfileAxisId) ? (rawAxisParam as ProfileAxisId) : null;
+  const [storedMindAxis, setStoredMindAxis] = useState<ProfileAxisId | null>(null);
+  useEffect(() => {
+    if (!guidedDayOneSource) {
+      setStoredMindAxis(null);
+      return;
+    }
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("mind_info_state_v1");
+      if (!raw) {
+        setStoredMindAxis(null);
+        return;
+      }
+      const parsed = JSON.parse(raw) as Record<string, { axisId?: string }>;
+      const entry = parsed?.[vocabDayKey];
+      const axisId = entry?.axisId;
+      if (axisId && VALID_AXIS_IDS.has(axisId as ProfileAxisId)) {
+        setStoredMindAxis(axisId as ProfileAxisId);
+      } else {
+        setStoredMindAxis(null);
+      }
+    } catch {
+      setStoredMindAxis(null);
+    }
+  }, [guidedDayOneSource, vocabDayKey]);
+  let axisCandidate: ProfileAxisId | null = null;
+  let axisSourceTag: "query" | "storage" | "default" | null = null;
+  if (axisOverrideParam) {
+    axisCandidate = axisOverrideParam;
+    axisSourceTag = "query";
+  } else if (storedMindAxis) {
+    axisCandidate = storedMindAxis;
+    axisSourceTag = "storage";
+  } else if (guidedDayOneSource) {
+    axisCandidate = "clarity";
+    axisSourceTag = "default";
+  }
+  const axisClusterParam = axisCandidate ? getGuidedClusterParam(axisCandidate) : null;
+  let clusterKeyForDebug: GuidedClusterParam | null = null;
+  let clusterSourceTag: "lane" | "query" | "axis-query" | "axis-storage" | "axis-default" | "default" | null = null;
+  if (rawClusterParam && rawClusterParam in CLUSTER_PARAM_MAP) {
+    clusterKeyForDebug = rawClusterParam as GuidedClusterParam;
+    clusterSourceTag = laneParam === "guided_day1" ? "lane" : "query";
+  }
+  if (!clusterKeyForDebug && axisClusterParam) {
+    clusterKeyForDebug = axisClusterParam;
+    if (axisSourceTag === "query") clusterSourceTag = "axis-query";
+    else if (axisSourceTag === "storage") clusterSourceTag = "axis-storage";
+    else if (axisSourceTag === "default") clusterSourceTag = "axis-default";
+    else clusterSourceTag = "axis-query";
+  }
+  if (!clusterKeyForDebug && guidedDayOneSource) {
+    clusterKeyForDebug = "clarity";
+    if (!clusterSourceTag) {
+      clusterSourceTag = "default";
+    }
+  }
   const clusterOverride =
-    rawClusterParam && rawClusterParam in CLUSTER_PARAM_MAP
-      ? CLUSTER_PARAM_MAP[rawClusterParam as keyof typeof CLUSTER_PARAM_MAP]
+    clusterKeyForDebug && clusterKeyForDebug in CLUSTER_PARAM_MAP
+      ? CLUSTER_PARAM_MAP[clusterKeyForDebug as keyof typeof CLUSTER_PARAM_MAP]
       : null;
+  const effectiveAxisId = axisCandidate;
 
   const rawLangParam = searchParams?.get("lang")?.toLowerCase() ?? null;
   const langOverride = rawLangParam === "en" ? "en" : rawLangParam === "ro" ? "ro" : null;
 
   const rawModeParam = searchParams?.get("mode")?.toLowerCase() ?? null;
-  const modeOverride = rawModeParam === "short" ? "short" : rawModeParam === "deep" ? "deep" : null;
+  const modeOverride =
+    rawModeParam === "short" ? "short" : rawModeParam === "deep" ? "deep" : rawModeParam === "quick" ? "short" : null;
 
   const rawModuleParam = searchParams?.get("module")?.toLowerCase() ?? null;
   const moduleOverride = rawModuleParam && rawModuleParam.length > 0 ? rawModuleParam : null;
 
   const decisionLang: DailyPathLanguage = langOverride ?? "ro";
   const isPremiumMember = membershipTier === "premium";
-  const hasQaOverrideParams =
-    Boolean(clusterOverride || langOverride || modeOverride || moduleOverride) ||
-    Boolean(searchParams?.get("qa"));
-  const qaOverrideActive = QA_PANEL_ENABLED && hasQaOverrideParams;
+  const manualClusterOverrideRequested = Boolean(rawClusterParam) && laneParam !== "guided_day1";
+  const manualClusterOverride =
+    manualClusterOverrideRequested && rawClusterParam && rawClusterParam in CLUSTER_PARAM_MAP
+      ? CLUSTER_PARAM_MAP[rawClusterParam as keyof typeof CLUSTER_PARAM_MAP]
+      : null;
+  const manualLangOverrideRequested = Boolean(rawLangParam);
+  const manualModeOverrideRequested = Boolean(rawModeParam);
+  const manualModuleOverrideRequested = Boolean(rawModuleParam);
+  const qaQueryFlag = (searchParams?.get("qa") ?? "").toLowerCase() === "1";
+  const overrideRequestPresent =
+    manualClusterOverrideRequested ||
+    manualLangOverrideRequested ||
+    manualModeOverrideRequested ||
+    manualModuleOverrideRequested ||
+    qaQueryFlag;
+  const qaOverrideActive = overrideRequestPresent && !guidedDayOneSource;
+  const overrideSuppressed = guidedDayOneSource && overrideRequestPresent;
   const skipOnboardingParam = searchParams?.get("skipOnboarding") === "1";
   const debugSkipEnv = (process.env.NEXT_PUBLIC_DEBUG_SKIP_ONBOARDING || "").toLowerCase();
   const debugSkipEnabled = debugSkipEnv === "true" || debugSkipEnv === "1";
   const skipOnboarding = skipOnboardingParam || debugSkipEnabled;
+  const debugFlagEnv = (process.env.NEXT_PUBLIC_TODAY_RUN_DEBUG || "").toLowerCase();
+  const debugParamEnabled = (searchParams?.get("debug") ?? "").toLowerCase() === "1";
+  const debugEnabled = debugParamEnabled || debugFlagEnv === "1" || debugFlagEnv === "true";
   useEffect(() => {
+    if (guidedDayOneSource) {
+      setCatProfile(null);
+      setOnboardingStatusState(null);
+      setHasCompletedOnboarding(true);
+      setOnboardingReady(true);
+      return;
+    }
     if (!user?.uid) {
       setCatProfile(null);
       setOnboardingStatusState(null);
@@ -310,9 +401,13 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
     return () => {
       cancelled = true;
     };
-  }, [router, user?.uid, qaOverrideActive, skipOnboarding]);
+  }, [guidedDayOneSource, router, user?.uid, qaOverrideActive, skipOnboarding]);
 
   useEffect(() => {
+    if (guidedDayOneSource) {
+      setCompetence(null);
+      return;
+    }
     if (!user?.uid) {
       setCompetence(null);
       return;
@@ -329,7 +424,7 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
     return () => {
       cancelled = true;
     };
-  }, [user?.uid]);
+  }, [guidedDayOneSource, user?.uid]);
 
 useEffect(() => {
   if (!user?.uid || !dailyDecision || qaOverrideActive) {
@@ -403,10 +498,21 @@ useEffect(() => {
   const derivedAxisLabel = primaryAxis ? axisMeta.get(primaryAxis)?.label ?? null : null;
   const axisLabelFallback = derivedAxisLabel;
 
+  const [plannerCalled, setPlannerCalled] = useState(false);
+
   useEffect(() => {
-    if (!onboardingReady || qaOverrideActive) return;
+    if (!onboardingReady || qaOverrideActive) {
+      setPlannerCalled(false);
+      return;
+    }
+    if (guidedDayOneSource) {
+      setDecisionLoading(false);
+      setPlannerCalled(false);
+      return;
+    }
     let cancelled = false;
     setDecisionLoading(true);
+    setPlannerCalled(true);
     setDailyDecision(null);
     void decideNextDailyPath({
       userId: user?.uid ?? null,
@@ -440,7 +546,41 @@ useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [onboardingReady, user?.uid, catProfile, decisionLang, qaOverrideActive]);
+  }, [
+    onboardingReady,
+    user?.uid,
+    catProfile,
+    decisionLang,
+    qaOverrideActive,
+    guidedDayOneSource,
+    clusterOverride,
+  ]);
+
+  useEffect(() => {
+    if (!guidedDayOneSource || !clusterOverride) return;
+    const targetCluster = clusterOverride;
+    const preferredMode = modeOverride ?? "deep";
+    const resolvedModule = resolveStarterModule(todayModuleKey ?? null, targetCluster);
+    try {
+      const config = getDailyPathForCluster({
+        cluster: targetCluster,
+        mode: preferredMode,
+        lang: decisionLang,
+        moduleKey: resolvedModule ?? undefined,
+      });
+      setDailyDecision({
+        config,
+        cluster: targetCluster,
+        mode: preferredMode,
+        reason: "guided_day1_direct",
+        moduleKey: resolvedModule ?? config.moduleKey ?? null,
+        skipPolicy: true,
+      });
+      setDecisionLoading(false);
+    } catch (error) {
+      console.warn("Failed to load guided Day1 daily path", error);
+    }
+  }, [clusterOverride, decisionLang, guidedDayOneSource, modeOverride, todayModuleKey]);
 
   const guidedDayOneModuleKey = useMemo(() => {
     if (!guidedDayOneSource) return null;
@@ -500,6 +640,13 @@ useEffect(() => {
     setSoftGatePreview(false);
   }, [baseDailyPathConfig?.id]);
 
+  useEffect(() => {
+    if (!guidedDayOneSource || !baseDailyPathConfig) return;
+    if (timeSelectionMinutes != null) return;
+    const fallback = baseDailyPathConfig.mode === "short" ? 7 : 15;
+    setTimeSelectionMinutes(fallback);
+  }, [baseDailyPathConfig, guidedDayOneSource, timeSelectionMinutes]);
+
   const userOverallLevel: CompetenceLevel = useMemo(() => {
     return competence ? getUserOverallLevel(competence) : "foundation";
   }, [competence]);
@@ -556,12 +703,12 @@ useEffect(() => {
     }
     if (!dailyDecision) return null;
     const overrides: string[] = [];
-    if (clusterOverride) overrides.push(`cluster=${clusterOverride}`);
+    if (manualClusterOverride) overrides.push(`cluster=${manualClusterOverride}`);
     if (modeOverride) overrides.push(`mode=${modeOverride}`);
     if (langOverride) overrides.push(`lang=${langOverride}`);
     if (!overrides.length) return dailyDecision.reason;
     return `${dailyDecision.reason} | override ${overrides.join(", ")}`;
-  }, [dailyDecision, clusterOverride, modeOverride, langOverride, qaOverrideActive]);
+  }, [dailyDecision, manualClusterOverride, modeOverride, langOverride, qaOverrideActive]);
 
   const moduleKeyForSelection = useMemo(() => {
     if (guidedDayOneModuleKey) {
@@ -602,10 +749,10 @@ useEffect(() => {
   const axisLabel = resolvedDailyPathConfig
     ? CLUSTER_FRIENDLY_LABELS[resolvedDailyPathConfig.cluster]
     : axisLabelFallback;
-  const dailyLoopReady = hasCompletedOnboarding || qaOverrideActive || Boolean(onboardingStatusState?.catBaselineDone);
+  const dailyLoopReady = guidedDayOneSource || hasCompletedOnboarding || qaOverrideActive || Boolean(onboardingStatusState?.catBaselineDone);
   const canRunDailyPath = dailyLoopReady || softGatePreview;
   const showLoader =
-    !onboardingReady || (!qaOverrideActive && decisionLoading) || !resolvedDailyPathConfig;
+    (!guidedDayOneSource && !onboardingReady) || (!qaOverrideActive && decisionLoading) || !resolvedDailyPathConfig;
   const showGuestBanner = Boolean(user?.isAnonymous);
   const upgradeWelcomeCopy =
     decisionLang === "en"
@@ -628,7 +775,41 @@ useEffect(() => {
     }),
     [decisionLang],
   );
-  const showQaPanel = QA_PANEL_ENABLED;
+  const showQaPanel = QA_PANEL_ENABLED && !guidedDayOneSource;
+  const calibrationBypass = guidedDayOneSource;
+  const planSourceTag = guidedDayOneSource
+    ? clusterSourceTag ?? "default"
+    : plannerCalled
+      ? "planner"
+      : qaOverrideActive
+        ? "qa"
+        : "unknown";
+  const renderDebugBanner = () => {
+    if (!debugEnabled) return null;
+    return (
+      <div className="fixed top-4 right-4 z-50 max-w-xs rounded-xl bg-black/80 px-4 py-3 text-[11px] text-white shadow-lg">
+        <p>source: {rawSourceParam || "—"}</p>
+        <p>lane: {laneParam || "n/a"}</p>
+        <p>axis: {effectiveAxisId ?? "n/a"} ({axisSourceTag ?? "n/a"})</p>
+        <p>cluster: {clusterOverride ?? cluster ?? "n/a"} ({clusterSourceTag ?? "n/a"})</p>
+        <p>calibrationBypass: {calibrationBypass ? "yes" : "no"}</p>
+        <p>qaOverride: {qaOverrideActive ? "active" : "inactive"}</p>
+        <p>overrideSuppressed: {overrideSuppressed ? "yes" : "no"}</p>
+        <p>plannerCalled: {plannerCalled ? "yes" : "no"}</p>
+        <p>planSource: {planSourceTag}</p>
+      </div>
+    );
+  };
+  const guidedLaneBadge = guidedDayOneSource ? (
+    <div className="fixed bottom-4 left-4 z-40 rounded-lg bg-black/80 px-3 py-2 text-[11px] text-white shadow-lg">
+      <p className="font-semibold">GuidedDay1LaneDebug</p>
+      <p>axisSource: {axisSourceTag ?? "n/a"}</p>
+      <p>clusterSource: {clusterSourceTag ?? "n/a"}</p>
+      <p>planSource: {planSourceTag}</p>
+      <p>plannerCalled: {plannerCalled ? "yes" : "no"}</p>
+      <p>overrideSuppressed: {overrideSuppressed ? "yes" : "no"}</p>
+    </div>
+  ) : null;
   const vocabAlreadyUnlocked = vocabPrimer ? unlockedVocabIds.includes(vocabPrimer.vocabId) : true;
   const targetVocabAxis = useMemo<ProfileAxisId>(() => {
     const clusterCandidate = resolvedDailyPathConfig?.cluster ?? dailyDecision?.cluster ?? cluster ?? null;
@@ -638,7 +819,7 @@ useEffect(() => {
       mapLegacyAxisToProfile(catProfile?.weakestAxis) ?? mapLegacyAxisToProfile(inferLegacyWeakestAxis(catProfile));
     return profileAxis ?? "clarity";
   }, [resolvedDailyPathConfig?.cluster, dailyDecision?.cluster, cluster, catProfile]);
-  const showDailyCompletedState = dailyCompletedToday && !qaOverrideActive;
+  const showDailyCompletedState = dailyCompletedToday && !qaOverrideActive && !guidedDayOneSource;
 
   useEffect(() => {
     if (!qaOverrideActive && !dailyLoopReady) {
@@ -741,6 +922,8 @@ useEffect(() => {
 
   return (
     <>
+      {renderDebugBanner()}
+      {guidedLaneBadge}
       <AppShell header={header}>
         <div className="w-full min-h-screen" style={{ background: "var(--omni-gradient-shell)" }}>
         <div className="px-4 py-8 text-[var(--omni-ink)] sm:px-6 lg:px-8">
@@ -756,17 +939,17 @@ useEffect(() => {
                   {!dailyLoopReady ? (
                     <DailyLoopFallback
                       status={onboardingStatusState}
-                      showDebugLinks={process.env.NODE_ENV !== "production"}
+                      showDebugLinks={debugEnabled}
                       lang={decisionLang}
                       variant="inline"
                     />
                   ) : null}
-                  {isWowActive && wowDayIndex ? (
+                  {!guidedDayOneSource && isWowActive && wowDayIndex ? (
                     <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-xs font-semibold text-[var(--omni-muted)]">
                       Foundation Cycle · {wowDayIndex}/15
                     </div>
                   ) : null}
-                  {dailyLoopReady ? (
+                  {!guidedDayOneSource && dailyLoopReady ? (
                     <div className="space-y-3">
                       {dailyStreak.current > 0 || dailyStreak.best > 0 ? (
                         <DailyStreakCallout lang={decisionLang} streak={dailyStreak.current} best={dailyStreak.best} />
@@ -774,12 +957,12 @@ useEffect(() => {
                       <WeeklyCheckpointCard lang={decisionLang} stats={weeklyStats} />
                     </div>
                   ) : null}
-                  {isWowActive && wowDayIndex ? (
+                  {!guidedDayOneSource && isWowActive && wowDayIndex ? (
                     <div className="rounded-[16px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-3 py-2 text-xs font-semibold text-[var(--omni-muted)]">
                       Foundation Cycle · {wowDayIndex}/15
                     </div>
                   ) : null}
-                  {isWowActive && wowDayIndex ? (
+                  {!guidedDayOneSource && isWowActive && wowDayIndex ? (
                     <div className="rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-4 shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
                       <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
                         <span>Foundation Cycle</span>
@@ -795,19 +978,19 @@ useEffect(() => {
                       </p>
                     </div>
                   ) : null}
-                  <AdaptiveMissionCard axisLabel={axisLabel} nudge={missionText} />
-                  {cameFromUpgradeSuccess ? (
+                  {!guidedDayOneSource ? <AdaptiveMissionCard axisLabel={axisLabel} nudge={missionText} /> : null}
+                  {!guidedDayOneSource && cameFromUpgradeSuccess ? (
                     <div className="rounded-[18px] border border-[var(--omni-energy)]/40 bg-[var(--omni-energy)]/10 px-4 py-3 text-sm text-[var(--omni-ink)]">
                       {upgradeWelcomeCopy}
                     </div>
                   ) : null}
-                  {!isPremiumMember ? (
+                  {!guidedDayOneSource && !isPremiumMember ? (
                     <div className="rounded-[18px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-4 py-3 text-sm text-[var(--omni-ink)]/90">
                       {freeModeCopy}
                     </div>
                   ) : null}
-                  {currentArc ? <CurrentArcCard arc={currentArc} /> : null}
-                  {!showDailyCompletedState && vocabPrimer ? (
+                  {!guidedDayOneSource && currentArc ? <CurrentArcCard arc={currentArc} /> : null}
+                  {!guidedDayOneSource && !showDailyCompletedState && vocabPrimer ? (
                     <div className="rounded-[24px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)]/95 px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.12)]">
                       <div className="space-y-3">
                         <div>
@@ -872,17 +1055,18 @@ useEffect(() => {
                       decisionReason={decisionReason}
                       policyReason={dailyDecision?.policyReason ?? null}
                       vocabDayKey={vocabDayKey}
+                      uiMode={guidedDayOneSource ? "guided_day1" : "default"}
                     />
                   )}
                 </div>
               </div>
-              {showGuestBanner ? <GuestBanner onCreateAccount={goToAuth} /> : null}
-              <ArcStateDebugPanel />
+              {!guidedDayOneSource && showGuestBanner ? <GuestBanner onCreateAccount={goToAuth} /> : null}
+              {debugEnabled ? <ArcStateDebugPanel /> : null}
             </div>
           ) : (
             <DailyLoopFallback
               status={onboardingStatusState}
-              showDebugLinks={process.env.NODE_ENV !== "production"}
+              showDebugLinks={debugEnabled}
               lang={decisionLang}
               variant="full"
               onPreviewRequest={handleSoftPreviewRequest}
@@ -923,6 +1107,7 @@ function DailyPathQaPanel({ reason, basePath }: { reason?: string | null; basePa
             cluster: cluster.param,
             mode: mode.value,
             lang: lang.value,
+            qa: "1",
           }).toString();
           const href = `${basePath}?${search}`;
           return (

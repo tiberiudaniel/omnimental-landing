@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
@@ -19,8 +19,15 @@ import {
 import { useEarnedRoundsController } from "@/components/today/useEarnedRounds";
 import { track } from "@/lib/telemetry/track";
 import { isE2EMode } from "@/lib/e2eMode";
-import { getTotalDailySessionsCompleted } from "@/lib/gatingSelectors";
 import { isMindPacingSignalTag, type MindPacingSignalTag } from "@/lib/mindPacingSignals";
+import type { CatAxisId } from "@/lib/profileEngine";
+import { getGuidedClusterParam, isGuidedDayOneLane } from "@/lib/guidedDayOne";
+import { getTodayKey } from "@/lib/dailyCompletion";
+import {
+  hasGuidedDayOneSavePromptBeenSeen,
+  markGuidedDayOneMigrationPending,
+  markGuidedDayOneSavePromptSeen,
+} from "@/lib/migration/migrateGuestProgress";
 
 const SUMMARY_WINDOW_MINUTES = 45;
 
@@ -125,6 +132,15 @@ function SessionCompletePageInner() {
   const modules = summary.modules.length ? summary.modules : ["Sesiune adaptivă"];
   const durationLabel = formatDurationLabel(summary.durationMs);
   const showEarnPrompt = membershipTier === "free" && !earnedRounds.canSpend;
+  const todayKeyRef = useRef<string | null>(null);
+  if (!todayKeyRef.current) {
+    todayKeyRef.current = getTodayKey();
+  }
+  const savePromptDayKey = todayKeyRef.current;
+  const [savePromptGateReady, setSavePromptGateReady] = useState(false);
+  const [savePromptSeenBefore, setSavePromptSeenBefore] = useState(false);
+  const [savePromptDismissed, setSavePromptDismissed] = useState(false);
+  const savePromptLoggedRef = useRef(false);
 
   useEffect(() => {
     track("session_complete_viewed");
@@ -132,13 +148,69 @@ function SessionCompletePageInner() {
 
   const isE2E = isE2EMode() || searchParams?.get("e2e") === "1";
   const withE2E = (path: string) => (isE2E ? `${path}${path.includes("?") ? "&" : "?"}e2e=1` : path);
-  const buildUrl = (basePath: string, params: Record<string, string>) => {
-    const query = new URLSearchParams(params);
-    if (isE2E) {
-      query.set("e2e", "1");
+  const buildUrl = useCallback(
+    (basePath: string, params: Record<string, string>) => {
+      const query = new URLSearchParams(params);
+      if (isE2E) {
+        query.set("e2e", "1");
+      }
+      return `${basePath}?${query.toString()}`;
+    },
+    [isE2E],
+  );
+
+  const todayHref = withE2E("/today");
+  const sourceParam = searchParams?.get("source");
+  const laneParam = searchParams?.get("lane");
+  const guidedLaneActive = isGuidedDayOneLane(sourceParam, laneParam);
+  const isGuestOrAnon = !user || user.isAnonymous;
+  const guidedDayOneSummaryActive = guidedLaneActive;
+  const guidedAxis = (progressFacts?.mindPacing?.axisId ?? null) as CatAxisId | null;
+  const guidedInsight = useMemo(
+    () => resolveGuidedInsight(progressFacts?.mindPacing?.mindTag ?? null),
+    [progressFacts],
+  );
+  const guidedDayOneFollowUpHref = useMemo(() => {
+    const params: Record<string, string> = {
+      source: "guided_day1",
+      mode: "quick",
+      round: "extra",
+      lessonMode: "short",
+      lane: "guided_day1",
+    };
+    if (guidedAxis) {
+      params.axis = guidedAxis;
+      const clusterParam = getGuidedClusterParam(guidedAxis);
+      if (clusterParam) {
+        params.cluster = clusterParam;
+      }
     }
-    return `${basePath}?${query.toString()}`;
-  };
+    return buildUrl("/today/run", params);
+  }, [buildUrl, guidedAxis]);
+
+  useEffect(() => {
+    if (!guidedLaneActive || !isGuestOrAnon) {
+      setSavePromptGateReady(false);
+      setSavePromptSeenBefore(false);
+      setSavePromptDismissed(false);
+      savePromptLoggedRef.current = false;
+      return;
+    }
+    const seen = hasGuidedDayOneSavePromptBeenSeen(savePromptDayKey);
+    setSavePromptSeenBefore(seen);
+    setSavePromptGateReady(true);
+    savePromptLoggedRef.current = false;
+  }, [guidedLaneActive, isGuestOrAnon, savePromptDayKey]);
+
+  const showSaveProgressCard =
+    guidedLaneActive && isGuestOrAnon && !savePromptDismissed && savePromptGateReady && !savePromptSeenBefore;
+
+  useEffect(() => {
+    if (!showSaveProgressCard || savePromptLoggedRef.current) return;
+    markGuidedDayOneSavePromptSeen(savePromptDayKey);
+    savePromptLoggedRef.current = true;
+    track("save_progress_prompt_view", { lane: "guided_day1", location: "session_complete" });
+  }, [savePromptDayKey, showSaveProgressCard]);
 
   const buildNextRoute = () => {
     const params = new URLSearchParams({ source: "session_complete", round: "extra" });
@@ -194,19 +266,6 @@ function SessionCompletePageInner() {
     track("session_complete_go_to_earn");
     applyNavigation(buildUrl("/today/earn", { source: "session_complete", round: "extra" }));
   };
-  const todayHref = withE2E("/today");
-  const sourceParam = searchParams?.get("source");
-  const totalSessionsCompleted = useMemo(
-    () => getTotalDailySessionsCompleted(progressFacts ?? null),
-    [progressFacts],
-  );
-  const isGuestOrAnon = !user || user.isAnonymous;
-  const guidedDayOneSummaryActive = sourceParam === "guided_day1" && (isGuestOrAnon || totalSessionsCompleted <= 1);
-  const guidedInsight = useMemo(
-    () => resolveGuidedInsight(progressFacts?.mindPacing?.mindTag ?? null),
-    [progressFacts],
-  );
-  const guidedDayOneFollowUpHref = buildUrl("/today/next", { source: "guided_day1_summary", round: "integration" });
 
   const handleGuidedDayOneContinue = () => {
     track("guided_day1_summary_continue");
@@ -217,6 +276,50 @@ function SessionCompletePageInner() {
     track("guided_day1_summary_back_today");
     applyNavigation(todayHref);
   };
+
+  const handleSaveProgressCreate = () => {
+    track("save_progress_prompt_action", { lane: "guided_day1", action: "create_account" });
+    markGuidedDayOneSavePromptSeen(savePromptDayKey);
+    markGuidedDayOneMigrationPending();
+    const target = `/auth?mode=signup&returnTo=${encodeURIComponent(
+      withE2E("/session/complete?lane=guided_day1&source=guided_day1"),
+    )}`;
+    applyNavigation(target);
+  };
+
+  const handleSaveProgressDismiss = () => {
+    track("save_progress_prompt_action", { lane: "guided_day1", action: "dismiss" });
+    markGuidedDayOneSavePromptSeen(savePromptDayKey);
+    setSavePromptDismissed(true);
+  };
+
+  const saveProgressCard = showSaveProgressCard ? (
+    <section
+      className="mt-8 rounded-[24px] border border-[var(--omni-border-soft)] bg-white px-6 py-5 text-left shadow-[0_18px_40px_rgba(0,0,0,0.08)]"
+      data-testid="save-progress-card"
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Salvează-ți progresul</p>
+      <p className="mt-2 text-base font-semibold text-[var(--omni-ink)]">Păstrezi rezultatele și traseul pe toate dispozitivele.</p>
+      <p className="mt-1 text-sm text-[var(--omni-ink)]/80">Durează 10 secunde și sincronizează MindPacing, vocab și sesiunea ghidată.</p>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <OmniCtaButton
+          className="justify-center sm:min-w-[200px]"
+          onClick={handleSaveProgressCreate}
+          data-testid="save-progress-create"
+        >
+          Creează cont
+        </OmniCtaButton>
+        <button
+          type="button"
+          className="rounded-[14px] border border-[var(--omni-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--omni-ink)]"
+          onClick={handleSaveProgressDismiss}
+          data-testid="save-progress-dismiss"
+        >
+          Mai târziu
+        </button>
+      </div>
+    </section>
+  ) : null;
 
   return (
     <>
@@ -236,8 +339,11 @@ function SessionCompletePageInner() {
         mainClassName={guidedDayOneSummaryActive ? "px-0 py-10" : undefined}
       >
         {guidedDayOneSummaryActive ? (
-          <div className="mx-auto w-full max-w-3xl px-4" data-testid="guided-day1-summary">
-            <section className="rounded-[32px] border border-[var(--omni-border-soft)] bg-white px-6 py-10 text-center shadow-[0_24px_70px_rgba(0,0,0,0.1)] sm:px-12">
+          <div className="mx-auto w-full max-w-3xl px-4" data-testid="guided-day1-summary-root">
+            <section
+              className="rounded-[32px] border border-[var(--omni-border-soft)] bg-white px-6 py-10 text-center shadow-[0_24px_70px_rgba(0,0,0,0.1)] sm:px-12"
+              data-testid="guided-day1-summary"
+            >
               <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
                 Prima sesiune ghidată
               </p>
@@ -265,6 +371,7 @@ function SessionCompletePageInner() {
                   Înapoi la Today
                 </button>
               </div>
+              {saveProgressCard}
               <p className="mt-5 text-xs text-[var(--omni-muted)]">Următorul pas: un micro-journal de 2 minute fixează decizia.</p>
             </section>
           </div>

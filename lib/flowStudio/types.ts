@@ -12,9 +12,19 @@ export type RouteDoc = {
   filePath: string;
 };
 
+export type FlowNodeKind = "route" | "stepScreen";
+
+export type StepScreenConfig = {
+  hostRoutePath: string;
+  stepKey: string;
+  label?: string;
+  queryPreset?: Record<string, string>;
+};
+
 export type FlowNode = {
   id: string;
-  routeId: string;
+  kind?: FlowNodeKind;
+  routeId?: string;
   routePath?: string;
   label?: LabelMap;
   x: number;
@@ -22,6 +32,7 @@ export type FlowNode = {
   tags?: string[];
   chunkId?: string;
   portal?: FlowNodePortalConfig | null;
+  stepScreen?: StepScreenConfig | null;
 };
 
 export type FlowEdge = {
@@ -78,7 +89,8 @@ export type FlowDoc = {
 };
 
 export type FlowNodeData = {
-  routeId: string;
+  kind: FlowNodeKind;
+  routeId?: string;
   routePath: string;
   filePath: string;
   screenId: string;
@@ -87,6 +99,7 @@ export type FlowNodeData = {
   routeMismatch?: boolean;
   chunkId?: string | null;
   portal?: FlowNodePortalConfig | null;
+  stepScreen?: StepScreenConfig | null;
 };
 
 export type FlowEdgeData = {

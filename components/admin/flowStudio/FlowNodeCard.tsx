@@ -5,6 +5,7 @@ import { Handle, Position, type NodeProps } from "reactflow";
 import type { FlowNodeData } from "@/lib/flowStudio/types";
 import type { ObservedNodeStats } from "@/lib/flowStudio/observed";
 import { StepStatusBadge, type StepAvailability } from "./StepStatusBadge";
+import { buildStepScreenHref } from "@/lib/flowStudio/stepScreenUtils";
 
 type FlowNodeCardProps = NodeProps<FlowNodeData> & {
   issueCount: number;
@@ -34,7 +35,8 @@ export function FlowNodeCard({
   dimmed = false,
   highlighted = false,
 }: FlowNodeCardProps) {
-  const label = data.labelOverrides?.ro ?? data.routePath;
+  const isStepScreen = data.kind === "stepScreen";
+  const label = data.stepScreen?.label ?? data.labelOverrides?.ro ?? data.routePath;
   const isStart = Boolean(data.tags?.includes("start"));
   const labelIsPortal = Boolean(label?.toUpperCase().startsWith("PORTAL:"));
   const hasPortalTag = Boolean(data.tags?.includes("type:portal"));
@@ -45,6 +47,8 @@ export function FlowNodeCard({
     portalTarget?.targetType === "route"
       ? portalTarget.targetRoutePath ?? portalTarget.targetRouteId ?? portalTarget.label ?? ""
       : portalTarget?.targetNodeId ?? "";
+  const stepHref = isStepScreen ? buildStepScreenHref(data.stepScreen) : null;
+  const linkHref = stepHref ?? data.routePath ?? "#";
   const tagHighlights =
     data.tags
       ?.map((tag) => {
@@ -105,6 +109,11 @@ export function FlowNodeCard({
           <div className="flex items-center justify-between gap-2">
             <span className="truncate select-text">{label}</span>
             <div className="flex items-center gap-1">
+              {isStepScreen ? (
+                <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
+                  STEP
+                </span>
+              ) : null}
               {issueCount ? (
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
                   {issueCount}
@@ -138,20 +147,23 @@ export function FlowNodeCard({
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[var(--omni-muted)]">
           <a
-            href={data.routePath || "#"}
+            href={linkHref}
             target="_blank"
             rel="noreferrer"
             className="truncate underline decoration-dotted underline-offset-2"
             onClick={(event) => event.stopPropagation()}
           >
-            {data.routePath}
+            {isStepScreen
+              ? `${data.stepScreen?.hostRoutePath ?? data.routePath ?? ""} · ${data.stepScreen?.stepKey ?? ""}`
+              : data.routePath}
           </a>
           <button
             type="button"
             className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--omni-ink)]"
             onClick={(event) => {
               event.stopPropagation();
-              void navigator.clipboard?.writeText(data.routePath ?? "");
+              const copyValue = stepHref ?? data.routePath ?? "";
+              void navigator.clipboard?.writeText(copyValue);
             }}
           >
             Copy

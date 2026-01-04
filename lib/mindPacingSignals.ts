@@ -1,6 +1,7 @@
 "use client";
 
 import type { CatAxisId } from "@/lib/profileEngine";
+import { CAT_VOCABULARY, type CatVocabTag } from "@/config/catVocabulary";
 
 export type MindPacingSignalTag = "brain_fog" | "overthinking" | "task_switching" | "somatic_tension";
 
@@ -27,6 +28,19 @@ export const MINDPACING_SIGNAL_VOCAB: Record<MindPacingSignalTag, string> = {
 
 const SIGNAL_KEYS = Object.keys(MINDPACING_SIGNAL_AXIS) as MindPacingSignalTag[];
 
+const TAG_AXIS_MAP: Partial<Record<CatVocabTag, CatAxisId>> = (() => {
+  const map: Partial<Record<CatVocabTag, CatAxisId>> = {};
+  Object.values(CAT_VOCABULARY).forEach((card) => {
+    card.tagsPrimary.forEach((tag) => {
+      const cast = tag as CatVocabTag;
+      if (!map[cast]) {
+        map[cast] = card.axisId;
+      }
+    });
+  });
+  return map;
+})();
+
 export function getMindPacingSignalFromOption(optionId?: string | null): MindPacingSignalTag | null {
   if (!optionId) return null;
   return MINDPACING_OPTION_SIGNAL[optionId] ?? null;
@@ -40,4 +54,9 @@ export function isMindPacingSignalTag(value: string | null | undefined): value i
 export function getAxisFromMindPacingSignal(signal?: MindPacingSignalTag | null): CatAxisId | null {
   if (!signal) return null;
   return MINDPACING_SIGNAL_AXIS[signal] ?? null;
+}
+
+export function getAxisFromMindPacingTag(tag?: string | null): CatAxisId | null {
+  if (!tag) return null;
+  return TAG_AXIS_MAP[tag as CatVocabTag] ?? null;
 }

@@ -42,6 +42,7 @@ type FlowNodeContextValue = {
   nodeStepAvailability: Map<string, StepAvailability>;
   nodeCanExpandSteps: Map<string, boolean>;
   onRequestNodeSteps?: (nodeId: string) => void;
+  onPinStep?: (payload: { hostNodeId: string; stepId: string; stepLabel: string }) => void;
   commentCountMap: Map<string, number>;
   highlightNodeIds: Set<string> | null;
   dimmedNodeIds: Set<string> | null;
@@ -59,9 +60,10 @@ function useFlowNodeContext() {
 
 type StepNodeCardProps = NodeProps<StepNodeRenderData> & {
   issueCount: number;
+  onPinStep?: (payload: { hostNodeId: string; stepId: string; stepLabel: string }) => void;
 };
 
-function StepNodeCard({ data, selected, issueCount }: StepNodeCardProps) {
+function StepNodeCard({ data, selected, issueCount, onPinStep }: StepNodeCardProps) {
   return (
     <div
       className={clsx(
@@ -75,6 +77,18 @@ function StepNodeCard({ data, selected, issueCount }: StepNodeCardProps) {
           <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700">{issueCount}</span>
         ) : null}
       </div>
+      {onPinStep ? (
+        <button
+          type="button"
+          className="mt-2 w-full rounded-full border border-slate-300 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 hover:border-slate-500"
+          onClick={(event) => {
+            event.stopPropagation();
+            onPinStep({ hostNodeId: data.parentNodeId, stepId: data.stepId, stepLabel: data.label });
+          }}
+        >
+          Pin to journey
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -106,8 +120,9 @@ function ChunkNodeCard({ data, selected }: NodeProps<ChunkNodeData>) {
 function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
   const ctx = useFlowNodeContext();
   const availability = ctx.nodeStepAvailability.get(props.id) ?? "unknown";
+  const isStepScreen = props.data.kind === "stepScreen";
   const manifestAvailable = Boolean(ctx.nodeCanExpandSteps.get(props.id));
-  const canExpand = true; // Temporarily expose Steps for all nodes while diagnostics parity is validated
+  const canExpand = manifestAvailable && !isStepScreen;
   const dimmed = ctx.dimmedNodeIds ? ctx.dimmedNodeIds.has(props.id) : false;
   const highlighted = ctx.highlightNodeIds ? ctx.highlightNodeIds.has(props.id) : false;
   if (DEBUG_STEPS) {
@@ -137,7 +152,13 @@ function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
 
 function StepNodeRenderer(props: NodeProps<StepNodeRenderData>) {
   const ctx = useFlowNodeContext();
-  return <StepNodeCard {...props} issueCount={ctx.nodeIssueMap.get(props.id) ?? 0} />;
+  return (
+    <StepNodeCard
+      {...props}
+      issueCount={ctx.nodeIssueMap.get(props.id) ?? 0}
+      onPinStep={ctx.onPinStep}
+    />
+  );
 }
 
 type ParallelEdgeProps = EdgeProps<FlowEdgeData>;
@@ -211,6 +232,7 @@ type FlowCanvasProps = {
   onNodeSelect: (node: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>) => void;
   onNodeDoubleClick?: (node: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>) => void;
   onRequestNodeSteps?: (nodeId: string) => void;
+  onPinStep?: (payload: { hostNodeId: string; stepId: string; stepLabel: string }) => void;
   onEdgeSelect: (edgeId: string | null) => void;
   onEdgeUpdate?: (oldEdge: Edge<FlowEdgeData>, newConnection: Connection) => void;
   onCanvasClear: () => void;
@@ -245,6 +267,7 @@ export function FlowCanvas({
   onNodeSelect,
   onNodeDoubleClick,
   onRequestNodeSteps,
+  onPinStep,
   onEdgeSelect,
   onEdgeUpdate,
   onCanvasClear,
@@ -326,6 +349,7 @@ export function FlowCanvas({
       nodeStepAvailability,
       nodeCanExpandSteps,
       onRequestNodeSteps,
+      onPinStep,
       commentCountMap: nodeCommentCounts,
       highlightNodeIds,
       dimmedNodeIds,
@@ -340,6 +364,7 @@ export function FlowCanvas({
       observedEnabled,
       observedNodeStats,
       onRequestNodeSteps,
+      onPinStep,
     ],
   );
   const nodeTypes = useMemo<NodeTypes>(() => ({ flowNode: FlowNodeRenderer, stepNode: StepNodeRenderer, chunkNode: ChunkNodeCard }), []);

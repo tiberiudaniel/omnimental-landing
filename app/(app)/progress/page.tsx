@@ -51,30 +51,6 @@ function ProgressContent() {
   const autoDemo = demoVariant || e2e ? (demoVariant ?? 1) : null;
   const demoFacts = autoDemo ? getDemoProgressFacts(lang === "en" ? "en" : "ro", autoDemo as 1 | 2 | 3) : undefined;
   const factsForViz = progress ?? demoFacts ?? null;
-  const userSessionCount = Array.isArray(progress?.practiceSessions)
-    ? (progress?.practiceSessions as unknown[]).length
-    : 0;
-  const guidedSourceParam = search?.get("source") ?? null;
-  const preserveGuidedE2E = search?.get("e2e") === "1";
-  const buildGuidedDayOneParams = () => {
-    const params = new URLSearchParams();
-    params.set("mode", search?.get("mode") ?? "short");
-    params.set("source", "guided_day1");
-    if (preserveGuidedE2E) {
-      params.set("e2e", "1");
-    }
-    return params.toString();
-  };
-  const handleGuidedDayOneStart = () => {
-    router.push(`/today/run?${buildGuidedDayOneParams()}`);
-  };
-  const handleGuidedDayOneExplore = () => {
-    const params = new URLSearchParams({ source: "guided_day1" });
-    if (preserveGuidedE2E) {
-      params.set("e2e", "1");
-    }
-    router.push(`/intro/explore?${params.toString()}`);
-  };
   const hasProgressData = useMemo(() => {
     if (demoFacts) return true;
     if (!progress) return false;

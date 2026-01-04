@@ -18,6 +18,7 @@ import { getWowLessonDefinition, resolveTraitPrimaryForModule } from "@/config/w
 import WowLessonShell, { type WowCompletionPayload } from "@/components/wow/WowLessonShell";
 import type { StoredTodayPlan } from "@/lib/todayPlanStorage";
 import { recordSessionTelemetry } from "@/lib/telemetry";
+import { isGuidedDayOneLane } from "@/lib/guidedDayOne";
 import { buildPlanKpiEvent } from "@/lib/sessionTelemetry";
 import { recordDailyRunnerEvent, recordDailySessionCompletion } from "@/lib/progressFacts/recorders";
 import { useUserAccessTier } from "@/components/useUserAccessTier";
@@ -40,15 +41,24 @@ function TodayRunPageInner() {
   const runStartLoggedRef = useRef(false);
   const runModeParam = searchParams.get("mode");
   const runSourceParam = searchParams.get("source");
-  const runMode = runModeParam === "deep" ? "deep" : runModeParam === "quick" ? "quick" : "standard";
+  const laneParam = (searchParams.get("lane") ?? "").toLowerCase();
+  const guidedLaneActive = isGuidedDayOneLane(runSourceParam, laneParam);
+  const runMode = runModeParam === "deep" ? "deep" : runModeParam === "quick" ? "quick" : runModeParam === "guided_day1" ? "guided_day1" : "standard";
   const roundParam = searchParams.get("round");
+  const lessonModeParam = searchParams.get("lessonMode");
+  const lessonMode = lessonModeParam === "short" ? "short" : "full";
   const isExtraRound = roundParam === "extra";
+  const axisParam = searchParams.get("axis");
+  const clusterParam = searchParams.get("cluster");
+  const debugFlagEnv = (process.env.NEXT_PUBLIC_TODAY_RUN_DEBUG || "").toLowerCase();
+  const debugParamEnabled = (searchParams.get("debug") ?? "").toLowerCase() === "1";
+  const debugEnabled = debugParamEnabled || debugFlagEnv === "1" || debugFlagEnv === "true";
+  const forceDailyRunner = guidedLaneActive;
   const cookieE2E = useMemo(() => {
     if (typeof document === "undefined") return false;
     return document.cookie.split(";").some((entry) => entry.trim().startsWith("omni_e2e=1"));
   }, []);
   const e2eMode = (searchParams.get("e2e") ?? "").toLowerCase() === "1" || cookieE2E;
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (e2eMode) return;
@@ -71,7 +81,9 @@ function TodayRunPageInner() {
     };
   }, [e2eMode]);
 
-  const isBlocked = Boolean(membershipTier === "free" && completedToday && !isExtraRound && !e2eMode);
+  const isBlocked = Boolean(
+    membershipTier === "free" && completedToday && !isExtraRound && !e2eMode,
+  );
 
   useEffect(() => {
     if (e2eMode) return;
@@ -104,14 +116,23 @@ function TodayRunPageInner() {
     });
   };
 
-  const completionSource = runSourceParam === "guided_day1" ? "guided_day1" : e2eMode ? "today_e2e" : "today_run";
-  const navigateToSessionComplete = useCallback(() => {
-    const params = new URLSearchParams({ source: completionSource });
-    if (e2eMode) {
-      params.set("e2e", "1");
-    }
-    router.push(`/session/complete?${params.toString()}`);
-  }, [completionSource, e2eMode, router]);
+  const completionSource = forceDailyRunner ? "guided_day1" : e2eMode ? "today_e2e" : "today_run";
+  const navigateToSessionComplete = useCallback(
+    (extras?: { module?: string | null }) => {
+      const params = new URLSearchParams({ source: completionSource });
+      if (extras?.module) {
+        params.set("module", extras.module);
+      }
+      if (forceDailyRunner) {
+        params.set("lane", "guided_day1");
+      }
+      if (e2eMode) {
+        params.set("e2e", "1");
+      }
+      router.push(`/session/complete?${params.toString()}`);
+    },
+    [completionSource, e2eMode, router, forceDailyRunner],
+  );
 
   const finalizeCompletion = async (moduleKey?: string | null) => {
     markDailyCompletion(moduleKey ?? null);
@@ -131,12 +152,13 @@ function TodayRunPageInner() {
     await finalizeCompletion(moduleKey ?? null);
     track("daily_run_completed_redirect", { moduleKey: moduleKey ?? null });
     logRunCompleted(moduleKey ?? null);
-    navigateToSessionComplete();
+    navigateToSessionComplete({ module: moduleKey ?? runModuleId ?? null });
   };
 
   const handleWowComplete = async (payload: WowCompletionPayload) => {
     const plan = readTodayPlan();
     const userId = profile?.id ?? null;
+    const shouldRecordDailyCompletion = lessonMode !== "short";
     if (userId) {
       const kpiEvent =
         plan && plan.canonDomain && plan.traitPrimary
@@ -152,8 +174,8 @@ function TodayRunPageInner() {
             )
           : null;
       try {
-        await recordSessionTelemetry({
-          sessionId: `today-wow-${Date.now()}`,
+      await recordSessionTelemetry({
+        sessionId: wowSessionId,
           userId,
           sessionType: "daily",
           arcId: plan?.arcId ?? null,
@@ -170,25 +192,28 @@ function TodayRunPageInner() {
       const moduleTraitPrimary = resolveTraitPrimaryForModule(plan?.moduleId ?? null, plan?.traitPrimary);
       if (moduleTraitPrimary) {
         try {
-          await addTraitXp(userId, moduleTraitPrimary, 10);
+          await addTraitXp(userId, moduleTraitPrimary, xpAmount);
         } catch (error) {
           console.warn("addTraitXp failed", error);
         }
       }
-      try {
-        await recordDailySessionCompletion(userId);
-      } catch (error) {
-        console.warn("recordDailySessionCompletion failed", error);
+      if (shouldRecordDailyCompletion) {
+        try {
+          await recordDailySessionCompletion(userId);
+        } catch (error) {
+          console.warn("recordDailySessionCompletion failed", error);
+        }
       }
       track("daily_session_completed", {
-        source: "today",
+        source: lessonMode === "short" ? "today_short" : "today",
         moduleId: plan?.moduleId ?? null,
         arcId: plan?.arcId ?? null,
       });
     }
-    await finalizeCompletion(plan?.moduleId ?? null);
-    logRunCompleted(plan?.moduleId ?? null);
-    navigateToSessionComplete();
+    const completedModule = plan?.moduleId ?? runModuleId ?? null;
+    await finalizeCompletion(completedModule);
+    logRunCompleted(completedModule);
+    navigateToSessionComplete({ module: completedModule });
   };
 
   const handleBackToToday = () => {
@@ -201,14 +226,86 @@ function TodayRunPageInner() {
     router.push("/today/earn?source=run_block&round=extra");
   };
 
+  const [wowSessionId] = useState(() => `today-wow-${Date.now()}`);
   const wowLesson = useMemo(() => {
+    if (forceDailyRunner) return null;
     if (!storedPlan?.moduleId) return null;
     return getWowLessonDefinition(storedPlan.moduleId);
-  }, [storedPlan]);
+  }, [forceDailyRunner, storedPlan]);
+  const planAxisId = storedPlan?.traitPrimary ?? null;
+  const planModuleId = storedPlan?.moduleId ?? null;
+  const renderDebugBanner = () => {
+    if (!debugEnabled) return null;
+    const runnerChoice = wowLesson && !isBlocked ? "wow" : isBlocked ? "blocked" : "daily";
+    return (
+      <div className="fixed top-4 right-4 z-50 max-w-xs rounded-xl bg-black/80 px-4 py-3 text-[11px] text-white shadow-lg">
+        <p>source: {runSourceParam ?? "—"}</p>
+        <p>lane: {laneParam || "n/a"}</p>
+        <p>mode: {runModeParam ?? "—"}</p>
+        <p>round: {roundParam ?? "—"}</p>
+        <p>axis(query): {axisParam ?? "n/a"}</p>
+        <p>cluster(query): {clusterParam ?? "n/a"}</p>
+        <p>runner: {runnerChoice}</p>
+        <p>planner: {forceDailyRunner ? "guided-shortcut" : "decideNextDailyPath"}</p>
+        <p>plan module: {planModuleId ?? "n/a"}</p>
+        <p>blocked: {isBlocked ? "yes" : "no"}</p>
+      </div>
+    );
+  };
+
+  const guidedLaneBadge = forceDailyRunner ? (
+    <div className="fixed bottom-4 left-4 z-40 rounded-lg bg-black/80 px-3 py-2 text-[11px] text-white shadow-lg">
+      <p className="font-semibold">GuidedDay1LaneDebug</p>
+      <p>lane: {laneParam || "n/a"}</p>
+      <p>axisQuery: {axisParam ?? "n/a"}</p>
+      <p>clusterQuery: {clusterParam ?? "n/a"}</p>
+    </div>
+  ) : null;
+
+  useEffect(() => {
+    if (!initialized || e2eMode) return;
+    const runner = forceDailyRunner || !wowLesson ? "daily" : "wow";
+    if (typeof window !== "undefined") {
+      console.info("[TodayRunDebug]", {
+        source: runSourceParam ?? null,
+        mode: runMode,
+        round: roundParam ?? null,
+        isExtraRound,
+        isBlocked,
+        storedPlanModule: planModuleId,
+        resolvedModule: runModuleId ?? null,
+        planAxisId,
+        axisParam: axisParam ?? null,
+        clusterParam: clusterParam ?? null,
+        lane: laneParam || null,
+        runner,
+        planner: forceDailyRunner ? "guided-shortcut" : "decideNextDailyPath",
+      });
+    }
+  }, [
+    axisParam,
+    clusterParam,
+    e2eMode,
+    forceDailyRunner,
+    initialized,
+    isBlocked,
+    isExtraRound,
+    planAxisId,
+    planModuleId,
+    roundParam,
+    runMode,
+    runModuleId,
+    runSourceParam,
+    laneParam,
+    wowLesson,
+  ]);
 
   if (e2eMode) {
     return (
-      <main
+      <>
+        {renderDebugBanner()}
+        {guidedLaneBadge}
+        <main
         className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)]"
         data-testid="today-run-e2e"
       >
@@ -220,7 +317,8 @@ function TodayRunPageInner() {
         >
           Finalizează sesiunea
         </Link>
-      </main>
+        </main>
+      </>
     );
   }
 
@@ -229,15 +327,26 @@ function TodayRunPageInner() {
   }
 
   const xpTrait = wowLesson?.traitPrimary ?? storedPlan?.traitPrimary ?? null;
-  const xpLabel = xpTrait ? `+10 XP ${getTraitLabel(xpTrait)}` : "+10 XP";
+  const xpAmount = lessonMode === "short" ? 2 : 10;
+  const xpLabel = xpTrait ? `+${xpAmount} XP ${getTraitLabel(xpTrait)}` : `+${xpAmount} XP`;
 
   if (wowLesson && !isBlocked) {
     return (
-      <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-8">
+      <>
+        {renderDebugBanner()}
+        {guidedLaneBadge}
+        <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-8">
         <div className="mx-auto max-w-3xl">
-          <WowLessonShell lesson={wowLesson} sessionType="daily" xpRewardLabel={xpLabel} onComplete={handleWowComplete} />
+          <WowLessonShell
+            lesson={wowLesson}
+            sessionType="daily"
+            xpRewardLabel={xpLabel}
+            onComplete={handleWowComplete}
+            mode={lessonMode === "short" ? "short" : "full"}
+          />
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -247,6 +356,8 @@ function TodayRunPageInner() {
     );
     return (
       <>
+        {renderDebugBanner()}
+        {guidedLaneBadge}
         <AppShell header={header}>
           <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-8">
             <div className="mx-auto max-w-xl rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
@@ -274,7 +385,13 @@ function TodayRunPageInner() {
     );
   }
 
-  return <DailyPathRunner onCompleted={handleCompleted} todayModuleKey={todayModuleKey} />;
+  return (
+    <>
+      {renderDebugBanner()}
+      {guidedLaneBadge}
+      <DailyPathRunner onCompleted={handleCompleted} todayModuleKey={todayModuleKey} />
+    </>
+  );
 }
 
 export default function TodayRunPage() {

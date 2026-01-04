@@ -40,7 +40,9 @@ import type {
   FlowIssue,
   FlowNode,
   FlowNodeData,
+  FlowNodeKind,
   FlowNodePortalConfig,
+  StepScreenConfig,
   FlowOverlay,
   FlowOverlayStep,
   RouteDoc,
@@ -89,6 +91,8 @@ import {
   parseFlowSpecText,
 } from "@/lib/flowStudio/flowSpec";
 import { OpenIssuesPanel } from "@/components/admin/flowStudio/OpenIssuesPanel";
+import { buildStepScreenHref } from "@/lib/flowStudio/stepScreenUtils";
+import { getStepsForRoute } from "@/lib/stepManifests/stepRegistry";
 
 const DEBUG_STEPS = process.env.NEXT_PUBLIC_FLOW_STUDIO_DEBUG_STEPS === "true";
 const FLOW_STUDIO_DIAG = process.env.NEXT_PUBLIC_FLOW_STUDIO_DIAG === "1";
@@ -615,7 +619,11 @@ useEffect(() => {
   const routeMap = useMemo(() => new Map(routes.map((route) => [route.id, route])), [routes]);
   const routeByPath = useMemo(() => new Map(routes.map((route) => [route.routePath, route])), [routes]);
   const resolveNodeRoutePath = useCallback(
-    (node: ReactFlowNode<FlowNodeData>) => routeMap.get(node.data.routeId)?.routePath ?? node.data.routePath ?? null,
+    (node: ReactFlowNode<FlowNodeData>) => {
+      const routeId = node.data.routeId;
+      const mappedPath = routeId ? routeMap.get(routeId)?.routePath ?? null : null;
+      return mappedPath ?? node.data.routePath ?? null;
+    },
     [routeMap],
   );
 
@@ -1150,21 +1158,29 @@ useEffect(() => {
   }, [nodes]);
   const nodeCanExpandSteps = useMemo(() => {
     const map = new Map<string, boolean>();
-    nodeManifestMap.forEach((manifest, nodeId) => {
-      map.set(nodeId, Boolean(manifest));
+    nodes.forEach((node) => {
+      if (node.data.kind === "stepScreen") {
+        map.set(node.id, false);
+        return;
+      }
+      map.set(node.id, Boolean(nodeManifestMap.get(node.id)));
     });
     return map;
-  }, [nodeManifestMap]);
+  }, [nodeManifestMap, nodes]);
   const currentStepManifest = selectedNode ? nodeManifestMap.get(selectedNode.id) ?? null : null;
   const stepsExpanded = Boolean(selectedNode && expandedStepsMap[selectedNode.id]);
   const nodeStepAvailability = useMemo(() => {
     const map = new Map<string, StepAvailability>();
     nodes.forEach((node) => {
+      if (node.data.kind === "stepScreen") {
+        map.set(node.id, "unavailable");
+        return;
+      }
       if (node.data.routeMismatch) {
         map.set(node.id, "route-mismatch");
-      } else {
-        map.set(node.id, nodeCanExpandSteps.get(node.id) ? "available" : "unavailable");
+        return;
       }
+      map.set(node.id, nodeCanExpandSteps.get(node.id) ? "available" : "unavailable");
     });
     return map;
   }, [nodeCanExpandSteps, nodes]);
@@ -1443,6 +1459,101 @@ useEffect(() => {
     if (!selectedNode) return;
     handleRequestExpandSteps(selectedNode.id);
   }, [handleRequestExpandSteps, selectedNode]);
+  const handlePinStep = useCallback(
+    ({ hostNodeId, stepId, stepLabel }: { hostNodeId: string; stepId: string; stepLabel: string }) => {
+      const hostNode = nodeByIdMap.get(hostNodeId);
+      if (!hostNode) return;
+      const hostRoutePath = resolveNodeRoutePath(hostNode);
+      if (!hostRoutePath) return;
+      const connectFromNodeId = selectedNodeId;
+      let pinnedNodeId: string | null = null;
+      let created = false;
+      setNodes((existing) => {
+        const duplicate = existing.find(
+          (node) =>
+            node.data.kind === "stepScreen" &&
+            node.data.stepScreen?.hostRoutePath === hostRoutePath &&
+            node.data.stepScreen?.stepKey === stepId,
+        );
+        if (duplicate) {
+          pinnedNodeId = duplicate.id;
+          return existing;
+        }
+        const nodeId = `screen_${randomId()}`;
+        const position = {
+          x: hostNode.position.x + STEP_NODE_HORIZONTAL_OFFSET / 2,
+          y: hostNode.position.y + 40,
+        };
+        const tags = [
+          ...(hostNode.data.tags?.filter((tag) => !tag.startsWith("type:stepScreen")) ?? []),
+          "type:stepScreen",
+        ];
+        const nodeData: FlowNodeData = {
+          kind: "stepScreen",
+          routeId: hostNode.data.routeId,
+          routePath: hostRoutePath,
+          filePath: hostNode.data.filePath,
+          screenId: hostNode.data.screenId,
+          labelOverrides: { ro: stepLabel, en: stepLabel },
+          tags,
+          routeMismatch: false,
+          chunkId: hostNode.data.chunkId ?? UNGROUPED_CHUNK_ID,
+          portal: null,
+          stepScreen: {
+            hostRoutePath,
+            stepKey: stepId,
+            label: stepLabel,
+          },
+        };
+        const newNode = {
+          id: nodeId,
+          type: "flowNode",
+          position,
+          data: nodeData,
+        };
+        pinnedNodeId = nodeId;
+        created = true;
+        return [...existing, newNode];
+      });
+      if (!pinnedNodeId) return;
+      setViewMode("nodes");
+      setSingleNodeSelection(pinnedNodeId);
+      setSingleEdgeSelection(null);
+      setSelectedStepNodeId(null);
+      setSelectedChunkId(null);
+      pendingFitNodeRef.current = pinnedNodeId;
+      if (created && connectFromNodeId && connectFromNodeId !== pinnedNodeId) {
+        setEdges((existing) => {
+          const duplicateEdge = existing.some(
+            (edge) => edge.source === connectFromNodeId && edge.target === pinnedNodeId,
+          );
+          if (duplicateEdge) return existing;
+          const edgeId = `edge_${randomId()}`;
+          return [
+            ...existing,
+            {
+              id: edgeId,
+              source: connectFromNodeId,
+              target: pinnedNodeId!,
+              data: {},
+            },
+          ];
+        });
+      }
+    },
+    [
+      nodeByIdMap,
+      resolveNodeRoutePath,
+      selectedNodeId,
+      setEdges,
+      setNodes,
+      setSelectedChunkId,
+      setSelectedStepNodeId,
+      setSingleEdgeSelection,
+      setSingleNodeSelection,
+      setViewMode,
+    ],
+  );
   const handleFixSelectedNodeRoute = useCallback(() => {
     if (!selectedNode) return;
     if (!selectedNode.data.routePath) {
@@ -1495,7 +1606,12 @@ useEffect(() => {
     });
     return issues;
   }, [nodeManifestMap, nodes]);
-  const diagnostics = useMemo(() => [...flowDiagnostics, ...stepDiagnostics], [flowDiagnostics, stepDiagnostics]);
+  const stepScreenDiagnostics = useMemo(() => computeStepScreenNodeDiagnostics(nodes), [nodes]);
+  const diagnostics = useMemo(() => [...flowDiagnostics, ...stepDiagnostics, ...stepScreenDiagnostics], [
+    flowDiagnostics,
+    stepDiagnostics,
+    stepScreenDiagnostics,
+  ]);
 
   const nodeIssueMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -1671,6 +1787,14 @@ useEffect(() => {
       if (node.type === "stepNode") {
         const stepData = node.data as StepNodeRenderData;
         openStepsForNode(stepData.parentNodeId, node.id);
+        return;
+      }
+      const flowNode = node as ReactFlowNode<FlowNodeData>;
+      if (flowNode.data.kind === "stepScreen") {
+        const href = buildStepScreenHref(flowNode.data.stepScreen);
+        if (href && typeof window !== "undefined") {
+          window.open(href, "_blank", "noopener,noreferrer");
+        }
         return;
       }
       handleRequestExpandSteps(node.id);
@@ -2009,6 +2133,7 @@ useEffect(() => {
               y: DEFAULT_NODE_POSITION.y + existing.length * 30,
             },
           data: {
+            kind: "route",
             routeId: route.id,
             routePath: route.routePath,
             filePath: route.filePath,
@@ -2267,10 +2392,13 @@ useEffect(() => {
     const storedNodes: FlowNode[] = nodes.map((node) => {
       const stored: FlowNode = {
         id: node.id,
-        routeId: node.data.routeId,
+        kind: node.data.kind ?? "route",
         x: node.position.x,
         y: node.position.y,
       };
+      if (node.data.routeId) {
+        stored.routeId = node.data.routeId;
+      }
       if (node.data.routePath) {
         stored.routePath = node.data.routePath;
       }
@@ -2281,6 +2409,9 @@ useEffect(() => {
       if (tags) stored.tags = tags;
       if (node.data.portal) {
         stored.portal = { ...node.data.portal };
+      }
+      if (node.data.stepScreen) {
+        stored.stepScreen = { ...node.data.stepScreen };
       }
       return stored;
     });
@@ -2998,6 +3129,52 @@ useEffect(() => {
       );
     },
     [routeByPath, setNodes],
+  );
+  const handleStepScreenConfigChange = useCallback(
+    (nodeId: string, updates: Partial<StepScreenConfig>) => {
+      setNodes((existing) =>
+        existing.map((node) => {
+          if (node.id !== nodeId) return node;
+          if (node.data.kind !== "stepScreen") return node;
+          const prevConfig: StepScreenConfig = {
+            hostRoutePath: node.data.stepScreen?.hostRoutePath ?? node.data.routePath ?? "",
+            stepKey: node.data.stepScreen?.stepKey ?? "",
+            ...(node.data.stepScreen ?? {}),
+          };
+          const nextConfig: StepScreenConfig = { ...prevConfig };
+          if (updates.hostRoutePath !== undefined) {
+            nextConfig.hostRoutePath = updates.hostRoutePath || prevConfig.hostRoutePath;
+          }
+          if (updates.stepKey !== undefined) {
+            nextConfig.stepKey = updates.stepKey;
+          }
+          if (updates.label !== undefined) {
+            if (updates.label) {
+              nextConfig.label = updates.label;
+            } else {
+              delete nextConfig.label;
+            }
+          }
+          if (Object.prototype.hasOwnProperty.call(updates, "queryPreset")) {
+            const preset = updates.queryPreset;
+            if (preset && Object.keys(preset).length) {
+              nextConfig.queryPreset = preset;
+            } else {
+              delete nextConfig.queryPreset;
+            }
+          }
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              routePath: nextConfig.hostRoutePath || node.data.routePath,
+              stepScreen: nextConfig,
+            },
+          };
+        }),
+      );
+    },
+    [setNodes],
   );
 
   const handleEdgeFieldChange = useCallback(
@@ -4201,11 +4378,11 @@ useEffect(() => {
             <div className="order-first flex-1 space-y-5 xl:order-none">
               <FlowCanvas
                 nodes={nodesForCanvas}
-                edges={edgesForCanvas}
-                onNodesChange={handleNodesChangeWrapped}
-                onEdgesChange={handleEdgesChangeWrapped}
-                onConnect={handleConnect}
-                onInit={(instance) => setReactFlowInstance(instance)}
+              edges={edgesForCanvas}
+              onNodesChange={handleNodesChangeWrapped}
+              onEdgesChange={handleEdgesChangeWrapped}
+              onConnect={handleConnect}
+              onInit={(instance) => setReactFlowInstance(instance)}
                 onNodeSelect={(node) => {
                   if (node.type === "chunkNode") {
                     const chunkData = node.data as ChunkNodeData;
@@ -4230,6 +4407,8 @@ useEffect(() => {
                   }
                   setSelectedChunkId(null);
                 }}
+                onRequestNodeSteps={(nodeId) => handleRequestExpandSteps(nodeId)}
+                onPinStep={handlePinStep}
                 onEdgeSelect={(edgeId) => {
                   setSingleEdgeSelection(edgeId);
                   setSingleNodeSelection(null);
@@ -4255,7 +4434,6 @@ useEffect(() => {
                 onSelectionChange={handleSelectionChange}
                 nodeCommentCounts={nodeCommentCountMap}
                 onNodeDoubleClick={handleNodeDoubleClick}
-                onRequestNodeSteps={(nodeId) => handleRequestExpandSteps(nodeId)}
                 highlightNodeIds={activeHighlightNodeIdSet}
                 dimmedNodeIds={activeDimmedNodeIdSet}
               />
@@ -4298,6 +4476,7 @@ useEffect(() => {
                   onLabelChange={handleNodeLabelChange}
                   onNodeTagsChange={handleNodeTagsChange}
                   onPortalChange={handleNodePortalChange}
+                  onStepScreenChange={handleStepScreenConfigChange}
                 onEdgeFieldChange={handleEdgeFieldChange}
                 onApplyEdgeColorToGroup={handleApplyEdgeColorToGroup}
                 observedEnabled={observedEnabled}
@@ -4738,19 +4917,30 @@ function migrateLegacyWorldAssignment(
 }
 
 function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeByPath: Map<string, RouteDoc>): ReactFlowNode<FlowNodeData> {
-  let route = routeMap.get(stored.routeId);
+  const kind: FlowNodeKind = stored.kind ?? "route";
+  let routeId = stored.routeId;
+  let route = routeId ? routeMap.get(routeId) : undefined;
   let routeMismatch = false;
-  const fallbackPathCandidate = stored.routeId;
-  if (!route) {
-    const fallbackRoute = routeByPath.get(fallbackPathCandidate);
+  if (!route && stored.routePath) {
+    const fallbackRoute = routeByPath.get(stored.routePath);
     if (fallbackRoute) {
       route = fallbackRoute;
-    } else if (routeMap.size) {
-      routeMismatch = true;
-      console.warn("Flow Studio: route not found for stored node", stored.routeId);
+      routeId = fallbackRoute.id;
     }
   }
-  const routePath = stored.routePath ?? route?.routePath ?? fallbackPathCandidate;
+  if (!route && stored.stepScreen?.hostRoutePath) {
+    const fallbackRoute = routeByPath.get(stored.stepScreen.hostRoutePath);
+    if (fallbackRoute) {
+      route = fallbackRoute;
+      routeId = fallbackRoute.id;
+    }
+  }
+  if (!route && routeMap.size && routeId) {
+    routeMismatch = true;
+    console.warn("Flow Studio: route not found for stored node", routeId);
+  }
+  const baseRoutePath = stored.routePath ?? route?.routePath ?? stored.stepScreen?.hostRoutePath ?? routeId ?? "";
+  const routePath = baseRoutePath || "/";
   const rawTags = Array.isArray(stored.tags) ? [...stored.tags] : [];
   const migration = migrateLegacyWorldAssignment(stored.chunkId, rawTags);
   const resolvedChunkId = migration.chunkId ?? stored.chunkId;
@@ -4760,7 +4950,8 @@ function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeB
     type: "flowNode",
     position: { x: stored.x ?? DEFAULT_NODE_POSITION.x, y: stored.y ?? DEFAULT_NODE_POSITION.y },
     data: {
-      routeId: route?.id ?? stored.routeId,
+      kind,
+      routeId,
       routePath,
       filePath: route?.filePath ?? "",
       screenId: getScreenIdForRoute(routePath),
@@ -4769,6 +4960,7 @@ function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeB
       routeMismatch,
       chunkId: normalizedChunkId,
       portal: stored.portal ?? null,
+      stepScreen: stored.stepScreen ?? null,
     },
   };
 }
@@ -4969,6 +5161,53 @@ function computeStepDiagnostics(manifest: StepManifest, hostNodeId: string): Flo
         severity: "warning",
         targetType: "stepNode",
         targetId: buildStepNodeReactId(hostNodeId, node.id),
+      });
+    }
+  });
+  return issues;
+}
+
+function computeStepScreenNodeDiagnostics(nodes: ReactFlowNode<FlowNodeData>[]): FlowIssue[] {
+  const issues: FlowIssue[] = [];
+  const manifestCache = new Map<string, ReturnType<typeof getStepsForRoute>>();
+  nodes.forEach((node) => {
+    if (node.data.kind !== "stepScreen") return;
+    const config = node.data.stepScreen;
+    const hostRoutePath = config?.hostRoutePath ?? node.data.routePath ?? "";
+    if (!hostRoutePath) {
+      issues.push({
+        id: `${node.id}-step-screen-no-host`,
+        message: `Step screen ${node.id} nu are hostRoutePath definit.`,
+        severity: "warning",
+        targetType: "node",
+        targetId: node.id,
+      });
+      return;
+    }
+    const stepKey = config?.stepKey;
+    if (!stepKey) {
+      issues.push({
+        id: `${node.id}-step-screen-no-key`,
+        message: `Step screen ${node.id} nu are stepId configurat.`,
+        severity: "warning",
+        targetType: "node",
+        targetId: node.id,
+      });
+      return;
+    }
+    let entries = manifestCache.get(hostRoutePath);
+    if (!entries) {
+      entries = getStepsForRoute(hostRoutePath);
+      manifestCache.set(hostRoutePath, entries);
+    }
+    const exists = entries.some((entry) => entry.stepKey === stepKey);
+    if (!exists) {
+      issues.push({
+        id: `${node.id}-step-screen-stale-${stepKey}`,
+        message: `Pasul "${stepKey}" nu există în manifestul ${hostRoutePath}.`,
+        severity: "warning",
+        targetType: "node",
+        targetId: node.id,
       });
     }
   });

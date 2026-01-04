@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MindPacingExperience, type IntroMindPacingResult } from "@/components/intro/steps/IntroMindPacingStep";
 
-const RETURN_TO_TODAY = "/today?mode=short&source=mindpacing_safe";
+const RETURN_TO_TODAY = "/today?source=mindpacing_safe";
 
 function getPreviousDayKey(dayKey: string): string | null {
   const date = new Date(dayKey);

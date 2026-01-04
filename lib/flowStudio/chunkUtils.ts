@@ -464,7 +464,7 @@ export function autoAssignChunksByRouteGroup(
     if (existing && existing !== UNGROUPED_CHUNK_ID) {
       return node;
     }
-    const route = routeMap.get(node.data.routeId);
+    const route = node.data.routeId ? routeMap.get(node.data.routeId) : undefined;
     const routePath = route?.routePath ?? node.data.routePath ?? "";
     const groupKey = route?.group?.toLowerCase?.();
     const match = resolveChunkMatch(routePath, groupKey, lookup);
@@ -525,7 +525,7 @@ export function previewChunkAssignments(
       afterCounts.set(currentChunkId, 0);
     }
     incrementCount(beforeCounts, currentChunkId);
-    const route = routeMap.get(node.data.routeId);
+    const route = node.data.routeId ? routeMap.get(node.data.routeId) : undefined;
     const routePath = route?.routePath ?? node.data.routePath ?? "";
     const groupKey = route?.group?.toLowerCase?.();
     const match = resolveChunkMatch(routePath, groupKey, lookup);

@@ -23,6 +23,7 @@ import { getFirebaseAuth, ensureAuth } from "../lib/firebase";
 import { isE2EMode } from "@/lib/e2eMode";
 import { getE2EUser } from "@/lib/e2eUser";
 import { migrateAnonToUser } from "@/lib/migrateUserData";
+import { migrateGuestProgress, GUIDED_DAY_ONE_MIGRATE_PENDING_KEY } from "@/lib/migration/migrateGuestProgress";
 
 const IS_DEV_ENV = process.env.NODE_ENV !== "production";
 const AUTH_EMAIL_STORAGE_KEY = "omnimental_auth_email";
@@ -182,6 +183,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
     }
   }, [e2eMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (e2eMode) return;
+    if (!user || user.isAnonymous) return;
+    const pending = window.localStorage.getItem(GUIDED_DAY_ONE_MIGRATE_PENDING_KEY) === "1";
+    if (!pending) return;
+    void migrateGuestProgress(user.uid).catch((error) => {
+      console.warn("migrateGuestProgress failed", error);
+    });
+  }, [e2eMode, user]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

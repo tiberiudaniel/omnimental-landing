@@ -1052,7 +1052,7 @@ export async function recordMindPacingSignal(payload: {
   optionId?: string | null;
   mindTag?: string | null;
   axisId?: string | null;
-}) {
+}, ownerId?: string | null) {
   try {
     return mergeProgressFact({
       mindPacing: {
@@ -1063,7 +1063,7 @@ export async function recordMindPacingSignal(payload: {
         axisId: payload.axisId ?? null,
         updatedAt: serverTimestamp(),
       },
-    });
+    }, ownerId);
   } catch (error) {
     console.warn("recordMindPacingSignal failed", error);
     return null;

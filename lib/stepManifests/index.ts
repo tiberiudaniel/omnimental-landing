@@ -74,3 +74,5 @@ export function getStepManifestAvailability(routePath: string): StepManifestAvai
 }
 
 export type { StepManifest, StepManifestContext } from "./types";
+export type { StepRegistryEntry } from "./stepRegistry";
+export { getStepsForRoute } from "./stepRegistry";

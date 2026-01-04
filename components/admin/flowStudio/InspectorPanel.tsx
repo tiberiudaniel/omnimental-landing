@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import type { Edge, Node } from "reactflow";
 import type { CopyFields } from "@/lib/useCopy";
@@ -11,6 +11,7 @@ import type {
   FlowIssue,
   FlowNodeData,
   FlowNodePortalConfig,
+  StepScreenConfig,
   FlowOverlay,
   FlowOverlayStep,
   LabelMap,
@@ -19,6 +20,8 @@ import type {
 import { getStepManifestForRoute, type StepManifest } from "@/lib/stepManifests";
 import type { ObservedEvent } from "@/lib/flowStudio/observed";
 import { StepStatusBadge, type StepAvailability } from "./StepStatusBadge";
+import { buildStepScreenHref } from "@/lib/flowStudio/stepScreenUtils";
+import { getStepsForRoute } from "@/lib/stepManifests/stepRegistry";
 
 const DEBUG_STEPS = process.env.NEXT_PUBLIC_FLOW_STUDIO_DEBUG_STEPS === "true";
 
@@ -71,6 +74,7 @@ type InspectorPanelProps = {
   onLabelChange: (nodeId: string, locale: "ro" | "en", value: string) => void;
   onNodeTagsChange: (nodeId: string, tags: string[]) => void;
   onPortalChange: (nodeId: string, portal: FlowNodePortalConfig | null) => void;
+  onStepScreenChange: (nodeId: string, updates: Partial<StepScreenConfig>) => void;
   onEdgeFieldChange: (edgeId: string, updates: Partial<FlowEdgeData>) => void;
   onApplyEdgeColorToGroup: (edgeId: string, color: string) => void;
   onCollapse: () => void;
@@ -152,6 +156,7 @@ export function InspectorPanel({
   onLabelChange,
   onNodeTagsChange,
   onPortalChange,
+  onStepScreenChange,
   onEdgeFieldChange,
   onApplyEdgeColorToGroup,
   onCollapse,
@@ -189,7 +194,13 @@ export function InspectorPanel({
   nodeRouteMap,
   overlayTabRequest,
 }: InspectorPanelProps) {
-  const resolvedRoutePath = selectedNode ? routeMap.get(selectedNode.data.routeId)?.routePath ?? selectedNode.data.routePath ?? null : null;
+  const resolvedRoutePath = selectedNode
+    ? (() => {
+        const routeId = selectedNode.data.routeId;
+        const mappedPath = routeId ? routeMap.get(routeId)?.routePath ?? null : null;
+        return mappedPath ?? selectedNode.data.routePath ?? null;
+      })()
+    : null;
   const manifestFallback = resolvedRoutePath ? getStepManifestForRoute(resolvedRoutePath, {}) : null;
   const manifestForDisplay = currentManifest ?? manifestFallback;
   const manifestLabel = selectedNode ? selectedNode.data.labelOverrides?.ro ?? selectedNode.data.routePath ?? selectedNode.id : null;
@@ -254,6 +265,7 @@ export function InspectorPanel({
             onPortalChange={onPortalChange}
             manifest={manifestForDisplay}
             manifestLabel={manifestLabel}
+            onStepScreenChange={onStepScreenChange}
           />
         );
       case "portal":
@@ -522,6 +534,28 @@ type NodeBasicsSectionProps = {
   onPortalChange: (nodeId: string, portal: FlowNodePortalConfig | null) => void;
   manifest?: StepManifest | null;
   manifestLabel?: string | null;
+  onStepScreenChange?: (nodeId: string, updates: Partial<StepScreenConfig>) => void;
+};
+
+type StepScreenPresetRow = { key: string; value: string };
+
+const buildPresetRows = (preset?: Record<string, string> | null): StepScreenPresetRow[] => {
+  const entries = preset ? Object.entries(preset) : [];
+  if (!entries.length) {
+    return [{ key: "", value: "" }];
+  }
+  return entries.map(([key, value]) => ({ key, value }));
+};
+
+const presetRowsEqual = (a: StepScreenPresetRow[], b: StepScreenPresetRow[]) => {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let index = 0; index < a.length; index += 1) {
+    if (a[index].key !== b[index].key || a[index].value !== b[index].value) {
+      return false;
+    }
+  }
+  return true;
 };
 
 type NodePortalSectionProps = {
@@ -594,14 +628,101 @@ function NodeBasicsSection({
   onPortalChange,
   manifest,
   manifestLabel,
+  onStepScreenChange,
 }: NodeBasicsSectionProps) {
-  const route = routeMap.get(node.data.routeId);
+  const route = node.data.routeId ? routeMap.get(node.data.routeId) : undefined;
   const [tagDraft, setTagDraft] = useState(node.data.tags?.join(", ") ?? "");
   useEffect(() => {
     if (typeof window === "undefined") return;
     const raf = window.requestAnimationFrame(() => setTagDraft(node.data.tags?.join(", ") ?? ""));
     return () => window.cancelAnimationFrame(raf);
   }, [node.data.tags, node.id]);
+
+  const isStepScreen = node.data.kind === "stepScreen";
+  const stepScreenConfig = isStepScreen ? node.data.stepScreen ?? null : null;
+  const hostRoutePath = stepScreenConfig?.hostRoutePath ?? node.data.routePath ?? "";
+  const stepOptions = useMemo(() => {
+    if (!isStepScreen || !hostRoutePath) return [];
+    return getStepsForRoute(hostRoutePath);
+  }, [hostRoutePath, isStepScreen]);
+  const stepExists = !isStepScreen || !stepScreenConfig?.stepKey
+    ? true
+    : stepOptions.some((entry) => entry.stepKey === stepScreenConfig.stepKey);
+  const [stepPresetRows, setStepPresetRows] = useState<StepScreenPresetRow[]>(() =>
+    buildPresetRows(stepScreenConfig?.queryPreset ?? null),
+  );
+  useEffect(() => {
+    const raf = window.requestAnimationFrame(() => {
+      setStepPresetRows((prev) => {
+        const next = buildPresetRows(stepScreenConfig?.queryPreset ?? null);
+        return presetRowsEqual(prev, next) ? prev : next;
+      });
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [node.id, stepScreenConfig?.queryPreset]);
+  const previewHref = stepScreenConfig ? buildStepScreenHref(stepScreenConfig) : null;
+  const commitPresetRows = useCallback(
+    (rows: StepScreenPresetRow[]) => {
+      if (!onStepScreenChange || !isStepScreen) return;
+      const normalized = rows
+        .map(({ key, value }) => ({ key: key.trim(), value: value.trim() }))
+        .filter((entry) => entry.key.length);
+      if (!normalized.length) {
+        onStepScreenChange(node.id, { queryPreset: undefined });
+        return;
+      }
+      const preset: Record<string, string> = {};
+      normalized.forEach(({ key, value }) => {
+        preset[key] = value;
+      });
+      onStepScreenChange(node.id, { queryPreset: preset });
+    },
+    [isStepScreen, node.id, onStepScreenChange],
+  );
+  const handlePresetRowChange = useCallback(
+    (index: number, field: "key" | "value", value: string) => {
+      setStepPresetRows((prev) => {
+        const next = [...prev];
+        const target = next[index] ?? { key: "", value: "" };
+        next[index] = { ...target, [field]: value };
+        commitPresetRows(next);
+        return next;
+      });
+    },
+    [commitPresetRows],
+  );
+  const handleAddPresetRow = useCallback(() => {
+    setStepPresetRows((prev) => [...prev, { key: "", value: "" }]);
+  }, []);
+  const handleRemovePresetRow = useCallback(
+    (index: number) => {
+      setStepPresetRows((prev) => {
+        if (prev.length === 1) {
+          const cleared = [{ key: "", value: "" }];
+          commitPresetRows(cleared);
+          return cleared;
+        }
+        const next = prev.filter((_, idx) => idx !== index);
+        commitPresetRows(next);
+        return next.length ? next : [{ key: "", value: "" }];
+      });
+    },
+    [commitPresetRows],
+  );
+  const handleStepKeySelect = useCallback(
+    (value: string) => {
+      if (!onStepScreenChange || !isStepScreen) return;
+      const entry = stepOptions.find((option) => option.stepKey === value);
+      onStepScreenChange(node.id, {
+        stepKey: value,
+        label: entry?.label ?? stepScreenConfig?.label,
+      });
+      if (entry?.label) {
+        onLabelChange(node.id, "ro", entry.label);
+      }
+    },
+    [isStepScreen, node.id, onLabelChange, onStepScreenChange, stepOptions, stepScreenConfig?.label],
+  );
 
   const handleTagsCommit = () => {
     const tags = tagDraft
@@ -645,7 +766,13 @@ function NodeBasicsSection({
                 className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
                 placeholder={`Titlu ${locale}`}
                 value={node.data.labelOverrides?.[locale] ?? ""}
-                onChange={(event) => onLabelChange(node.id, locale, event.target.value)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  onLabelChange(node.id, locale, value);
+                  if (onStepScreenChange && isStepScreen && locale === "ro") {
+                    onStepScreenChange(node.id, { label: value || undefined });
+                  }
+                }}
               />
             ))}
           </div>
@@ -690,6 +817,90 @@ function NodeBasicsSection({
           />
           <p className="text-[11px] text-[var(--omni-muted)]">Separă tag-urile cu virgulă (ex: engine:vocab, surface:today).</p>
         </div>
+        {isStepScreen ? (
+          <div className="space-y-3 rounded-2xl border border-indigo-200/70 bg-indigo-50/40 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-indigo-800">Step screen</p>
+              {previewHref ? (
+                <a
+                  href={previewHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] font-semibold text-indigo-700 underline decoration-dotted underline-offset-2"
+                >
+                  Deschide preview
+                </a>
+              ) : null}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[var(--omni-ink)]">{hostRoutePath || "Host route absent"}</p>
+              <p className="text-[11px] text-[var(--omni-muted)]">Host route</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Step ID</label>
+              <select
+                className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
+                value={stepScreenConfig?.stepKey ?? ""}
+                onChange={(event) => handleStepKeySelect(event.target.value)}
+              >
+                <option value="">{stepOptions.length ? "Selectează pas" : "Nicio definiție"}</option>
+                {stepOptions.map((step) => (
+                  <option key={step.stepKey} value={step.stepKey}>
+                    {step.label}
+                  </option>
+                ))}
+              </select>
+              {stepOptions.length === 0 ? (
+                <p className="text-xs text-amber-600">Manifestul nu are pași disponibili pentru {hostRoutePath || "ruta aceasta"}.</p>
+              ) : null}
+              {stepScreenConfig?.stepKey && !stepExists ? (
+                <p className="text-xs text-amber-600">Pasul selectat nu mai există în manifest. Alege o altă opțiune.</p>
+              ) : null}
+            </div>
+            <div className="space-y-2 rounded-2xl border border-white bg-white/80 p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Query preset</p>
+                <button
+                  type="button"
+                  className="rounded-full border border-[var(--omni-border-soft)] px-3 py-0.5 text-[10px] font-semibold"
+                  onClick={handleAddPresetRow}
+                >
+                  Adaugă parametru
+                </button>
+              </div>
+              {stepPresetRows.map((row, index) => (
+                <div key={`${node.id}-preset-${index}`} className="grid grid-cols-[1fr_auto_1fr_auto] gap-2">
+                  <input
+                    type="text"
+                    className="rounded-xl border border-[var(--omni-border-soft)] px-2 py-1 text-[12px]"
+                    placeholder="param (source)"
+                    value={row.key}
+                    onChange={(event) => handlePresetRowChange(index, "key", event.target.value)}
+                  />
+                  <span className="self-center text-xs text-[var(--omni-muted)]">=</span>
+                  <input
+                    type="text"
+                    className="rounded-xl border border-[var(--omni-border-soft)] px-2 py-1 text-[12px]"
+                    placeholder="valoare"
+                    value={row.value}
+                    onChange={(event) => handlePresetRowChange(index, "value", event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="self-center rounded-full border border-transparent px-2 py-0.5 text-[10px] font-semibold text-[var(--omni-muted)] hover:text-rose-600"
+                    onClick={() => handleRemovePresetRow(index)}
+                    aria-label="Șterge parametrul"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <p className="text-[11px] text-[var(--omni-muted)]">
+                Parametrii sunt aplicați automat la URL-ul StepRunner (ex: source=guided_day1, returnTo=/today).
+              </p>
+            </div>
+          </div>
+        ) : null}
         <div className="rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-white px-3 py-2 text-[11px]">
           <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Portal target</p>
           {isPortal ? (

@@ -1,9 +1,20 @@
 import type { XYPosition } from "reactflow";
-import type { FlowChunk, FlowComment, FlowNodePortalConfig, FlowOverlay, LabelMap } from "@/lib/flowStudio/types";
+import type {
+  FlowChunk,
+  FlowComment,
+  FlowNodeKind,
+  FlowNodePortalConfig,
+  FlowOverlay,
+  LabelMap,
+  StepScreenConfig,
+} from "@/lib/flowStudio/types";
 import { normalizeChunks, UNGROUPED_CHUNK_ID } from "@/lib/flowStudio/chunkUtils";
+
+const FLOW_NODE_KIND_VALUES: FlowNodeKind[] = ["route", "stepScreen"];
 
 export type FlowSpecNode = {
   id: string;
+  kind?: FlowNodeKind;
   routeId?: string;
   routePath?: string;
   label?: LabelMap;
@@ -12,6 +23,7 @@ export type FlowSpecNode = {
   tags?: string[];
   chunkId?: string;
   portal?: FlowNodePortalConfig | null;
+  stepScreen?: StepScreenConfig | null;
 };
 
 export type FlowSpecEdge = {
@@ -82,6 +94,8 @@ export function normalizeFlowSpecPayload(payload: unknown): FlowSpecPreview {
       throw new Error(`Nod invalid la pozitia ${index}.`);
     }
     const id = typeof nodeRaw.id === "string" && nodeRaw.id ? nodeRaw.id : `node_${index}`;
+    const rawKind = typeof nodeRaw.kind === "string" ? (nodeRaw.kind as FlowNodeKind) : undefined;
+    const kind: FlowNodeKind = rawKind && FLOW_NODE_KIND_VALUES.includes(rawKind) ? rawKind : "route";
     const routePath = typeof nodeRaw.routePath === "string" ? nodeRaw.routePath : undefined;
     const routeId = typeof nodeRaw.routeId === "string" ? nodeRaw.routeId : undefined;
     if (!routePath && !routeId) {
@@ -101,10 +115,13 @@ export function normalizeFlowSpecPayload(payload: unknown): FlowSpecPreview {
     }
     nodeIdSet.push(id);
     const portal = normalizeSpecPortal(nodeRaw.portal);
+    const stepScreen = normalizeSpecStepScreen(nodeRaw.stepScreen, routePath);
+    const resolvedRoutePath = stepScreen?.hostRoutePath ?? routePath;
     const normalizedNode: FlowSpecNode = {
       id,
+      kind,
       routeId,
-      routePath,
+      routePath: resolvedRoutePath,
       label: isPlainObject(nodeRaw.label) ? (nodeRaw.label as LabelMap) : undefined,
       position: { x: pos.x, y: pos.y },
       isStart: Boolean(nodeRaw.isStart),
@@ -113,6 +130,9 @@ export function normalizeFlowSpecPayload(payload: unknown): FlowSpecPreview {
     };
     if (portal) {
       normalizedNode.portal = portal;
+    }
+    if (stepScreen) {
+      normalizedNode.stepScreen = stepScreen;
     }
     return normalizedNode;
   });
@@ -251,6 +271,37 @@ function normalizeSpecPortal(portal: unknown): FlowNodePortalConfig | undefined 
   }
   if (typeof portal.label === "string" && portal.label.trim()) {
     normalized.label = portal.label.trim();
+  }
+  return normalized;
+}
+
+function normalizeSpecStepScreen(stepScreen: unknown, fallbackHost?: string | null): StepScreenConfig | undefined {
+  if (!isPlainObject(stepScreen)) return undefined;
+  const hostRoutePath =
+    typeof stepScreen.hostRoutePath === "string" && stepScreen.hostRoutePath.trim()
+      ? stepScreen.hostRoutePath.trim()
+      : fallbackHost && typeof fallbackHost === "string"
+        ? fallbackHost
+        : null;
+  const stepKey = typeof stepScreen.stepKey === "string" && stepScreen.stepKey.trim() ? stepScreen.stepKey.trim() : null;
+  if (!hostRoutePath || !stepKey) return undefined;
+  const normalized: StepScreenConfig = {
+    hostRoutePath,
+    stepKey,
+  };
+  if (typeof stepScreen.label === "string" && stepScreen.label.trim()) {
+    normalized.label = stepScreen.label.trim();
+  }
+  if (isPlainObject(stepScreen.queryPreset)) {
+    const presetEntries = Object.entries(stepScreen.queryPreset).filter(
+      ([key, value]) => typeof key === "string" && typeof value === "string",
+    ) as Array<[string, string]>;
+    if (presetEntries.length) {
+      normalized.queryPreset = presetEntries.reduce<Record<string, string>>((acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      }, {});
+    }
   }
   return normalized;
 }
