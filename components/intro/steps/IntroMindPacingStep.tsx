@@ -45,16 +45,6 @@ type MindPacingExperienceProps = {
   continueTestId?: string;
 };
 
-function getPreviousDayKey(dayKey: string): string | null {
-  const date = new Date(dayKey);
-  if (Number.isNaN(date.getTime())) return null;
-  date.setDate(date.getDate() - 1);
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function resolveQuestion(dayKey: string) {
   const existing = getMindPacingEntry(dayKey);
   let nextQuestionId = existing?.questionId;
@@ -84,7 +74,6 @@ export function MindPacingExperience({
   const { lang } = useI18n();
   const locale = lang === "en" ? "en" : "ro";
   const dayKey = useMemo(() => getTodayKey(), []);
-  const previousDayKey = useMemo(() => getPreviousDayKey(dayKey), [dayKey]);
   const [hydrated, setHydrated] = useState(false);
   const [question, setQuestion] = useState(() => resolveQuestion(dayKey));
   const [phase, setPhase] = useState<"question" | "result">(() => {
@@ -227,38 +216,19 @@ export function MindPacingExperience({
 
         {phase === "result" ? (
           <section className="space-y-6 rounded-[28px] border border-[var(--omni-border-soft)] bg-white/95 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
-            <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
-              {locale === "ro" ? "Semnal notat" : "Signal noted"}
-            </p>
-            <h3 className="text-lg font-semibold text-[var(--omni-ink)]">
-              {selectedLabel
-                ? locale === "ro"
-                  ? `Ai ales: „${selectedLabel}”.`
-                  : `You chose: “${selectedLabel}”.`
-                : locale === "ro"
-                  ? "Ai ales un semnal."
-                  : "You captured a signal."}
+            <h3 className="text-2xl font-semibold text-[var(--omni-ink)]">
+              {locale === "ro" ? "Când mintea e „În ceață”." : 'When your mind feels “foggy.”'}
             </h3>
-            <div className="space-y-2 text-sm text-[var(--omni-ink)]/85">
-              <p>
-                {locale === "ro"
-                  ? "Acum personalizezi traseul de azi. În următoarele minute ajustăm exercițiul după semnalul tău."
-                  : "You just personalized today's session. Next steps adapt to what you reported."}
+            <p className="text-sm text-[var(--omni-muted)]">
+              {locale === "ro"
+                ? "Asta e situația reală acum — exact de aici începem și ajustăm exercițiile pentru azi."
+                : "This is your real state right now—it's where we start and adjust today's exercises."}
+            </p>
+            {selectedLabel ? (
+              <p className="text-sm text-[var(--omni-ink)]">
+                {locale === "ro" ? `Ai ales: „${selectedLabel}”.` : `You chose: “${selectedLabel}.”`}
               </p>
-              {mindTag ? (
-                <p className="text-[var(--omni-ink)]">
-                  {locale === "ro" ? "Semnalul selectat: " : "Detected signal: "}
-                  <span className="font-semibold uppercase tracking-[0.25em]">{mindTag}</span>
-                </p>
-              ) : null}
-              {previousDayKey ? (
-                <p className="text-[var(--omni-muted)]">
-                  {locale === "ro"
-                    ? `Aseară: ${previousDayKey}. Nu repetăm aceeași combinație.`
-                    : `Last entry: ${previousDayKey}. We avoid the same combo twice.`}
-                </p>
-              ) : null}
-            </div>
+            ) : null}
             <div className="pt-2">
               <OmniCtaButton
                 className="w-full justify-center"
@@ -270,8 +240,8 @@ export function MindPacingExperience({
             </div>
           </section>
         ) : null}
-      </main>
-    </div>
+     </main>
+   </div>
   );
 }
 

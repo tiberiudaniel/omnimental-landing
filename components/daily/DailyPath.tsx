@@ -37,7 +37,8 @@ const DAILY_PATH_COPY: Record<
     durationLabel: string;
     durations: Record<DailyPathMode, string>;
     preparing: string;
-    skillIntro: string;
+    skillPlan: string;
+    skillCompleted: string;
   }
 > = {
   ro: {
@@ -51,7 +52,8 @@ const DAILY_PATH_COPY: Record<
       short: "3–5 min",
     },
     preparing: "Pregătim un traseu adaptiv pentru tine.",
-    skillIntro: "Astăzi ai antrenat",
+    skillPlan: "Astăzi antrenăm",
+    skillCompleted: "Astăzi ai antrenat",
   },
   en: {
     title: "Today's path",
@@ -64,7 +66,8 @@ const DAILY_PATH_COPY: Record<
       short: "3–5 min",
     },
     preparing: "Preparing your adaptive path…",
-    skillIntro: "Today you trained",
+    skillPlan: "Today we train",
+    skillCompleted: "Today you trained",
   },
 };
 
@@ -858,7 +861,7 @@ useEffect(() => {
             </span>
             {trainedSkill ? (
               <p className="text-xs text-[var(--omni-muted)]">
-                {copy.skillIntro}: {trainedSkill}
+                {copy.skillCompleted}: {trainedSkill}
               </p>
             ) : null}
             {todaysReflexCopy ? (
@@ -953,7 +956,7 @@ useEffect(() => {
             <p className="text-sm text-[var(--omni-ink)]/80">{guidedCopy.subtitle(clusterLabel)}</p>
             {trainedSkill ? (
               <p className="text-xs text-[var(--omni-muted)]">
-                {copy.skillIntro}: {trainedSkill}
+                {copy.skillPlan}: {trainedSkill}
               </p>
             ) : null}
           </div>

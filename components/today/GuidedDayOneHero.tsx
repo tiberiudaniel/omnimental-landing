@@ -42,7 +42,9 @@ export function GuidedDayOneHero({
         {title || (lang === "ro" ? "Claritate operațională" : "Operational clarity")}
       </p>
       <h1 className="mt-2 text-2xl font-semibold text-[var(--omni-ink)] lg:text-3xl">
-        {lang === "ro" ? "În 1–3 minute reduci zgomotul și alegi 1 decizie reală azi." : "In 1–3 minutes you cut the noise and choose one real decision today."}
+        {lang === "ro"
+          ? "În 10–12 minute reduci zgomotul și alegi 1 decizie reală azi."
+          : "In roughly 10 minutes you cut the noise and choose one real decision today."}
       </h1>
       <p className="mt-4 text-sm text-[var(--omni-ink-soft)]">
         {reason ||
@@ -58,7 +60,9 @@ export function GuidedDayOneHero({
           data-testid="guided-day1-start"
           disabled={disabled}
         >
-          {disabled ? disabledLabel ?? (lang === "ro" ? "Se pregătește planul…" : "Preparing session…") : ctaLabel ?? (lang === "ro" ? "Pornește sesiunea (3 min)" : "Start session (3 min)")}
+          {disabled
+            ? disabledLabel ?? (lang === "ro" ? "Se pregătește planul…" : "Preparing session…")
+            : ctaLabel ?? (lang === "ro" ? "Pornește sesiunea (10 min)" : "Start session (10 min)")}
         </OmniCtaButton>
       </div>
       <div className="mt-8 rounded-[24px] border border-dashed border-[var(--omni-border-soft)] bg-white/80 px-5 py-4 text-left text-sm text-[var(--omni-ink)]">

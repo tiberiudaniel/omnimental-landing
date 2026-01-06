@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import SimulatorTimer from "./SimulatorTimer";
 import type { DailyPathLanguage, DailyPathNodeConfig } from "@/types/dailyPath";
@@ -73,7 +72,6 @@ export default function DailyPathNode({
   onAutonomyChoice,
   lang = "ro",
 }: DailyPathNodeProps) {
-  const router = useRouter();
   const [quizState, setQuizState] = useState<QuizState>({ choice: null, feedback: null });
   const [realContext, setRealContext] = useState("");
   const [realRule, setRealRule] = useState("");
@@ -128,7 +126,6 @@ export default function DailyPathNode({
         node={node}
         onComplete={() => {
           onSelect?.();
-          router.push("/progress");
         }}
       />
     );
@@ -140,7 +137,6 @@ export default function DailyPathNode({
         node={node}
         onComplete={() => {
           onSelect?.();
-          router.push("/progress");
         }}
       />
     );
@@ -204,6 +200,7 @@ export default function DailyPathNode({
       realWorldContextInputRef={realWorldContextInputRef}
       realWorldRuleInputRef={realWorldRuleInputRef}
       labels={labels}
+      lang={lang}
     />
   );
 }
@@ -240,6 +237,7 @@ function StandardCard({
   realWorldContextInputRef,
   realWorldRuleInputRef,
   labels,
+  lang,
 }: {
   node: DailyPathNodeConfig;
   icon: string;
@@ -254,6 +252,7 @@ function StandardCard({
   realWorldContextInputRef?: React.RefObject<HTMLInputElement>;
   realWorldRuleInputRef?: React.RefObject<HTMLTextAreaElement>;
   labels: (typeof NODE_LABELS)[DailyPathLanguage];
+  lang: DailyPathLanguage;
 }) {
   const isQuiz = node.kind === "QUIZ_SINGLE";
   const showButton = true;
@@ -300,6 +299,7 @@ function StandardCard({
             simulatorAutoStart={simulatorAutoStart}
             realWorldContextInputRef={realWorldContextInputRef}
             realWorldRuleInputRef={realWorldRuleInputRef}
+            lang={lang}
           />
           <div className="flex flex-wrap items-center gap-3">
             {showXp ? (
@@ -334,6 +334,7 @@ function NodeBody({
   simulatorAutoStart,
   realWorldContextInputRef,
   realWorldRuleInputRef,
+  lang,
 }: {
   node: DailyPathNodeConfig;
   quizState: QuizState;
@@ -342,6 +343,7 @@ function NodeBody({
   simulatorAutoStart?: boolean;
   realWorldContextInputRef?: React.RefObject<HTMLInputElement>;
   realWorldRuleInputRef?: React.RefObject<HTMLTextAreaElement>;
+  lang: DailyPathLanguage;
 }) {
   switch (node.kind) {
     case "SIMULATOR":
@@ -363,7 +365,6 @@ function NodeBody({
         const [contextField, ruleField] = node.fields;
         return (
           <div className="space-y-4 rounded-[20px] border border-[var(--omni-border-soft)] bg-white/60 px-4 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--omni-muted)]">{node.title}</p>
             {node.description ? (
               <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>
             ) : null}
@@ -411,18 +412,24 @@ function NodeBody({
       }
       return (
         <div className="space-y-4 rounded-[20px] border border-[var(--omni-border-soft)] bg-white/60 px-4 py-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--omni-muted)]">{node.title}</p>
           <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>
         </div>
       );
     case "QUIZ_SINGLE": {
       const options = node.quizOptions ?? [];
       const answered = quizState.feedback !== null;
-      const feedbackLabel = quizState.feedback === "correct" ? "Corect" : "Recalibrare";
+      const feedbackLabel =
+        quizState.feedback === "correct"
+          ? lang === "ro"
+            ? "Bun."
+            : "Nice."
+          : lang === "ro"
+            ? "Mai util:"
+            : "Try this:";
       const feedbackCopy =
         quizState.feedback === "correct"
-          ? node.quizFeedback?.correct ?? "Răspuns bun."
-          : node.quizFeedback?.incorrect ?? "Mai există o variantă mai utilă.";
+          ? node.quizFeedback?.correct ?? (lang === "ro" ? "Răspuns bun." : "Good answer.")
+          : node.quizFeedback?.incorrect ?? (lang === "ro" ? "Gândește-te la varianta mai utilă." : "Consider the more useful option.");
       return (
         <div className="space-y-3">
           <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>
@@ -435,9 +442,9 @@ function NodeBody({
                 "w-full rounded-[16px] border px-4 py-3 text-left text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--omni-energy)]";
               if (answered) {
                 if (isCorrect) {
-                  optionClasses += " border-transparent bg-[#315d23] text-white";
+                  optionClasses += " border-[var(--omni-success)] bg-[var(--omni-success)] text-white";
                 } else if (isIncorrect) {
-                  optionClasses += " border-transparent bg-[#b25137] text-white";
+                  optionClasses += " border-[var(--omni-danger)] bg-[var(--omni-danger)] text-white";
                 } else {
                   optionClasses += " border-[var(--omni-border-soft)] text-[var(--omni-muted)] opacity-60";
                 }
@@ -464,7 +471,7 @@ function NodeBody({
             <div className="rounded-[18px] bg-white/80 px-4 py-3">
               <p
                 className={`text-xs font-semibold uppercase tracking-[0.35em] ${
-                  quizState.feedback === "correct" ? "text-[#315d23]" : "text-[#b25137]"
+                  quizState.feedback === "correct" ? "text-[var(--omni-success)]" : "text-[var(--omni-danger)]"
                 }`}
               >
                 {feedbackLabel}

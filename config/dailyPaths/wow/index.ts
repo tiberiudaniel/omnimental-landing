@@ -20,7 +20,7 @@ const CTA_LABELS: Record<
     intro: "Încep",
     simulator: "Am făcut exercițiul",
     realWorld: "Îmi iau angajamentul",
-    summary: "Vezi progresul tău",
+    summary: "Finalizează sesiunea",
     anchor: "Gata pe azi",
   },
   en: {
@@ -37,12 +37,12 @@ const SECTION_TITLES: Record<
   { intro: string; learn: string; quiz: string; simulator: string; realWorld: string; summary: string; anchor: string }
 > = {
   ro: {
-    intro: "Hook + Mirror",
-    learn: "Core Insight",
-    quiz: "Active Check",
-    simulator: "Micro-Simulator",
+    intro: "Declanșator + Oglindă",
+    learn: "Ideea-cheie",
+    quiz: "Verificare",
+    simulator: "Micro-exercițiu",
     realWorld: "Transfer în realitate",
-    summary: "Anchor Phrase",
+    summary: "Fixare",
     anchor: "Ancora zilei",
   },
   en: {

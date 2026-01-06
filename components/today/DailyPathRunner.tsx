@@ -257,6 +257,7 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
   }
   const vocabDayKey = runDayKeyRef.current;
   const rawSourceParam = searchParams?.get("source")?.toLowerCase() ?? "";
+  const e2eParamActive = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
   const laneParam = searchParams?.get("lane")?.toLowerCase() ?? "";
   const guidedDayOneSource = isGuidedDayOneLane(rawSourceParam, laneParam);
   const cameFromUpgradeSuccess = rawSourceParam === "upgrade_success";
@@ -800,7 +801,7 @@ useEffect(() => {
       </div>
     );
   };
-  const guidedLaneBadge = guidedDayOneSource ? (
+  const guidedLaneBadge = guidedDayOneSource && debugEnabled ? (
     <div className="fixed bottom-4 left-4 z-40 rounded-lg bg-black/80 px-3 py-2 text-[11px] text-white shadow-lg">
       <p className="font-semibold">GuidedDay1LaneDebug</p>
       <p>axisSource: {axisSourceTag ?? "n/a"}</p>
@@ -912,13 +913,45 @@ useEffect(() => {
     });
   }, [vocabPrimer]);
 
-  const header = (
+  const handleGuidedExit = useCallback(() => {
+    if (typeof window !== "undefined") {
+      const confirmText =
+        decisionLang === "ro"
+          ? "Vrei să ieși din sesiunea ghidată? Progresul de azi va rămâne în această sesiune."
+          : "Leave the guided session? Progress from today stays inside this flow.";
+      if (!window.confirm(confirmText)) {
+        return;
+      }
+    }
+    const target = e2eParamActive ? "/today?e2e=1" : "/today";
+    router.push(target);
+  }, [decisionLang, e2eParamActive, router]);
+
+  const defaultHeader = (
     <SiteHeader
       showMenu
       onMenuToggle={() => setMenuOpen(true)}
       onAuthRequest={goToAuth}
     />
   );
+
+  const guidedHeader = (
+    <div className="flex items-center justify-between px-4 py-3 text-[var(--omni-ink)]">
+      <Link href="/intro" className="flex items-center gap-2 font-semibold tracking-wide">
+        <span className="text-lg">OmniMental</span>
+        <span className="text-[10px] uppercase tracking-[0.4em] text-[var(--omni-muted)]">Guided Day 1</span>
+      </Link>
+      <button
+        type="button"
+        onClick={handleGuidedExit}
+        className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-ink)] hover:border-[var(--omni-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--omni-ink)]"
+      >
+        {decisionLang === "ro" ? "Ieși" : "Exit"}
+      </button>
+    </div>
+  );
+
+  const header = guidedDayOneSource ? guidedHeader : defaultHeader;
 
   return (
     <>

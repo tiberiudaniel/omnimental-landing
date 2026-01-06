@@ -40,6 +40,7 @@ test.describe('Guided Day1 contract (lane UI)', () => {
     await expect(page.getByTestId('guided-day1-hero')).toBeVisible({ timeout: 20_000 });
     await go(page, '/session/complete?source=guided_day1&lane=guided_day1&e2e=1');
     await expect(page).toHaveURL(/\/session\/complete/i, { timeout: 20_000 });
+    await expect(page.getByTestId('session-complete-root')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId('guided-day1-summary-root')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId('guided-day1-summary-continue')).toBeVisible();
     await expect(page.getByTestId('guided-day1-summary-back')).toBeVisible();
@@ -49,6 +50,7 @@ test.describe('Guided Day1 contract (lane UI)', () => {
     await page.getByTestId('save-progress-dismiss').click();
     await expect(page.getByTestId('save-progress-card')).toHaveCount(0);
     await page.reload();
+    await expect(page.getByTestId('session-complete-root')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId('guided-day1-summary-root')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId('save-progress-card')).toHaveCount(0);
   });

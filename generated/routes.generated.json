@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-01-01T23:07:23.936761Z",
+  "generatedAt": "2026-01-06T13:48:06.928Z",
   "routes": [
     {
       "routePath": "/",
@@ -168,6 +168,12 @@
       "group": "public",
       "filePath": "app/(public)/group-info/page.tsx",
       "routeId": "L2dyb3VwLWluZm8"
+    },
+    {
+      "routePath": "/guided/day1",
+      "group": "public",
+      "filePath": "app/(app)/guided/day1/page.tsx",
+      "routeId": "L2d1aWRlZC9kYXkx"
     },
     {
       "routePath": "/individual",

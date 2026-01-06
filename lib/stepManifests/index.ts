@@ -10,6 +10,7 @@ import { getOnboardingCatLiteManifest } from "./onboardingCatLite";
 import { getTodayOverviewManifest } from "./todayOverview";
 import { getUpgradeManifest } from "./upgrade";
 import { getArenaRunManifest } from "./arenaRun";
+import { getGuidedDayOneManifest } from "./guidedDay1";
 
 type ManifestFactory = (context?: StepManifestContext) => StepManifest;
 
@@ -39,6 +40,7 @@ const MANIFEST_REGISTRY: ManifestRegistryEntry[] = [
   { type: "exact", value: "/onboarding/style", getManifest: getOnboardingManifest },
   { type: "exact", value: "/today", getManifest: getTodayOverviewManifest },
   { type: "exact", value: "/today/run", getManifest: getTodayRunManifest },
+  { type: "exact", value: "/guided/day1", getManifest: getGuidedDayOneManifest },
   { type: "exact", value: "/upgrade", getManifest: getUpgradeManifest },
   { type: "exact", value: "/upgrade/cancel", getManifest: getUpgradeManifest },
   { type: "exact", value: "/upgrade/success", getManifest: getUpgradeManifest },

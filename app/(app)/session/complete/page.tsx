@@ -108,7 +108,12 @@ function StatCard({ label, value, detail }: StatCardProps) {
   );
 }
 
-function SessionCompletePageInner() {
+export type SessionCompletePageInnerProps = {
+  forcedSource?: string | null;
+  forcedLane?: string | null;
+};
+
+export function SessionCompletePageInner({ forcedSource = null, forcedLane = null }: SessionCompletePageInnerProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const navLinks = useNavigationLinks();
@@ -159,11 +164,10 @@ function SessionCompletePageInner() {
     [isE2E],
   );
 
-  const todayHref = withE2E("/today");
-  const sourceParam = searchParams?.get("source");
-  const laneParam = searchParams?.get("lane");
+  const sourceParam = forcedSource ?? searchParams?.get("source");
+  const laneParam = forcedLane ?? searchParams?.get("lane");
   const guidedLaneActive = isGuidedDayOneLane(sourceParam, laneParam);
-  const isGuestOrAnon = !user || user.isAnonymous;
+  const isGuestOrAnon = !user || user.isAnonymous || isE2E;
   const guidedDayOneSummaryActive = guidedLaneActive;
   const guidedAxis = (progressFacts?.mindPacing?.axisId ?? null) as CatAxisId | null;
   const guidedInsight = useMemo(
@@ -211,6 +215,8 @@ function SessionCompletePageInner() {
     savePromptLoggedRef.current = true;
     track("save_progress_prompt_view", { lane: "guided_day1", location: "session_complete" });
   }, [savePromptDayKey, showSaveProgressCard]);
+
+  const todayHref = withE2E("/today");
 
   const buildNextRoute = () => {
     const params = new URLSearchParams({ source: "session_complete", round: "extra" });
@@ -339,11 +345,12 @@ function SessionCompletePageInner() {
         mainClassName={guidedDayOneSummaryActive ? "px-0 py-10" : undefined}
       >
         {guidedDayOneSummaryActive ? (
-          <div className="mx-auto w-full max-w-3xl px-4" data-testid="guided-day1-summary-root">
-            <section
-              className="rounded-[32px] border border-[var(--omni-border-soft)] bg-white px-6 py-10 text-center shadow-[0_24px_70px_rgba(0,0,0,0.1)] sm:px-12"
-              data-testid="guided-day1-summary"
-            >
+          <div className="mx-auto w-full max-w-3xl px-4" data-testid="session-complete-root">
+            <div data-testid="guided-day1-summary-root">
+              <section
+                className="rounded-[32px] border border-[var(--omni-border-soft)] bg-white px-6 py-10 text-center shadow-[0_24px_70px_rgba(0,0,0,0.1)] sm:px-12"
+                data-testid="guided-day1-summary"
+              >
               <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
                 Prima sesiune ghidată
               </p>
@@ -374,6 +381,7 @@ function SessionCompletePageInner() {
               {saveProgressCard}
               <p className="mt-5 text-xs text-[var(--omni-muted)]">Următorul pas: un micro-journal de 2 minute fixează decizia.</p>
             </section>
+            </div>
           </div>
         ) : (
           <div
