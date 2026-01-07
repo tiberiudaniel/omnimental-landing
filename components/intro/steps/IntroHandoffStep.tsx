@@ -10,12 +10,14 @@ import type { CatAxisId } from "@/lib/profileEngine";
 function buildTarget(intent: "guided" | "explore", preserveE2E: boolean, axisId: CatAxisId | null) {
   const params = new URLSearchParams({ mode: "deep", source: "intro" });
   params.set("intent", intent);
-  params.set("lane", "guided_day1");
-  if (axisId) {
-    params.set("axis", axisId);
-    const cluster = getGuidedClusterParam(axisId);
-    if (cluster) {
-      params.set("cluster", cluster);
+  if (intent === "guided") {
+    params.set("lane", "guided_day1");
+    if (axisId) {
+      params.set("axis", axisId);
+      const cluster = getGuidedClusterParam(axisId);
+      if (cluster) {
+        params.set("cluster", cluster);
+      }
     }
   }
   if (preserveE2E) {

@@ -16,6 +16,9 @@ interface DailyPathNodeProps {
   showSoftLabel?: boolean;
   onAutonomyChoice?: (choice: "soft" | "challenge") => void;
   lang: DailyPathLanguage;
+  hideIntroCta?: boolean;
+  introHelperText?: string | null;
+  preserveIntroContent?: boolean;
 }
 
 type QuizState = {
@@ -71,6 +74,9 @@ export default function DailyPathNode({
   showSoftLabel,
   onAutonomyChoice,
   lang = "ro",
+  hideIntroCta = false,
+  introHelperText = null,
+  preserveIntroContent = false,
 }: DailyPathNodeProps) {
   const [quizState, setQuizState] = useState<QuizState>({ choice: null, feedback: null });
   const [realContext, setRealContext] = useState("");
@@ -98,7 +104,7 @@ export default function DailyPathNode({
     );
   }
 
-  if (status === "completed") {
+  if (status === "completed" && !(node.kind === "INTRO" && preserveIntroContent)) {
     return (
       <div className={CARD_WRAPPER}>
         <div className="mx-auto flex w-full max-w-[380px] items-center gap-4 rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-main)] px-5 py-5 shadow-[0_6px_18px_rgba(0,0,0,0.06)] sm:max-w-xl sm:px-6">
@@ -146,9 +152,15 @@ export default function DailyPathNode({
     return (
       <IntroCard
         node={node}
-        onStart={() => {
-          onSelect?.();
-        }}
+        onStart={
+          hideIntroCta
+            ? undefined
+            : () => {
+                onSelect?.();
+              }
+        }
+        hideCta={hideIntroCta}
+        helperText={introHelperText}
       />
     );
   }
@@ -205,7 +217,17 @@ export default function DailyPathNode({
   );
 }
 
-function IntroCard({ node, onStart }: { node: DailyPathNodeConfig; onStart?: () => void }) {
+function IntroCard({
+  node,
+  onStart,
+  hideCta = false,
+  helperText = null,
+}: {
+  node: DailyPathNodeConfig;
+  onStart?: () => void;
+  hideCta?: boolean;
+  helperText?: string | null;
+}) {
   return (
     <div className={CARD_WRAPPER}>
       <div className={`${CARD_BASE} pt-10`}>
@@ -213,11 +235,17 @@ function IntroCard({ node, onStart }: { node: DailyPathNodeConfig; onStart?: () 
           {node.title}
         </h2>
         <p className="mt-4 text-base leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>
-        <div className="mt-4">
-          <OmniCtaButton size="md" onClick={onStart} className="h-11 px-6 text-sm font-medium tracking-[0.2em]">
-            {node.ctaLabel ?? "Încep"}
-          </OmniCtaButton>
-        </div>
+        {hideCta ? (
+          helperText ? (
+            <p className="mt-4 text-xs text-[var(--omni-muted)]">{helperText}</p>
+          ) : null
+        ) : (
+          <div className="mt-4">
+            <OmniCtaButton size="md" onClick={onStart} className="h-11 px-6 text-sm font-medium tracking-[0.2em]">
+              {node.ctaLabel ?? "Încep"}
+            </OmniCtaButton>
+          </div>
+        )}
       </div>
     </div>
   );

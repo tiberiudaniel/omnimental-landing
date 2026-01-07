@@ -5,6 +5,13 @@ import type { CopyFields } from "@/lib/useCopy";
 
 export type LabelMap = { ro?: string; en?: string };
 
+export type FlowNodeInternalStep = {
+  id: string;
+  label: string;
+  description?: string;
+  tags?: string[];
+};
+
 export type RouteDoc = {
   id: string;
   routePath: string;
@@ -33,6 +40,7 @@ export type FlowNode = {
   chunkId?: string;
   portal?: FlowNodePortalConfig | null;
   stepScreen?: StepScreenConfig | null;
+  internalSteps?: FlowNodeInternalStep[] | null;
 };
 
 export type FlowEdge = {
@@ -74,6 +82,12 @@ export type FlowOverlay = {
 };
 
 export type FlowDoc = {
+  flow?: {
+    id?: string | null;
+    name?: string | null;
+    version?: number | null;
+    updatedAt?: string | null;
+  };
   name: string;
   description?: string;
   nodes?: FlowNode[];
@@ -100,6 +114,7 @@ export type FlowNodeData = {
   chunkId?: string | null;
   portal?: FlowNodePortalConfig | null;
   stepScreen?: StepScreenConfig | null;
+  internalSteps?: FlowNodeInternalStep[] | null;
 };
 
 export type FlowEdgeData = {

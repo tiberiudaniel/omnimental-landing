@@ -307,6 +307,9 @@ export default function TodayOrchestrator() {
   };
 
   const completedSessions = totalDailySessionsCompleted ?? 0;
+  const exploreDay1Context =
+    (sourceParam === "guided" || sourceParam === "explore_cat_day1" || sourceParam === "intro") && completedSessions <= 1;
+  const catProfileComplete = sourceParam === "explore_cat_day1";
   const isGuestOrAnon = !user || user.isAnonymous;
   const guidedDayOneActive = isGuidedDayOneLane(sourceParam, laneParam) && (isGuestOrAnon || completedSessions === 0);
   const axisParamToday = searchParams?.get("axis") ?? null;
@@ -419,7 +422,12 @@ export default function TodayOrchestrator() {
     : deepNeedsEarnCredit
       ? "Ai nevoie de un credit Earn pentru încă o rundă azi."
       : "Credit Earn disponibil pentru 30–60 min de focus.";
-  const highlightExploreCat = intentParam === "explore";
+  const highlightExploreCat = !catProfileComplete && (exploreDay1Context || intentParam === "explore");
+  const exploreHeadingLabel = exploreDay1Context ? "Vrei mai mult azi?" : "Explorează mai mult";
+  const exploreHeadingTitle = exploreDay1Context ? "Alege contextul pe care îl aprofundezi" : "Alege contextul pe care îl aprofundezi";
+  const exploreHeadingBody = exploreDay1Context
+    ? "După sesiunea deep poți continua cu profilul CAT sau cu o lecție scurtă pe o axă."
+    : "După sesiunea deep poți continua cu o explorare ghidată sau cu o lecție scurtă pe o axă.";
   const earnStatusLabel = isPremiumMember
     ? "Premium activ: poți rula Deep + Explore fără limită."
     : `Credite Earn: ${earnedRounds.state.credits}/3 · Runde extra azi: ${earnedRounds.state.usedToday}`;
@@ -445,6 +453,14 @@ export default function TodayOrchestrator() {
     track("today_explore_cat_clicked", { intent: intentParam || null, source: sourceParam ?? null });
     router.push(exploreCatUrl);
   };
+  const exploreCatTitle = "Profil mental Ziua 1";
+  const exploreCatDescription = exploreDay1Context
+    ? "Intră în CAT Lite și vezi unde ești pe axele principale. Îți ia 10–12 minute."
+    : "Intră în CAT Lite și vezi unde te afli pe axele principale. Îți ia 10-12 minute.";
+  const exploreAxesTitle = "Alege o lecție pe o axă";
+  const exploreAxesDescription = exploreDay1Context
+    ? "Dacă vrei doar context rapid, alegi o axă și primești vocab + mini-instrucțiuni pentru zona respectivă."
+    : "Dacă vrei doar context rapid, alege o axă și primești vocab + mini-instrucțiuni pentru zona respectivă.";
   const handleExploreAxes = () => {
     track("today_explore_axes_clicked", { intent: intentParam || null, source: sourceParam ?? null });
     router.push(exploreAxesUrl);
@@ -575,6 +591,10 @@ export default function TodayOrchestrator() {
                 <div className="mt-4 rounded-2xl border border-[var(--omni-energy)]/40 bg-[var(--omni-energy)]/10 px-4 py-3 text-sm text-[var(--omni-ink)]">
                   Ai făcut deja sesiunea zilnică azi. Dacă vrei să lucrezi mai mult în fiecare zi, activează OmniMental Premium.
                 </div>
+              ) : catProfileComplete ? (
+                <div className="mt-4 rounded-2xl border border-[var(--omni-ink)]/15 bg-[var(--omni-bg-paper)] px-4 py-3 text-sm text-[var(--omni-ink)]">
+                  Sesiunea deep este completă, iar profilul mental de Ziua 1 este salvat.
+                </div>
               ) : cameFromRunComplete ? (
                 <div className="mt-4 rounded-2xl border border-[var(--omni-energy)]/40 bg-[var(--omni-energy)]/10 px-4 py-3 text-sm text-[var(--omni-ink)]">
                   Sesiunea de azi este completă. Ne vedem mâine.
@@ -584,36 +604,31 @@ export default function TodayOrchestrator() {
 
             <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-white/90 px-6 py-8 shadow-[0_15px_45px_rgba(0,0,0,0.06)] sm:px-10">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Explorează mai mult</p>
-                <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">Alege contextul pe care îl aprofundezi</h2>
-                <p className="text-sm text-[var(--omni-ink)]/80">
-                  După sesiunea deep poți continua cu o explorare ghidată sau cu o lecție scurtă pe o axă.
-                </p>
+                <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{exploreHeadingLabel}</p>
+                <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">{exploreHeadingTitle}</h2>
+                <p className="text-sm text-[var(--omni-ink)]/80">{exploreHeadingBody}</p>
               </div>
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <article className="rounded-[22px] border border-[var(--omni-border-soft)] bg-white/95 px-5 py-5 shadow-[0_12px_30px_rgba(0,0,0,0.05)]">
                   <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
                     <span>Explore CAT</span>
                     {highlightExploreCat ? (
-                      <span className="rounded-full bg-[var(--omni-energy)]/10 px-3 py-1 text-[var(--omni-energy)]">Propus azi</span>
-                    ) : (
-                      <span>Profil mental</span>
-                    )}
+                      <span className="rounded-full bg-[var(--omni-energy)] px-3 py-1 text-xs font-semibold text-white">Propus azi</span>
+                    ) : null}
                   </div>
-                  <h3 className="mt-3 text-xl font-semibold text-[var(--omni-ink)]">Profil mental Ziua 1</h3>
-                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">
-                    Intră în CAT Lite și vezi unde te afli pe axele principale. Îți ia 10-12 minute.
-                  </p>
+                  <h3 className="mt-3 text-xl font-semibold text-[var(--omni-ink)]">{exploreCatTitle}</h3>
+                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{exploreCatDescription}</p>
+                  {catProfileComplete ? (
+                    <p className="mt-2 text-xs text-[var(--omni-muted)]">Profilul CAT pentru Ziua 1 este salvat.</p>
+                  ) : null}
                   <OmniCtaButton className="mt-4 w-full justify-center" onClick={handleExploreCatLite} data-testid="today-explore-cat">
                     Explorează CAT
                   </OmniCtaButton>
                 </article>
                 <article className="rounded-[22px] border border-dashed border-[var(--omni-border-soft)] bg-white/80 px-5 py-5 shadow-[0_12px_30px_rgba(0,0,0,0.05)]">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Explore AXE</div>
-                  <h3 className="mt-3 text-xl font-semibold text-[var(--omni-ink)]">Alege o lecție pe o axă</h3>
-                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">
-                    Dacă vrei doar context rapid, alege o axă și primești vocab + mini-instrucțiuni pentru zona respectivă.
-                  </p>
+                  <h3 className="mt-3 text-xl font-semibold text-[var(--omni-ink)]">{exploreAxesTitle}</h3>
+                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{exploreAxesDescription}</p>
                   <OmniCtaButton
                     className="mt-4 w-full justify-center"
                     variant="neutral"
@@ -626,68 +641,65 @@ export default function TodayOrchestrator() {
               </div>
             </section>
 
-            {!guidedOnboardingActive ? (
-              <section className="rounded-[24px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-5 text-sm text-[var(--omni-ink)]/85 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Ultima sesiune</p>
-                  <p className="mt-1 text-lg font-semibold text-[var(--omni-ink)]">{lastSessionLabel}</p>
-                </div>
-                <div className="mt-4 sm:mt-0">
-                  <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Zile consecutive</p>
-                  <p className="mt-1 text-lg font-semibold text-[var(--omni-ink)]">—</p>
-                </div>
-              </section>
-            ) : null}
-        {catLitePart2Needed ? (
-          <CatLitePart2Card
-            missingTraits={missingExtendedAxisLabels}
-            onContinue={() => {
-              track("cat_lite_part2_card_clicked");
-              router.push("/onboarding/cat-lite-2");
-            }}
-          />
-        ) : null}
-
-        {needsStyle ? (
-          <StyleProfileCard
-            totalDailySessions={totalDailySessionsCompleted}
-            onConfigure={() => {
-              track("style_profile_cta_clicked");
-              router.push("/onboarding/style");
-            }}
-          />
-        ) : null}
-
-        <GatingUnlockCards
-          wizardUnlocked={wizardUnlocked}
-          omniKunoUnlocked={omniKunoUnlocked}
-          buddyUnlocked={buddyUnlocked}
-          stats={{ totalDailySessions: totalDailySessionsCompleted, totalActions: totalActionsCompleted }}
-          onWizard={() => router.push("/wizard")}
-          onOmniKuno={() => router.push("/kuno/learn")}
-          onBuddy={() => {
-            track("buddy_invite_clicked");
-            router.push("/intro?buddy=1");
-          }}
-        />
-
-            {!isPremiumMember && (completedToday || triedExtraToday || freeLimitReached) ? (
-              <section className="rounded-[24px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-6 text-[var(--omni-ink)]">
-                <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Upgrade</p>
-                <h2 className="mt-2 text-2xl font-semibold">Vrei încă o sesiune azi?</h2>
-                <ul className="mt-4 space-y-2 text-sm text-[var(--omni-ink)]/85">
-                  <li>• +1 sesiune azi</li>
-                  <li>• Istoric complet</li>
-                  <li>• Recomandări adaptative</li>
-                </ul>
-                <OmniCtaButton
-                  as="link"
-                  href="/upgrade"
-                  className="mt-4 w-full justify-center sm:w-auto"
-                >
-                  Activează OmniMental
-                </OmniCtaButton>
-              </section>
+            {!exploreDay1Context ? (
+              <>
+                {!guidedOnboardingActive ? (
+                  <section className="rounded-[24px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-5 text-sm text-[var(--omni-ink)]/85 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Ultima sesiune</p>
+                      <p className="mt-1 text-lg font-semibold text-[var(--omni-ink)]">{lastSessionLabel}</p>
+                    </div>
+                    <div className="mt-4 sm:mt-0">
+                      <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Zile consecutive</p>
+                      <p className="mt-1 text-lg font-semibold text-[var(--omni-ink)]">—</p>
+                    </div>
+                  </section>
+                ) : null}
+                {catLitePart2Needed ? (
+                  <CatLitePart2Card
+                    missingTraits={missingExtendedAxisLabels}
+                    onContinue={() => {
+                      track("cat_lite_part2_card_clicked");
+                      router.push("/onboarding/cat-lite-2");
+                    }}
+                  />
+                ) : null}
+                {needsStyle ? (
+                  <StyleProfileCard
+                    totalDailySessions={totalDailySessionsCompleted}
+                    onConfigure={() => {
+                      track("style_profile_cta_clicked");
+                      router.push("/onboarding/style");
+                    }}
+                  />
+                ) : null}
+                <GatingUnlockCards
+                  wizardUnlocked={wizardUnlocked}
+                  omniKunoUnlocked={omniKunoUnlocked}
+                  buddyUnlocked={buddyUnlocked}
+                  stats={{ totalDailySessions: totalDailySessionsCompleted, totalActions: totalActionsCompleted }}
+                  onWizard={() => router.push("/wizard")}
+                  onOmniKuno={() => router.push("/kuno/learn")}
+                  onBuddy={() => {
+                    track("buddy_invite_clicked");
+                    router.push("/intro?buddy=1");
+                  }}
+                />
+                {!isPremiumMember && (completedToday || triedExtraToday || freeLimitReached) ? (
+                  <section className="rounded-[24px] border border-dashed border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-6 text-[var(--omni-ink)]">
+                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Upgrade</p>
+                    <h2 className="mt-2 text-2xl font-semibold">Vrei încă o sesiune azi?</h2>
+                    <ul className="mt-4 space-y-2 text-sm text-[var(--omni-ink)]/85">
+                      <li>• +1 sesiune azi</li>
+                      <li>• Istoric complet</li>
+                      <li>• Recomandări adaptative</li>
+                    </ul>
+                    <OmniCtaButton as="link" href="/upgrade" className="mt-4 w-full justify-center sm:w-auto">
+                      Activează OmniMental
+                    </OmniCtaButton>
+                  </section>
+                ) : null}
+              </>
             ) : null}
           </div>
         </div>

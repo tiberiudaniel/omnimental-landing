@@ -251,6 +251,7 @@ export default function DailyPath({
   const questCompletionLoggedRef = useRef<string | null>(null);
   const nodeIntentTimesRef = useRef<Record<string, number>>({});
   const nodeStartTimesRef = useRef<Record<string, number>>({});
+  const guidedIntroCompletedRef = useRef(false);
   const activeLang: DailyPathLanguage = config?.lang ?? "ro";
   const persistenceEnabled = !disablePersistence;
   const copy = DAILY_PATH_COPY[activeLang] ?? DAILY_PATH_COPY.ro;
@@ -286,6 +287,11 @@ export default function DailyPath({
       debugLabel: "Debug",
     };
   }, [activeLang]);
+  const guidedIntroHelperText = isGuidedMode
+    ? activeLang === "en"
+      ? "Start the session from the top CTA above."
+      : "Pornești sesiunea din butonul principal de sus."
+    : null;
   const questMapCopy = useMemo(() => {
     if (activeLang === "en") {
       return {
@@ -898,6 +904,9 @@ useEffect(() => {
               showSoftLabel={node.softPathOnly === true}
               onAutonomyChoice={handleAutonomyChoice}
               lang={config?.lang ?? "ro"}
+              hideIntroCta={isGuidedMode}
+              introHelperText={guidedIntroHelperText}
+              preserveIntroContent={isGuidedMode}
             />
             {index < visibleNodes.length - 1 ? <PathConnector /> : null}
           </div>
@@ -913,6 +922,15 @@ useEffect(() => {
       target.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [currentActiveId, visibleNodes]);
+  const handleGuidedHeroStart = () => {
+    handleGuidedStartScroll();
+    if (guidedIntroCompletedRef.current) return;
+    const activeNode = visibleNodes.find((node) => node.id === currentActiveId);
+    if (activeNode?.kind === "INTRO") {
+      guidedIntroCompletedRef.current = true;
+      handleNodeAction(activeNode);
+    }
+  };
 
   if (!config) {
     return (
@@ -973,9 +991,7 @@ useEffect(() => {
               {guidedCopy.xpLabel}: {xp}
             </span>
           </div>
-          {!pathFinished ? (
-            <OmniCtaButton onClick={handleGuidedStartScroll}>{guidedCopy.startCta}</OmniCtaButton>
-          ) : null}
+          {!pathFinished ? <OmniCtaButton onClick={handleGuidedHeroStart}>{guidedCopy.startCta}</OmniCtaButton> : null}
           {renderNodeStack("space-y-3")}
           {completionBanner}
         </div>

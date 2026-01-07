@@ -951,6 +951,48 @@ useEffect(() => {
   }, []);
 
   const nodeRouteById = useMemo(() => new Map(nodes.map((node) => [node.id, node.data.routePath ?? ""])), [nodes]);
+
+  const flowNodeMap = useMemo(() => {
+    const map = new Map<string, ReactFlowNode<FlowNodeData>>();
+    nodes.forEach((node) => {
+      if (node.type !== "flowNode") return;
+      map.set(node.id, node as ReactFlowNode<FlowNodeData>);
+    });
+    return map;
+  }, [nodes]);
+
+  const canonicalRouteNodeByPath = useMemo(() => {
+    const map = new Map<string, ReactFlowNode<FlowNodeData>>();
+    flowNodeMap.forEach((node) => {
+      if (node.data.kind === "stepScreen") return;
+      if (node.data.routePath) {
+        map.set(node.data.routePath, node);
+      }
+    });
+    return map;
+  }, [flowNodeMap]);
+
+  const resolveCanonicalFlowNode = useCallback(
+    (node: ReactFlowNode<FlowNodeData> | null) => {
+      if (!node) return null;
+      if (node.data.kind !== "stepScreen") return node;
+      const hostPath = node.data.stepScreen?.hostRoutePath ?? node.data.routePath ?? null;
+      if (hostPath) {
+        return canonicalRouteNodeByPath.get(hostPath) ?? node;
+      }
+      return node;
+    },
+    [canonicalRouteNodeByPath],
+  );
+
+  const resolveCanonicalNodeForInspector = useCallback(
+    (node: ReactFlowNode<FlowNodeData> | null) => {
+      if (!node) return null;
+      const canvasNode = flowNodeMap.get(node.id) ?? node;
+      return resolveCanonicalFlowNode(canvasNode) ?? canvasNode;
+    },
+    [flowNodeMap, resolveCanonicalFlowNode],
+  );
   const nodeChunkIdMap = useMemo(() => new Map(nodes.map((node) => [node.id, node.data.chunkId ?? UNGROUPED_CHUNK_ID])), [nodes]);
   const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedNodeId) ?? null, [nodes, selectedNodeId]);
   const selectedNodeResolvedRoutePath = selectedNode ? resolveNodeRoutePath(selectedNode) : null;
@@ -1156,34 +1198,45 @@ useEffect(() => {
     });
     return map;
   }, [nodes]);
+
+  const nodeInternalStepCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    flowNodeMap.forEach((node, nodeId) => {
+      const canonical = resolveCanonicalFlowNode(node);
+      const count = canonical?.data.internalSteps?.length ?? 0;
+      map.set(nodeId, count);
+    });
+    return map;
+  }, [flowNodeMap, resolveCanonicalFlowNode]);
   const nodeCanExpandSteps = useMemo(() => {
     const map = new Map<string, boolean>();
     nodes.forEach((node) => {
-      if (node.data.kind === "stepScreen") {
-        map.set(node.id, false);
-        return;
-      }
-      map.set(node.id, Boolean(nodeManifestMap.get(node.id)));
+      if (node.type !== "flowNode") return;
+      const count = nodeInternalStepCounts.get(node.id) ?? 0;
+      map.set(node.id, count > 0);
     });
     return map;
-  }, [nodeManifestMap, nodes]);
-  const currentStepManifest = selectedNode ? nodeManifestMap.get(selectedNode.id) ?? null : null;
+  }, [nodes, nodeInternalStepCounts]);
   const stepsExpanded = Boolean(selectedNode && expandedStepsMap[selectedNode.id]);
   const nodeStepAvailability = useMemo(() => {
     const map = new Map<string, StepAvailability>();
     nodes.forEach((node) => {
-      if (node.data.kind === "stepScreen") {
-        map.set(node.id, "unavailable");
-        return;
-      }
-      if (node.data.routeMismatch) {
+      if (node.type !== "flowNode") return;
+      const flowNode = node as ReactFlowNode<FlowNodeData>;
+      if (flowNode.data.routeMismatch) {
         map.set(node.id, "route-mismatch");
         return;
       }
-      map.set(node.id, nodeCanExpandSteps.get(node.id) ? "available" : "unavailable");
+      const canonical = resolveCanonicalFlowNode(flowNode);
+      if (canonical?.data.routeMismatch) {
+        map.set(node.id, "route-mismatch");
+        return;
+      }
+      const count = canonical?.data.internalSteps?.length ?? 0;
+      map.set(node.id, count > 0 ? "available" : "unavailable");
     });
     return map;
-  }, [nodeCanExpandSteps, nodes]);
+  }, [nodes, resolveCanonicalFlowNode]);
   useEffect(() => {
     if (!DEBUG_STEPS) return;
     console.groupCollapsed("[FlowStudio] node manifest & availability snapshot");
@@ -2413,6 +2466,11 @@ useEffect(() => {
       if (node.data.stepScreen) {
         stored.stepScreen = { ...node.data.stepScreen };
       }
+      if (node.data.internalSteps && node.data.internalSteps.length) {
+        stored.internalSteps = node.data.internalSteps.map((step) => ({ ...step }));
+      } else if (node.data.internalSteps === null) {
+        stored.internalSteps = null;
+      }
       return stored;
     });
     const storedEdges: FlowEdge[] = edges.map((edge) => {
@@ -2580,6 +2638,7 @@ useEffect(() => {
     if (!selectedFlowId) return null;
     const specNodes: FlowSpecNode[] = nodes.map((node) => ({
       id: node.id,
+      kind: node.data.kind ?? "route",
       routeId: node.data.routeId,
       routePath: node.data.routePath,
       label: node.data.labelOverrides,
@@ -2588,6 +2647,8 @@ useEffect(() => {
       tags: node.data.tags ?? [],
       chunkId: node.data.chunkId ?? UNGROUPED_CHUNK_ID,
       portal: node.data.portal ?? undefined,
+      stepScreen: node.data.stepScreen ?? undefined,
+      internalSteps: node.data.internalSteps ?? undefined,
     }));
     const specEdges: FlowSpecEdge[] = edges.map((edge) => ({
       id: edge.id,
@@ -2940,6 +3001,8 @@ useEffect(() => {
       };
       const label = normalizeLabelMap(node.label);
       const tags = normalizeSpecTags(node.tags, node.isStart);
+      const kind: FlowNodeKind = node.kind ?? "route";
+      normalized.kind = kind;
       if (label) {
         normalized.label = label;
       }
@@ -2948,6 +3011,17 @@ useEffect(() => {
       }
       if (node.portal) {
         normalized.portal = node.portal;
+      }
+      if (node.routePath) {
+        normalized.routePath = node.routePath;
+      }
+      if (kind === "stepScreen" && node.stepScreen) {
+        normalized.stepScreen = { ...node.stepScreen };
+      }
+      if (node.internalSteps && node.internalSteps.length) {
+        normalized.internalSteps = node.internalSteps.map((step) => ({ ...step }));
+      } else if (node.internalSteps === null) {
+        normalized.internalSteps = null;
       }
       return normalized;
     });
@@ -4428,7 +4502,6 @@ useEffect(() => {
                 extraHeader={canvasHeaderActions}
                 onEdgeUpdate={handleEdgeUpdate}
                 nodeStepAvailability={nodeStepAvailability}
-                nodeCanExpandSteps={nodeCanExpandSteps}
                 autoLayoutRunning={autoLayoutRunning}
                 viewMode={viewMode}
                 autoLayoutDisabled={viewMode === "chunks"}
@@ -4453,72 +4526,73 @@ useEffect(() => {
             </div>
           ) : null}
           <InspectorPanel
-                  diagnostics={diagnostics}
-                  onSelectIssue={handleSelectIssue}
-                  missingManifestNodes={missingManifestNodes}
-                  onSelectMissingManifestNode={handleSelectMissingManifestNode}
-                  flowStats={flowStats}
-                  stepsExpanded={stepsExpanded}
-                  onToggleSteps={toggleSelectedNodeSteps}
-                  stepStatus={selectedNodeStepStatus}
-                  canFixRouteMapping={canFixSelectedNode}
-                  onFixRouteMapping={handleFixSelectedNodeRoute}
-                  stepFixError={stepFixError}
-                  currentManifest={currentStepManifest}
-                  routeMap={routeMap}
-                  copyDraft={copyDraft}
-                  onCopyFieldChange={handleCopyFieldChange}
-                  onSaveCopy={handleSaveCopyOverrides}
-                  copyLoading={copyLoading}
-                  copyError={copyError}
-                  setCopyError={setCopyError}
-                  selectedNode={selectedNode}
-                  selectedEdge={selectedEdge}
-                  onLabelChange={handleNodeLabelChange}
-                  onNodeTagsChange={handleNodeTagsChange}
-                  onPortalChange={handleNodePortalChange}
-                  onStepScreenChange={handleStepScreenConfigChange}
-                onEdgeFieldChange={handleEdgeFieldChange}
-                onApplyEdgeColorToGroup={handleApplyEdgeColorToGroup}
-                observedEnabled={observedEnabled}
-                observedEvents={observedEventsForSelection}
-                debugInfo={selectedNodeDebugInfo}
-                selectedStepDetails={selectedStepDetails}
-                onCollapse={() => setInspectorCollapsed(true)}
-                  chunks={chunks}
-                  defaultChunkId={UNGROUPED_CHUNK_ID}
-                  onNodeChunkChange={handleNodeChunkChange}
-                  onAutoAssignChunks={handleAutoAssignChunks}
-                  nodeComments={selectedNodeComments}
-                  routeOptions={routes}
-                  portalNodeOptions={portalNodeOptions}
-                  onAddNodeComment={(message) => {
-                    if (selectedNode) {
-                      handleAddComment("node", selectedNode.id, message);
-                    }
-                  }}
-                  onDeleteNodeComment={handleDeleteComment}
-                  onToggleNodeCommentResolved={handleToggleCommentResolved}
-                  onExportAuditSnapshot={handleExportAuditSnapshot}
-                  onPublishIntroStepOrder={handlePublishIntroStepOrder}
-                  publishIntroStepOrderLoading={publishIntroLoading}
-                  overlays={overlays}
-                  selectedOverlayId={selectedOverlayId}
-                  onSelectOverlay={handleOverlaySelectChange}
-                  onCreateOverlay={handleCreateOverlay}
-                  onDeleteOverlay={handleDeleteOverlay}
-                  onOverlayMetadataChange={handleOverlayMetadataChange}
-                  onOverlayAddNodes={handleOverlayAddNodes}
-                  onOverlayRemoveStep={handleOverlayRemoveStep}
-                  onOverlayReorderSteps={handleOverlayReorderSteps}
-                  onOverlayStepUpdate={handleOverlayStepUpdate}
-                  onRepairOverlaySteps={handleRepairSelectedOverlaySteps}
-                  onOverlayStepFocus={handleOverlayStepFocus}
-                  selectedNodeIds={selectedNodeIds}
-                  nodeLabelMap={nodeLabelMap}
-                  nodeRouteMap={nodeRouteById}
-                  overlayTabRequest={inspectorTabRequest}
-                />
+            diagnostics={diagnostics}
+            onSelectIssue={handleSelectIssue}
+            missingManifestNodes={missingManifestNodes}
+            onSelectMissingManifestNode={handleSelectMissingManifestNode}
+            flowStats={flowStats}
+            stepsExpanded={stepsExpanded}
+            onToggleSteps={toggleSelectedNodeSteps}
+            stepStatus={selectedNodeStepStatus}
+            canFixRouteMapping={canFixSelectedNode}
+            onFixRouteMapping={handleFixSelectedNodeRoute}
+            stepFixError={stepFixError}
+            routeMap={routeMap}
+            copyDraft={copyDraft}
+            onCopyFieldChange={handleCopyFieldChange}
+            onSaveCopy={handleSaveCopyOverrides}
+            copyLoading={copyLoading}
+            copyError={copyError}
+            setCopyError={setCopyError}
+            selectedNode={selectedNode}
+            selectedEdge={selectedEdge}
+            onLabelChange={handleNodeLabelChange}
+            onNodeTagsChange={handleNodeTagsChange}
+            onPortalChange={handleNodePortalChange}
+            onStepScreenChange={handleStepScreenConfigChange}
+            onEdgeFieldChange={handleEdgeFieldChange}
+            onApplyEdgeColorToGroup={handleApplyEdgeColorToGroup}
+            observedEnabled={observedEnabled}
+            observedEvents={observedEventsForSelection}
+            debugInfo={selectedNodeDebugInfo}
+            selectedStepDetails={selectedStepDetails}
+            onCollapse={() => setInspectorCollapsed(true)}
+            chunks={chunks}
+            defaultChunkId={UNGROUPED_CHUNK_ID}
+            onNodeChunkChange={handleNodeChunkChange}
+            onAutoAssignChunks={handleAutoAssignChunks}
+            nodeComments={selectedNodeComments}
+            routeOptions={routes}
+            portalNodeOptions={portalNodeOptions}
+            onAddNodeComment={(message) => {
+              if (selectedNode) {
+                handleAddComment("node", selectedNode.id, message);
+              }
+            }}
+            onDeleteNodeComment={handleDeleteComment}
+            onToggleNodeCommentResolved={handleToggleCommentResolved}
+            onExportAuditSnapshot={handleExportAuditSnapshot}
+            onPublishIntroStepOrder={handlePublishIntroStepOrder}
+            publishIntroStepOrderLoading={publishIntroLoading}
+            overlays={overlays}
+            selectedOverlayId={selectedOverlayId}
+            onSelectOverlay={handleOverlaySelectChange}
+            onCreateOverlay={handleCreateOverlay}
+            onDeleteOverlay={handleDeleteOverlay}
+            onOverlayMetadataChange={handleOverlayMetadataChange}
+            onOverlayAddNodes={handleOverlayAddNodes}
+            onOverlayRemoveStep={handleOverlayRemoveStep}
+            onOverlayReorderSteps={handleOverlayReorderSteps}
+            onOverlayStepUpdate={handleOverlayStepUpdate}
+            onRepairOverlaySteps={handleRepairSelectedOverlaySteps}
+            onOverlayStepFocus={handleOverlayStepFocus}
+            selectedNodeIds={selectedNodeIds}
+            nodeLabelMap={nodeLabelMap}
+            nodeRouteMap={nodeRouteById}
+            overlayTabRequest={inspectorTabRequest}
+            nodeCanExpandSteps={nodeCanExpandSteps}
+            resolveCanonicalNode={resolveCanonicalNodeForInspector}
+          />
               </div>
             ) : null}
           </div>
@@ -4962,6 +5036,7 @@ function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeB
       chunkId: normalizedChunkId,
       portal: stored.portal ?? null,
       stepScreen: stored.stepScreen ?? null,
+      internalSteps: stored.internalSteps ?? null,
     },
   };
 }

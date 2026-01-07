@@ -63,9 +63,23 @@ function guardConsole(page: Page) {
   });
 }
 
+function sanitizeRoutePath(routePath: string | undefined): string {
+  if (!routePath) return "/intro";
+  const trimmed = routePath.trim();
+  if (!trimmed) return "/intro";
+  if (trimmed.startsWith("http")) return trimmed;
+  const regexChars = trimmed.match(/^([^[()]+?)(?:[\[(]|$)/);
+  const candidateRaw = regexChars?.[1]?.trim() ?? trimmed;
+  const candidate = candidateRaw.replace(/^\^+/, "").trim();
+  if (!candidate) return "/intro";
+  return candidate.startsWith("/") ? candidate : `/${candidate}`;
+}
+
 function appendE2EParams(routePath: string | undefined): string {
-  const targetPath = routePath?.trim() ? routePath.trim() : "/intro";
-  const base = targetPath.startsWith("http") ? targetPath : `http://placeholder${targetPath.startsWith("/") ? "" : "/"}${targetPath}`;
+  const targetPath = sanitizeRoutePath(routePath);
+  const base = targetPath.startsWith("http")
+    ? targetPath
+    : `http://placeholder${targetPath.startsWith("/") ? "" : "/"}${targetPath}`;
   const url = new URL(base);
   url.searchParams.set("e2e", "1");
   if (!url.searchParams.has("lang")) {
@@ -113,6 +127,13 @@ describeJourneys("Flow Studio journeys", () => {
           await expect(page.getByTestId(step.assertTestId)).toBeVisible({ timeout: 20_000 });
         }
         if (step.clickTestId) {
+          if (step.clickTestId.startsWith("intro-choice")) {
+            const skipButton = page.getByTestId("intro-skip");
+            if (await skipButton.count()) {
+              await expect(skipButton).toBeVisible({ timeout: 10_000 });
+              await skipButton.click();
+            }
+          }
           const target = page.getByTestId(step.clickTestId);
           await expect(target).toBeVisible({ timeout: 20_000 });
           await target.click();

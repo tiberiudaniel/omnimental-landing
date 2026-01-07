@@ -49,6 +49,7 @@ test.describe("Explore CAT Day1 journey", () => {
         const node = el as HTMLInputElement;
         node.value = "7";
         node.dispatchEvent(new Event("input", { bubbles: true }));
+        node.dispatchEvent(new Event("change", { bubbles: true }));
       });
     }
     await page.getByRole("button", { name: /Salvează și revino la program/i }).click();
@@ -61,5 +62,30 @@ test.describe("Explore CAT Day1 journey", () => {
     expect(finalUrl.searchParams.get("mode")).toBe("deep");
     expect(finalUrl.searchParams.get("source")).toBe("explore_cat_day1");
     expect(finalUrl.searchParams.get("e2e")).toBe("1");
+  });
+
+  test("keeps Explore Hub visible before CAT Lite and does not auto-redirect", async ({ page }) => {
+    await go(page, "/intro?e2e=1");
+
+    await page.locator("#intro-choice-explore").click();
+
+    await expect(page.getByTestId("mindpacing-root")).toBeVisible({ timeout: 20_000 });
+    await page.getByTestId("mindpacing-option-0").click();
+    await page.getByTestId("mindpacing-continue").click();
+
+    await expect(page.getByTestId("vocab-root")).toBeVisible({ timeout: 20_000 });
+    await page.getByTestId("vocab-continue").click();
+
+    await page.waitForURL(/\/today\?/, { timeout: 30_000 });
+    await page.getByTestId("today-explore-cat").click();
+
+    await page.waitForURL(/\/intro\/explore/, { timeout: 30_000 });
+    await expect(page.getByTestId("explore-card-cat-lite")).toBeVisible();
+    await page.waitForTimeout(1500);
+    expect(page.url()).toMatch(/\/intro\/explore/);
+
+    await page.getByTestId("explore-card-cat-lite").click();
+    await page.waitForURL(/\/intro\/explore\/cat-lite/, { timeout: 30_000 });
+    await page.waitForURL(/\/onboarding\/cat-lite-2/, { timeout: 30_000 });
   });
 });

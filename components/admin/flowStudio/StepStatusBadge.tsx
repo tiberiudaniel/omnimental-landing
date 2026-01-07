@@ -10,10 +10,10 @@ type StepStatusBadgeProps = {
 };
 
 const LABELS: Record<StepAvailability, string> = {
-  available: "Steps available",
-  unavailable: "No steps",
-  "route-mismatch": "Steps unavailable (route mismatch)",
-  unknown: "Steps unknown",
+  available: "Flow intern definit",
+  unavailable: "Fără flow intern",
+  "route-mismatch": "Route mismatch",
+  unknown: "Flow necunoscut",
 };
 
 export function StepStatusBadge({ status, variant = "ghost" }: StepStatusBadgeProps) {

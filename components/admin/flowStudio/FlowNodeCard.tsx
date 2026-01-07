@@ -129,21 +129,21 @@ export function FlowNodeCard({
               ) : null}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <StepStatusBadge status={stepStatus} variant="ghost" />
-            {canExpandSteps ? (
-              <button
-                type="button"
-                className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--omni-ink)]"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onExpandSteps?.(id);
-                }}
-              >
-                Steps
-              </button>
-            ) : null}
-          </div>
+        <div className="flex items-center gap-2">
+          {!isStepScreen ? <StepStatusBadge status={stepStatus} variant="ghost" /> : null}
+          {!isStepScreen && canExpandSteps ? (
+            <button
+              type="button"
+              className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--omni-ink)]"
+              onClick={(event) => {
+                event.stopPropagation();
+                onExpandSteps?.(id);
+              }}
+            >
+              Steps
+            </button>
+          ) : null}
+        </div>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[var(--omni-muted)]">
           <a

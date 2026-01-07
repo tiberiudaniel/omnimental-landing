@@ -42,7 +42,6 @@ export function needsCatLitePart2(
   profile: UserProfileSnapshot | null | undefined,
   facts: ProgressFact | null | undefined,
 ): boolean {
-  if (!profile?.catProfile) return false;
-  if (getTotalDailySessionsCompleted(facts) < 3) return false;
+  if (!profile?.catProfile) return true;
   return CAT_LITE_EXTENDED_AXES.some((axis) => typeof profile.catProfile?.axes?.[axis]?.score !== "number");
 }

@@ -40,7 +40,6 @@ type FlowNodeContextValue = {
   observedEnabled: boolean;
   observedNodeStats: Map<string, ObservedNodeStats> | null;
   nodeStepAvailability: Map<string, StepAvailability>;
-  nodeCanExpandSteps: Map<string, boolean>;
   onRequestNodeSteps?: (nodeId: string) => void;
   onPinStep?: (payload: { hostNodeId: string; stepId: string; stepLabel: string }) => void;
   commentCountMap: Map<string, number>;
@@ -121,8 +120,7 @@ function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
   const ctx = useFlowNodeContext();
   const availability = ctx.nodeStepAvailability.get(props.id) ?? "unknown";
   const isStepScreen = props.data.kind === "stepScreen";
-  const manifestAvailable = Boolean(ctx.nodeCanExpandSteps.get(props.id));
-  const canExpand = manifestAvailable && !isStepScreen;
+  const canExpand = availability === "available" && !isStepScreen;
   const dimmed = ctx.dimmedNodeIds ? ctx.dimmedNodeIds.has(props.id) : false;
   const highlighted = ctx.highlightNodeIds ? ctx.highlightNodeIds.has(props.id) : false;
   if (DEBUG_STEPS) {
@@ -130,7 +128,6 @@ function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
       nodeId: props.id,
       routePath: props.data.routePath,
       availability,
-      manifestAvailable,
       canExpand,
     });
   }
@@ -248,7 +245,6 @@ type FlowCanvasProps = {
   extraHeader?: ReactNode;
   nodeStepAvailability: Map<string, StepAvailability>;
   autoLayoutRunning: boolean;
-  nodeCanExpandSteps: Map<string, boolean>;
   viewMode: "nodes" | "chunks";
   autoLayoutDisabled?: boolean;
   onSelectionChange?: (params: { nodes: Node<FlowNodeData | StepNodeRenderData | ChunkNodeData>[]; edges: Edge<FlowEdgeData>[] }) => void;
@@ -283,7 +279,6 @@ export function FlowCanvas({
   extraHeader,
   nodeStepAvailability,
   autoLayoutRunning,
-  nodeCanExpandSteps,
   viewMode,
   autoLayoutDisabled,
   onSelectionChange,
@@ -347,7 +342,6 @@ export function FlowCanvas({
       observedEnabled,
       observedNodeStats,
       nodeStepAvailability,
-      nodeCanExpandSteps,
       onRequestNodeSteps,
       onPinStep,
       commentCountMap: nodeCommentCounts,
@@ -357,7 +351,6 @@ export function FlowCanvas({
     [
       dimmedNodeIds,
       highlightNodeIds,
-      nodeCanExpandSteps,
       nodeCommentCounts,
       nodeIssueMap,
       nodeStepAvailability,

@@ -10,6 +10,7 @@ import type {
   FlowEdgeData,
   FlowIssue,
   FlowNodeData,
+  FlowNodeInternalStep,
   FlowNodePortalConfig,
   StepScreenConfig,
   FlowOverlay,
@@ -17,7 +18,6 @@ import type {
   LabelMap,
   RouteDoc,
 } from "@/lib/flowStudio/types";
-import { getStepManifestForRoute, type StepManifest } from "@/lib/stepManifests";
 import type { ObservedEvent } from "@/lib/flowStudio/observed";
 import { StepStatusBadge, type StepAvailability } from "./StepStatusBadge";
 import { buildStepScreenHref } from "@/lib/flowStudio/stepScreenUtils";
@@ -77,7 +77,6 @@ type InspectorPanelProps = {
   canFixRouteMapping: boolean;
   onFixRouteMapping: () => void;
   stepFixError: string | null;
-  currentManifest: StepManifest | null;
   routeMap: Map<string, RouteDoc>;
   copyDraft: { ro: CopyFields; en: CopyFields };
   onCopyFieldChange: (locale: "ro" | "en", field: keyof CopyFields, value: string) => void;
@@ -143,6 +142,8 @@ type InspectorPanelProps = {
   nodeLabelMap: Map<string, string>;
   nodeRouteMap: Map<string, string>;
   overlayTabRequest?: { tab: InspectorTab; nonce: number } | null;
+  nodeCanExpandSteps: Map<string, boolean>;
+  resolveCanonicalNode: (node: Node<FlowNodeData> | null) => Node<FlowNodeData> | null;
 };
 
 export type InspectorTab = "basics" | "portal" | "diagnostics" | "overlays" | "advanced";
@@ -159,7 +160,6 @@ export function InspectorPanel({
   canFixRouteMapping,
   onFixRouteMapping,
   stepFixError,
-  currentManifest,
   routeMap,
   copyDraft,
   onCopyFieldChange,
@@ -209,28 +209,26 @@ export function InspectorPanel({
   nodeLabelMap,
   nodeRouteMap,
   overlayTabRequest,
+  nodeCanExpandSteps,
+  resolveCanonicalNode,
 }: InspectorPanelProps) {
-  const resolvedRoutePath = selectedNode
-    ? (() => {
-        const routeId = selectedNode.data.routeId;
-        const mappedPath = routeId ? routeMap.get(routeId)?.routePath ?? null : null;
-        return mappedPath ?? selectedNode.data.routePath ?? null;
-      })()
-    : null;
-  const manifestFallback = resolvedRoutePath ? getStepManifestForRoute(resolvedRoutePath, {}) : null;
-  const manifestForDisplay = currentManifest ?? manifestFallback;
-  const manifestLabel = selectedNode ? selectedNode.data.labelOverrides?.ro ?? selectedNode.data.routePath ?? selectedNode.id : null;
-  const canExpandSteps = Boolean(selectedNode);
+  const canonicalNode = resolveCanonicalNode(selectedNode);
+  const canExpandStepsForNode = canonicalNode ? Boolean(nodeCanExpandSteps.get(canonicalNode.id)) : false;
+  const selectedNodeIsStepScreen = canonicalNode?.data.kind === "stepScreen";
   const expandTitle =
-    !selectedNode
+    !canonicalNode
       ? "Selecteaza un nod."
-      : !canExpandSteps
-        ? stepStatus === "route-mismatch"
-          ? "Fix mapping pentru a vedea pasii."
-          : "Nu exista manifest pentru acest route."
-        : undefined;
-  const portalEligible = selectedNode ? nodeLooksLikePortal(selectedNode) : false;
-  const portalTabVisible = Boolean(selectedNode);
+      : selectedNodeIsStepScreen
+        ? "StepScreen-urile se gestionează din nodul host."
+          : !canExpandStepsForNode
+          ? stepStatus === "route-mismatch"
+            ? "Fix mapping pentru a vedea flow-ul intern."
+            : "Adaugă FlowDoc internalSteps pentru acest nod."
+          : undefined;
+  const shouldShowStepStatusBadge = Boolean(canonicalNode && !selectedNodeIsStepScreen);
+  const shouldShowStepsButton = Boolean(!selectedNodeIsStepScreen && canExpandStepsForNode);
+  const portalEligible = canonicalNode ? nodeLooksLikePortal(canonicalNode) : false;
+  const portalTabVisible = Boolean(canonicalNode);
   const [activeTab, setActiveTab] = useState<InspectorTab>("basics");
 
   useEffect(() => {
@@ -250,6 +248,8 @@ export function InspectorPanel({
     const raf = window.requestAnimationFrame(() => setActiveTab(overlayTabRequest.tab));
     return () => window.cancelAnimationFrame(raf);
   }, [overlayTabRequest]);
+
+  const internalStepsForDisplay = canonicalNode?.data.internalSteps ?? null;
 
   const tabs = [
     { key: "basics" as const, label: "Basics" },
@@ -279,8 +279,7 @@ export function InspectorPanel({
             portalNodeOptions={portalNodeOptions}
             onPortalTabRequest={() => setActiveTab("portal")}
             onPortalChange={onPortalChange}
-            manifest={manifestForDisplay}
-            manifestLabel={manifestLabel}
+            internalSteps={internalStepsForDisplay}
             onStepScreenChange={onStepScreenChange}
           />
         );
@@ -386,21 +385,23 @@ export function InspectorPanel({
       {selectedNode ? (
         <div className="rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <StepStatusBadge status={stepStatus} variant="solid" />
+            {shouldShowStepStatusBadge ? <StepStatusBadge status={stepStatus} variant="solid" /> : null}
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                className={clsx(
-                  "rounded-full border px-3 py-2 text-xs font-semibold",
-                  stepsExpanded ? "border-sky-500 text-sky-500" : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]",
-                  !canExpandSteps ? "opacity-60" : "",
-                )}
-                onClick={onToggleSteps}
-                disabled={!canExpandSteps}
-                title={expandTitle}
-              >
-                {stepsExpanded ? "Ascunde pasii" : "Expand steps"}
-              </button>
+              {shouldShowStepsButton ? (
+                <button
+                  type="button"
+                  className={clsx(
+                    "rounded-full border px-3 py-2 text-xs font-semibold",
+                    stepsExpanded ? "border-sky-500 text-sky-500" : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]",
+                    !canExpandStepsForNode ? "opacity-60" : "",
+                  )}
+                  onClick={onToggleSteps}
+                  disabled={!canExpandStepsForNode}
+                  title={expandTitle}
+                >
+                  {stepsExpanded ? "Ascunde pasii" : "Expand steps"}
+                </button>
+              ) : null}
               {stepStatus === "route-mismatch" ? (
                 <button
                   type="button"
@@ -548,8 +549,7 @@ type NodeBasicsSectionProps = {
   portalNodeOptions: PortalNodeOption[];
   onPortalTabRequest: () => void;
   onPortalChange: (nodeId: string, portal: FlowNodePortalConfig | null) => void;
-  manifest?: StepManifest | null;
-  manifestLabel?: string | null;
+  internalSteps?: FlowNodeInternalStep[] | null;
   onStepScreenChange?: (nodeId: string, updates: Partial<StepScreenConfig>) => void;
 };
 
@@ -642,8 +642,7 @@ function NodeBasicsSection({
   portalNodeOptions,
   onPortalTabRequest,
   onPortalChange,
-  manifest,
-  manifestLabel,
+  internalSteps,
   onStepScreenChange,
 }: NodeBasicsSectionProps) {
   const route = node.data.routeId ? routeMap.get(node.data.routeId) : undefined;
@@ -767,9 +766,11 @@ function NodeBasicsSection({
     return option?.label ?? portalConfig.targetNodeId;
   })();
 
+  const nodeInternalSteps = internalSteps ?? node.data.internalSteps ?? null;
+
   return (
     <div className="space-y-4 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3">
-      {manifest && manifestLabel ? <ManifestPreview manifest={manifest} label={manifestLabel} /> : null}
+      <NodeInternalFlowSection steps={nodeInternalSteps} />
       <div className="space-y-3 rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 p-3">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Quick actions</p>
         <div className="grid gap-3 md:grid-cols-2">
@@ -1643,21 +1644,47 @@ function ObservedEventsPanel({ events }: { events: ObservedEvent[] }) {
   );
 }
 
-function ManifestPreview({ manifest, label }: { manifest: StepManifest; label: string }) {
+function NodeInternalFlowSection({ steps }: { steps?: FlowNodeInternalStep[] | null }) {
+  const count = steps?.length ?? 0;
   return (
-    <div className="rounded-2xl border border-slate-700 bg-white/80 p-3 text-xs text-[var(--omni-muted)]">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-        Flow intern — <span className="text-[var(--omni-ink)]">{label}</span>
-      </p>
-      <ol className="mt-2 space-y-1">
-        {manifest.nodes.map((node, index) => (
-          <li key={node.id} className="flex items-center gap-2">
-            <span className="rounded bg-slate-900/10 px-2 py-0.5 font-semibold text-[var(--omni-ink)]">{index + 1}</span>
-            <span className="font-semibold text-[var(--omni-ink)]">{node.label}</span>
-            {index < manifest.nodes.length - 1 ? <span className="text-[var(--omni-muted)]">→</span> : null}
-          </li>
-        ))}
-      </ol>
+    <div className="space-y-2 rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 p-3">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Flow intern — nod ({count})</p>
+      </div>
+      {count ? (
+        <ol className="space-y-2">
+          {steps!.map((step, index) => (
+            <li
+              key={`${step.id}-${index}`}
+              className="rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
+            >
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-slate-900/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--omni-ink)]">
+                  {index + 1}
+                </span>
+                <p className="font-semibold text-[var(--omni-ink)]">{step.label}</p>
+              </div>
+              {step.description ? (
+                <p className="mt-1 text-[12px] text-[var(--omni-muted)]">{step.description}</p>
+              ) : null}
+              {step.tags?.length ? (
+                <div className="mt-2 flex flex-wrap items-center gap-1 text-[10px]">
+                  {step.tags.map((tag) => (
+                    <span
+                      key={`${step.id}-${tag}`}
+                      className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 font-semibold text-[var(--omni-muted)]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="text-xs text-[var(--omni-muted)]">Nod fără flow intern definit încă.</p>
+      )}
     </div>
   );
 }

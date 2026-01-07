@@ -39,6 +39,38 @@ const EVENT_LABELS: Record<string, string> = {
   cat_lite_completed: "CAT Lite complet",
 };
 
+const GUIDED_DAY1_MICRO_DONE_KEY = "guided_day1_micro_done";
+
+function getDailyMicroFlag(): string | null {
+  return (() => {
+    try {
+      return getTodayKey();
+    } catch {
+      return new Date().toDateString();
+    }
+  })();
+}
+
+function hasCompletedGuidedDayOneMicro() {
+  if (typeof window === "undefined") return false;
+  const dayKey = getDailyMicroFlag();
+  if (!dayKey) return false;
+  try {
+    return window.localStorage.getItem(GUIDED_DAY1_MICRO_DONE_KEY) === dayKey;
+  } catch {
+    return false;
+  }
+}
+
+function setCompletedGuidedDayOneMicro() {
+  if (typeof window === "undefined") return;
+  const dayKey = getDailyMicroFlag();
+  if (!dayKey) return;
+  try {
+    window.localStorage.setItem(GUIDED_DAY1_MICRO_DONE_KEY, dayKey);
+  } catch {}
+}
+
 function formatDurationLabel(durationMs: number): string {
   if (!durationMs) return "<1 min";
   const minutes = durationMs / 60000;
@@ -169,6 +201,8 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
   const guidedLaneActive = isGuidedDayOneLane(sourceParam, laneParam);
   const isGuestOrAnon = !user || user.isAnonymous || isE2E;
   const guidedDayOneSummaryActive = guidedLaneActive;
+  const alreadyDidMicro = hasCompletedGuidedDayOneMicro();
+  const showGuidedDayOneFollowUp = guidedDayOneSummaryActive && !alreadyDidMicro;
   const guidedAxis = (progressFacts?.mindPacing?.axisId ?? null) as CatAxisId | null;
   const guidedInsight = useMemo(
     () => resolveGuidedInsight(progressFacts?.mindPacing?.mindTag ?? null),
@@ -275,6 +309,7 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
 
   const handleGuidedDayOneContinue = () => {
     track("guided_day1_summary_continue");
+    setCompletedGuidedDayOneMicro();
     applyNavigation(guidedDayOneFollowUpHref);
   };
 
@@ -362,13 +397,20 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
                 <p className="mt-1 text-sm text-[var(--omni-ink)]/80">{guidedInsight.detail}</p>
               </div>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                <OmniCtaButton
-                  className="justify-center sm:min-w-[220px]"
-                  onClick={handleGuidedDayOneContinue}
-                  data-testid="guided-day1-summary-continue"
-                >
-                  Continuă (2 min)
-                </OmniCtaButton>
+                {showGuidedDayOneFollowUp ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <OmniCtaButton
+                      className="justify-center sm:min-w-[220px]"
+                      onClick={handleGuidedDayOneContinue}
+                      data-testid="guided-day1-summary-continue"
+                    >
+                      Continuă (2 min)
+                    </OmniCtaButton>
+                    <p className="text-center text-xs text-[var(--omni-muted)]">
+                      Un micro-jurnal de 2 minute fixează decizia de azi. Îl faci o singură dată.
+                    </p>
+                  </div>
+                ) : null}
                 <button
                   type="button"
                   className="rounded-[14px] border border-[var(--omni-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--omni-ink)]"
@@ -379,7 +421,11 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
                 </button>
               </div>
               {saveProgressCard}
-              <p className="mt-5 text-xs text-[var(--omni-muted)]">Următorul pas: un micro-journal de 2 minute fixează decizia.</p>
+              <p className="mt-5 text-xs text-[var(--omni-muted)]">
+                {showGuidedDayOneFollowUp
+                  ? "Următorul pas: un micro-jurnal de 2 minute fixează decizia."
+                  : "Micro-jurnalul de 2 minute a fost completat azi."}
+              </p>
             </section>
             </div>
           </div>

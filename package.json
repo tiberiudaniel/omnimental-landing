@@ -10,6 +10,7 @@
     "lint": "eslint",
     "gen:routes": "ts-node --project tsconfig.scripts.json --transpile-only scripts/genRoutes.ts",
     "sync:routes": "ts-node --project tsconfig.scripts.json --transpile-only scripts/syncRoutesToFirestore.ts",
+    "sync:flowdoc-day1": "ts-node --project tsconfig.scripts.json --transpile-only scripts/sync-flowdoc-from-screens.ts",
     "bootstrap:flowstudio": "ts-node --project tsconfig.scripts.json --transpile-only scripts/bootstrapFlowStudioConfig.ts",
     "bootstrap:defaultflows": "ts-node --project tsconfig.scripts.json --transpile-only scripts/bootstrapDefaultFlows.ts",
     "test:logic": "node --test tests/*.test.cjs",
@@ -31,6 +32,8 @@
     "journeys:generate": "ts-node --project tsconfig.scripts.json --transpile-only scripts/generateFlowJourneys.ts",
     "validate:dailyPaths": "ts-node --project tsconfig.scripts.json --transpile-only scripts/validateDailyPaths.ts",
     "validate:arcstate": "tsx scripts/validateArcState.ts",
+    "metrics:update-durations": "ts-node --project tsconfig.scripts.json --transpile-only scripts/updateDurationBenchmarks.ts",
+    "verify:flowdoc-stepmanifests": "ts-node --project tsconfig.scripts.json -r tsconfig-paths/register --transpile-only scripts/verify-stepmanifests-from-flowdoc.ts",
     "test:all": "npm run test:logic && npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:all:3000": "npm run test:logic && npm run test:unit && npm run test:integration && node scripts/run-e2e.mjs http://localhost:3000"
   },

@@ -54,9 +54,11 @@ export default function ExploreHub() {
     <main className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-0">
       <div className="mx-auto w-full max-w-4xl space-y-6">
         <header className="space-y-3 text-center">
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Explore Mode</p>
-          <h1 className="text-3xl font-semibold sm:text-4xl">Cum vrei să continui explorarea?</h1>
-          <p className="text-base text-[var(--omni-muted)]">Poți merge mai în profunzime într-unul din aceste moduri.</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Ziua 1 · Explorare</p>
+          <h1 className="text-3xl font-semibold sm:text-4xl">Ai redus zgomotul. Acum îți clarifici profilul mental.</h1>
+          <p className="text-base text-[var(--omni-muted)]">
+            Alege una dintre opțiuni – recomandarea de azi este profilul CAT completat rapid.
+          </p>
         </header>
         <section className="space-y-5">
           <article
@@ -68,21 +70,21 @@ export default function ExploreHub() {
             <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">
               <span>Opțiunea 1</span>
               {featuredCat ? (
-                <span className="rounded-full bg-[var(--omni-energy)]/10 px-3 py-1 text-[var(--omni-energy)]">Recomandat</span>
+                <span className="rounded-full bg-[var(--omni-energy)] px-3 py-1 text-xs font-semibold text-white">Recomandat azi</span>
               ) : null}
             </div>
-            <h2 className="text-2xl font-semibold leading-snug text-[var(--omni-ink)]">🟨 Vreau să văd unde mă situez acum</h2>
+            <h2 className="text-2xl font-semibold leading-snug text-[var(--omni-ink)]">🟧 Profil mental rapid (10–12 min)</h2>
             <p className="text-base text-[var(--omni-ink)]/85">
-              O evaluare scurtă, pe câteva direcții, ca să obții o imagine mai clară a stării tale actuale.
+              Răspunzi la câteva întrebări și vezi unde ești pe axele principale. Nu e test de personalitate, e hartă de lucru.
             </p>
-            <p className="text-xs text-[var(--omni-muted)]">Nu este un rezultat final. Este o fotografie de moment.</p>
+            <p className="text-xs text-[var(--omni-muted)]">Potrivit dacă vrei un tablou clar înainte să investești mai mult timp.</p>
             <OmniCtaButton
               className="justify-center"
               variant="neutral"
               onClick={() => router.push(catTarget)}
               data-testid="explore-card-cat-lite"
             >
-              👉 Continuă cu evaluarea
+              Intră în CAT Lite
             </OmniCtaButton>
           </article>
           <article
@@ -94,8 +96,8 @@ export default function ExploreHub() {
             }`}
           >
             <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Opțiunea 2</p>
-            <h2 className="text-2xl font-semibold leading-snug text-[var(--omni-ink)]">🟦 Vreau să înțeleg mai bine o altă zonă</h2>
-            <p className="text-base text-[var(--omni-ink)]/85">O lecție scurtă, la alegere, fără evaluare.</p>
+            <h2 className="text-2xl font-semibold leading-snug text-[var(--omni-ink)]">🟦 Vreau să înțeleg mai bine o singură zonă</h2>
+            <p className="text-base text-[var(--omni-ink)]/85">O lecție scurtă, la alegere, fără evaluare completă.</p>
             <p className="text-xs text-[var(--omni-muted)]">
               {axisDisabled ? "Ai ales deja o zonă în această sesiune." : "Poți explora o singură zonă acum."}
             </p>
@@ -106,7 +108,7 @@ export default function ExploreHub() {
               onClick={axisDisabled ? undefined : () => router.push(axisTarget)}
               data-testid="explore-card-axes"
             >
-              {axisDisabled ? "Explore deja închis" : "👉 Alege o zonă"}
+              {axisDisabled ? "Explore deja închis" : "Alege o zonă"}
             </OmniCtaButton>
           </article>
         </section>

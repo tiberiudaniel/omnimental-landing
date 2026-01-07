@@ -4,6 +4,7 @@ import type {
   FlowComment,
   FlowNodeKind,
   FlowNodePortalConfig,
+  FlowNodeInternalStep,
   FlowOverlay,
   LabelMap,
   StepScreenConfig,
@@ -24,6 +25,7 @@ export type FlowSpecNode = {
   chunkId?: string;
   portal?: FlowNodePortalConfig | null;
   stepScreen?: StepScreenConfig | null;
+  internalSteps?: FlowNodeInternalStep[] | null;
 };
 
 export type FlowSpecEdge = {
@@ -134,6 +136,10 @@ export function normalizeFlowSpecPayload(payload: unknown): FlowSpecPreview {
     if (stepScreen) {
       normalizedNode.stepScreen = stepScreen;
     }
+    const internalSteps = normalizeSpecInternalSteps(nodeRaw.internalSteps);
+    if (internalSteps) {
+      normalizedNode.internalSteps = internalSteps;
+    }
     return normalizedNode;
   });
 
@@ -187,6 +193,22 @@ export function normalizeSpecTags(tags?: string[] | null, isStart?: boolean): st
   }
   const unique = Array.from(new Set(normalized));
   return unique.length ? unique : undefined;
+}
+
+function normalizeSpecInternalSteps(input: unknown): FlowNodeInternalStep[] | undefined {
+  if (!Array.isArray(input)) return undefined;
+  const entries: FlowNodeInternalStep[] = [];
+  input.forEach((raw, index) => {
+    if (!isPlainObject(raw)) return;
+    const id = typeof raw.id === "string" && raw.id.trim() ? raw.id.trim() : `step_${index + 1}`;
+    const label = typeof raw.label === "string" && raw.label.trim() ? raw.label.trim() : id;
+    const description = typeof raw.description === "string" ? raw.description : undefined;
+    const tags = Array.isArray(raw.tags)
+      ? raw.tags.filter((tag): tag is string => typeof tag === "string" && Boolean(tag.trim()))
+      : undefined;
+    entries.push({ id, label, description, tags });
+  });
+  return entries.length ? entries : undefined;
 }
 
 function normalizeSpecOverlays(

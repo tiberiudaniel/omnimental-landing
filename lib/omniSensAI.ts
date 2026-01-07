@@ -4,6 +4,7 @@ import { getUserProfileSnapshot, type UserProfileSnapshot, type CatAxisId } from
 import { getTodayPlan, type SessionPlan } from "@/lib/sessionRecommenderEngine";
 import { getSessionsToday, getArenaRunsById } from "@/lib/usageStats";
 import { FREE_LIMITS } from "@/lib/gatingRules";
+import { getBenchmarkMinutes } from "@/lib/durationBenchmarks";
 
 export type SensAiContext = {
   profile: UserProfileSnapshot;
@@ -44,6 +45,20 @@ export async function buildSensAiContext(userId: string): Promise<SensAiContext 
   return { profile, sessionsToday, arenasRunsById };
 }
 
+function withDurationBenchmark(plan: SessionPlan | null): SessionPlan | null {
+  if (!plan) return plan;
+  const benchmarkMinutes = getBenchmarkMinutes(plan.moduleId);
+  if (!benchmarkMinutes) return plan;
+  const adjustedMinutes = Math.max(3, Math.min(45, Math.round(benchmarkMinutes)));
+  if (!Number.isFinite(adjustedMinutes) || adjustedMinutes <= 0) {
+    return plan;
+  }
+  if (adjustedMinutes === plan.expectedDurationMinutes) {
+    return plan;
+  }
+  return { ...plan, expectedDurationMinutes: adjustedMinutes };
+}
+
 export async function getSensAiTodayPlan(
   userId: string,
   options?: { forcedAxis?: CatAxisId | null },
@@ -56,18 +71,19 @@ export async function getSensAiTodayPlan(
       return { ctx: null, plan: SAFE_FALLBACK_PLAN };
     }
     try {
-      return { ctx: null, plan: getTodayPlan(fallbackProfile, forcedAxis ? { forcedTrait: forcedAxis } : undefined) };
+      const nextPlan = getTodayPlan(fallbackProfile, forcedAxis ? { forcedTrait: forcedAxis } : undefined);
+      return { ctx: null, plan: withDurationBenchmark(nextPlan) };
     } catch (error) {
       console.warn("getSensAiTodayPlan fallback planner failed", error);
-      return { ctx: null, plan: SAFE_FALLBACK_PLAN };
+      return { ctx: null, plan: withDurationBenchmark(SAFE_FALLBACK_PLAN) };
     }
   }
   try {
     const plan = getTodayPlan(ctx.profile, forcedAxis ? { forcedTrait: forcedAxis } : undefined);
-    return { ctx, plan };
+    return { ctx, plan: withDurationBenchmark(plan) };
   } catch (error) {
     console.warn("getSensAiTodayPlan planner failed", error);
-    return { ctx, plan: SAFE_FALLBACK_PLAN };
+    return { ctx, plan: withDurationBenchmark(SAFE_FALLBACK_PLAN) };
   }
 }
 
