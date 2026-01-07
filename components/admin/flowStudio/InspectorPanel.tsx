@@ -24,6 +24,22 @@ import { buildStepScreenHref } from "@/lib/flowStudio/stepScreenUtils";
 import { getStepsForRoute } from "@/lib/stepManifests/stepRegistry";
 
 const DEBUG_STEPS = process.env.NEXT_PUBLIC_FLOW_STUDIO_DEBUG_STEPS === "true";
+const NODE_GATING_NOTES: Record<string, { title: string; entries: string[] }> = {
+  "/intro/explore": {
+    title: "Gating & shortcuts",
+    entries: [
+      "Setează intro_explore_completion=cat-lite/axes la final.",
+      "Dacă intro_explore_completion este set, route-ul sare direct în Today.",
+    ],
+  },
+  "/onboarding/cat-lite-2": {
+    title: "Gating & shortcuts",
+    entries: [
+      "Rulează doar când needsCatLitePart2 === true.",
+      "Dacă needsCatLitePart2 === false, redirect imediat în Today (deep).",
+    ],
+  },
+};
 
 const EDGE_COLOR_FALLBACK = "#0f172a";
 const EDGE_COLOR_PALETTE = ["#0f172a", "#0369a1", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2"];
@@ -932,7 +948,24 @@ function NodeBasicsSection({
         <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Route</p>
         <p className="font-semibold text-[var(--omni-ink)]">{route?.routePath ?? node.data.routePath}</p>
         {route?.filePath ? <p className="text-[11px] text-[var(--omni-muted)]">{route.filePath}</p> : null}
+        <NodeGatingNotes routePath={route?.routePath ?? node.data.routePath} />
       </div>
+    </div>
+  );
+}
+
+function NodeGatingNotes({ routePath }: { routePath?: string }) {
+  if (!routePath) return null;
+  const noteEntry = NODE_GATING_NOTES[routePath.toLowerCase()];
+  if (!noteEntry) return null;
+  return (
+    <div className="mt-3 rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2">
+      <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">{noteEntry.title}</p>
+      <ul className="mt-1 list-disc space-y-1 pl-4 text-[11px] text-[var(--omni-ink)]/80">
+        {noteEntry.entries.map((text) => (
+          <li key={text}>{text}</li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -1367,7 +1400,9 @@ function OverlayManagerSection({
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Pași ({activeOverlay.steps?.length ?? 0})</p>
+              <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+                Flow intern — journey ({activeOverlay.steps?.length ?? 0})
+              </p>
               {activeOverlay.steps?.length ? (
                 <button
                   type="button"
@@ -1405,10 +1440,35 @@ function OverlayManagerSection({
                           onClick={() => nodeExists && step.nodeId && onOverlayStepFocus(step.nodeId)}
                           disabled={!nodeExists || !step.nodeId}
                         >
-                          <p className="text-sm font-semibold">
-                            {index + 1}. {label}
-                          </p>
+                          <p className="text-sm font-semibold">{index + 1}. {label}</p>
                           <p className="text-[11px] text-[var(--omni-muted)]">{routePath || step.nodeId || "—"}</p>
+                          <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
+                            {step.gateTag ? (
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">
+                                Gate: {step.gateTag}
+                              </span>
+                            ) : null}
+                            {step.tags?.map((tag) => (
+                              <span key={`${step.nodeId}-${tag}`} className="rounded-full bg-indigo-100 px-2 py-0.5 font-semibold text-indigo-800">
+                                {tag}
+                              </span>
+                            ))}
+                            {step.assertTestId ? (
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
+                                assert:{step.assertTestId}
+                              </span>
+                            ) : null}
+                            {step.clickTestId ? (
+                              <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">
+                                click:{step.clickTestId}
+                              </span>
+                            ) : null}
+                          </div>
+                          {step.urlPattern ? (
+                            <p className="mt-1 truncate rounded-lg bg-slate-50 px-2 py-1 font-mono text-[10px] text-slate-600">
+                              {step.urlPattern}
+                            </p>
+                          ) : null}
                           {!nodeExists ? <p className="text-[11px] text-amber-700">Nod inexistent — repară Journey-ul.</p> : null}
                         </button>
                         <div className="flex items-center gap-1 text-[10px]">
@@ -1527,6 +1587,23 @@ function OverlayManagerSection({
             ) : (
               <p className="text-[11px] text-[var(--omni-muted)]">Niciun pas definit. Selectează noduri și folosește acțiunea „Adaugă noduri selectate”.</p>
             )}
+            {activeOverlay.edges?.length ? (
+              <div className="rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3">
+                <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Flow intern — edges ({activeOverlay.edges.length})</p>
+                <ul className="mt-2 space-y-1 text-[11px] text-[var(--omni-ink)]/80">
+                  {activeOverlay.edges.map((edge) => {
+                    const sourceLabel = edge.fromNodeId ? nodeLabelMap.get(edge.fromNodeId) ?? edge.fromNodeId : edge.fromNodeId ?? "—";
+                    const targetLabel = edge.toNodeId ? nodeLabelMap.get(edge.toNodeId) ?? edge.toNodeId : edge.toNodeId ?? "—";
+                    return (
+                      <li key={`${edge.fromNodeId ?? "from"}-${edge.toNodeId ?? "to"}`}>
+                        {sourceLabel} →
+                        <span className="font-semibold"> {targetLabel}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : (

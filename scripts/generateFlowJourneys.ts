@@ -10,6 +10,8 @@ type JourneyStepOutput = {
   urlPattern?: string;
   assertTestId?: string;
   clickTestId?: string;
+  gateTag?: string | null;
+  tags?: string[] | null;
 };
 
 type JourneyOutput = {
@@ -69,6 +71,8 @@ function normalizeStep(step: FlowOverlayStep, order: number): JourneyStepOutput 
   if (step.urlPattern) normalized.urlPattern = step.urlPattern;
   if (step.assertTestId) normalized.assertTestId = step.assertTestId;
   if (step.clickTestId) normalized.clickTestId = step.clickTestId;
+  if (step.gateTag) normalized.gateTag = step.gateTag;
+  if (step.tags?.length) normalized.tags = step.tags;
   return normalized;
 }
 

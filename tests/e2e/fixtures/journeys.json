@@ -1,58 +1,65 @@
 {
-  "generatedAt": "2025-01-01T00:00:00.000Z",
+  "generatedAt": "2025-01-07T12:00:00.000Z",
   "flowId": "canonical_spine",
-  "flowName": "Canonical MindPacing Spine",
+  "flowName": "Canonical Day1 Journeys",
   "journeys": [
     {
-      "id": "canonical_mindpacing_flow",
-      "name": "Intro → MindPacing → Today → Session",
+      "id": "journey_guided_day1",
+      "name": "Guided Day 1",
       "status": "active",
-      "entryRoutePath": "/intro?lang=ro&e2e=1",
-      "exitRoutePath": "/session/complete",
+      "entryRoutePath": "/intro(.*)$",
+      "exitRoutePath": "/today(.*source=guided_day1.*)$",
       "steps": [
-        {
-          "order": 1,
-          "urlPattern": "/intro(.*)$",
-          "clickTestId": "intro-skip"
-        },
-        {
-          "order": 2,
-          "urlPattern": "/intro(.*)$",
-          "clickTestId": "intro-choice-guided"
-        },
-        {
-          "order": 3,
-          "urlPattern": "/intro(.*step=mindpacing.*)$",
-          "assertTestId": "mindpacing-root",
-          "clickTestId": "mindpacing-option-0"
-        },
-        {
-          "order": 4,
-          "urlPattern": "/intro(.*step=mindpacing.*)$",
-          "assertTestId": "mindpacing-root",
-          "clickTestId": "mindpacing-continue"
-        },
-        {
-          "order": 5,
-          "urlPattern": "/intro(.*step=vocab.*)$",
-          "assertTestId": "vocab-root",
-          "clickTestId": "vocab-continue"
-        },
-        {
-          "order": 6,
-          "urlPattern": "/today(.*)$",
-          "assertTestId": "today-root",
-          "clickTestId": "today-start-run"
-        },
-        {
-          "order": 7,
-          "urlPattern": "/today/(run|next)(.*)$"
-        },
-        {
-          "order": 8,
-          "urlPattern": "/session/complete(.*)$",
-          "assertTestId": "session-complete-root"
-        }
+        { "order": 1, "nodeId": "n_intro_cinematic_step", "urlPattern": "/intro(.*step=cinematic.*)$", "clickTestId": "intro-choice-guided" },
+        { "order": 2, "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "clickTestId": "mindpacing-option-0" },
+        { "order": 3, "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "assertTestId": "mindpacing-root", "clickTestId": "mindpacing-continue" },
+        { "order": 4, "nodeId": "n_intro_vocab_step", "urlPattern": "/intro(.*step=vocab.*)$", "assertTestId": "vocab-root", "clickTestId": "vocab-continue" },
+        { "order": 5, "nodeId": "n_intro_handoff_step", "urlPattern": "/intro(.*step=handoff.*)$" },
+        { "order": 6, "nodeId": "n_today_deep", "urlPattern": "/today(.*mode=deep.*intent=guided.*)$", "assertTestId": "guided-day1-page", "clickTestId": "guided-day1-start" },
+        { "order": 7, "nodeId": "n_guided_day1_session_step", "urlPattern": "/guided/day1(.*step=guided_day1_session.*)$", "assertTestId": "guided-day1-e2e", "clickTestId": "session-finish-button" },
+        { "order": 8, "nodeId": "n_guided_day1_complete_step", "urlPattern": "/guided/day1(.*step=guided_day1_complete.*)$", "assertTestId": "session-complete-root" },
+        { "order": 9, "nodeId": "n_today_deep", "urlPattern": "/today(.*source=guided_day1.*)$" }
+      ]
+    },
+    {
+      "id": "journey_explore_cat_day1",
+      "name": "Explore CAT Day 1",
+      "status": "active",
+      "entryRoutePath": "/intro(.*)$",
+      "exitRoutePath": "/today(.*source=explore_cat_day1.*)$",
+      "steps": [
+        { "order": 1, "nodeId": "n_intro_cinematic_step", "urlPattern": "/intro(.*step=cinematic.*)$", "clickTestId": "intro-choice-explore" },
+        { "order": 2, "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "clickTestId": "mindpacing-option-0" },
+        { "order": 3, "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "assertTestId": "mindpacing-root", "clickTestId": "mindpacing-continue" },
+        { "order": 4, "nodeId": "n_intro_vocab_step", "urlPattern": "/intro(.*step=vocab.*)$", "assertTestId": "vocab-root", "clickTestId": "vocab-continue" },
+        { "order": 5, "nodeId": "n_intro_handoff_step", "urlPattern": "/intro(.*step=handoff.*)$" },
+        { "order": 6, "nodeId": "n_today_deep", "urlPattern": "/today(.*mode=deep.*intent=explore.*)$", "assertTestId": "today-root", "clickTestId": "today-explore-cat" },
+        { "order": 7, "nodeId": "n_intro_explore", "urlPattern": "/intro/explore(.*entry=cat-lite.*)$", "assertTestId": "explore-card-cat-lite", "clickTestId": "explore-card-cat-lite", "gateTag": "skip_if_intro_explore_completed" },
+        { "order": 8, "nodeId": "n_intro_explore_catlite", "urlPattern": "/intro/explore/cat-lite(.*)$" },
+        { "order": 9, "nodeId": "n_onboarding_catlite2", "urlPattern": "/onboarding/cat-lite-2(.*)$", "tags": ["auto:cat-lite-part2"], "gateTag": "skip_if_catlite_not_needed" },
+        { "order": 10, "nodeId": "n_intro_vocab_catlite", "urlPattern": "/intro/vocab(.*source=cat-lite.*)$", "assertTestId": "vocab-root", "clickTestId": "vocab-continue" },
+        { "order": 11, "nodeId": "n_intro_explore_complete", "urlPattern": "/intro/explore/complete(.*source=cat-lite.*)$" },
+        { "order": 12, "nodeId": "n_today_deep", "urlPattern": "/today(.*source=explore_cat_day1.*)$" }
+      ]
+    },
+    {
+      "id": "journey_explore_axes_day1",
+      "name": "Explore AXE Day 1",
+      "status": "active",
+      "entryRoutePath": "/intro(.*)$",
+      "exitRoutePath": "/today(.*source=explore_axes_day1.*)$",
+      "steps": [
+        { "order": 1, "nodeId": "n_intro_cinematic_step", "urlPattern": "/intro(.*step=cinematic.*)$", "clickTestId": "intro-choice-explore" },
+        { "order": 2, "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "clickTestId": "mindpacing-option-0" },
+        { "order": 3, "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "assertTestId": "mindpacing-root", "clickTestId": "mindpacing-continue" },
+        { "order": 4, "nodeId": "n_intro_vocab_step", "urlPattern": "/intro(.*step=vocab.*)$", "assertTestId": "vocab-root", "clickTestId": "vocab-continue" },
+        { "order": 5, "nodeId": "n_intro_handoff_step", "urlPattern": "/intro(.*step=handoff.*)$" },
+        { "order": 6, "nodeId": "n_today_deep", "urlPattern": "/today(.*mode=deep.*intent=explore.*)$", "assertTestId": "today-root", "clickTestId": "today-explore-axes" },
+        { "order": 7, "nodeId": "n_intro_explore", "urlPattern": "/intro/explore(.*entry=axes.*)$", "assertTestId": "explore-card-axes", "clickTestId": "explore-card-axes", "gateTag": "skip_if_intro_explore_completed" },
+        { "order": 8, "nodeId": "n_intro_explore_axes", "urlPattern": "/intro/explore/axes(.*)$", "assertTestId": "explore-axes-root", "tags": ["auto:explore-axis-pick"] },
+        { "order": 9, "nodeId": "n_intro_explore_axis_detail", "urlPattern": "/intro/explore/axes/.+", "assertTestId": "explore-axis-detail-root", "tags": ["auto:explore-axis-complete"] },
+        { "order": 10, "nodeId": "n_intro_explore_complete", "urlPattern": "/intro/explore/complete(.*source=axes.*)$" },
+        { "order": 11, "nodeId": "n_today_deep", "urlPattern": "/today(.*source=explore_axes_day1.*)$" }
       ]
     }
   ]

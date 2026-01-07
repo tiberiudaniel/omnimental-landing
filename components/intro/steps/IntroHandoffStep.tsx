@@ -8,28 +8,20 @@ import type { IntroMindPacingResult } from "./IntroMindPacingStep";
 import type { CatAxisId } from "@/lib/profileEngine";
 
 function buildTarget(intent: "guided" | "explore", preserveE2E: boolean, axisId: CatAxisId | null) {
-  if (intent === "guided") {
-    const params = new URLSearchParams({ mode: "deep", source: "guided_day1" });
-    params.set("lane", "guided_day1");
-    if (axisId) {
-      params.set("axis", axisId);
-      const cluster = getGuidedClusterParam(axisId);
-      if (cluster) {
-        params.set("cluster", cluster);
-      }
+  const params = new URLSearchParams({ mode: "deep", source: "intro" });
+  params.set("intent", intent);
+  params.set("lane", "guided_day1");
+  if (axisId) {
+    params.set("axis", axisId);
+    const cluster = getGuidedClusterParam(axisId);
+    if (cluster) {
+      params.set("cluster", cluster);
     }
-    if (preserveE2E) {
-      params.set("e2e", "1");
-    }
-    return `/today?${params.toString()}`;
   }
-  const base = "/intro/explore";
-  const params = new URLSearchParams({ source: "intro_spine" });
   if (preserveE2E) {
     params.set("e2e", "1");
   }
-  const query = params.toString();
-  return `${base}?${query}`;
+  return `/today?${params.toString()}`;
 }
 
 export function IntroHandoffStep({ state }: StepComponentProps) {

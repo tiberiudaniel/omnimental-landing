@@ -8,6 +8,8 @@ type JourneyStep = {
   urlPattern?: string;
   assertTestId?: string;
   clickTestId?: string;
+  gateTag?: string | null;
+  tags?: string[] | null;
 };
 
 type JourneySpec = {
@@ -114,11 +116,16 @@ describeJourneys("Flow Studio journeys", () => {
           const target = page.getByTestId(step.clickTestId);
           await expect(target).toBeVisible({ timeout: 20_000 });
           await target.click();
-        } else if (!step.assertTestId && !step.urlPattern) {
+        }
+
+        if (step.tags?.length) {
+          await runStepTags(page, step.tags, journeyName);
+        } else if (!step.assertTestId && !step.urlPattern && !step.clickTestId) {
           throw new Error(`Step ${index + 1} in journey ${journeyName} lacks actionable test data.`);
         }
 
-        if (/\/today\/(run|next)(\?|$)/.test(page.url())) {
+        const currentUrl = page.url();
+        if (/\/today\/(run|next)(\?|$)/.test(currentUrl) || /\/guided\/day1/.test(currentUrl)) {
           const finishButton = page.getByTestId("session-finish-button");
           await expect(finishButton).toBeVisible({ timeout: 20_000 });
           await Promise.all([
@@ -135,3 +142,56 @@ describeJourneys("Flow Studio journeys", () => {
     });
   }
 });
+async function handleCatLitePartTwo(page: Page) {
+  const sliders = page.locator('input[type="range"]');
+  const sliderCount = await sliders.count();
+  for (let index = 0; index < sliderCount; index += 1) {
+    const slider = sliders.nth(index);
+    await slider.waitFor({ state: "attached", timeout: 15_000 });
+    await slider.evaluate((element) => {
+      const input = element as HTMLInputElement;
+      input.value = "7";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  }
+  const saveButton = page.getByRole("button", { name: /Salvează și revino la program/i });
+  await Promise.all([
+    page.waitForURL(/\/intro\/vocab(.*source=cat-lite.*)$/i, { timeout: 20_000 }),
+    saveButton.click(),
+  ]);
+}
+
+async function handleExploreAxisPick(page: Page) {
+  const card = page.getByTestId("explore-axis-item").first();
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  await Promise.all([
+    page.waitForURL(/\/intro\/explore\/axes\/[^/?]+/i, { timeout: 20_000 }),
+    card.getByRole("button").click(),
+  ]);
+}
+
+async function handleExploreAxisComplete(page: Page) {
+  const finishButton = page.getByRole("button", { name: /Revenim în Today/i }).first();
+  await Promise.all([
+    page.waitForURL(/\/intro\/explore\/complete(.*source=axes.*)$/i, { timeout: 20_000 }),
+    finishButton.click(),
+  ]);
+}
+
+async function runStepTags(page: Page, tags: string[], journeyName: string) {
+  for (const tag of tags) {
+    switch (tag) {
+      case "auto:cat-lite-part2":
+        await handleCatLitePartTwo(page);
+        break;
+      case "auto:explore-axis-pick":
+        await handleExploreAxisPick(page);
+        break;
+      case "auto:explore-axis-complete":
+        await handleExploreAxisComplete(page);
+        break;
+      default:
+        console.warn(`[journeys] Journey ${journeyName} has unknown tag ${tag}. Skipping.`);
+    }
+  }
+}

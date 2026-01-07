@@ -70,6 +70,7 @@ export default function TodayOrchestrator() {
   const [completedToday, setCompletedToday] = useState(false);
   const [lastCompletion, setLastCompletion] = useState<DailyCompletionRecord | null>(null);
   const sourceParam = searchParams?.get("source");
+  const intentParam = (searchParams?.get("intent") ?? "").toLowerCase();
   const mindpacingTagParam = searchParams?.get("mindpacingTag") ?? null;
   const todayKey = useMemo(() => getTodayKey(), []);
   const mindBlock = progressFacts?.mindPacing ?? null;
@@ -276,6 +277,20 @@ export default function TodayOrchestrator() {
     }
     return params.toString();
   };
+  const exploreCatUrl = useMemo(() => {
+    const params = new URLSearchParams({ source: "today", entry: "cat-lite" });
+    if (preserveGuidedDayOneE2E) {
+      params.set("e2e", "1");
+    }
+    return `/intro/explore?${params.toString()}`;
+  }, [preserveGuidedDayOneE2E]);
+  const exploreAxesUrl = useMemo(() => {
+    const params = new URLSearchParams({ source: "today", entry: "axes" });
+    if (preserveGuidedDayOneE2E) {
+      params.set("e2e", "1");
+    }
+    return `/intro/explore?${params.toString()}`;
+  }, [preserveGuidedDayOneE2E]);
   const handleGuidedDayOneStart = () => {
     if (!canStartGuided) return;
     router.push(`/today/run?${buildGuidedDayOneQuery()}`);
@@ -362,18 +377,6 @@ export default function TodayOrchestrator() {
     return `Pornește sesiunea (${sessionPlan.expectedDurationMinutes} min)`;
   }, [sessionPlan?.expectedDurationMinutes]);
 
-  const explorePortal = useMemo(() => {
-    if (wizardUnlocked) {
-      return { href: "/wizard", label: "Wizard", description: "Configuratorul avansat pentru scenarii speciale." };
-    }
-    if (omniKunoUnlocked) {
-      return { href: "/omni-kuno", label: "OmniKuno", description: "Lecții intensive pentru execuție." };
-    }
-    if (accessTier.flags.canArenas) {
-      return { href: "/arenas", label: "Arenas", description: "Drills cu scor și progres măsurat." };
-    }
-    return { href: "/progress", label: "Progress Map", description: "Harta progresului tău zilnic." };
-  }, [accessTier.flags.canArenas, omniKunoUnlocked, wizardUnlocked]);
   const goToEarnGate = useCallback(
     (source: string) => {
       router.push(`/today/earn?source=${source}&round=extra`);
@@ -416,8 +419,7 @@ export default function TodayOrchestrator() {
     : deepNeedsEarnCredit
       ? "Ai nevoie de un credit Earn pentru încă o rundă azi."
       : "Credit Earn disponibil pentru 30–60 min de focus.";
-  const exploreNeedsEarnCredit = !isPremiumMember && completedToday && !earnedRounds.canSpend;
-  const exploreButtonLabel = exploreNeedsEarnCredit ? "Deblochează credit Earn" : `Intră în ${explorePortal.label}`;
+  const highlightExploreCat = intentParam === "explore";
   const earnStatusLabel = isPremiumMember
     ? "Premium activ: poți rula Deep + Explore fără limită."
     : `Credite Earn: ${earnedRounds.state.credits}/3 · Runde extra azi: ${earnedRounds.state.usedToday}`;
@@ -439,13 +441,13 @@ export default function TodayOrchestrator() {
     const params = new URLSearchParams({ source: "today_hub", mode: "deep", round: "extra" });
     router.push(`/today/next?${params.toString()}`);
   };
-  const handleExploreLaunch = () => {
-    track("today_explore_selected", { destination: explorePortal.href, premium: isPremiumMember });
-    if (exploreNeedsEarnCredit) {
-      goToEarnGate("today_explore");
-      return;
-    }
-    router.push(explorePortal.href);
+  const handleExploreCatLite = () => {
+    track("today_explore_cat_clicked", { intent: intentParam || null, source: sourceParam ?? null });
+    router.push(exploreCatUrl);
+  };
+  const handleExploreAxes = () => {
+    track("today_explore_axes_clicked", { intent: intentParam || null, source: sourceParam ?? null });
+    router.push(exploreAxesUrl);
   };
   const handleEarnShortcut = () => {
     goToEarnGate("today_hub");
@@ -529,21 +531,6 @@ export default function TodayOrchestrator() {
                     {deepButtonLabel}
                   </OmniCtaButton>
                 </article>
-                <article className="rounded-[20px] border border-[var(--omni-border-soft)] bg-white/90 px-5 py-4 shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
-                  <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-                    <span>Explore</span>
-                    <span>{explorePortal.label}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{explorePortal.description}</p>
-                  <OmniCtaButton
-                    className="mt-4 w-full justify-center"
-                    variant="secondary"
-                    onClick={handleExploreLaunch}
-                    disabled={planLoading}
-                  >
-                    {exploreButtonLabel}
-                  </OmniCtaButton>
-                </article>
               </div>
               <div className="mt-4 flex flex-col gap-2 rounded-[18px] border border-[var(--omni-border-soft)] bg-white/60 px-4 py-3 text-xs text-[var(--omni-muted)] sm:flex-row sm:items-center sm:justify-between">
                 <p className="font-semibold uppercase tracking-[0.35em] text-[var(--omni-ink)]">{earnStatusLabel}</p>
@@ -593,6 +580,50 @@ export default function TodayOrchestrator() {
                   Sesiunea de azi este completă. Ne vedem mâine.
                 </div>
               ) : null}
+            </section>
+
+            <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-white/90 px-6 py-8 shadow-[0_15px_45px_rgba(0,0,0,0.06)] sm:px-10">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Explorează mai mult</p>
+                <h2 className="text-2xl font-semibold text-[var(--omni-ink)]">Alege contextul pe care îl aprofundezi</h2>
+                <p className="text-sm text-[var(--omni-ink)]/80">
+                  După sesiunea deep poți continua cu o explorare ghidată sau cu o lecție scurtă pe o axă.
+                </p>
+              </div>
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                <article className="rounded-[22px] border border-[var(--omni-border-soft)] bg-white/95 px-5 py-5 shadow-[0_12px_30px_rgba(0,0,0,0.05)]">
+                  <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                    <span>Explore CAT</span>
+                    {highlightExploreCat ? (
+                      <span className="rounded-full bg-[var(--omni-energy)]/10 px-3 py-1 text-[var(--omni-energy)]">Propus azi</span>
+                    ) : (
+                      <span>Profil mental</span>
+                    )}
+                  </div>
+                  <h3 className="mt-3 text-xl font-semibold text-[var(--omni-ink)]">Profil mental Ziua 1</h3>
+                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">
+                    Intră în CAT Lite și vezi unde te afli pe axele principale. Îți ia 10-12 minute.
+                  </p>
+                  <OmniCtaButton className="mt-4 w-full justify-center" onClick={handleExploreCatLite} data-testid="today-explore-cat">
+                    Explorează CAT
+                  </OmniCtaButton>
+                </article>
+                <article className="rounded-[22px] border border-dashed border-[var(--omni-border-soft)] bg-white/80 px-5 py-5 shadow-[0_12px_30px_rgba(0,0,0,0.05)]">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Explore AXE</div>
+                  <h3 className="mt-3 text-xl font-semibold text-[var(--omni-ink)]">Alege o lecție pe o axă</h3>
+                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">
+                    Dacă vrei doar context rapid, alege o axă și primești vocab + mini-instrucțiuni pentru zona respectivă.
+                  </p>
+                  <OmniCtaButton
+                    className="mt-4 w-full justify-center"
+                    variant="neutral"
+                    onClick={handleExploreAxes}
+                    data-testid="today-explore-axes"
+                  >
+                    Explorează axele
+                  </OmniCtaButton>
+                </article>
+              </div>
             </section>
 
             {!guidedOnboardingActive ? (

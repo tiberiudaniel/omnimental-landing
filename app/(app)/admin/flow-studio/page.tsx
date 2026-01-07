@@ -2981,11 +2981,12 @@ useEffect(() => {
       updatedAt: serverTimestamp(),
       version: incomingVersion,
     };
+    const cleanedPayload = stripUndefinedDeep(payload);
     if (importUpdateCurrent && selectedFlowId) {
-      await setDoc(doc(db, "adminFlows", selectedFlowId), payload, { merge: true });
+      await setDoc(doc(db, "adminFlows", selectedFlowId), cleanedPayload, { merge: true });
     } else {
       const docRef = await addDoc(collection(db, "adminFlows"), {
-        ...payload,
+        ...cleanedPayload,
         createdAt: serverTimestamp(),
       });
       setSelectedFlowId(docRef.id);

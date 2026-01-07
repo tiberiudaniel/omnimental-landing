@@ -1,0 +1,290 @@
+{
+  "flow": {
+    "id": "canonical_spine",
+    "name": "Canonical Day1 Journeys",
+    "version": 4,
+    "updatedAt": "2025-01-07T12:00:00.000Z"
+  },
+  "nodes": [
+    {
+      "id": "n_entry_home",
+      "routePath": "/",
+      "label": { "ro": "Landing" },
+      "position": { "x": 20, "y": 80 },
+      "chunkId": "public",
+      "isStart": true
+    },
+    {
+      "id": "n_intro_route",
+      "routePath": "/intro",
+      "label": { "ro": "Intro (StepRunner)" },
+      "position": { "x": 220, "y": 80 },
+      "chunkId": "entry_intro"
+    },
+    {
+      "id": "n_intro_cinematic_step",
+      "kind": "stepScreen",
+      "routePath": "/intro",
+      "stepScreen": {
+        "hostRoutePath": "/intro",
+        "stepKey": "cinematic",
+        "label": "Intro cinematic"
+      },
+      "label": { "ro": "Intro cinematic" },
+      "position": { "x": 420, "y": 20 },
+      "chunkId": "entry_intro"
+    },
+    {
+      "id": "n_intro_mindpacing_step",
+      "kind": "stepScreen",
+      "routePath": "/intro",
+      "stepScreen": {
+        "hostRoutePath": "/intro",
+        "stepKey": "mindpacing",
+        "label": "MindPacing"
+      },
+      "label": { "ro": "MindPacing" },
+      "position": { "x": 420, "y": 110 },
+      "chunkId": "entry_intro"
+    },
+    {
+      "id": "n_intro_vocab_step",
+      "kind": "stepScreen",
+      "routePath": "/intro",
+      "stepScreen": {
+        "hostRoutePath": "/intro",
+        "stepKey": "vocab",
+        "label": "Vocab primer"
+      },
+      "label": { "ro": "Vocab primer" },
+      "position": { "x": 420, "y": 200 },
+      "chunkId": "entry_intro"
+    },
+    {
+      "id": "n_intro_handoff_step",
+      "kind": "stepScreen",
+      "routePath": "/intro",
+      "stepScreen": {
+        "hostRoutePath": "/intro",
+        "stepKey": "handoff",
+        "label": "Handoff"
+      },
+      "label": { "ro": "Handoff" },
+      "position": { "x": 420, "y": 290 },
+      "chunkId": "entry_intro"
+    },
+    {
+      "id": "n_today_deep",
+      "routePath": "/today",
+      "label": { "ro": "Today (deep default)" },
+      "position": { "x": 640, "y": 160 },
+      "tags": ["mode:deep"],
+      "chunkId": "daily_loop"
+    },
+    {
+      "id": "n_intro_explore",
+      "routePath": "/intro/explore",
+      "label": { "ro": "Explore Hub" },
+      "position": { "x": 860, "y": 160 },
+      "chunkId": "guided_day1"
+    },
+    {
+      "id": "n_intro_explore_catlite",
+      "routePath": "/intro/explore/cat-lite",
+      "label": { "ro": "CAT Lite redirect" },
+      "position": { "x": 1060, "y": 80 },
+      "chunkId": "guided_day1"
+    },
+    {
+      "id": "n_onboarding_catlite2",
+      "routePath": "/onboarding/cat-lite-2",
+      "label": { "ro": "CAT Lite Part 2" },
+      "position": { "x": 1260, "y": 40 },
+      "chunkId": "onboarding"
+    },
+    {
+      "id": "n_intro_vocab_catlite",
+      "routePath": "/intro/vocab",
+      "label": { "ro": "Vocab (CAT Lite)" },
+      "position": { "x": 1460, "y": 40 },
+      "chunkId": "entry_intro"
+    },
+    {
+      "id": "n_intro_explore_complete",
+      "routePath": "/intro/explore/complete",
+      "label": { "ro": "Explore complete gate" },
+      "position": { "x": 1660, "y": 40 },
+      "chunkId": "guided_day1"
+    },
+    {
+      "id": "n_guided_day1_route",
+      "routePath": "/guided/day1",
+      "label": { "ro": "Guided Day1" },
+      "position": { "x": 860, "y": 320 },
+      "chunkId": "guided_day1"
+    },
+    {
+      "id": "n_guided_day1_session_step",
+      "kind": "stepScreen",
+      "routePath": "/guided/day1",
+      "stepScreen": {
+        "hostRoutePath": "/guided/day1",
+        "stepKey": "guided_day1_session",
+        "label": "Guided session"
+      },
+      "label": { "ro": "Guided session" },
+      "position": { "x": 1060, "y": 300 },
+      "chunkId": "guided_day1"
+    },
+    {
+      "id": "n_guided_day1_complete_step",
+      "kind": "stepScreen",
+      "routePath": "/guided/day1",
+      "stepScreen": {
+        "hostRoutePath": "/guided/day1",
+        "stepKey": "guided_day1_complete",
+        "label": "Guided complete"
+      },
+      "label": { "ro": "Guided complete" },
+      "position": { "x": 1260, "y": 300 },
+      "chunkId": "guided_day1"
+    },
+    {
+      "id": "n_intro_explore_axes",
+      "routePath": "/intro/explore/axes",
+      "label": { "ro": "Explore AXE Hub" },
+      "position": { "x": 1060, "y": 200 },
+      "chunkId": "guided_day1"
+    },
+    {
+      "id": "n_intro_explore_axis_detail",
+      "routePath": "/intro/explore/axes/[axisId]",
+      "label": { "ro": "Axis lesson" },
+      "position": { "x": 1260, "y": 200 },
+      "chunkId": "guided_day1"
+    }
+  ],
+  "edges": [
+    { "id": "edge_home_intro", "source": "n_entry_home", "target": "n_intro_route" },
+    { "id": "edge_intro_to_cinematic", "source": "n_intro_route", "target": "n_intro_cinematic_step" },
+    { "id": "edge_cinematic_to_mindpacing", "source": "n_intro_cinematic_step", "target": "n_intro_mindpacing_step" },
+    { "id": "edge_mindpacing_to_vocab", "source": "n_intro_mindpacing_step", "target": "n_intro_vocab_step" },
+    { "id": "edge_vocab_to_handoff", "source": "n_intro_vocab_step", "target": "n_intro_handoff_step" },
+    { "id": "edge_handoff_to_today", "source": "n_intro_handoff_step", "target": "n_today_deep" },
+    { "id": "edge_today_to_explore", "source": "n_today_deep", "target": "n_intro_explore" },
+    { "id": "edge_explore_to_catlite_redirect", "source": "n_intro_explore", "target": "n_intro_explore_catlite" },
+    { "id": "edge_catlite_redirect_to_part2", "source": "n_intro_explore_catlite", "target": "n_onboarding_catlite2" },
+    { "id": "edge_catlite_part2_to_vocab", "source": "n_onboarding_catlite2", "target": "n_intro_vocab_catlite" },
+    { "id": "edge_catlite_vocab_to_complete", "source": "n_intro_vocab_catlite", "target": "n_intro_explore_complete" },
+    { "id": "edge_explore_complete_to_today", "source": "n_intro_explore_complete", "target": "n_today_deep" },
+    { "id": "edge_explore_to_axes", "source": "n_intro_explore", "target": "n_intro_explore_axes" },
+    { "id": "edge_axes_to_lesson", "source": "n_intro_explore_axes", "target": "n_intro_explore_axis_detail" },
+    { "id": "edge_axis_lesson_to_complete", "source": "n_intro_explore_axis_detail", "target": "n_intro_explore_complete" },
+    { "id": "edge_today_to_guided_route", "source": "n_today_deep", "target": "n_guided_day1_route" },
+    { "id": "edge_guided_route_to_session", "source": "n_guided_day1_route", "target": "n_guided_day1_session_step" },
+    { "id": "edge_guided_session_to_complete", "source": "n_guided_day1_session_step", "target": "n_guided_day1_complete_step" },
+    { "id": "edge_guided_complete_to_today", "source": "n_guided_day1_complete_step", "target": "n_today_deep" }
+  ],
+  "overlays": [
+    {
+      "id": "journey_guided_day1",
+      "name": "Guided Day 1",
+      "description": "Intro StepRunner → Today (deep) → Guided Day 1 session → Completion → Today",
+      "status": "active",
+      "entryRoutePath": "/intro(.*)$",
+      "exitRoutePath": "/today(.*source=guided_day1.*)$",
+      "steps": [
+        { "nodeId": "n_intro_cinematic_step", "urlPattern": "/intro(.*step=cinematic.*)$", "clickTestId": "intro-choice-guided" },
+        { "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "clickTestId": "mindpacing-option-0" },
+        { "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "assertTestId": "mindpacing-root", "clickTestId": "mindpacing-continue" },
+        { "nodeId": "n_intro_vocab_step", "urlPattern": "/intro(.*step=vocab.*)$", "assertTestId": "vocab-root", "clickTestId": "vocab-continue" },
+        { "nodeId": "n_intro_handoff_step", "urlPattern": "/intro(.*step=handoff.*)$" },
+        { "nodeId": "n_today_deep", "urlPattern": "/today(.*mode=deep.*intent=guided.*)$", "assertTestId": "guided-day1-page", "clickTestId": "guided-day1-start" },
+        { "nodeId": "n_guided_day1_session_step", "urlPattern": "/guided/day1(.*step=guided_day1_session.*)$", "assertTestId": "guided-day1-e2e", "clickTestId": "session-finish-button" },
+        { "nodeId": "n_guided_day1_complete_step", "urlPattern": "/guided/day1(.*step=guided_day1_complete.*)$", "assertTestId": "session-complete-root" },
+        { "nodeId": "n_today_deep", "urlPattern": "/today(.*source=guided_day1.*)$" }
+      ],
+      "edges": [
+        { "fromNodeId": "n_intro_cinematic_step", "toNodeId": "n_intro_mindpacing_step" },
+        { "fromNodeId": "n_intro_mindpacing_step", "toNodeId": "n_intro_vocab_step" },
+        { "fromNodeId": "n_intro_vocab_step", "toNodeId": "n_intro_handoff_step" },
+        { "fromNodeId": "n_intro_handoff_step", "toNodeId": "n_today_deep" },
+        { "fromNodeId": "n_today_deep", "toNodeId": "n_guided_day1_session_step" },
+        { "fromNodeId": "n_guided_day1_session_step", "toNodeId": "n_guided_day1_complete_step" },
+        { "fromNodeId": "n_guided_day1_complete_step", "toNodeId": "n_today_deep" }
+      ]
+    },
+    {
+      "id": "journey_explore_cat_day1",
+      "name": "Explore CAT Day 1",
+      "description": "Intro StepRunner → Today (deep) → Explore Hub → CAT Lite → Today",
+      "status": "active",
+      "entryRoutePath": "/intro(.*)$",
+      "exitRoutePath": "/today(.*source=explore_cat_day1.*)$",
+      "steps": [
+        { "nodeId": "n_intro_cinematic_step", "urlPattern": "/intro(.*step=cinematic.*)$", "clickTestId": "intro-choice-explore" },
+        { "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "clickTestId": "mindpacing-option-0" },
+        { "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "assertTestId": "mindpacing-root", "clickTestId": "mindpacing-continue" },
+        { "nodeId": "n_intro_vocab_step", "urlPattern": "/intro(.*step=vocab.*)$", "assertTestId": "vocab-root", "clickTestId": "vocab-continue" },
+        { "nodeId": "n_intro_handoff_step", "urlPattern": "/intro(.*step=handoff.*)$" },
+        { "nodeId": "n_today_deep", "urlPattern": "/today(.*mode=deep.*intent=explore.*)$", "assertTestId": "today-root", "clickTestId": "today-explore-cat" },
+        { "nodeId": "n_intro_explore", "urlPattern": "/intro/explore(.*entry=cat-lite.*)$", "assertTestId": "explore-card-cat-lite", "clickTestId": "explore-card-cat-lite", "gateTag": "skip_if_intro_explore_completed" },
+        { "nodeId": "n_intro_explore_catlite", "urlPattern": "/intro/explore/cat-lite(.*)$" },
+        { "nodeId": "n_onboarding_catlite2", "urlPattern": "/onboarding/cat-lite-2(.*)$", "tags": ["auto:cat-lite-part2"], "gateTag": "skip_if_catlite_not_needed" },
+        { "nodeId": "n_intro_vocab_catlite", "urlPattern": "/intro/vocab(.*source=cat-lite.*)$", "assertTestId": "vocab-root", "clickTestId": "vocab-continue" },
+        { "nodeId": "n_intro_explore_complete", "urlPattern": "/intro/explore/complete(.*source=cat-lite.*)$" },
+        { "nodeId": "n_today_deep", "urlPattern": "/today(.*source=explore_cat_day1.*)$" }
+      ],
+      "edges": [
+        { "fromNodeId": "n_intro_cinematic_step", "toNodeId": "n_intro_mindpacing_step" },
+        { "fromNodeId": "n_intro_mindpacing_step", "toNodeId": "n_intro_vocab_step" },
+        { "fromNodeId": "n_intro_vocab_step", "toNodeId": "n_intro_handoff_step" },
+        { "fromNodeId": "n_intro_handoff_step", "toNodeId": "n_today_deep" },
+        { "fromNodeId": "n_today_deep", "toNodeId": "n_intro_explore" },
+        { "fromNodeId": "n_intro_explore", "toNodeId": "n_intro_explore_catlite" },
+        { "fromNodeId": "n_intro_explore_catlite", "toNodeId": "n_onboarding_catlite2" },
+        { "fromNodeId": "n_onboarding_catlite2", "toNodeId": "n_intro_vocab_catlite" },
+        { "fromNodeId": "n_intro_vocab_catlite", "toNodeId": "n_intro_explore_complete" },
+        { "fromNodeId": "n_intro_explore_complete", "toNodeId": "n_today_deep" }
+      ]
+    },
+    {
+      "id": "journey_explore_axes_day1",
+      "name": "Explore AXE Day 1",
+      "description": "Intro StepRunner → Today (deep) → Explore Hub → Axis lesson → Today",
+      "status": "active",
+      "entryRoutePath": "/intro(.*)$",
+      "exitRoutePath": "/today(.*source=explore_axes_day1.*)$",
+      "steps": [
+        { "nodeId": "n_intro_cinematic_step", "urlPattern": "/intro(.*step=cinematic.*)$", "clickTestId": "intro-choice-explore" },
+        { "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "clickTestId": "mindpacing-option-0" },
+        { "nodeId": "n_intro_mindpacing_step", "urlPattern": "/intro(.*step=mindpacing.*)$", "assertTestId": "mindpacing-root", "clickTestId": "mindpacing-continue" },
+        { "nodeId": "n_intro_vocab_step", "urlPattern": "/intro(.*step=vocab.*)$", "assertTestId": "vocab-root", "clickTestId": "vocab-continue" },
+        { "nodeId": "n_intro_handoff_step", "urlPattern": "/intro(.*step=handoff.*)$" },
+        { "nodeId": "n_today_deep", "urlPattern": "/today(.*mode=deep.*intent=explore.*)$", "assertTestId": "today-root", "clickTestId": "today-explore-axes" },
+        { "nodeId": "n_intro_explore", "urlPattern": "/intro/explore(.*entry=axes.*)$", "assertTestId": "explore-card-axes", "clickTestId": "explore-card-axes", "gateTag": "skip_if_intro_explore_completed" },
+        { "nodeId": "n_intro_explore_axes", "urlPattern": "/intro/explore/axes(.*)$", "assertTestId": "explore-axes-root", "tags": ["auto:explore-axis-pick"] },
+        { "nodeId": "n_intro_explore_axis_detail", "urlPattern": "/intro/explore/axes/.+", "assertTestId": "explore-axis-detail-root", "tags": ["auto:explore-axis-complete"] },
+        { "nodeId": "n_intro_explore_complete", "urlPattern": "/intro/explore/complete(.*source=axes.*)$" },
+        { "nodeId": "n_today_deep", "urlPattern": "/today(.*source=explore_axes_day1.*)$" }
+      ],
+      "edges": [
+        { "fromNodeId": "n_intro_cinematic_step", "toNodeId": "n_intro_mindpacing_step" },
+        { "fromNodeId": "n_intro_mindpacing_step", "toNodeId": "n_intro_vocab_step" },
+        { "fromNodeId": "n_intro_vocab_step", "toNodeId": "n_intro_handoff_step" },
+        { "fromNodeId": "n_intro_handoff_step", "toNodeId": "n_today_deep" },
+        { "fromNodeId": "n_today_deep", "toNodeId": "n_intro_explore" },
+        { "fromNodeId": "n_intro_explore", "toNodeId": "n_intro_explore_axes" },
+        { "fromNodeId": "n_intro_explore_axes", "toNodeId": "n_intro_explore_axis_detail" },
+        { "fromNodeId": "n_intro_explore_axis_detail", "toNodeId": "n_intro_explore_complete" },
+        { "fromNodeId": "n_intro_explore_complete", "toNodeId": "n_today_deep" }
+      ]
+    }
+  ],
+  "diagnostics": {
+    "gateTags": {
+      "skip_if_intro_explore_completed": "Verifică intro_explore_completion în localStorage — dacă există, /intro/explore sare direct în Today.",
+      "skip_if_catlite_not_needed": "needsCatLitePart2(profile, progressFacts) === false determină redirect direct către Today (deep)."
+    }
+  }
+}

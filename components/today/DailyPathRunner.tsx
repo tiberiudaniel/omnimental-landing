@@ -337,6 +337,7 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
 
   const rawModuleParam = searchParams?.get("module")?.toLowerCase() ?? null;
   const moduleOverride = rawModuleParam && rawModuleParam.length > 0 ? rawModuleParam : null;
+  const guidedDayOneE2E = guidedDayOneSource && e2eParamActive;
 
   const decisionLang: DailyPathLanguage = langOverride ?? "ro";
   const isPremiumMember = membershipTier === "premium";
@@ -926,6 +927,32 @@ useEffect(() => {
     const target = e2eParamActive ? "/today?e2e=1" : "/today";
     router.push(target);
   }, [decisionLang, e2eParamActive, router]);
+
+  if (guidedDayOneE2E) {
+    return (
+      <main
+        className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)]"
+        data-testid="guided-day1-e2e"
+      >
+        <p className="text-center text-lg font-semibold">Simulated Guided Day 1 session</p>
+        <p className="max-w-md text-center text-sm text-[var(--omni-muted)]">
+          Modul e în e2e. Apasă butonul de mai jos pentru a marca sesiunea ca finalizată și a continua spre pasul următor.
+        </p>
+        <OmniCtaButton
+          className="w-full max-w-sm justify-center"
+          data-testid="session-finish-button"
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+            onCompleted?.();
+          }}
+        >
+          Finalizează sesiunea
+        </OmniCtaButton>
+      </main>
+    );
+  }
 
   const defaultHeader = (
     <SiteHeader

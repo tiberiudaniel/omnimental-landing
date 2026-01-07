@@ -179,22 +179,50 @@ export function MindPacingExperience({
   }
 
   const eyebrowText = locale === "ro" ? "5 secunde · 1 întrebare" : "5 seconds · 1 question";
-  const helperText =
-    locale === "ro"
-      ? "Ne ajută să ajustăm exercițiul de azi pentru tine."
-      : "This helps us adjust today's exercise for you.";
   const questionTitle = question?.prompt?.[locale] ?? "";
+  const heroCopy = (label: string | null) => {
+    if (label) {
+      return locale === "ro"
+        ? {
+            title: `Când mintea e „${label}”.`,
+            subtitle: "Asta e situația reală acum — exact de aici începem și ajustăm exercițiile pentru azi.",
+          }
+        : {
+            title: `When your mind feels “${label}.”`,
+            subtitle: "This is your real state right now—it's where we start and adjust today's exercises.",
+          };
+    }
+    return locale === "ro"
+      ? {
+          title: "Când mintea e „În ceață”.",
+          subtitle: "Asta e situația reală acum — exact de aici începem și ajustăm exercițiile pentru azi.",
+        }
+      : {
+          title: 'When your mind feels “foggy.”',
+          subtitle: "This is your real state right now—it's where we start and adjust today's exercises.",
+        };
+  };
 
   return (
     <div className="min-h-screen bg-[var(--omni-bg-main)] text-[var(--omni-ink)]" data-testid="mindpacing-root">
       <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-6 py-12">
-        {phase === "question" ? (
-          <section className="space-y-3 text-center">
-            <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{eyebrowText}</p>
-            <h1 className="text-3xl font-semibold text-[var(--omni-ink)]">{questionTitle}</h1>
-            <p className="text-sm text-[var(--omni-muted)]">{helperText}</p>
-          </section>
-        ) : null}
+        <section className="space-y-3 text-center">
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">{eyebrowText}</p>
+          {phase === "result" ? (
+            <h1 className="text-2xl font-semibold text-[var(--omni-ink)]">
+              {locale === "ro" ? "Am reținut semnalul." : "Signal saved."}
+            </h1>
+          ) : (
+            <>
+              <h1 className="text-3xl font-semibold text-[var(--omni-ink)]">{questionTitle}</h1>
+              <p className="text-sm text-[var(--omni-muted)]">
+                {locale === "ro"
+                  ? "Ne ajută să ajustăm exercițiul de azi pentru tine."
+                  : "This helps us adjust today's exercise for you."}
+              </p>
+            </>
+          )}
+        </section>
 
         {phase === "question" ? (
           <section className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 shadow-[0_15px_50px_rgba(0,0,0,0.08)]">
@@ -217,13 +245,9 @@ export function MindPacingExperience({
         {phase === "result" ? (
           <section className="space-y-6 rounded-[28px] border border-[var(--omni-border-soft)] bg-white/95 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
             <h3 className="text-2xl font-semibold text-[var(--omni-ink)]">
-              {locale === "ro" ? "Când mintea e „În ceață”." : 'When your mind feels “foggy.”'}
+              {heroCopy(selectedLabel).title}
             </h3>
-            <p className="text-sm text-[var(--omni-muted)]">
-              {locale === "ro"
-                ? "Asta e situația reală acum — exact de aici începem și ajustăm exercițiile pentru azi."
-                : "This is your real state right now—it's where we start and adjust today's exercises."}
-            </p>
+            <p className="text-sm text-[var(--omni-muted)]">{heroCopy(selectedLabel).subtitle}</p>
             {selectedLabel ? (
               <p className="text-sm text-[var(--omni-ink)]">
                 {locale === "ro" ? `Ai ales: „${selectedLabel}”.` : `You chose: “${selectedLabel}.”`}

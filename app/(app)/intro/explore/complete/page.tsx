@@ -15,7 +15,7 @@ function ExploreCompletionInner() {
     if (axis) {
       setAxisLessonChoice(axis);
     }
-    const params = new URLSearchParams({ mode: "short", source: "explore" });
+    const params = new URLSearchParams({ mode: "deep", source: "explore_cat_day1" });
     if ((searchParams.get("e2e") ?? "").toLowerCase() === "1") {
       params.set("e2e", "1");
     }
