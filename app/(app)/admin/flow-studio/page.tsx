@@ -42,11 +42,13 @@ import type {
   FlowNodeData,
   FlowNodeKind,
   FlowNodePortalConfig,
-  StepScreenConfig,
   FlowOverlay,
   FlowOverlayStep,
+  FlowScreenCard,
   RouteDoc,
   StepNodeRenderData,
+  StepScreenConfig,
+  FlowNodeInternalStep,
 } from "@/lib/flowStudio/types";
 import { getStepManifestAvailability, getStepManifestForRoute, type StepManifest } from "@/lib/stepManifests";
 import type { StepAvailability } from "@/components/admin/flowStudio/StepStatusBadge";
@@ -126,6 +128,18 @@ const CHUNK_FOCUS_HIDE_STORAGE_KEY = "flowStudio:focusHide";
 const LEFT_SIDEBAR_COLLAPSED_KEY = "flowStudio:leftSidebarCollapsed";
 const INSPECTOR_COLLAPSED_KEY = "flowStudio:inspectorCollapsed";
 const DEFAULT_INTRO_STEP_ORDER = ["cinematic", "mindpacing", "vocab", "handoff"];
+const DAY_ONE_CORE_ROUTE_PATHS = [
+  "/intro",
+  "/guided/day1",
+  "/today",
+  "/intro/explore",
+  "/onboarding/cat-lite-2",
+  "/intro/explore/complete",
+];
+const normalizeRoutePathForSet = (path?: string | null) => {
+  if (!path) return "";
+  return path.split("?")[0]?.trim().toLowerCase() ?? "";
+};
 const stripUndefinedDeep = <T,>(value: T): T => {
   if (Array.isArray(value)) {
     return value.map((item) => stripUndefinedDeep(item)).filter((item) => item !== undefined) as unknown as T;
@@ -179,6 +193,51 @@ const randomId = () => {
     return crypto.randomUUID();
   }
   return `id_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+};
+const makeInternalStepId = () => `screen_${randomId()}`;
+const makeInternalCardId = () => `card_${randomId()}`;
+const normalizeFlowScreenCard = (card: FlowScreenCard): FlowScreenCard => {
+  const normalized: FlowScreenCard = {
+    id: card.id?.trim() || makeInternalCardId(),
+    label: card.label?.trim() || "Card",
+  };
+  const actionTag = card.actionTag?.trim();
+  if (actionTag) {
+    normalized.actionTag = actionTag;
+  }
+  return normalized;
+};
+const normalizeFlowScreen = (step: FlowNodeInternalStep): FlowNodeInternalStep => {
+  const normalized: FlowNodeInternalStep = {
+    ...step,
+    id: step.id?.trim() || makeInternalStepId(),
+    label: step.label?.trim() || "Screen",
+  };
+  const description = step.description?.trim();
+  if (description) {
+    normalized.description = description;
+  } else {
+    delete normalized.description;
+  }
+  const tags = step.tags?.map((tag) => tag.trim()).filter(Boolean);
+  if (tags?.length) {
+    normalized.tags = tags;
+  } else {
+    delete normalized.tags;
+  }
+  const flags = step.flags?.map((flag) => flag.trim()).filter(Boolean);
+  if (flags?.length) {
+    normalized.flags = flags;
+  } else {
+    delete normalized.flags;
+  }
+  const cards = step.cards?.map(normalizeFlowScreenCard).filter((card) => card.label.length);
+  if (cards?.length) {
+    normalized.cards = cards;
+  } else {
+    delete normalized.cards;
+  }
+  return normalized;
 };
 
 const sortAndDedupeIds = (list: string[]) => {
@@ -993,6 +1052,33 @@ useEffect(() => {
     },
     [flowNodeMap, resolveCanonicalFlowNode],
   );
+  const dayOneEditableRouteSet = useMemo(() => {
+    const base = new Set<string>();
+    DAY_ONE_CORE_ROUTE_PATHS.forEach((path) => {
+      const normalized = normalizeRoutePathForSet(path);
+      if (normalized) base.add(normalized);
+    });
+    (flowDoc?.overlays ?? []).forEach((overlay) => {
+      const overlayId = overlay.id?.toLowerCase() ?? "";
+      if (!overlayId.includes("day1")) return;
+      (overlay.steps ?? []).forEach((step) => {
+        const node = flowNodeMap.get(step.nodeId);
+        const normalized = normalizeRoutePathForSet(node?.data.routePath);
+        if (normalized) base.add(normalized);
+      });
+    });
+    return base;
+  }, [flowDoc?.overlays, flowNodeMap]);
+  const canEditInternalFlowNode = useCallback(
+    (node: ReactFlowNode<FlowNodeData> | null) => {
+      if (!node) return false;
+      const canonical = resolveCanonicalFlowNode(node);
+      if (!canonical || canonical.data.kind === "stepScreen") return false;
+      const normalized = normalizeRoutePathForSet(canonical.data.routePath);
+      return normalized ? dayOneEditableRouteSet.has(normalized) : false;
+    },
+    [dayOneEditableRouteSet, resolveCanonicalFlowNode],
+  );
   const nodeChunkIdMap = useMemo(() => new Map(nodes.map((node) => [node.id, node.data.chunkId ?? UNGROUPED_CHUNK_ID])), [nodes]);
   const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedNodeId) ?? null, [nodes, selectedNodeId]);
   const selectedNodeResolvedRoutePath = selectedNode ? resolveNodeRoutePath(selectedNode) : null;
@@ -1212,11 +1298,13 @@ useEffect(() => {
     const map = new Map<string, boolean>();
     nodes.forEach((node) => {
       if (node.type !== "flowNode") return;
+      const flowNode = node as ReactFlowNode<FlowNodeData>;
       const count = nodeInternalStepCounts.get(node.id) ?? 0;
-      map.set(node.id, count > 0);
+      const editable = canEditInternalFlowNode(flowNode);
+      map.set(node.id, count > 0 || editable);
     });
     return map;
-  }, [nodes, nodeInternalStepCounts]);
+  }, [canEditInternalFlowNode, nodeInternalStepCounts, nodes]);
   const stepsExpanded = Boolean(selectedNode && expandedStepsMap[selectedNode.id]);
   const nodeStepAvailability = useMemo(() => {
     const map = new Map<string, StepAvailability>();
@@ -3251,6 +3339,24 @@ useEffect(() => {
     },
     [setNodes],
   );
+  const handleInternalStepsChange = useCallback(
+    (nodeId: string, nextSteps: FlowNodeInternalStep[]) => {
+      setNodes((existing) =>
+        existing.map((node) => {
+          if (node.id !== nodeId) return node;
+          const sanitized = nextSteps.map((step) => normalizeFlowScreen(step));
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              internalSteps: sanitized,
+            },
+          };
+        }),
+      );
+    },
+    [setNodes],
+  );
 
   const handleEdgeFieldChange = useCallback(
     (edgeId: string, updates: Partial<FlowEdgeData>) => {
@@ -4509,8 +4615,9 @@ useEffect(() => {
                 nodeCommentCounts={nodeCommentCountMap}
                 onNodeDoubleClick={handleNodeDoubleClick}
                 highlightNodeIds={activeHighlightNodeIdSet}
-                dimmedNodeIds={activeDimmedNodeIdSet}
-              />
+              dimmedNodeIds={activeDimmedNodeIdSet}
+              nodeCanExpandSteps={nodeCanExpandSteps}
+            />
             </div>
       {!inspectorCollapsed ? (
         <div className="w-full space-y-3 xl:w-[360px]">
@@ -4583,16 +4690,18 @@ useEffect(() => {
             onOverlayAddNodes={handleOverlayAddNodes}
             onOverlayRemoveStep={handleOverlayRemoveStep}
             onOverlayReorderSteps={handleOverlayReorderSteps}
-            onOverlayStepUpdate={handleOverlayStepUpdate}
-            onRepairOverlaySteps={handleRepairSelectedOverlaySteps}
-            onOverlayStepFocus={handleOverlayStepFocus}
-            selectedNodeIds={selectedNodeIds}
-            nodeLabelMap={nodeLabelMap}
-            nodeRouteMap={nodeRouteById}
-            overlayTabRequest={inspectorTabRequest}
-            nodeCanExpandSteps={nodeCanExpandSteps}
-            resolveCanonicalNode={resolveCanonicalNodeForInspector}
-          />
+          onOverlayStepUpdate={handleOverlayStepUpdate}
+          onRepairOverlaySteps={handleRepairSelectedOverlaySteps}
+          onOverlayStepFocus={handleOverlayStepFocus}
+          selectedNodeIds={selectedNodeIds}
+          nodeLabelMap={nodeLabelMap}
+          nodeRouteMap={nodeRouteById}
+          overlayTabRequest={inspectorTabRequest}
+          nodeCanExpandSteps={nodeCanExpandSteps}
+          resolveCanonicalNode={resolveCanonicalNodeForInspector}
+          onInternalStepsChange={handleInternalStepsChange}
+          canEditInternalFlowNode={(node) => canEditInternalFlowNode(node as ReactFlowNode<FlowNodeData>)}
+        />
               </div>
             ) : null}
           </div>

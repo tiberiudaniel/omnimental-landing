@@ -300,7 +300,7 @@ function TodayRunPageInner() {
     wowLesson,
   ]);
 
-  if (e2eMode) {
+  if (e2eMode && !guidedLaneActive) {
     return (
       <>
         {renderDebugBanner()}
@@ -322,7 +322,7 @@ function TodayRunPageInner() {
     );
   }
 
-  if (!initialized) {
+  if (!initialized && !e2eMode) {
     return null;
   }
 

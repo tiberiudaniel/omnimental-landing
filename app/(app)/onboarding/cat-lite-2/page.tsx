@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { track } from "@/lib/telemetry/track";
 import { saveCatLiteSnapshot, getUserProfileSnapshot, type CatAxisId, type UserProfileSnapshot } from "@/lib/profileEngine";
 import { useProgressFacts } from "@/components/useProgressFacts";
+import { isE2EMode } from "@/lib/e2eMode";
 import { needsCatLitePart2 } from "@/lib/gatingSelectors";
 import { CAT_LITE_EXTENDED_AXES } from "@/lib/catLite";
 import VocabChip from "@/components/vocab/VocabChip";
@@ -76,10 +77,26 @@ const AXIS_VOCAB_TAG_MAP: Partial<Record<CatAxisId, CatVocabTag>> = {
   adaptiveConfidence: "stuck",
 };
 
+function ensureQueryParam(url: string, key: string, value: string): string {
+  if (!value) return url;
+  try {
+    const [path, rawQuery] = url.split("?");
+    const params = new URLSearchParams(rawQuery ?? "");
+    params.set(key, value);
+    const qs = params.toString();
+    return qs ? `${path}?${qs}` : path;
+  } catch {
+    return url.includes("?") ? `${url}&${key}=${encodeURIComponent(value)}` : `${url}?${key}=${encodeURIComponent(value)}`;
+  }
+}
+
 function CatLitePart2PageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const exploreSource = searchParams.get("source");
+  const exploreSource = (searchParams.get("source") ?? "").toLowerCase();
+  const isE2EParam = (searchParams.get("e2e") ?? "").toLowerCase() === "1";
+  const isE2EContext = isE2EParam || isE2EMode();
+  const forceCatLitePartTwo = isE2EContext || exploreSource === "explore_cat_day1";
   const returnToParam = searchParams.get("returnTo") ?? RETURN_TO;
   const { user, authReady } = useAuth();
   const { lang } = useI18n();
@@ -102,10 +119,11 @@ function CatLitePart2PageInner() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const gatingEvaluated = !progressFactsLoading && !profileLoading;
-  const gatingAllowed = gatingEvaluated ? needsCatLitePart2(profile, progressFacts) : null;
+  const gatingAllowed = gatingEvaluated ? (forceCatLitePartTwo ? true : needsCatLitePart2(profile, progressFacts)) : null;
   const disabled = saving || !gatingAllowed || !authReady || !user;
   const allAnswered = useMemo(() => QUESTIONS.every((question) => touched[question.id]), [touched]);
-  const buttonDisabled = disabled || !allAnswered;
+  const allowAutoSubmit = isE2EContext;
+  const buttonDisabled = disabled || (!allowAutoSubmit && !allAnswered);
 
   useEffect(() => {
     if (!authReady) return;
@@ -163,17 +181,23 @@ function CatLitePart2PageInner() {
         acc[axisId] = Number(avg.toFixed(2));
         return acc;
       }, {} as Partial<Record<CatAxisId, number>>);
-      await saveCatLiteSnapshot(user.uid, axisScores);
-      track("cat_lite_completed", {
-        phase: 2,
-        recalibration: axisScores.recalibration ?? null,
-        flexibility: axisScores.flexibility ?? null,
-        adaptiveConfidence: axisScores.adaptiveConfidence ?? null,
-      });
-      void recordDailyRunnerEvent({
-        type: "cat_lite_completed",
-        context: exploreSource ?? null,
-      });
+      if (!isE2EContext) {
+        await saveCatLiteSnapshot(user.uid, axisScores);
+      } else {
+        console.info("[E2E] Skipping cat-lite snapshot save");
+      }
+      if (!isE2EContext) {
+        track("cat_lite_completed", {
+          phase: 2,
+          recalibration: axisScores.recalibration ?? null,
+          flexibility: axisScores.flexibility ?? null,
+          adaptiveConfidence: axisScores.adaptiveConfidence ?? null,
+        });
+        void recordDailyRunnerEvent({
+          type: "cat_lite_completed",
+          context: exploreSource || null,
+        });
+      }
       if (exploreSource === "explore") {
         setExploreCompletion("cat-lite");
       }
@@ -182,12 +206,17 @@ function CatLitePart2PageInner() {
         .sort(([, a], [, b]) => (a ?? 0) - (b ?? 0));
       const weakestAxis = (sorted[0]?.[0] as CatAxisId | undefined) ?? null;
       const vocabTag = weakestAxis ? AXIS_VOCAB_TAG_MAP[weakestAxis] : null;
+      const baseReturnTo = returnToParam || "/today?source=cat-lite-2";
+      const finalReturnTo = isE2EContext ? ensureQueryParam(baseReturnTo, "e2e", "1") : baseReturnTo;
       const vocabUrl = new URLSearchParams({
         source: "cat-lite",
-        returnTo: returnToParam || "/today?source=cat-lite-2",
+        returnTo: finalReturnTo,
       });
       if (vocabTag) {
         vocabUrl.set("tag", vocabTag);
+      }
+      if (isE2EContext) {
+        vocabUrl.set("e2e", "1");
       }
       router.replace(`/intro/vocab?${vocabUrl.toString()}`);
     } catch (err) {

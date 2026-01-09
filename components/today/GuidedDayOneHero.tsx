@@ -62,7 +62,7 @@ export function GuidedDayOneHero({
         >
           {disabled
             ? disabledLabel ?? (lang === "ro" ? "Se pregătește planul…" : "Preparing session…")
-            : ctaLabel ?? (lang === "ro" ? "Pornește sesiunea (10 min)" : "Start session (10 min)")}
+            : ctaLabel ?? (lang === "ro" ? "Continuă sesiunea" : "Continue session")}
         </OmniCtaButton>
       </div>
       <div className="mt-8 rounded-[24px] border border-dashed border-[var(--omni-border-soft)] bg-white/80 px-5 py-4 text-left text-sm text-[var(--omni-ink)]">

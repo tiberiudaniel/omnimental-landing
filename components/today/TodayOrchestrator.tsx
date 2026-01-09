@@ -12,7 +12,6 @@ import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import { track } from "@/lib/telemetry/track";
 import { useCopy } from "@/lib/useCopy";
 import { getScreenIdForRoute } from "@/lib/routeIds";
-import { GuidedDayOneHero } from "@/components/today/GuidedDayOneHero";
 import { isGuidedDayOneLane } from "@/lib/guidedDayOne";
 
 const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
@@ -28,6 +27,7 @@ const GUIDED_REASON_BY_AXIS: Partial<Record<CatAxisId, string>> = {
   clarity: "Nu e lipsă de voință, e zgomot cognitiv. Îl reducem azi.",
   energy: "Nu erai leneș, doar descărcat. Îți aducem energie funcțională rapid.",
 };
+const DAY_ONE_ENTRY_UNLOCK_KEY = "today_day1_entry_unlock_v1";
 import {
   getTodayKey,
   getTriedExtraToday,
@@ -56,6 +56,7 @@ import {
   isMindPacingSignalTag,
 } from "@/lib/mindPacingSignals";
 import { useUserAccessTier } from "@/components/useUserAccessTier";
+import { isE2EMode } from "@/lib/e2eMode";
 import { getGuidedClusterParam } from "@/lib/guidedDayOne";
 import { useEarnedRoundsController } from "@/components/today/useEarnedRounds";
 
@@ -70,9 +71,11 @@ export default function TodayOrchestrator() {
   const [completedToday, setCompletedToday] = useState(false);
   const [lastCompletion, setLastCompletion] = useState<DailyCompletionRecord | null>(null);
   const sourceParam = searchParams?.get("source");
+  const normalizedSourceParam = (sourceParam ?? "").toLowerCase();
   const intentParam = (searchParams?.get("intent") ?? "").toLowerCase();
   const mindpacingTagParam = searchParams?.get("mindpacingTag") ?? null;
   const todayKey = useMemo(() => getTodayKey(), []);
+  const entryUnlockStorageKey = useMemo(() => `${DAY_ONE_ENTRY_UNLOCK_KEY}:${todayKey}`, [todayKey]);
   const mindBlock = progressFacts?.mindPacing ?? null;
   const persistedMindSignal = useMemo(() => {
     if (!mindBlock) return null;
@@ -102,13 +105,15 @@ export default function TodayOrchestrator() {
   }, [mindpacingTagParam, persistedAxis, sourceParam]);
   const cameFromRunComplete = sourceParam === "run_complete";
   const cameFromGuided = sourceParam === "guided";
-  const e2eMode = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
+  const e2eParamActive = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
+  const e2eMode = e2eParamActive || isE2EMode();
   const [triedExtraToday, setTriedExtraTodayState] = useState(false);
   const [sessionPlan, setSessionPlan] = useState<SessionPlan | null>(null);
   const [planPersisted, setPlanPersisted] = useState(false);
   const [planLoading, setPlanLoading] = useState(false);
   const [sensAiCtx, setSensAiCtx] = useState<SensAiContext | null>(null);
   const [guidedOnboardingActive, setGuidedOnboardingActive] = useState(false);
+  const [dayOneEntryUnlocked, setDayOneEntryUnlocked] = useState(false);
   const totalDailySessionsCompleted = useMemo(() => getTotalDailySessionsCompleted(progressFacts), [progressFacts]);
   const totalActionsCompleted = useMemo(() => getTotalActionsCompleted(progressFacts), [progressFacts]);
   const wizardUnlocked = canAccessWizard(progressFacts);
@@ -258,7 +263,7 @@ export default function TodayOrchestrator() {
   }, [lastCompletion]);
 
   const laneParam = (searchParams?.get("lane") ?? "").toLowerCase();
-  const preserveGuidedDayOneE2E = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
+  const preserveGuidedDayOneE2E = e2eMode;
   const buildGuidedDayOneQuery = () => {
     const params = new URLSearchParams();
     params.set("mode", "deep");
@@ -291,8 +296,36 @@ export default function TodayOrchestrator() {
     }
     return `/intro/explore?${params.toString()}`;
   }, [preserveGuidedDayOneE2E]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      setDayOneEntryUnlocked(window.localStorage.getItem(entryUnlockStorageKey) === "1");
+    } catch {
+      setDayOneEntryUnlocked(false);
+    }
+  }, [entryUnlockStorageKey]);
+  const markDayOneEntryUnlocked = useCallback(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(entryUnlockStorageKey, "1");
+    } catch {
+      // ignore
+    }
+    setDayOneEntryUnlocked(true);
+  }, [entryUnlockStorageKey]);
+  useEffect(() => {
+    if (!normalizedSourceParam) return;
+    if (
+      normalizedSourceParam === "guided_day1" ||
+      normalizedSourceParam === "explore_cat_day1" ||
+      normalizedSourceParam === "explore_axes_day1"
+    ) {
+      markDayOneEntryUnlocked();
+    }
+  }, [markDayOneEntryUnlocked, normalizedSourceParam]);
   const handleGuidedDayOneStart = () => {
     if (!canStartGuided) return;
+    markDayOneEntryUnlocked();
     router.push(`/today/run?${buildGuidedDayOneQuery()}`);
   };
   const handleStart = () => {
@@ -311,7 +344,13 @@ export default function TodayOrchestrator() {
     (sourceParam === "guided" || sourceParam === "explore_cat_day1" || sourceParam === "intro") && completedSessions <= 1;
   const catProfileComplete = sourceParam === "explore_cat_day1";
   const isGuestOrAnon = !user || user.isAnonymous;
-  const guidedDayOneActive = isGuidedDayOneLane(sourceParam, laneParam) && (isGuestOrAnon || completedSessions === 0);
+  const guidedDayOneActive =
+    isGuidedDayOneLane(sourceParam, laneParam) && !dayOneEntryUnlocked && (isGuestOrAnon || completedSessions === 0);
+  const dayOneEntryEligible = exploreDay1Context && !dayOneEntryUnlocked;
+  const dayOneEntryActive =
+    dayOneEntryEligible &&
+    !guidedDayOneActive &&
+    (normalizedSourceParam === "intro" || (!normalizedSourceParam && completedSessions <= 0));
   const axisParamToday = searchParams?.get("axis") ?? null;
   const clusterParamToday = searchParams?.get("cluster") ?? null;
   const overrideSuppressedToday = Boolean(
@@ -337,6 +376,7 @@ export default function TodayOrchestrator() {
       onAuthRequest={() => router.push("/auth?returnTo=%2Ftoday")}
     />
   );
+  const shellHeader = guidedOnboardingActive ? null : header;
 
   useEffect(() => {
     if (!accessTier.flags.showMenu && menuOpen) {
@@ -387,29 +427,32 @@ export default function TodayOrchestrator() {
     [router],
   );
   if (guidedDayOneActive) {
-    const guidedTitle = sessionPlan?.title ?? null;
-    const guidedSummary = sessionPlan?.summary ?? null;
+    const guidedTitle = sessionPlan?.title ?? "Start clar pentru Ziua 1";
+    const guidedSummary = guidedReasonText ?? sessionPlan?.summary ?? undefined;
+    const guidedCta = guidedCtaLabel ?? "Pornește sesiunea (10–12 min)";
     return (
-      <div data-testid="guided-day1-page">
-        {guidedLaneBadge}
-        <AppShell header={null} bodyClassName="bg-[var(--omni-bg-soft)]" mainClassName="px-0 py-10">
-          <div className="mx-auto w-full max-w-4xl px-4">
-            <GuidedDayOneHero
-              lang="ro"
-              onStart={handleGuidedDayOneStart}
-              title={guidedTitle}
-              reason={guidedReasonText ?? guidedSummary}
-              lessonSummary={guidedSummary}
-              ctaLabel={guidedCtaLabel ?? undefined}
-              disabled={!canStartGuided || planLoading}
-              disabledLabel="Se pregătește planul…"
-            />
-          </div>
-        </AppShell>
+      <div data-testid="today-root">
+        <div data-testid="guided-day1-page">
+          {guidedLaneBadge}
+          <AppShell header={null} bodyClassName="bg-[var(--omni-bg-soft)]" mainClassName="px-0 py-10">
+            <div className="mx-auto w-full max-w-4xl px-4">
+              <DayOneEntryHero
+                title={guidedTitle}
+                summary={
+                  guidedSummary ??
+                  "O sesiune ghidată de 10–12 minute care taie zgomotul mental și îți dă o singură decizie aplicabilă azi."
+                }
+                ctaLabel={guidedCta}
+                disabled={!canStartGuided || planLoading}
+                disabledLabel="Se pregătește planul…"
+                onStart={handleGuidedDayOneStart}
+              />
+            </div>
+          </AppShell>
+        </div>
       </div>
     );
   }
-
   const quickButtonLabel = completedToday ? "Completat azi" : primaryCtaLabel;
   const quickButtonDisabled = freeLimitReached || planLoading || completedToday;
   const quickDurationLabel = sessionPlan?.expectedDurationMinutes
@@ -476,6 +519,33 @@ export default function TodayOrchestrator() {
       </div>
     );
   }
+  if (dayOneEntryActive) {
+    const entryTitle = sessionPlan?.title ?? "Start clar pentru Ziua 1";
+    const entrySummary =
+      guidedReasonText ??
+      sessionPlan?.summary ??
+      "O sesiune ghidată de 10–12 minute care reduce zgomotul mental și setează ritmul de lucru.";
+    const entryCta = guidedCtaLabel ?? "Pornește sesiunea (10–12 min)";
+    return (
+      <div data-testid="today-root">
+        <div data-testid="today-day1-entry">
+          {guidedLaneBadge}
+          <AppShell header={null} bodyClassName="bg-[var(--omni-bg-soft)]" mainClassName="px-0 py-10">
+            <div className="mx-auto w-full max-w-4xl px-4">
+              <DayOneEntryHero
+                title={entryTitle}
+                summary={entrySummary}
+                ctaLabel={entryCta}
+                disabled={!canStartGuided || planLoading}
+                disabledLabel="Se pregătește planul…"
+                onStart={handleGuidedDayOneStart}
+              />
+            </div>
+          </AppShell>
+        </div>
+      </div>
+    );
+  }
 
   const activeArcDayIndex =
     sensAiCtx?.profile.activeArcId && sensAiCtx.profile.activeArcId === sessionPlan.arcId
@@ -497,8 +567,6 @@ export default function TodayOrchestrator() {
     ? `Ziua ${arcDayNumber ?? "—"}${sessionPlan.arcLengthDays ? ` din ${sessionPlan.arcLengthDays}` : ""} în ${sessionPlan.title}`
     : "Primul tău antrenament de claritate";
   const xpForTrait = sensAiCtx?.profile.xpByTrait?.[sessionPlan.traitPrimary] ?? 0;
-
-  const shellHeader = guidedOnboardingActive ? null : header;
 
   return (
     <>
@@ -746,6 +814,36 @@ function StyleProfileCard({ totalDailySessions, onConfigure }: StyleProfileCardP
       <OmniCtaButton className="mt-4 w-full justify-center sm:w-auto" onClick={onConfigure}>
         Configurează stilul
       </OmniCtaButton>
+    </section>
+  );
+}
+
+type DayOneEntryHeroProps = {
+  title: string;
+  summary: string;
+  ctaLabel: string;
+  disabled?: boolean;
+  disabledLabel?: string;
+  onStart: () => void;
+};
+
+function DayOneEntryHero({ title, summary, ctaLabel, disabled, disabledLabel, onStart }: DayOneEntryHeroProps) {
+  return (
+    <section className="rounded-[32px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-10 shadow-[0_25px_80px_rgba(0,0,0,0.08)] sm:px-12">
+      <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Ziua 1 · Guided</p>
+      <h1 className="mt-4 text-3xl font-semibold tracking-tight text-[var(--omni-ink)] sm:text-4xl">{title}</h1>
+      <p className="mt-3 text-base text-[var(--omni-ink)]/85">{summary}</p>
+      <OmniCtaButton
+        className="mt-8 w-full justify-center sm:w-auto"
+        onClick={onStart}
+        disabled={disabled}
+        data-testid="guided-day1-start"
+      >
+        {disabled ? disabledLabel ?? "Se pregătește planul…" : ctaLabel}
+      </OmniCtaButton>
+      <p className="mt-4 text-sm text-[var(--omni-muted)]">
+        După cele 10–12 minute intri în Explore Hub și alegi fie profilul CAT, fie o axă de lucru rapidă.
+      </p>
     </section>
   );
 }

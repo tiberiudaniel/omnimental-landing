@@ -40,6 +40,7 @@ type FlowNodeContextValue = {
   observedEnabled: boolean;
   observedNodeStats: Map<string, ObservedNodeStats> | null;
   nodeStepAvailability: Map<string, StepAvailability>;
+  nodeCanExpandSteps: Map<string, boolean>;
   onRequestNodeSteps?: (nodeId: string) => void;
   onPinStep?: (payload: { hostNodeId: string; stepId: string; stepLabel: string }) => void;
   commentCountMap: Map<string, number>;
@@ -120,7 +121,7 @@ function FlowNodeRenderer(props: NodeProps<FlowNodeData>) {
   const ctx = useFlowNodeContext();
   const availability = ctx.nodeStepAvailability.get(props.id) ?? "unknown";
   const isStepScreen = props.data.kind === "stepScreen";
-  const canExpand = availability === "available" && !isStepScreen;
+  const canExpand = !isStepScreen && (ctx.nodeCanExpandSteps.get(props.id) ?? false);
   const dimmed = ctx.dimmedNodeIds ? ctx.dimmedNodeIds.has(props.id) : false;
   const highlighted = ctx.highlightNodeIds ? ctx.highlightNodeIds.has(props.id) : false;
   if (DEBUG_STEPS) {
@@ -236,6 +237,7 @@ type FlowCanvasProps = {
   nodeIssueMap: Map<string, number>;
   observedEnabled: boolean;
   observedNodeStats: Map<string, ObservedNodeStats> | null;
+  nodeCanExpandSteps: Map<string, boolean>;
   disabled: boolean;
   wrapperRef: React.RefObject<HTMLDivElement>;
   onCanvasDragOver: (event: ReactDragEvent<HTMLDivElement>) => void;
@@ -270,6 +272,7 @@ export function FlowCanvas({
   nodeIssueMap,
   observedEnabled,
   observedNodeStats,
+  nodeCanExpandSteps,
   disabled,
   wrapperRef,
   onCanvasDragOver,
@@ -342,6 +345,7 @@ export function FlowCanvas({
       observedEnabled,
       observedNodeStats,
       nodeStepAvailability,
+      nodeCanExpandSteps,
       onRequestNodeSteps,
       onPinStep,
       commentCountMap: nodeCommentCounts,
@@ -357,6 +361,7 @@ export function FlowCanvas({
       observedEnabled,
       observedNodeStats,
       onRequestNodeSteps,
+      nodeCanExpandSteps,
       onPinStep,
     ],
   );

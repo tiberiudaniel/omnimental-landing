@@ -16,12 +16,18 @@ function ExploreCompletionInner() {
   const hasAxisParam = Boolean(axisId);
   const preserveE2E = (searchParams.get("e2e") ?? "").toLowerCase() === "1";
   const todayTarget = useMemo(() => {
-    const params = new URLSearchParams({ mode: "deep", source: "explore_cat_day1" });
+    const sourceParam =
+      completionSource === "axes"
+        ? "explore_axes_day1"
+        : completionSource === "cat-lite"
+          ? "explore_cat_day1"
+          : "explore_cat_day1";
+    const params = new URLSearchParams({ mode: "deep", source: sourceParam });
     if (preserveE2E) {
       params.set("e2e", "1");
     }
     return `/today?${params.toString()}`;
-  }, [preserveE2E]);
+  }, [completionSource, preserveE2E]);
 
   useEffect(() => {
     setExploreCompletion(completionSource || "unknown");

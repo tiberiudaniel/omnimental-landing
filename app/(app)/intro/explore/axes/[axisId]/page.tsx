@@ -27,6 +27,16 @@ function ExploreAxisLessonPageInner() {
     }
     return `/today?${query.toString()}`;
   };
+  const completionPath = () => {
+    const query = new URLSearchParams({ source: "axes" });
+    if (axisId) {
+      query.set("axis", axisId);
+    }
+    if (isE2E) {
+      query.set("e2e", "1");
+    }
+    return `/intro/explore/complete?${query.toString()}`;
+  };
   const goBackToToday = () => {
     router.push(todayPath());
   };
@@ -56,7 +66,7 @@ function ExploreAxisLessonPageInner() {
   const handleFinish = () => {
     setAxisLessonChoice(lesson.id);
     setExploreCompletion("axis");
-    router.replace(todayPath());
+    router.replace(completionPath());
   };
 
   return (

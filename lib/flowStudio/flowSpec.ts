@@ -206,9 +206,28 @@ function normalizeSpecInternalSteps(input: unknown): FlowNodeInternalStep[] | un
     const tags = Array.isArray(raw.tags)
       ? raw.tags.filter((tag): tag is string => typeof tag === "string" && Boolean(tag.trim()))
       : undefined;
-    entries.push({ id, label, description, tags });
+    const copyKey = typeof raw.copyKey === "string" && raw.copyKey.trim() ? raw.copyKey.trim() : undefined;
+    const flags = Array.isArray(raw.flags)
+      ? raw.flags.filter((flag): flag is string => typeof flag === "string" && Boolean(flag.trim()))
+      : undefined;
+    const cards = normalizeSpecCards(raw.cards);
+    entries.push({ id, label, description, tags, copyKey, flags, cards });
   });
   return entries.length ? entries : undefined;
+}
+
+function normalizeSpecCards(input: unknown): FlowNodeInternalStep["cards"] | undefined {
+  if (!Array.isArray(input)) return undefined;
+  const cards = input
+    .map((raw, index) => {
+      if (!isPlainObject(raw)) return null;
+      const id = typeof raw.id === "string" && raw.id.trim() ? raw.id.trim() : `card_${index + 1}`;
+      const label = typeof raw.label === "string" && raw.label.trim() ? raw.label.trim() : id;
+      const actionTag = typeof raw.actionTag === "string" && raw.actionTag.trim() ? raw.actionTag.trim() : undefined;
+      return { id, label, actionTag };
+    })
+    .filter((card): card is NonNullable<typeof card> => Boolean(card));
+  return cards.length ? cards : undefined;
 }
 
 function normalizeSpecOverlays(

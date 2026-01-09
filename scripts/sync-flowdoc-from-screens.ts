@@ -36,6 +36,9 @@ function toInternalSteps(steps: ScreenStep[]): FlowNodeInternalStep[] {
 }
 
 function syncFlowDoc() {
+  console.warn(
+    "[sync-flowdoc] Deprecated for Day1: FlowDoc is now the source of truth. Use Flow Studio to edit screens instead.",
+  );
   const raw = fs.readFileSync(FLOW_DOC_PATH, "utf-8");
   const doc = JSON.parse(raw) as FlowDoc;
   if (!doc.nodes) {

@@ -58,6 +58,7 @@ export function getDb() {
 }
 
 export function areWritesDisabled(): boolean {
+  if (isE2EMode()) return true;
   try {
     const flag = (process.env.NEXT_PUBLIC_DISABLE_PROGRESS_WRITES || "").toLowerCase();
     return flag === "1" || flag === "true" || flag === "yes";

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
 import SimulatorTimer from "./SimulatorTimer";
 import type { DailyPathLanguage, DailyPathNodeConfig } from "@/types/dailyPath";
@@ -19,6 +20,7 @@ interface DailyPathNodeProps {
   hideIntroCta?: boolean;
   introHelperText?: string | null;
   preserveIntroContent?: boolean;
+  reduceRealWorldFriction?: boolean;
 }
 
 type QuizState = {
@@ -31,6 +33,12 @@ type RealWorldState = {
   rule: string;
   setContext: (value: string) => void;
   setRule: (value: string) => void;
+};
+
+type FrictionlessRealWorldState = {
+  options: string[];
+  selection: string | null;
+  onSelect: (value: string) => void;
 };
 
 const CARD_WRAPPER = "w-full px-4 sm:px-0";
@@ -66,6 +74,11 @@ const NODE_LABELS: Record<
   },
 };
 
+const DEFAULT_REAL_WORLD_OPTIONS: Record<DailyPathLanguage, string[]> = {
+  ro: ["În call-ul critic", "Între două task-uri azi", "În pauza de prânz"],
+  en: ["During the tough call", "Between two tasks today", "In the lunch break"],
+};
+
 export default function DailyPathNode({
   node,
   status,
@@ -77,6 +90,7 @@ export default function DailyPathNode({
   hideIntroCta = false,
   introHelperText = null,
   preserveIntroContent = false,
+  reduceRealWorldFriction = false,
 }: DailyPathNodeProps) {
   const [quizState, setQuizState] = useState<QuizState>({ choice: null, feedback: null });
   const [realContext, setRealContext] = useState("");
@@ -88,11 +102,26 @@ export default function DailyPathNode({
   const labels = NODE_LABELS[lang] ?? NODE_LABELS.ro;
   const badgeLabel = node.badge ? labels.badges[node.badge] : null;
   const shouldAutofocusRealWorld = node.kind === "REAL_WORLD";
+  const frictionlessRealWorld = reduceRealWorldFriction && node.kind === "REAL_WORLD";
+  const [quickRealWorldSelection, setQuickRealWorldSelection] = useState<string | null>(null);
+  const quickRealWorldOptions = useMemo(() => {
+    if (!frictionlessRealWorld) return [];
+    if (node.bullets?.length) {
+      return node.bullets.slice(0, 3);
+    }
+    return DEFAULT_REAL_WORLD_OPTIONS[lang] ?? DEFAULT_REAL_WORLD_OPTIONS.ro;
+  }, [frictionlessRealWorld, node.bullets, lang]);
 
   useEffect(() => {
     if (!shouldAutofocusRealWorld) return;
     queueMicrotask(() => realWorldContextInputRef.current?.focus());
   }, [shouldAutofocusRealWorld]);
+
+  useEffect(() => {
+    if (!frictionlessRealWorld) {
+      queueMicrotask(() => setQuickRealWorldSelection(null));
+    }
+  }, [frictionlessRealWorld]);
 
   if (status === "locked") {
     return (
@@ -176,14 +205,19 @@ export default function DailyPathNode({
 
   const requiresRealWorldFields =
     node.kind === "REAL_WORLD" && (node.fields?.length ?? 0) >= 2;
-  const realWorldReady =
-    !requiresRealWorldFields || Boolean(realContext.trim().length && realRule.trim().length);
+  const realWorldReady = frictionlessRealWorld
+    ? Boolean(quickRealWorldSelection)
+    : !requiresRealWorldFields || Boolean(realContext.trim().length && realRule.trim().length);
 
   const handlePrimaryAction = () => {
     if (node.kind === "REAL_WORLD") {
+      const contextValue = frictionlessRealWorld ? quickRealWorldSelection ?? realContext : realContext;
+      const ruleValue = frictionlessRealWorld
+        ? node.fields?.[1]?.label ?? "Angajament rapid Ziua 1"
+        : realRule;
       console.log("[REAL_WORLD commitment]", {
-        context: realContext.trim(),
-        rule: realRule.trim(),
+        context: contextValue.trim(),
+        rule: ruleValue.trim(),
       });
       void recordActionCompletion().catch((error) => {
         console.warn("recordActionCompletion failed", error);
@@ -209,11 +243,20 @@ export default function DailyPathNode({
         setRule: setRealRule,
       }}
       simulatorAutoStart={simulatorAutoStart}
-      realWorldContextInputRef={realWorldContextInputRef}
-      realWorldRuleInputRef={realWorldRuleInputRef}
-      labels={labels}
-      lang={lang}
-    />
+            realWorldContextInputRef={realWorldContextInputRef}
+            realWorldRuleInputRef={realWorldRuleInputRef}
+            labels={labels}
+            lang={lang}
+            frictionlessRealWorld={
+              frictionlessRealWorld
+                ? {
+                    options: quickRealWorldOptions,
+                    selection: quickRealWorldSelection,
+                    onSelect: setQuickRealWorldSelection,
+                  }
+                : undefined
+            }
+          />
   );
 }
 
@@ -266,6 +309,7 @@ function StandardCard({
   realWorldRuleInputRef,
   labels,
   lang,
+  frictionlessRealWorld,
 }: {
   node: DailyPathNodeConfig;
   icon: string;
@@ -281,6 +325,7 @@ function StandardCard({
   realWorldRuleInputRef?: React.RefObject<HTMLTextAreaElement>;
   labels: (typeof NODE_LABELS)[DailyPathLanguage];
   lang: DailyPathLanguage;
+  frictionlessRealWorld?: FrictionlessRealWorldState;
 }) {
   const isQuiz = node.kind === "QUIZ_SINGLE";
   const showButton = true;
@@ -328,6 +373,7 @@ function StandardCard({
             realWorldContextInputRef={realWorldContextInputRef}
             realWorldRuleInputRef={realWorldRuleInputRef}
             lang={lang}
+            frictionlessRealWorld={frictionlessRealWorld}
           />
           <div className="flex flex-wrap items-center gap-3">
             {showXp ? (
@@ -363,6 +409,7 @@ function NodeBody({
   realWorldContextInputRef,
   realWorldRuleInputRef,
   lang,
+  frictionlessRealWorld,
 }: {
   node: DailyPathNodeConfig;
   quizState: QuizState;
@@ -372,6 +419,7 @@ function NodeBody({
   realWorldContextInputRef?: React.RefObject<HTMLInputElement>;
   realWorldRuleInputRef?: React.RefObject<HTMLTextAreaElement>;
   lang: DailyPathLanguage;
+  frictionlessRealWorld?: FrictionlessRealWorldState;
 }) {
   switch (node.kind) {
     case "SIMULATOR":
@@ -389,6 +437,47 @@ function NodeBody({
       }
       return <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>;
     case "REAL_WORLD":
+      if (frictionlessRealWorld && frictionlessRealWorld.options.length) {
+        const helper =
+          lang === "ro"
+            ? "Alege rapid unde aplici regula azi."
+            : "Pick quickly where you’ll apply the rule today.";
+        const info =
+          lang === "ro"
+            ? "Poți detalia mâine după ce vezi cum arată traseul complet."
+            : "You can add details tomorrow once you feel the full session.";
+        return (
+          <div className="space-y-4 rounded-[20px] border border-[var(--omni-border-soft)] bg-white/60 px-4 py-4">
+            {node.description ? (
+              <p className="text-sm leading-relaxed text-[var(--omni-ink)]/80">{node.description}</p>
+            ) : null}
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-[var(--omni-ink)]">{helper}</p>
+              <div className="flex flex-wrap gap-2">
+                {frictionlessRealWorld.options.map((option) => {
+                  const active = frictionlessRealWorld.selection === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => frictionlessRealWorld.onSelect(option)}
+                      className={clsx(
+                        "rounded-full border px-3 py-1 text-xs font-semibold transition",
+                        active
+                          ? "border-[var(--omni-ink)] bg-[var(--omni-ink)] text-white"
+                          : "border-[var(--omni-border-soft)] text-[var(--omni-ink)]/80 hover:border-[var(--omni-ink)]",
+                      )}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-[var(--omni-muted)]">{info}</p>
+            </div>
+          </div>
+        );
+      }
       if (node.fields && node.fields.length >= 2) {
         const [contextField, ruleField] = node.fields;
         return (

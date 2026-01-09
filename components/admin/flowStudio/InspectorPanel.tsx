@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { DragEvent as ReactDragEvent } from "react";
 import clsx from "clsx";
 import type { Edge, Node } from "reactflow";
 import type { CopyFields } from "@/lib/useCopy";
@@ -144,6 +145,8 @@ type InspectorPanelProps = {
   overlayTabRequest?: { tab: InspectorTab; nonce: number } | null;
   nodeCanExpandSteps: Map<string, boolean>;
   resolveCanonicalNode: (node: Node<FlowNodeData> | null) => Node<FlowNodeData> | null;
+  onInternalStepsChange: (nodeId: string, steps: FlowNodeInternalStep[]) => void;
+  canEditInternalFlowNode: (node: Node<FlowNodeData>) => boolean;
 };
 
 export type InspectorTab = "basics" | "portal" | "diagnostics" | "overlays" | "advanced";
@@ -211,6 +214,8 @@ export function InspectorPanel({
   overlayTabRequest,
   nodeCanExpandSteps,
   resolveCanonicalNode,
+  onInternalStepsChange,
+  canEditInternalFlowNode,
 }: InspectorPanelProps) {
   const canonicalNode = resolveCanonicalNode(selectedNode);
   const canExpandStepsForNode = canonicalNode ? Boolean(nodeCanExpandSteps.get(canonicalNode.id)) : false;
@@ -250,6 +255,7 @@ export function InspectorPanel({
   }, [overlayTabRequest]);
 
   const internalStepsForDisplay = canonicalNode?.data.internalSteps ?? null;
+  const internalFlowEditable = canonicalNode ? canEditInternalFlowNode(canonicalNode) : false;
 
   const tabs = [
     { key: "basics" as const, label: "Basics" },
@@ -281,6 +287,8 @@ export function InspectorPanel({
             onPortalChange={onPortalChange}
             internalSteps={internalStepsForDisplay}
             onStepScreenChange={onStepScreenChange}
+            canEditInternalFlow={internalFlowEditable}
+            onInternalStepsChange={onInternalStepsChange}
           />
         );
       case "portal":
@@ -551,6 +559,8 @@ type NodeBasicsSectionProps = {
   onPortalChange: (nodeId: string, portal: FlowNodePortalConfig | null) => void;
   internalSteps?: FlowNodeInternalStep[] | null;
   onStepScreenChange?: (nodeId: string, updates: Partial<StepScreenConfig>) => void;
+  canEditInternalFlow?: boolean;
+  onInternalStepsChange?: (nodeId: string, steps: FlowNodeInternalStep[]) => void;
 };
 
 type StepScreenPresetRow = { key: string; value: string };
@@ -644,6 +654,8 @@ function NodeBasicsSection({
   onPortalChange,
   internalSteps,
   onStepScreenChange,
+  canEditInternalFlow = false,
+  onInternalStepsChange,
 }: NodeBasicsSectionProps) {
   const route = node.data.routeId ? routeMap.get(node.data.routeId) : undefined;
   const [tagDraft, setTagDraft] = useState(node.data.tags?.join(", ") ?? "");
@@ -770,7 +782,14 @@ function NodeBasicsSection({
 
   return (
     <div className="space-y-4 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3">
-      <NodeInternalFlowSection steps={nodeInternalSteps} />
+      <NodeInternalFlowSection
+        nodeId={node.id}
+        steps={nodeInternalSteps}
+        editable={canEditInternalFlow}
+        onStepsChange={
+          canEditInternalFlow && onInternalStepsChange ? (next) => onInternalStepsChange(node.id, next) : undefined
+        }
+      />
       <div className="space-y-3 rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 p-3">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Quick actions</p>
         <div className="grid gap-3 md:grid-cols-2">
@@ -1644,46 +1663,382 @@ function ObservedEventsPanel({ events }: { events: ObservedEvent[] }) {
   );
 }
 
-function NodeInternalFlowSection({ steps }: { steps?: FlowNodeInternalStep[] | null }) {
-  const count = steps?.length ?? 0;
+type NodeInternalFlowSectionProps = {
+  nodeId: string;
+  steps?: FlowNodeInternalStep[] | null;
+  editable?: boolean;
+  onStepsChange?: (steps: FlowNodeInternalStep[]) => void;
+};
+
+const inspectorRandomId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `tmp_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+};
+const inspectorStepId = () => `screen_${inspectorRandomId()}`;
+const inspectorCardId = () => `card_${inspectorRandomId()}`;
+
+function NodeInternalFlowSection({ steps, editable = false, onStepsChange }: NodeInternalFlowSectionProps) {
+  const safeSteps = useMemo(() => steps ?? [], [steps]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const applyStepsChange = useCallback(
+    (mutator: (draft: FlowNodeInternalStep[]) => void) => {
+      if (!onStepsChange) return;
+      const draft = safeSteps.map((step) => ({
+        ...step,
+        flags: step.flags ? [...step.flags] : undefined,
+        tags: step.tags ? [...step.tags] : undefined,
+        cards: step.cards ? step.cards.map((card) => ({ ...card })) : undefined,
+      }));
+      mutator(draft);
+      onStepsChange(draft);
+    },
+    [onStepsChange, safeSteps],
+  );
+  const handleAddStep = useCallback(() => {
+    if (!editable) return;
+    applyStepsChange((draft) => {
+      draft.push({
+        id: inspectorStepId(),
+        label: "Screen nou",
+        description: "",
+      });
+    });
+  }, [applyStepsChange, editable]);
+  const handleRemoveStep = useCallback(
+    (index: number) => {
+      if (!editable) return;
+      applyStepsChange((draft) => {
+        draft.splice(index, 1);
+      });
+    },
+    [applyStepsChange, editable],
+  );
+  const handleDragStart = useCallback(
+    (event: ReactDragEvent<HTMLButtonElement>, index: number) => {
+      if (!editable) return;
+      setDragIndex(index);
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", String(index));
+    },
+    [editable],
+  );
+  const handleDragOver = useCallback(
+    (event: ReactDragEvent<HTMLLIElement>) => {
+      if (!editable) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    },
+    [editable],
+  );
+  const handleDragEnd = useCallback(() => setDragIndex(null), []);
+  const handleDrop = useCallback(
+    (event: ReactDragEvent<HTMLLIElement>, overIndex: number) => {
+      if (!editable) return;
+      event.preventDefault();
+      const fromData = event.dataTransfer.getData("text/plain");
+      const fromIndex = dragIndex ?? (fromData ? Number(fromData) : null);
+      setDragIndex(null);
+      if (fromIndex === null || Number.isNaN(fromIndex) || fromIndex === overIndex) return;
+      applyStepsChange((draft) => {
+        const [moved] = draft.splice(fromIndex, 1);
+        draft.splice(overIndex, 0, moved);
+      });
+    },
+    [applyStepsChange, dragIndex, editable],
+  );
+  const handleStepFieldChange = useCallback(
+    (index: number, field: "label" | "description", value: string) => {
+      if (!editable) return;
+      applyStepsChange((draft) => {
+        const target = draft[index];
+        if (!target) return;
+        if (field === "label") {
+          target.label = value;
+        } else {
+          target.description = value;
+        }
+      });
+    },
+    [applyStepsChange, editable],
+  );
+  const handleStepListFieldChange = useCallback(
+    (index: number, field: "flags" | "tags", raw: string) => {
+      if (!editable) return;
+      const parsed = raw
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+      applyStepsChange((draft) => {
+        const target = draft[index];
+        if (!target) return;
+        if (parsed.length) {
+          target[field] = parsed;
+        } else {
+          delete target[field];
+        }
+      });
+    },
+    [applyStepsChange, editable],
+  );
+  const handleCardFieldChange = useCallback(
+    (stepIndex: number, cardIndex: number, field: "label" | "actionTag", value: string) => {
+      if (!editable) return;
+      applyStepsChange((draft) => {
+        const target = draft[stepIndex];
+        if (!target) return;
+        const cards = target.cards ? [...target.cards] : [];
+        const existing = cards[cardIndex] ?? { id: inspectorCardId(), label: "" };
+        const updated = { ...existing };
+        if (field === "label") {
+          updated.label = value;
+        } else {
+          updated.actionTag = value;
+        }
+        cards[cardIndex] = updated;
+        target.cards = cards;
+      });
+    },
+    [applyStepsChange, editable],
+  );
+  const handleCardAdd = useCallback(
+    (stepIndex: number) => {
+      if (!editable) return;
+      applyStepsChange((draft) => {
+        const target = draft[stepIndex];
+        if (!target) return;
+        const cards = target.cards ? [...target.cards] : [];
+        cards.push({
+          id: inspectorCardId(),
+          label: "Card nou",
+        });
+        target.cards = cards;
+      });
+    },
+    [applyStepsChange, editable],
+  );
+  const handleCardRemove = useCallback(
+    (stepIndex: number, cardIndex: number) => {
+      if (!editable) return;
+      applyStepsChange((draft) => {
+        const target = draft[stepIndex];
+        if (!target || !target.cards) return;
+        const cards = [...target.cards];
+        cards.splice(cardIndex, 1);
+        target.cards = cards.length ? cards : undefined;
+      });
+    },
+    [applyStepsChange, editable],
+  );
+  const count = safeSteps.length;
+  const showAddButton = editable;
   return (
     <div className="space-y-2 rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 p-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Flow intern — nod ({count})</p>
+        {showAddButton ? (
+          <button
+            type="button"
+            className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold"
+            onClick={handleAddStep}
+          >
+            Adaugă screen
+          </button>
+        ) : null}
       </div>
       {count ? (
         <ol className="space-y-2">
-          {steps!.map((step, index) => (
-            <li
-              key={`${step.id}-${index}`}
-              className="rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
-            >
-              <div className="flex items-center gap-2">
-                <span className="rounded bg-slate-900/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--omni-ink)]">
-                  {index + 1}
-                </span>
-                <p className="font-semibold text-[var(--omni-ink)]">{step.label}</p>
-              </div>
-              {step.description ? (
-                <p className="mt-1 text-[12px] text-[var(--omni-muted)]">{step.description}</p>
-              ) : null}
-              {step.tags?.length ? (
-                <div className="mt-2 flex flex-wrap items-center gap-1 text-[10px]">
-                  {step.tags.map((tag) => (
-                    <span
-                      key={`${step.id}-${tag}`}
-                      className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 font-semibold text-[var(--omni-muted)]"
+          {safeSteps.map((step, index) => {
+            const cards = step.cards ?? [];
+            const isDragging = dragIndex === index;
+            if (editable) {
+              const tagsValue = step.tags?.join(", ") ?? "";
+              const flagsValue = step.flags?.join(", ") ?? "";
+              return (
+                <li
+                  key={`${step.id}-${index}`}
+                  className={clsx(
+                    "space-y-3 rounded-2xl border bg-white px-3 py-2 text-sm",
+                    isDragging ? "border-dashed border-[var(--omni-ink)]" : "border-[var(--omni-border-soft)]",
+                  )}
+                  onDragOver={handleDragOver}
+                  onDrop={(event) => handleDrop(event, index)}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className="cursor-grab rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--omni-muted)]"
+                      draggable={editable}
+                      aria-label="Reordonează screen"
+                      onDragStart={(event) => handleDragStart(event, index)}
+                      onDragEnd={handleDragEnd}
                     >
-                      {tag}
+                      ↕
+                    </button>
+                    <span className="rounded bg-slate-900/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--omni-ink)]">
+                      {index + 1}
                     </span>
-                  ))}
+                    <input
+                      type="text"
+                      className="flex-1 rounded-xl border border-[var(--omni-border-soft)] px-3 py-1 text-sm"
+                      value={step.label}
+                      onChange={(event) => handleStepFieldChange(index, "label", event.target.value)}
+                      placeholder="Titlu screen"
+                    />
+                    <button
+                      type="button"
+                      className="rounded-full border border-red-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700"
+                      onClick={() => handleRemoveStep(index)}
+                    >
+                      Șterge
+                    </button>
+                  </div>
+                  <textarea
+                    className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-2 text-sm"
+                    placeholder="Descriere"
+                    value={step.description ?? ""}
+                    onChange={(event) => handleStepFieldChange(index, "description", event.target.value)}
+                  />
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Tags</label>
+                      <input
+                        type="text"
+                        className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-1 text-sm"
+                        placeholder="surface:today, persona:burnout"
+                        value={tagsValue}
+                        onChange={(event) => handleStepListFieldChange(index, "tags", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Flags</label>
+                      <input
+                        type="text"
+                        className="w-full rounded-xl border border-[var(--omni-border-soft)] px-3 py-1 text-sm"
+                        placeholder="Day1, Hero"
+                        value={flagsValue}
+                        onChange={(event) => handleStepListFieldChange(index, "flags", event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2 rounded-xl border border-dashed border-[var(--omni-border-soft)] px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                        Carduri ({cards.length})
+                      </p>
+                      <button
+                        type="button"
+                        className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                        onClick={() => handleCardAdd(index)}
+                      >
+                        Adaugă card
+                      </button>
+                    </div>
+                    {cards.length ? (
+                      <div className="space-y-2">
+                        {cards.map((card, cardIndex) => (
+                          <div
+                            key={`${card.id}-${cardIndex}`}
+                            className="space-y-2 rounded-xl border border-[var(--omni-border-soft)] bg-white/70 px-3 py-2 text-xs"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="font-semibold text-[var(--omni-ink)]">Card {cardIndex + 1}</p>
+                              <button
+                                type="button"
+                                className="rounded-full border border-red-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700"
+                                onClick={() => handleCardRemove(index, cardIndex)}
+                              >
+                                Șterge
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              className="w-full rounded-xl border border-[var(--omni-border-soft)] px-2 py-1 text-sm"
+                              value={card.label}
+                              placeholder="Titlu card"
+                              onChange={(event) => handleCardFieldChange(index, cardIndex, "label", event.target.value)}
+                            />
+                            <input
+                              type="text"
+                              className="w-full rounded-xl border border-[var(--omni-border-soft)] px-2 py-1 text-sm"
+                              value={card.actionTag ?? ""}
+                              placeholder="actionTag (ex: cta_explore_cat_day1)"
+                              onChange={(event) => handleCardFieldChange(index, cardIndex, "actionTag", event.target.value)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-[var(--omni-muted)]">Nu există carduri definite pentru acest screen.</p>
+                    )}
+                  </div>
+                </li>
+              );
+            }
+            return (
+              <li key={`${step.id}-${index}`} className="rounded-2xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-slate-900/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--omni-ink)]">
+                    {index + 1}
+                  </span>
+                  <p className="font-semibold text-[var(--omni-ink)]">{step.label}</p>
                 </div>
-              ) : null}
-            </li>
-          ))}
+                {step.description ? (
+                  <p className="mt-1 text-[12px] text-[var(--omni-muted)]">{step.description}</p>
+                ) : null}
+                {step.tags?.length ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-1 text-[10px]">
+                    {step.tags.map((tag) => (
+                      <span
+                        key={`${step.id}-${tag}`}
+                        className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 font-semibold text-[var(--omni-muted)]"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                {step.flags?.length ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-1 text-[10px]">
+                    {step.flags.map((flag) => (
+                      <span
+                        key={`${step.id}-flag-${flag}`}
+                        className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-700"
+                      >
+                        {flag}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                {step.cards?.length ? (
+                  <div className="mt-2 space-y-1 rounded-xl border border-dashed border-[var(--omni-border-soft)] px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                      Carduri ({step.cards.length})
+                    </p>
+                    <ul className="space-y-1 text-xs text-[var(--omni-ink)]/85">
+                      {step.cards.map((card) => (
+                        <li key={`${step.id}-card-${card.id}`} className="flex items-center justify-between gap-2">
+                          <span className="font-semibold">{card.label}</span>
+                          {card.actionTag ? (
+                            <span className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--omni-muted)]">
+                              {card.actionTag}
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ol>
       ) : (
-        <p className="text-xs text-[var(--omni-muted)]">Nod fără flow intern definit încă.</p>
+        <p className="text-xs text-[var(--omni-muted)]">
+          Nod fără flow intern definit încă.
+          {editable ? " Adaugă un screen pentru a începe structurarea nodului." : null}
+        </p>
       )}
     </div>
   );

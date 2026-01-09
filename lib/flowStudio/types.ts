@@ -5,12 +5,23 @@ import type { CopyFields } from "@/lib/useCopy";
 
 export type LabelMap = { ro?: string; en?: string };
 
-export type FlowNodeInternalStep = {
+export type FlowScreenCard = {
+  id: string;
+  label: string;
+  actionTag?: string;
+};
+
+export type FlowScreen = {
   id: string;
   label: string;
   description?: string;
   tags?: string[];
+  copyKey?: string;
+  flags?: string[];
+  cards?: FlowScreenCard[];
 };
+
+export type FlowNodeInternalStep = FlowScreen;
 
 export type RouteDoc = {
   id: string;

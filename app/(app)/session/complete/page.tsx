@@ -250,7 +250,8 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
     track("save_progress_prompt_view", { lane: "guided_day1", location: "session_complete" });
   }, [savePromptDayKey, showSaveProgressCard]);
 
-  const todayHref = withE2E("/today");
+  const todayHrefBase = guidedLaneActive ? "/today?source=guided_day1" : "/today";
+  const todayHref = withE2E(todayHrefBase);
 
   const buildNextRoute = () => {
     const params = new URLSearchParams({ source: "session_complete", round: "extra" });
@@ -311,6 +312,12 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
     track("guided_day1_summary_continue");
     setCompletedGuidedDayOneMicro();
     applyNavigation(guidedDayOneFollowUpHref);
+  };
+
+  const handleGuidedDayOneExplore = () => {
+    track("guided_day1_summary_explore");
+    const target = buildUrl("/intro/explore", { source: "guided_day1", entry: "cat-lite" });
+    applyNavigation(target);
   };
 
   const handleGuidedDayOneBack = () => {
@@ -411,11 +418,19 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
                     </p>
                   </div>
                 ) : null}
+                <OmniCtaButton
+                  className="justify-center sm:min-w-[220px]"
+                  variant="neutral"
+                  onClick={handleGuidedDayOneExplore}
+                  data-testid="guided-day1-summary-explore"
+                >
+                  Vreau mai mult
+                </OmniCtaButton>
                 <button
                   type="button"
                   className="rounded-[14px] border border-[var(--omni-border-soft)] px-4 py-2 text-sm font-semibold text-[var(--omni-ink)]"
                   onClick={handleGuidedDayOneBack}
-                  data-testid="guided-day1-summary-back"
+                  data-testid="session-back-today"
                 >
                   Înapoi la Today
                 </button>

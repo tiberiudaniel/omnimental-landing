@@ -907,6 +907,7 @@ useEffect(() => {
               hideIntroCta={isGuidedMode}
               introHelperText={guidedIntroHelperText}
               preserveIntroContent={isGuidedMode}
+              reduceRealWorldFriction={isGuidedMode}
             />
             {index < visibleNodes.length - 1 ? <PathConnector /> : null}
           </div>
@@ -948,7 +949,7 @@ useEffect(() => {
             title: "Session 1 · Curated focus",
             subtitle: (clusterLabel: string | null) =>
               clusterLabel ? `Today we stay in ${clusterLabel}.` : "Stay present and move through the session.",
-            startCta: "Start session",
+            startCta: "Continue session",
             xpLabel: "XP gained",
             stepsLabel: "Steps",
           }
@@ -957,7 +958,7 @@ useEffect(() => {
             title: "Sesiunea 1 · Traseu ghidat",
             subtitle: (clusterLabel: string | null) =>
               clusterLabel ? `Astăzi lucrăm pe ${clusterLabel}.` : "Rămâi prezent și parcurge sesiunea ghidată.",
-            startCta: "Pornește sesiunea",
+            startCta: "Continuă sesiunea",
             xpLabel: "XP acumulate",
             stepsLabel: "Pași",
           };

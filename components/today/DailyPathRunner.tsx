@@ -52,6 +52,7 @@ import {
 } from "@/lib/vocabProgress";
 import { track } from "@/lib/telemetry/track";
 import { useUserAccessTier } from "@/components/useUserAccessTier";
+import { isE2EMode } from "@/lib/e2eMode";
 
 const ADAPTIVE_NUDGES: Record<AdaptiveCluster, string> = {
   clarity_cluster: "Alege azi un lucru important și exprimă-l în minte în 7 cuvinte.",
@@ -258,6 +259,7 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
   const vocabDayKey = runDayKeyRef.current;
   const rawSourceParam = searchParams?.get("source")?.toLowerCase() ?? "";
   const e2eParamActive = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
+  const e2eMode = e2eParamActive || isE2EMode();
   const laneParam = searchParams?.get("lane")?.toLowerCase() ?? "";
   const guidedDayOneSource = isGuidedDayOneLane(rawSourceParam, laneParam);
   const cameFromUpgradeSuccess = rawSourceParam === "upgrade_success";
@@ -337,7 +339,7 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
 
   const rawModuleParam = searchParams?.get("module")?.toLowerCase() ?? null;
   const moduleOverride = rawModuleParam && rawModuleParam.length > 0 ? rawModuleParam : null;
-  const guidedDayOneE2E = guidedDayOneSource && e2eParamActive;
+  const guidedDayOneE2E = guidedDayOneSource && e2eMode;
 
   const decisionLang: DailyPathLanguage = langOverride ?? "ro";
   const isPremiumMember = membershipTier === "premium";
@@ -358,6 +360,7 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
     qaQueryFlag;
   const qaOverrideActive = overrideRequestPresent && !guidedDayOneSource;
   const overrideSuppressed = guidedDayOneSource && overrideRequestPresent;
+  const guidedDayOneE2EFinishingRef = useRef(false);
   const skipOnboardingParam = searchParams?.get("skipOnboarding") === "1";
   const debugSkipEnv = (process.env.NEXT_PUBLIC_DEBUG_SKIP_ONBOARDING || "").toLowerCase();
   const debugSkipEnabled = debugSkipEnv === "true" || debugSkipEnv === "1";
@@ -365,6 +368,11 @@ function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = 
   const debugFlagEnv = (process.env.NEXT_PUBLIC_TODAY_RUN_DEBUG || "").toLowerCase();
   const debugParamEnabled = (searchParams?.get("debug") ?? "").toLowerCase() === "1";
   const debugEnabled = debugParamEnabled || debugFlagEnv === "1" || debugFlagEnv === "true";
+  useEffect(() => {
+    if (!guidedDayOneE2E) {
+      guidedDayOneE2EFinishingRef.current = false;
+    }
+  }, [guidedDayOneE2E]);
   useEffect(() => {
     if (guidedDayOneSource) {
       setCatProfile(null);
@@ -924,9 +932,9 @@ useEffect(() => {
         return;
       }
     }
-    const target = e2eParamActive ? "/today?e2e=1" : "/today";
+    const target = e2eMode ? "/today?e2e=1" : "/today";
     router.push(target);
-  }, [decisionLang, e2eParamActive, router]);
+  }, [decisionLang, e2eMode, router]);
 
   if (guidedDayOneE2E) {
     return (
@@ -942,10 +950,15 @@ useEffect(() => {
           className="w-full max-w-sm justify-center"
           data-testid="session-finish-button"
           onClick={() => {
+            if (guidedDayOneE2EFinishingRef.current) return;
+            guidedDayOneE2EFinishingRef.current = true;
+            const complete = () => onCompleted?.();
             if (typeof window !== "undefined") {
               window.scrollTo({ top: 0, behavior: "smooth" });
+              window.setTimeout(complete, 250);
+              return;
             }
-            onCompleted?.();
+            complete();
           }}
         >
           Finalizează sesiunea

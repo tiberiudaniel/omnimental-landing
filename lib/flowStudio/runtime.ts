@@ -36,10 +36,6 @@ function getFlowDocForRoute(_routePath?: string | null): FlowDoc {
   return FLOW_DOC_REGISTRY.day1;
 }
 
-function getDayOneFlowDoc(): FlowDoc {
-  return getFlowDocForRoute();
-}
-
 function findRouteNode(doc: FlowDoc, routePath: string): FlowNode | undefined {
   return doc.nodes?.find((node) => node.kind !== "stepScreen" && normalizeRoutePath(node.routePath) === routePath);
 }
@@ -136,30 +132,16 @@ function buildManifestFromStepScreens(doc: FlowDoc, hostRoutePath: string): Step
   };
 }
 
-let internalStepCache: Map<string, FlowNodeInternalStep[]> | null = null;
-
-function buildInternalStepCache(): Map<string, FlowNodeInternalStep[]> {
-  const map = new Map<string, FlowNodeInternalStep[]>();
-  const doc = getDayOneFlowDoc();
-  doc.nodes?.forEach((node) => {
-    if (!node || node.kind === "stepScreen") return;
-    const routePath = normalizeRoutePath(node.routePath ?? node.stepScreen?.hostRoutePath ?? null);
-    if (!routePath) return;
-    const steps = node.internalSteps;
-    if (!steps || !steps.length) return;
-    map.set(routePath, steps.map((step) => ({ ...step })));
-  });
-  return map;
-}
-
-export function getNodeInternalStepsForRoute(routePath: string): FlowNodeInternalStep[] {
+export function getScreensForRoute(routePath: string): FlowNodeInternalStep[] {
   const normalizedPath = normalizeRoutePath(routePath);
   if (!normalizedPath) return [];
   const doc = getFlowDocForRoute(normalizedPath);
-  if (!internalStepCache) {
-    internalStepCache = buildInternalStepCache();
-  }
-  return internalStepCache.get(normalizedPath) ?? doc.nodes?.find((node) => node.routePath === normalizedPath)?.internalSteps ?? [];
+  const node = doc.nodes?.find((entry) => normalizeRoutePath(entry.routePath) === normalizedPath);
+  return node?.internalSteps?.map((step) => ({ ...step })) ?? [];
+}
+
+export function getNodeInternalStepsForRoute(routePath: string): FlowNodeInternalStep[] {
+  return getScreensForRoute(routePath);
 }
 
 const introManifestFallback: StepManifest = {

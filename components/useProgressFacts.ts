@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ProgressFact } from "@/lib/progressFacts";
 import { backfillProgressFacts } from "@/lib/progressFacts";
 import { getDb } from "@/lib/firebase";
+import { isE2EMode } from "@/lib/e2eMode";
 
 type ProgressFactsState = {
   data: ProgressFact | null;
@@ -19,6 +20,7 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
     error: null,
   }));
   const backfillRequested = useRef(false);
+  const e2eActive = isE2EMode();
   useEffect(() => {
     const maybeUseE2EOverride = (): ProgressFact | null => {
       if (typeof window === "undefined") return null;
@@ -34,8 +36,9 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
     };
 
     const override = maybeUseE2EOverride();
-    if (override) {
-      const commit = () => setState({ data: override, loading: false, error: null });
+    if (override || e2eActive) {
+      const resolved = override ?? null;
+      const commit = () => setState({ data: resolved, loading: false, error: null });
       if (typeof window === "undefined") {
         if (typeof queueMicrotask === "function") {
           queueMicrotask(commit);
@@ -124,7 +127,7 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
       unsubProfile();
       unsubFacts();
     };
-  }, [profileId]);
+  }, [profileId, e2eActive]);
 
   return state;
 }

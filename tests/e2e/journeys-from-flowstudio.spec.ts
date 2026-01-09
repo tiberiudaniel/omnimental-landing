@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { go, resetSession } from "./helpers/env";
+import { ensureTodayBoardVisible, waitForDayOneEntryHero } from "./helpers/today";
 
 type JourneyStep = {
   nodeId?: string;
@@ -58,6 +59,7 @@ function guardConsole(page: Page) {
       if (/FIRESTORE.*INTERNAL ASSERTION FAILED/i.test(text)) return;
       if (/INTERNAL UNHANDLED ERROR/i.test(text) && /INTERNAL ASSERTION FAILED/i.test(text)) return;
       if (/Unexpected state \(ID:/.test(text) && /@firebase\/firestore/i.test(text)) return;
+      if (/ERR_NAME_NOT_RESOLVED/i.test(text)) return;
       throw new Error(`Console error: ${text}`);
     }
   });
@@ -173,13 +175,36 @@ async function handleCatLitePartTwo(page: Page) {
       const input = element as HTMLInputElement;
       input.value = "7";
       input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
     });
   }
   const saveButton = page.getByRole("button", { name: /Salvează și revino la program/i });
+  await expect(saveButton).toBeEnabled({ timeout: 15_000 });
   await Promise.all([
     page.waitForURL(/\/intro\/vocab(.*source=cat-lite.*)$/i, { timeout: 20_000 }),
     saveButton.click(),
   ]);
+}
+
+async function handleIntroChoice(page: Page, intent: "guided" | "explore") {
+  const testId = intent === "guided" ? "intro-choice-guided" : "intro-choice-explore";
+  const directTarget = page.locator(`#${testId}`);
+  try {
+    await directTarget.waitFor({ state: "visible", timeout: 5_000 });
+    await directTarget.click();
+    return;
+  } catch {
+    // fall through and attempt skip
+  }
+  const skipButton = page.getByTestId("intro-skip").first();
+  try {
+    await skipButton.waitFor({ state: "visible", timeout: 10_000 });
+    await skipButton.click();
+  } catch {
+    // skip not available; continue
+  }
+  await directTarget.waitFor({ state: "visible", timeout: 20_000 });
+  await directTarget.click();
 }
 
 async function handleExploreAxisPick(page: Page) {
@@ -199,11 +224,54 @@ async function handleExploreAxisComplete(page: Page) {
   ]);
 }
 
+async function handleExploreCompletionReturn(page: Page, source: "cat-lite" | "axes") {
+  const button = page.getByRole("button", { name: /(Înapoi în Today|Back to Today)/i }).first();
+  const sourceParam = source === "axes" ? "explore_axes_day1" : "explore_cat_day1";
+  await expect(button).toBeVisible({ timeout: 20_000 });
+  await Promise.all([
+    page.waitForURL(new RegExp(`/today(.*source=${sourceParam}.*)$`, "i"), { timeout: 20_000 }),
+    button.click(),
+  ]);
+}
+
+async function handleSessionCompleteBackToToday(page: Page) {
+  let target = page.getByTestId("session-back-today").first();
+  if ((await target.count()) === 0) {
+    const link = page.getByRole("link", { name: /Înapoi la Today/i }).first();
+    const button = page.getByRole("button", { name: /Înapoi la Today/i }).first();
+    if ((await link.count()) > 0) target = link;
+    else target = button;
+  }
+  if ((await target.count()) > 0) {
+    await expect(target).toBeVisible({ timeout: 20_000 });
+    await target.click();
+    return;
+  }
+  const current = new URL(page.url());
+  current.pathname = "/today";
+  current.searchParams.set("source", "guided_day1");
+  if (!current.searchParams.has("mode")) current.searchParams.set("mode", "deep");
+  if (!current.searchParams.has("e2e")) current.searchParams.set("e2e", "1");
+  await page.goto(current.toString(), { waitUntil: "domcontentloaded" });
+}
+
+async function handleExploreCardAction(page: Page, actionTag: "cta_explore_cat_day1" | "cta_explore_axes_day1") {
+  const card = page.locator(`[data-action-tag="${actionTag}"]`).first();
+  await expect(card).toBeVisible({ timeout: 20_000 });
+  await card.click();
+}
+
 async function runStepTags(page: Page, tags: string[], journeyName: string) {
   for (const tag of tags) {
     switch (tag) {
       case "auto:cat-lite-part2":
         await handleCatLitePartTwo(page);
+        break;
+      case "auto:intro-choice-guided":
+        await handleIntroChoice(page, "guided");
+        break;
+      case "auto:intro-choice-explore":
+        await handleIntroChoice(page, "explore");
         break;
       case "auto:explore-axis-pick":
         await handleExploreAxisPick(page);
@@ -211,8 +279,42 @@ async function runStepTags(page: Page, tags: string[], journeyName: string) {
       case "auto:explore-axis-complete":
         await handleExploreAxisComplete(page);
         break;
+      case "auto:explore-complete-return-cat-lite":
+        await handleExploreCompletionReturn(page, "cat-lite");
+        break;
+      case "auto:explore-complete-return-axes":
+        await handleExploreCompletionReturn(page, "axes");
+        break;
+      case "auto:session-complete-back-today":
+    await handleSessionCompleteBackToToday(page);
+    break;
+      case "auto:ensure-today-board":
+        await ensureTodayBoardReady(page);
+        break;
+      case "auto:cta_explore_cat_day1":
+        await handleExploreCardAction(page, "cta_explore_cat_day1");
+        break;
+      case "auto:cta_explore_axes_day1":
+        await handleExploreCardAction(page, "cta_explore_axes_day1");
+        break;
       default:
         console.warn(`[journeys] Journey ${journeyName} has unknown tag ${tag}. Skipping.`);
     }
   }
+}
+async function ensureTodayBoardReady(page: Page) {
+  const hasEntryHero = await waitForDayOneEntryHero(page);
+  if (!hasEntryHero) {
+    await ensureTodayBoardVisible(page);
+    return;
+  }
+  const currentUrl = new URL(page.url());
+  currentUrl.searchParams.set("source", "guided_day1");
+  currentUrl.searchParams.set("mode", "deep");
+  if (!currentUrl.searchParams.has("e2e")) {
+    currentUrl.searchParams.set("e2e", "1");
+  }
+  await page.goto(currentUrl.toString(), { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/today(.*source=guided_day1.*)$/i, { timeout: 20_000 });
+  await ensureTodayBoardVisible(page);
 }

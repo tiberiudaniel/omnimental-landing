@@ -43,7 +43,7 @@ test.describe('Guided Day1 contract (lane UI)', () => {
     await expect(page.getByTestId('session-complete-root')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId('guided-day1-summary-root')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId('guided-day1-summary-continue')).toBeVisible();
-    await expect(page.getByTestId('guided-day1-summary-back')).toBeVisible();
+    await expect(page.getByTestId('session-back-today')).toBeVisible();
     await expect(page.getByTestId('save-progress-card')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByTestId('save-progress-create')).toBeVisible();
     await expect(page.getByTestId('save-progress-dismiss')).toBeVisible();

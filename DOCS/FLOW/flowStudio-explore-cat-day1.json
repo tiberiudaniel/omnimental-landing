@@ -154,10 +154,21 @@
       "chunkId": "daily_loop",
       "internalSteps": [
         {
-          "id": "today_axis_hero",
+          "id": "today_day1_entry",
+          "label": "Today Day-1 · entry tunnel",
+          "description": "Hero simplu + CTA unic pentru Guided Day1. Fără board/extra carduri.",
+          "flags": ["day1_entry"],
+          "tags": [
+            "cta:/today/run?lane=guided_day1"
+          ]
+        },
+        {
+          "id": "today_board_hero",
           "label": "Hero Claritate operațională",
           "description": "Titlu + rezumat și CTA „Pornește sesiunea”",
+          "flags": ["day1_board"],
           "tags": [
+            "cta:/today/run",
             "cta:/today/run?lane=guided_day1"
           ]
         },
@@ -165,6 +176,7 @@
           "id": "today_session_cards",
           "label": "Quick vs Deep",
           "description": "Carduri 8 min vs 30–60 min + indicator Earn",
+          "flags": ["day1_board"],
           "tags": [
             "cta:/today/run",
             "cta:/today/run?mode=deep"
@@ -174,6 +186,7 @@
           "id": "today_explore_choices",
           "label": "Explore Ziua 1",
           "description": "Profil CAT și „Alege o axă”",
+          "flags": ["day1_board"],
           "tags": [
             "cta:/intro/explore?entry=cat-lite",
             "cta:/intro/explore?entry=axes"
@@ -182,12 +195,14 @@
         {
           "id": "today_last_session",
           "label": "Ultima sesiune",
-          "description": "Istoric + status Earn/Premium"
+          "description": "Istoric + status Earn/Premium",
+          "flags": ["day1_board"]
         },
         {
           "id": "today_more_sessions",
           "label": "Vrei încă o sesiune azi?",
           "description": "Card upgrade/drill după prima sesiune",
+          "flags": ["day1_board"],
           "tags": [
             "cta:/today/earn?source=today_hub"
           ]
@@ -195,7 +210,8 @@
         {
           "id": "today_completion_status",
           "label": "Status profil Ziua 1",
-          "description": "Mesaj după CAT Lite sau completare Today"
+          "description": "Mesaj după CAT Lite sau completare Today",
+          "flags": ["day1_board"]
         }
       ]
     },
@@ -212,24 +228,20 @@
       "chunkId": "guided_day1",
       "internalSteps": [
         {
-          "id": "hero_explore",
-          "label": "Header Ziua 1 · Explorare",
-          "description": "Context „Ai redus zgomotul” + recomandare CAT"
-        },
-        {
-          "id": "card_cat_lite",
-          "label": "Card Profil CAT",
-          "description": "Card cu badge „Recomandat azi” și CTA CAT Lite",
-          "tags": [
-            "cta:/intro/explore/cat-lite"
-          ]
-        },
-        {
-          "id": "card_axes",
-          "label": "Card lecție pe o axă",
-          "description": "Opțiunea „Alege o zonă” cu CTA axes hub",
-          "tags": [
-            "cta:/intro/explore/axes"
+          "id": "intro_explore_hub_day1",
+          "label": "Explore Hub Ziua 1",
+          "description": "Userul a terminat Guided Day1 și acum poate alege profilul mental sau o axă de lucru.",
+          "cards": [
+            {
+              "id": "card_cat_profile",
+              "label": "Profil mental Ziua 1 (CAT)",
+              "actionTag": "cta_explore_cat_day1"
+            },
+            {
+              "id": "card_explore_axis",
+              "label": "Explorează o axă",
+              "actionTag": "cta_explore_axes_day1"
+            }
           ]
         }
       ]
@@ -596,29 +608,29 @@
       "steps": [
         {
           "nodeId": "n_intro_cinematic_step",
-          "urlPattern": "/intro(.*step=cinematic.*)$",
-          "clickTestId": "intro-choice-guided"
+          "urlPattern": "/intro(.*)$",
+          "tags": ["auto:intro-choice-guided"]
         },
         {
           "nodeId": "n_intro_mindpacing_step",
-          "urlPattern": "/intro(.*step=mindpacing.*)$",
+          "urlPattern": "/intro(.*)$",
           "clickTestId": "mindpacing-option-0"
         },
         {
           "nodeId": "n_intro_mindpacing_step",
-          "urlPattern": "/intro(.*step=mindpacing.*)$",
+          "urlPattern": "/intro(.*)$",
           "assertTestId": "mindpacing-root",
           "clickTestId": "mindpacing-continue"
         },
         {
           "nodeId": "n_intro_vocab_step",
-          "urlPattern": "/intro(.*step=vocab.*)$",
+          "urlPattern": "/intro(.*)$",
           "assertTestId": "vocab-root",
           "clickTestId": "vocab-continue"
         },
         {
           "nodeId": "n_intro_handoff_step",
-          "urlPattern": "/intro(.*step=handoff.*)$"
+          "urlPattern": "/intro(.*)$"
         },
         {
           "nodeId": "n_today_deep",
@@ -628,14 +640,16 @@
         },
         {
           "nodeId": "n_guided_day1_session_step",
-          "urlPattern": "/guided/day1(.*step=guided_day1_session.*)$",
+          "urlPattern": "/today/run(.*lane=guided_day1.*)$",
           "assertTestId": "guided-day1-e2e",
           "clickTestId": "session-finish-button"
         },
         {
           "nodeId": "n_guided_day1_complete_step",
-          "urlPattern": "/guided/day1(.*step=guided_day1_complete.*)$",
-          "assertTestId": "session-complete-root"
+          "urlPattern": "/session/complete(.*lane=guided_day1.*)$",
+          "tags": [
+            "auto:session-complete-back-today"
+          ]
         },
         {
           "nodeId": "n_today_deep",
@@ -683,33 +697,42 @@
       "steps": [
         {
           "nodeId": "n_intro_cinematic_step",
-          "urlPattern": "/intro(.*step=cinematic.*)$",
-          "clickTestId": "intro-choice-explore"
+          "urlPattern": "/intro(.*)$",
+          "tags": ["auto:intro-choice-explore"]
         },
         {
           "nodeId": "n_intro_mindpacing_step",
-          "urlPattern": "/intro(.*step=mindpacing.*)$",
+          "urlPattern": "/intro(.*)$",
           "clickTestId": "mindpacing-option-0"
         },
         {
           "nodeId": "n_intro_mindpacing_step",
-          "urlPattern": "/intro(.*step=mindpacing.*)$",
+          "urlPattern": "/intro(.*)$",
           "assertTestId": "mindpacing-root",
           "clickTestId": "mindpacing-continue"
         },
         {
           "nodeId": "n_intro_vocab_step",
-          "urlPattern": "/intro(.*step=vocab.*)$",
+          "urlPattern": "/intro(.*)$",
           "assertTestId": "vocab-root",
           "clickTestId": "vocab-continue"
         },
         {
           "nodeId": "n_intro_handoff_step",
-          "urlPattern": "/intro(.*step=handoff.*)$"
+          "urlPattern": "/intro(.*)$"
         },
         {
           "nodeId": "n_today_deep",
           "urlPattern": "/today(.*mode=deep.*intent=explore.*)$",
+          "assertTestId": "today-day1-entry",
+          "clickTestId": "guided-day1-start",
+          "tags": [
+            "auto:ensure-today-board"
+          ]
+        },
+        {
+          "nodeId": "n_today_deep",
+          "urlPattern": "/today(.*source=guided_day1.*)$",
           "assertTestId": "today-root",
           "clickTestId": "today-explore-cat"
         },
@@ -717,12 +740,14 @@
           "nodeId": "n_intro_explore",
           "urlPattern": "/intro/explore(.*entry=cat-lite.*)$",
           "assertTestId": "explore-card-cat-lite",
-          "clickTestId": "explore-card-cat-lite",
-          "gateTag": "skip_if_intro_explore_completed"
+          "gateTag": "skip_if_intro_explore_completed",
+          "tags": [
+            "auto:cta_explore_cat_day1"
+          ]
         },
         {
           "nodeId": "n_intro_explore_catlite",
-          "urlPattern": "/intro/explore/cat-lite(.*)$"
+          "urlPattern": "/(intro\\/explore\\/cat-lite|onboarding\\/cat-lite-2)(.*)$"
         },
         {
           "nodeId": "n_onboarding_catlite2",
@@ -740,7 +765,10 @@
         },
         {
           "nodeId": "n_intro_explore_complete",
-          "urlPattern": "/intro/explore/complete(.*source=cat-lite.*)$"
+          "urlPattern": "/intro/explore/complete(.*source=cat-lite.*)$",
+          "tags": [
+            "auto:explore-complete-return-cat-lite"
+          ]
         },
         {
           "nodeId": "n_today_deep",
@@ -800,33 +828,42 @@
       "steps": [
         {
           "nodeId": "n_intro_cinematic_step",
-          "urlPattern": "/intro(.*step=cinematic.*)$",
-          "clickTestId": "intro-choice-explore"
+          "urlPattern": "/intro(.*)$",
+          "tags": ["auto:intro-choice-explore"]
         },
         {
           "nodeId": "n_intro_mindpacing_step",
-          "urlPattern": "/intro(.*step=mindpacing.*)$",
+          "urlPattern": "/intro(.*)$",
           "clickTestId": "mindpacing-option-0"
         },
         {
           "nodeId": "n_intro_mindpacing_step",
-          "urlPattern": "/intro(.*step=mindpacing.*)$",
+          "urlPattern": "/intro(.*)$",
           "assertTestId": "mindpacing-root",
           "clickTestId": "mindpacing-continue"
         },
         {
           "nodeId": "n_intro_vocab_step",
-          "urlPattern": "/intro(.*step=vocab.*)$",
+          "urlPattern": "/intro(.*)$",
           "assertTestId": "vocab-root",
           "clickTestId": "vocab-continue"
         },
         {
           "nodeId": "n_intro_handoff_step",
-          "urlPattern": "/intro(.*step=handoff.*)$"
+          "urlPattern": "/intro(.*)$"
         },
         {
           "nodeId": "n_today_deep",
           "urlPattern": "/today(.*mode=deep.*intent=explore.*)$",
+          "assertTestId": "today-day1-entry",
+          "clickTestId": "guided-day1-start",
+          "tags": [
+            "auto:ensure-today-board"
+          ]
+        },
+        {
+          "nodeId": "n_today_deep",
+          "urlPattern": "/today(.*source=guided_day1.*)$",
           "assertTestId": "today-root",
           "clickTestId": "today-explore-axes"
         },
@@ -834,8 +871,10 @@
           "nodeId": "n_intro_explore",
           "urlPattern": "/intro/explore(.*entry=axes.*)$",
           "assertTestId": "explore-card-axes",
-          "clickTestId": "explore-card-axes",
-          "gateTag": "skip_if_intro_explore_completed"
+          "gateTag": "skip_if_intro_explore_completed",
+          "tags": [
+            "auto:cta_explore_axes_day1"
+          ]
         },
         {
           "nodeId": "n_intro_explore_axes",
@@ -855,7 +894,10 @@
         },
         {
           "nodeId": "n_intro_explore_complete",
-          "urlPattern": "/intro/explore/complete(.*source=axes.*)$"
+          "urlPattern": "/intro/explore/complete(.*source=axes.*)$",
+          "tags": [
+            "auto:explore-complete-return-axes"
+          ]
         },
         {
           "nodeId": "n_today_deep",
