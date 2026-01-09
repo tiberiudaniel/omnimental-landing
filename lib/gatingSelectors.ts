@@ -40,8 +40,9 @@ export function needsStyleProfile(
 
 export function needsCatLitePart2(
   profile: UserProfileSnapshot | null | undefined,
-  facts: ProgressFact | null | undefined,
+  _facts: ProgressFact | null | undefined,
 ): boolean {
+  void _facts;
   if (!profile?.catProfile) return true;
   return CAT_LITE_EXTENDED_AXES.some((axis) => typeof profile.catProfile?.axes?.[axis]?.score !== "number");
 }

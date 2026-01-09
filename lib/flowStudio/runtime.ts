@@ -31,6 +31,7 @@ function normalizeRoutePath(input: string | null | undefined): string | null {
 }
 
 function getFlowDocForRoute(_routePath?: string | null): FlowDoc {
+  void _routePath;
   // TODO: map routePath către doc-uri diferite când vor exista multiple FlowDoc-uri
   return FLOW_DOC_REGISTRY.day1;
 }
