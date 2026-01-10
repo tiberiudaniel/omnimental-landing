@@ -6,19 +6,21 @@ import {
   clearInitiationProgress,
   LEGACY_INITIATION_PROGRESS_KEY,
 } from "@/lib/content/initiationProgressStorage";
+import type { LessonId, ModuleId } from "@/lib/taxonomy/types";
 
-const MODULE_A = "init_clarity_foundations";
-const MODULE_B = "init_energy_foundations";
+const MODULE_A = "init_clarity_foundations" as ModuleId;
+const MODULE_B = "init_energy_foundations" as ModuleId;
+const LESSON_A = "clarity_01_illusion_of_clarity" as LessonId;
 
 test("progress storage isolates per user", () => {
   clearInitiationProgress("userA");
   clearInitiationProgress("userB");
   writeInitiationProgressState("userA", {
-    moduleId: MODULE_A as never,
-    completedLessonIds: ["clarity_01_illusion_of_clarity" as never],
+    moduleId: MODULE_A,
+    completedLessonIds: [LESSON_A],
   });
   writeInitiationProgressState("userB", {
-    moduleId: MODULE_B as never,
+    moduleId: MODULE_B,
     completedLessonIds: [],
   });
   assert.equal(readInitiationProgressState("userA")?.moduleId, MODULE_A);
@@ -27,19 +29,47 @@ test("progress storage isolates per user", () => {
 
 test("legacy key migrates when accessed in browser context", () => {
   const store = new Map<string, string>();
-  const localStorageMock = {
-    getItem: (key: string) => store.get(key) ?? null,
-    setItem: (key: string, value: string) => {
-      store.set(key, value);
+  const localStorageMock: Storage = {
+    get length() {
+      return store.size;
     },
-    removeItem: (key: string) => {
+    clear() {
+      store.clear();
+    },
+    getItem(key: string) {
+      return store.get(key) ?? null;
+    },
+    key(index: number) {
+      const keys = Array.from(store.keys());
+      return keys[index] ?? null;
+    },
+    removeItem(key: string) {
       store.delete(key);
     },
+    setItem(key: string, value: string) {
+      store.set(key, value);
+    },
   };
-  (globalThis as typeof globalThis & { window?: unknown }).window = {
+  const globalWithWindow = globalThis as { window?: Window & typeof globalThis };
+  const originalWindow = globalWithWindow.window;
+  const workingWindow =
+    originalWindow ??
+    (({
+      localStorage: localStorageMock,
+      dispatchEvent: () => true,
+    } as unknown) as Window & typeof globalThis);
+  const originalLocalStorage = workingWindow.localStorage;
+  const originalDispatchEvent = workingWindow.dispatchEvent;
+  const dispatchEventMock: typeof workingWindow.dispatchEvent = (event: Event) => {
+    void event;
+    return true;
+  };
+  const patchedWindow = {
+    ...workingWindow,
     localStorage: localStorageMock,
-    dispatchEvent: () => {},
-  } as unknown as Window;
+    dispatchEvent: dispatchEventMock,
+  } as Window & typeof globalThis;
+  globalWithWindow.window = patchedWindow;
   const legacyPayload = JSON.stringify({
     moduleId: MODULE_B,
     completedLessonIds: ["focus_energy_01_energy_not_motivation"],
@@ -47,5 +77,11 @@ test("legacy key migrates when accessed in browser context", () => {
   localStorageMock.setItem(LEGACY_INITIATION_PROGRESS_KEY, legacyPayload);
   const state = readInitiationProgressState("legacy-user");
   assert.equal(state?.moduleId, MODULE_B);
-  delete (globalThis as typeof globalThis & { window?: unknown }).window;
+  if (originalWindow) {
+    originalWindow.localStorage = originalLocalStorage;
+    originalWindow.dispatchEvent = originalDispatchEvent;
+    globalWithWindow.window = originalWindow;
+  } else {
+    delete globalWithWindow.window;
+  }
 });

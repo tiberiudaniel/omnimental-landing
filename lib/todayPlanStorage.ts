@@ -49,7 +49,16 @@ export function saveTodayPlan(plan: StoredTodayPlan): void {
 
 export function readTodayPlan(): StoredTodayPlan | null {
   if (typeof window === "undefined") return null;
-  return parsePayload(window.sessionStorage.getItem(STORAGE_KEY));
+  const raw = window.sessionStorage.getItem(STORAGE_KEY);
+  const parsed = parsePayload(raw);
+  if (!parsed && raw) {
+    try {
+      window.sessionStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }
+  return parsed;
 }
 
 export function clearTodayPlan(): void {

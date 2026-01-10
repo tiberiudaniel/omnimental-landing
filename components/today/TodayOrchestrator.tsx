@@ -56,14 +56,13 @@ import {
   buildInitiationSessionPlan,
   type InitiationSessionPlanResult,
 } from "@/lib/sessions/buildInitiationSessionPlan";
-import { resolveInitiationLesson } from "@/lib/content/resolveLessonToExistingContent";
 import {
   hasInitiationRunCompleted,
   markInitiationRunCompleted,
   clearInitiationRunHistory,
 } from "@/lib/content/initiationRunHistory";
 import { useInitiationProgress } from "@/components/today/useInitiationProgress";
-import type { MindpacingFallbackReason } from "@/lib/mindpacing/moduleMapping";
+import { resolveInitiationPlanLock } from "@/lib/today/initiationPlanLock";
 
 const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
 const GUIDED_ONBOARDING_KEY = "guided_onboarding_active";
@@ -85,13 +84,6 @@ const formatLessonLabel = (lessonId: string): string =>
     .split("_")
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" ");
-
-const generateRunId = (): string => {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `run_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-};
 
 export default function TodayOrchestrator() {
   const router = useRouter();
@@ -307,38 +299,18 @@ export default function TodayOrchestrator() {
   );
 
   useEffect(() => {
-    const normalizedTag = normalizedMindpacingTag;
-    const storedPlan = readTodayPlan();
-    const storedTag = storedPlan?.mindpacingTag ?? null;
-    if (
-      storedPlan &&
-      storedPlan.todayKey === todayKey &&
-      storedPlan.worldId === "INITIATION" &&
-      storedPlan.mode === "initiation" &&
-      storedPlan.initiationModuleId &&
-      storedPlan.initiationLessonIds?.length &&
-      storedPlan.runId &&
-      storedTag === normalizedTag
-    ) {
-      try {
-        const lessons = storedPlan.initiationLessonIds.map((lessonId) =>
-          resolveInitiationLesson(lessonId as LessonId),
-        );
-        setInitiationPlanResult({
-          lessons,
-          debug: {
-            moduleId: storedPlan.initiationModuleId as ModuleId,
-            mindpacingTag: storedTag,
-            fallbackReason: storedPlan.fallbackReason as MindpacingFallbackReason | undefined,
-          },
-        });
-        setRunId(storedPlan.runId);
-        fallbackTrackedRef.current = Boolean(storedPlan.fallbackReason);
-        return;
-      } catch {
-        clearTodayPlan();
-      }
+    const planLockResult = resolveInitiationPlanLock({
+      todayKey,
+      mindpacingTag: normalizedMindpacingTag,
+    });
+    if (planLockResult.status === "reused") {
+      setInitiationPlanResult(planLockResult.planResult);
+      setRunId(planLockResult.runId);
+      fallbackTrackedRef.current = Boolean(planLockResult.planResult.debug.fallbackReason);
+      return;
     }
+    setRunId(planLockResult.runId);
+    fallbackTrackedRef.current = false;
 
     try {
       const existingProgress = readInitiationProgressState(user?.uid ?? null);
@@ -346,12 +318,10 @@ export default function TodayOrchestrator() {
         templateId: "initiation_10min" as SessionTemplateId,
         currentModuleId: existingProgress?.moduleId ?? null,
         completedLessonIds: existingProgress?.completedLessonIds ?? [],
-        mindpacingTag: normalizedTag,
+        mindpacingTag: normalizedMindpacingTag,
       });
       ensureInitiationProgress(user?.uid ?? null, builderResult.debug.moduleId);
       setInitiationPlanResult(builderResult);
-      fallbackTrackedRef.current = false;
-      setRunId(generateRunId());
     } catch (error) {
       console.warn("[today] initiation session plan failed", error);
       setInitiationPlanResult(null);
@@ -407,8 +377,7 @@ export default function TodayOrchestrator() {
   const lastSessionLabel = useMemo(() => {
     if (!lastCompletion) return "—";
     const completedAt = new Date(lastCompletion.completedAt);
-    const todayKey = new Date().toDateString();
-    if (completedAt.toDateString() === todayKey) {
+    if (getTodayKey(completedAt) === todayKey) {
       return "Azi";
     }
     try {
@@ -416,7 +385,7 @@ export default function TodayOrchestrator() {
     } catch {
       return completedAt.toLocaleDateString();
     }
-  }, [lastCompletion]);
+  }, [lastCompletion, todayKey]);
 
   const laneParam = (searchParams?.get("lane") ?? "").toLowerCase();
   const preserveGuidedDayOneE2E = e2eMode;

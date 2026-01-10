@@ -1,4 +1,4 @@
-import { getTodayKey } from "./dailyCompletion";
+import { getTodayKey } from "@/lib/time/todayKey";
 import type { ProgressFact } from "./progressFacts";
 import { recordEarnedRoundState } from "./progressFacts/recorders";
 

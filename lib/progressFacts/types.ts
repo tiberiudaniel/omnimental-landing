@@ -146,5 +146,7 @@ export type ProgressFact = {
     moduleLessonCount: number;
     nextLessonId: LessonId | null;
     streakDays: number;
+    completedLessonIds?: LessonId[];
+    lastCompletedAt?: string;
   };
 };

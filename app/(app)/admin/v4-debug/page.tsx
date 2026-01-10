@@ -28,6 +28,7 @@ import {
   ActiveArcProgressCard,
   TRAIT_LABELS,
 } from "./ProfileSnapshotComponents";
+import { getTodayKey } from "@/lib/time/todayKey";
 import type { ArcCoverageRow, TraitCoverageRow, ActiveArcProgressData } from "./ProfileSnapshotComponents";
 
 const SESSION_FILTERS: Array<{ id: TelemetrySessionType; label: string }> = [
@@ -218,7 +219,7 @@ export default function AdminV4DebugPage() {
   const todaySummary = useMemo(() => {
     const dailySessions = sessions.filter((session) => session.sessionType === "daily");
     const dayKeys = new Set<string>();
-    const todayKey = new Date().toISOString().split("T")[0];
+    const todayKey = getTodayKey();
     let sessionsToday = 0;
     let realCount = 0;
     dailySessions.forEach((session) => {
@@ -779,7 +780,7 @@ function getSessionDate(session: SessionTelemetry): Date | null {
 
 function getSessionDateKey(session: SessionTelemetry): string | null {
   const date = getSessionDate(session);
-  return date ? date.toISOString().split("T")[0] : null;
+  return date ? getTodayKey(date) : null;
 }
 
 type SessionTraitInfo = {
@@ -806,7 +807,7 @@ function buildTimeline(data: SessionTelemetry[]): TimelineEntry[] {
   const buckets = new Map<string, TimelineEntry>();
   data.forEach((session) => {
     const recordedAt = getSessionDate(session);
-    const dateKey = recordedAt ? recordedAt.toISOString().split("T")[0] : "unknown";
+    const dateKey = recordedAt ? getTodayKey(recordedAt) : "unknown";
     const label = recordedAt
       ? recordedAt.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })
       : "Fără dată";

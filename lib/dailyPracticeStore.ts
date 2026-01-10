@@ -11,14 +11,15 @@ import {
   where,
 } from "firebase/firestore";
 import { areWritesDisabled, getDb } from "@/lib/firebase";
-import { toUtcDayKey } from "@/lib/dailyPathHistory";
 import type { AdaptiveCluster, DailyPathLanguage, DailyPathMode } from "@/types/dailyPath";
 import type { DailyPracticeDoc, DailyPracticePathVariant } from "@/types/dailyPractice";
+import { getTodayKey } from "@/lib/time/todayKey";
 
 const COLLECTION_NAME = "dailyPractice";
 
+/** @deprecated Use getTodayKey from "@/lib/time/todayKey" */
 export function getCurrentDateKey(date: Date = new Date()): string {
-  return toUtcDayKey(date) ?? new Date(date).toISOString().slice(0, 10);
+  return getTodayKey(date);
 }
 
 export function buildDailyPracticeDocId(userId: string, configId: string, date: string): string {

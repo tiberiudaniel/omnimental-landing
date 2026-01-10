@@ -2,6 +2,7 @@ import { collection, getDocs, limit, orderBy, query, Timestamp, where } from "fi
 import { getDb } from "@/lib/firebase";
 import { isE2EMode, readE2ETelemetry } from "@/lib/e2eMode";
 import type { SessionTelemetry } from "@/lib/telemetry";
+import { getTodayKey } from "@/lib/time/todayKey";
 
 function startOfToday(): Date {
   const now = new Date();
@@ -18,12 +19,12 @@ export async function getSessionsToday(userId: string): Promise<number> {
   if (!userId) return 0;
   if (isE2EMode()) {
     const data = readE2ETelemetry<SessionTelemetry>(userId);
-    const today = startOfToday();
-    const todayKey = today.toDateString();
+    const todayKey = getTodayKey();
     return data.filter((entry) => {
       const recordedAt = entry.recordedAt instanceof Date ? entry.recordedAt : entry.recordedAtOverride;
       if (!recordedAt) return false;
-      return new Date(recordedAt).toDateString() === todayKey && entry.sessionType === "daily";
+      const entryDate = recordedAt instanceof Date ? recordedAt : new Date(recordedAt);
+      return getTodayKey(entryDate) === todayKey && entry.sessionType === "daily";
     }).length;
   }
   const colRef = sessionsCollection(userId);

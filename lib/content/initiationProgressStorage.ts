@@ -2,6 +2,7 @@ import { INITIATION_MODULES } from "@/config/content/initiations/modules";
 import { getNextLessonInModule } from "@/lib/content/getNextLessonInModule";
 import { getLocalCompletionStreak } from "@/lib/dailyCompletion";
 import type { LessonId, ModuleId, WorldId } from "@/lib/taxonomy/types";
+import { persistRemoteInitiationFacts } from "@/lib/content/initiationFactsRemote";
 
 const SCHEMA_VERSION = "v1";
 const LEGACY_STORAGE_KEY = "omnimental:initiationProgress";
@@ -137,13 +138,16 @@ export function markInitiationLessonsCompleted(
 ): void {
   if (!lessons.length) return;
   const state = ensureInitiationProgress(userId, moduleId);
+  let nextState: InitiationProgressState;
   if (state.moduleId !== moduleId) {
-    writeInitiationProgressState(userId, { moduleId, completedLessonIds: lessons });
-    return;
+    nextState = { moduleId, completedLessonIds: lessons };
+  } else {
+    const updated = new Set(state.completedLessonIds);
+    lessons.forEach((lesson) => updated.add(lesson));
+    nextState = { moduleId, completedLessonIds: Array.from(updated) };
   }
-  const updated = new Set(state.completedLessonIds);
-  lessons.forEach((lesson) => updated.add(lesson));
-  writeInitiationProgressState(userId, { moduleId, completedLessonIds: Array.from(updated) });
+  writeInitiationProgressState(userId, nextState);
+  void persistRemoteInitiationFacts(userId ?? null, nextState).catch(() => {});
 }
 
 export type InitiationFacts = {

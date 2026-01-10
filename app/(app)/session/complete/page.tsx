@@ -42,13 +42,7 @@ const EVENT_LABELS: Record<string, string> = {
 const GUIDED_DAY1_MICRO_DONE_KEY = "guided_day1_micro_done";
 
 function getDailyMicroFlag(): string | null {
-  return (() => {
-    try {
-      return getTodayKey();
-    } catch {
-      return new Date().toDateString();
-    }
-  })();
+  return getTodayKey();
 }
 
 function hasCompletedGuidedDayOneMicro() {

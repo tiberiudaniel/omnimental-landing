@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { go, resetSession } from "./helpers/env";
+import { getTodayKey } from "../../lib/time/todayKey";
 
 function guardConsole(page: Page) {
   page.on("console", (msg) => {
@@ -15,7 +16,7 @@ async function primeOverrides(
   page: Page,
   overrides: { membership?: "free" | "premium"; tier?: number; progress?: Record<string, unknown> } = {},
 ) {
-  const dayKey = new Date().toISOString().split("T")[0];
+  const dayKey = getTodayKey();
   const progressOverrides = (() => {
     const baseProgress = overrides.progress ?? {};
     const baseStats = (baseProgress as { stats?: Record<string, unknown> }).stats ?? {};

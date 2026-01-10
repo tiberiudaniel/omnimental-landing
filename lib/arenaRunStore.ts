@@ -1,4 +1,5 @@
 import type { ArenaId } from "@/config/arenaModules/v1/types";
+import { getTodayKey } from "@/lib/time/todayKey";
 
 const STORAGE_KEY = "omnimental_arena_runs_v1";
 const MAX_RECORDS = 500;
@@ -86,10 +87,7 @@ export function getArenaRuns(filters: ArenaRunFilters = {}): ArenaRunRecord[] {
   return typeof filters.limit === "number" ? filtered.slice(0, filters.limit) : filtered;
 }
 
+/** @deprecated Use getTodayKey(new Date(ts)) for Canary-consistent keys. */
 export function toDayKeyLocal(ts: number): string {
-  const date = new Date(ts);
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return getTodayKey(new Date(ts));
 }

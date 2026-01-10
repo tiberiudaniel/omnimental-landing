@@ -2,6 +2,7 @@ import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import type { Timestamp } from "firebase/firestore";
 import { getDb, ensureAuth } from "@/lib/firebase";
 import { recordOmniAbilTaskCompletion } from "@/lib/progressFacts";
+import { getTodayKey as getCanonicalTodayKey } from "@/lib/time/todayKey";
 
 export type OmniAbilTaskType = "daily" | "weekly";
 export type OmniAbilTaskStatus = "pending" | "done";
@@ -50,19 +51,17 @@ function pickTemplate(type: OmniAbilTaskType): OmniAbilTaskTemplate {
 }
 
 function formatDateUTC(date: Date): string {
-  const year = date.getUTCFullYear();
-  const month = `${date.getUTCMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getUTCDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return getCanonicalTodayKey(date);
 }
 
+/** @deprecated Use getTodayKey from "@/lib/time/todayKey" directly. */
 export function getTodayKey(baseDate: Date = new Date()): string {
-  const utc = new Date(Date.UTC(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate()));
-  return formatDateUTC(utc);
+  return getCanonicalTodayKey(baseDate);
 }
 
 export function getWeekKey(baseDate: Date = new Date()): string {
-  const utc = new Date(Date.UTC(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate()));
+  const todayKey = getCanonicalTodayKey(baseDate);
+  const utc = new Date(`${todayKey}T00:00:00Z`);
   const day = utc.getUTCDay() || 7;
   if (day > 1) {
     utc.setUTCDate(utc.getUTCDate() - (day - 1));

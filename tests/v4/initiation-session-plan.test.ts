@@ -1,9 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildInitiationSessionPlan } from "@/lib/sessions/buildInitiationSessionPlan";
-import type { ModuleId, SessionTemplateId } from "@/lib/taxonomy/types";
+import type { LessonId, ModuleId, SessionTemplateId } from "@/lib/taxonomy/types";
 
 const CLARITY_MODULE = "init_clarity_foundations" as ModuleId;
+const CLARITY_FIRST_LESSON = "clarity_01_illusion_of_clarity" as LessonId;
+const CLARITY_SECOND_LESSON = "clarity_02_one_real_thing" as LessonId;
 
 test("initiation_10min derives single lesson from module progress", () => {
   const result = buildInitiationSessionPlan({
@@ -12,8 +14,10 @@ test("initiation_10min derives single lesson from module progress", () => {
     completedLessonIds: [],
     mindpacingTag: "brain_fog",
   });
-  assert.equal(result.plan.expectedDurationMinutes, 10);
-  assert.equal(result.plan.moduleId, CLARITY_MODULE);
+  const plan = result.plan;
+  assert.ok(plan);
+  assert.equal(plan.expectedDurationMinutes, 10);
+  assert.equal(plan.moduleId, CLARITY_MODULE);
   assert.equal(result.lessons.length, 1);
   assert.equal(result.debug.moduleId, CLARITY_MODULE);
   assert.equal(result.debug.fallbackReason, undefined);
@@ -23,11 +27,13 @@ test("completed lessons are skipped when deriving sequence", () => {
   const result = buildInitiationSessionPlan({
     templateId: "initiation_12min_deep" as SessionTemplateId,
     currentModuleId: CLARITY_MODULE,
-    completedLessonIds: ["clarity_01_illusion_of_clarity" as never],
+    completedLessonIds: [CLARITY_FIRST_LESSON],
   });
-  assert.equal(result.plan.expectedDurationMinutes, 12);
+  const plan = result.plan;
+  assert.ok(plan);
+  assert.equal(plan.expectedDurationMinutes, 12);
   assert.equal(result.lessons.length, 2);
-  assert.equal(result.lessons[0].meta.lessonId, "clarity_02_one_real_thing");
+  assert.equal(result.lessons[0].meta.lessonId, CLARITY_SECOND_LESSON);
 });
 
 test("unknown template id throws", () => {

@@ -1,4 +1,4 @@
-const CANARY_TIME_ZONE = "Atlantic/Canary";
+export const CANARY_TIME_ZONE = "Atlantic/Canary";
 
 const formatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: CANARY_TIME_ZONE,
@@ -7,6 +7,13 @@ const formatter = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
-export function getTodayKey(date: Date = new Date()): string {
+export function todayKey(date: Date = new Date()): string {
   return formatter.format(date);
+}
+
+/**
+ * @deprecated Use todayKey(date?) from "@/lib/time/todayKey" instead.
+ */
+export function getTodayKey(date: Date = new Date()): string {
+  return todayKey(date);
 }

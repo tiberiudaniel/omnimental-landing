@@ -1,4 +1,4 @@
-import { getTodayKey } from "./dailyReset";
+import { getTodayKey } from "@/lib/time/todayKey";
 import type { ProgressFact } from "./progressFacts";
 
 export type OmniDimension =
