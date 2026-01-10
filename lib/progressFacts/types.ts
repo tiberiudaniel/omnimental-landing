@@ -12,6 +12,7 @@ import type { QuestSuggestion } from "../quests";
 import type { SessionType } from "../recommendation";
 import type { DimensionScores } from "../scoring";
 import type { OmniBlock } from "../omniIntel";
+import type { LessonId, ModuleId, WorldId } from "../taxonomy/types";
 
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
@@ -59,6 +60,7 @@ export type RecentEntry = {
 };
 
 export type ProgressFact = {
+  factsSource?: "remote" | "local" | "merged";
   updatedAt?: Date;
   intent?: {
     tags: string[];
@@ -136,5 +138,13 @@ export type ProgressFact = {
       cluster?: string | null;
       [key: string]: unknown;
     }>;
+  };
+  initiation?: {
+    activeWorld: WorldId;
+    currentModuleId: ModuleId;
+    completedLessons: number;
+    moduleLessonCount: number;
+    nextLessonId: LessonId | null;
+    streakDays: number;
   };
 };

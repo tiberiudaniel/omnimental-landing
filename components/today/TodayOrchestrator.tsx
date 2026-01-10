@@ -9,35 +9,22 @@ import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { useAuth } from "@/components/AuthProvider";
 import { OmniCtaButton } from "@/components/ui/OmniCtaButton";
+import { INITIATION_MODULES } from "@/config/content/initiations/modules";
 import { track } from "@/lib/telemetry/track";
 import { useCopy } from "@/lib/useCopy";
 import { getScreenIdForRoute } from "@/lib/routeIds";
 import { isGuidedDayOneLane } from "@/lib/guidedDayOne";
-
-const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
-const GUIDED_ONBOARDING_KEY = "guided_onboarding_active";
-const LEGACY_GUIDED_KEY = "guided_guest_mode";
-const GUIDED_REASON_BY_SIGNAL: Record<string, string> = {
-  brain_fog: "Mintea era în ceață. Azi o traducem în 1 propoziție reală.",
-  overthinking: "Te-a blocat overthinking-ul. Tăiem firul mental și rămâne o decizie.",
-  task_switching: "Task switching continuu ți-a mâncat claritatea. Fixăm o singură ancoră.",
-  somatic_tension: "Corpul ținea frâna, nu motivația. Relaxăm tensiunea și alegem un gest real.",
-};
-const GUIDED_REASON_BY_AXIS: Partial<Record<CatAxisId, string>> = {
-  clarity: "Nu e lipsă de voință, e zgomot cognitiv. Îl reducem azi.",
-  energy: "Nu erai leneș, doar descărcat. Îți aducem energie funcțională rapid.",
-};
-const DAY_ONE_ENTRY_UNLOCK_KEY = "today_day1_entry_unlock_v1";
 import {
-  getTodayKey,
   getTriedExtraToday,
   hasCompletedToday,
   readLastCompletion,
   type DailyCompletionRecord,
 } from "@/lib/dailyCompletion";
+import { getTodayKey } from "@/lib/time/todayKey";
 import { getTraitLabel, type CatAxisId } from "@/lib/profileEngine";
+import type { LessonId, ModuleId, SessionTemplateId, WorldId } from "@/lib/taxonomy/types";
 import { type SessionPlan } from "@/lib/sessionRecommenderEngine";
-import { saveTodayPlan } from "@/lib/todayPlanStorage";
+import { clearTodayPlan, readTodayPlan, saveTodayPlan } from "@/lib/todayPlanStorage";
 import { getSensAiTodayPlan, hasFreeDailyLimit, type SensAiContext } from "@/lib/omniSensAI";
 import { useProgressFacts } from "@/components/useProgressFacts";
 import {
@@ -59,6 +46,51 @@ import { useUserAccessTier } from "@/components/useUserAccessTier";
 import { isE2EMode } from "@/lib/e2eMode";
 import { getGuidedClusterParam } from "@/lib/guidedDayOne";
 import { useEarnedRoundsController } from "@/components/today/useEarnedRounds";
+import {
+  ensureInitiationProgress,
+  markInitiationLessonsCompleted,
+  readInitiationProgressState,
+  clearInitiationProgress,
+  INITIATION_PROGRESS_EVENT,
+} from "@/lib/content/initiationProgressStorage";
+import {
+  buildInitiationSessionPlan,
+  type InitiationSessionPlanResult,
+} from "@/lib/sessions/buildInitiationSessionPlan";
+import { resolveInitiationLesson } from "@/lib/content/resolveLessonToExistingContent";
+import {
+  hasInitiationRunCompleted,
+  markInitiationRunCompleted,
+  clearInitiationRunHistory,
+} from "@/lib/content/initiationRunHistory";
+
+const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
+const GUIDED_ONBOARDING_KEY = "guided_onboarding_active";
+const LEGACY_GUIDED_KEY = "guided_guest_mode";
+const GUIDED_REASON_BY_SIGNAL: Record<string, string> = {
+  brain_fog: "Mintea era în ceață. Azi o traducem în 1 propoziție reală.",
+  overthinking: "Te-a blocat overthinking-ul. Tăiem firul mental și rămâne o decizie.",
+  task_switching: "Task switching continuu ți-a mâncat claritatea. Fixăm o singură ancoră.",
+  somatic_tension: "Corpul ținea frâna, nu motivația. Relaxăm tensiunea și alegem un gest real.",
+};
+const GUIDED_REASON_BY_AXIS: Partial<Record<CatAxisId, string>> = {
+  clarity: "Nu e lipsă de voință, e zgomot cognitiv. Îl reducem azi.",
+  energy: "Nu erai leneș, doar descărcat. Îți aducem energie funcțională rapid.",
+};
+const DAY_ONE_ENTRY_UNLOCK_KEY = "today_day1_entry_unlock_v1";
+
+const formatLessonLabel = (lessonId: string): string =>
+  lessonId
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+
+const generateRunId = (): string => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `run_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+};
 
 export default function TodayOrchestrator() {
   const router = useRouter();
@@ -74,6 +106,7 @@ export default function TodayOrchestrator() {
   const normalizedSourceParam = (sourceParam ?? "").toLowerCase();
   const intentParam = (searchParams?.get("intent") ?? "").toLowerCase();
   const mindpacingTagParam = searchParams?.get("mindpacingTag") ?? null;
+  const normalizedMindpacingTag = mindpacingTagParam ? mindpacingTagParam.toLowerCase() : null;
   const todayKey = useMemo(() => getTodayKey(), []);
   const entryUnlockStorageKey = useMemo(() => `${DAY_ONE_ENTRY_UNLOCK_KEY}:${todayKey}`, [todayKey]);
   const mindBlock = progressFacts?.mindPacing ?? null;
@@ -95,14 +128,14 @@ export default function TodayOrchestrator() {
     return persistedMindSignal ? getAxisFromMindPacingSignal(persistedMindSignal) : null;
   }, [mindBlock, persistedMindSignal, todayKey]);
   const forcedMindAxis = useMemo<CatAxisId | null>(() => {
-    if (sourceParam === "mindpacing_safe" && isMindPacingSignalTag(mindpacingTagParam)) {
-      return getAxisFromMindPacingSignal(mindpacingTagParam);
+    if (sourceParam === "mindpacing_safe" && isMindPacingSignalTag(normalizedMindpacingTag)) {
+      return getAxisFromMindPacingSignal(normalizedMindpacingTag);
     }
     if (persistedAxis) {
       return persistedAxis;
     }
     return null;
-  }, [mindpacingTagParam, persistedAxis, sourceParam]);
+  }, [normalizedMindpacingTag, persistedAxis, sourceParam]);
   const cameFromRunComplete = sourceParam === "run_complete";
   const cameFromGuided = sourceParam === "guided";
   const e2eParamActive = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
@@ -112,6 +145,9 @@ export default function TodayOrchestrator() {
   const [planPersisted, setPlanPersisted] = useState(false);
   const [planLoading, setPlanLoading] = useState(false);
   const [sensAiCtx, setSensAiCtx] = useState<SensAiContext | null>(null);
+  const [initiationPlanResult, setInitiationPlanResult] = useState<InitiationSessionPlanResult | null>(null);
+  const [initiationProgressVersion, setInitiationProgressVersion] = useState(0);
+  const [runId, setRunId] = useState<string | null>(null);
   const [guidedOnboardingActive, setGuidedOnboardingActive] = useState(false);
   const [dayOneEntryUnlocked, setDayOneEntryUnlocked] = useState(false);
   const totalDailySessionsCompleted = useMemo(() => getTotalDailySessionsCompleted(progressFacts), [progressFacts]);
@@ -137,6 +173,26 @@ export default function TodayOrchestrator() {
   const omniKunoUnlockRef = useRef(false);
   const buddyUnlockRef = useRef(false);
   const { accessTier, membershipTier } = useUserAccessTier();
+  const fallbackTrackedRef = useRef(false);
+  const debugQueryActive = (searchParams?.get("debug") ?? "").toLowerCase() === "1";
+  const showDebugUi = process.env.NODE_ENV !== "production" || e2eMode || debugQueryActive;
+  const handleResetInitiation = useCallback(() => {
+    const uid = user?.uid ?? null;
+    clearTodayPlan();
+    clearInitiationProgress(uid);
+    clearInitiationRunHistory(uid);
+    setInitiationPlanResult(null);
+    setRunId(null);
+    setInitiationProgressVersion((version) => version + 1);
+    fallbackTrackedRef.current = false;
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => setInitiationProgressVersion((version) => version + 1);
+    window.addEventListener(INITIATION_PROGRESS_EVENT, handler);
+    return () => window.removeEventListener(INITIATION_PROGRESS_EVENT, handler);
+  }, []);
 
   useEffect(() => {
     if (wizardUnlocked && !wizardUnlockRef.current) {
@@ -201,6 +257,42 @@ export default function TodayOrchestrator() {
   }, [guidedOnboardingActive, totalDailySessionsCompleted, user]);
 
   useEffect(() => {
+    if (sourceParam !== "run_complete") return;
+    const storedPlan = readTodayPlan();
+    if (
+      !storedPlan ||
+      storedPlan.worldId !== "INITIATION" ||
+      storedPlan.mode !== "initiation" ||
+      !storedPlan.initiationModuleId ||
+      !storedPlan.initiationLessonIds?.length
+    ) {
+      return;
+    }
+    const userId = user?.uid ?? null;
+    if (!storedPlan.runId) {
+      markInitiationLessonsCompleted(
+        userId,
+        storedPlan.initiationModuleId as ModuleId,
+        storedPlan.initiationLessonIds as LessonId[],
+      );
+      clearTodayPlan();
+      setInitiationProgressVersion((version) => version + 1);
+      return;
+    }
+    if (hasInitiationRunCompleted(userId, storedPlan.runId)) {
+      return;
+    }
+    markInitiationLessonsCompleted(
+      userId,
+      storedPlan.initiationModuleId as ModuleId,
+      storedPlan.initiationLessonIds as LessonId[],
+    );
+    markInitiationRunCompleted(userId, storedPlan.runId);
+    clearTodayPlan();
+    setInitiationProgressVersion((version) => version + 1);
+  }, [sourceParam, user?.uid]);
+
+  useEffect(() => {
     if (!sourceParam) return;
     if (sourceParam === "run_complete" || sourceParam === "guided") {
       router.replace("/today");
@@ -223,6 +315,59 @@ export default function TodayOrchestrator() {
   );
 
   useEffect(() => {
+    const normalizedTag = normalizedMindpacingTag;
+    const storedPlan = readTodayPlan();
+    const storedTag = storedPlan?.mindpacingTag ?? null;
+    if (
+      storedPlan &&
+      storedPlan.todayKey === todayKey &&
+      storedPlan.worldId === "INITIATION" &&
+      storedPlan.mode === "initiation" &&
+      storedPlan.initiationModuleId &&
+      storedPlan.initiationLessonIds?.length &&
+      storedPlan.runId &&
+      storedTag === normalizedTag
+    ) {
+      try {
+        const lessons = storedPlan.initiationLessonIds.map((lessonId) =>
+          resolveInitiationLesson(lessonId as LessonId),
+        );
+        setInitiationPlanResult({
+          lessons,
+          debug: {
+            moduleId: storedPlan.initiationModuleId as ModuleId,
+            mindpacingTag: storedTag,
+            fallbackReason: storedPlan.fallbackReason,
+          },
+        });
+        setRunId(storedPlan.runId);
+        fallbackTrackedRef.current = Boolean(storedPlan.fallbackReason);
+        return;
+      } catch {
+        clearTodayPlan();
+      }
+    }
+
+    try {
+      const existingProgress = readInitiationProgressState(user?.uid ?? null);
+      const builderResult = buildInitiationSessionPlan({
+        templateId: "initiation_10min" as SessionTemplateId,
+        currentModuleId: existingProgress?.moduleId ?? null,
+        completedLessonIds: existingProgress?.completedLessonIds ?? [],
+        mindpacingTag: normalizedTag,
+      });
+      ensureInitiationProgress(user?.uid ?? null, builderResult.debug.moduleId);
+      setInitiationPlanResult(builderResult);
+      fallbackTrackedRef.current = false;
+      setRunId(generateRunId());
+    } catch (error) {
+      console.warn("[today] initiation session plan failed", error);
+      setInitiationPlanResult(null);
+      setRunId(null);
+    }
+  }, [normalizedMindpacingTag, initiationProgressVersion, user?.uid, todayKey]);
+
+  useEffect(() => {
     if (!authReady || !user) return;
     const token = { cancelled: false };
     void loadPlanFromSensAi(user.uid, token, forcedMindAxis);
@@ -232,7 +377,18 @@ export default function TodayOrchestrator() {
   }, [authReady, user, loadPlanFromSensAi, forcedMindAxis]);
 
   useEffect(() => {
-    if (!sessionPlan) {
+    if (!initiationPlanResult?.debug.fallbackReason) return;
+    if (fallbackTrackedRef.current) return;
+    fallbackTrackedRef.current = true;
+    track("mindpacing_fallback", {
+      reason: initiationPlanResult.debug.fallbackReason,
+      mindpacingTag: initiationPlanResult.debug.mindpacingTag ?? null,
+      fallbackModuleId: initiationPlanResult.debug.moduleId,
+    });
+  }, [initiationPlanResult]);
+
+  useEffect(() => {
+    if (!sessionPlan || !initiationPlanResult || !runId) {
       setPlanPersisted(false);
       return;
     }
@@ -244,9 +400,17 @@ export default function TodayOrchestrator() {
       traitPrimary: sessionPlan.traitPrimary,
       traitSecondary: sessionPlan.traitSecondary,
       canonDomain: sessionPlan.canonDomain,
+      initiationModuleId: initiationPlanResult.debug.moduleId,
+      initiationLessonIds: initiationPlanResult.lessons.map((lesson) => lesson.meta.lessonId),
+      todayKey,
+      runId,
+      mindpacingTag: initiationPlanResult.debug.mindpacingTag ?? null,
+      fallbackReason: initiationPlanResult.debug.fallbackReason,
+      worldId: "INITIATION" as WorldId,
+      mode: "initiation",
     });
     setPlanPersisted(true);
-  }, [sessionPlan]);
+  }, [sessionPlan, initiationPlanResult, todayKey, runId]);
 
   const lastSessionLabel = useMemo(() => {
     if (!lastCompletion) return "—";
@@ -567,6 +731,53 @@ export default function TodayOrchestrator() {
     ? `Ziua ${arcDayNumber ?? "—"}${sessionPlan.arcLengthDays ? ` din ${sessionPlan.arcLengthDays}` : ""} în ${sessionPlan.title}`
     : "Primul tău antrenament de claritate";
   const xpForTrait = sensAiCtx?.profile.xpByTrait?.[sessionPlan.traitPrimary] ?? 0;
+  const initiationProgressSnapshot = useMemo(
+    () => readInitiationProgressState(user?.uid ?? null),
+    [initiationProgressVersion, user?.uid],
+  );
+  const moduleIdForUi =
+    initiationPlanResult?.debug.moduleId ??
+    initiationProgressSnapshot?.moduleId ??
+    ("init_clarity_foundations" as ModuleId);
+  const moduleMeta = INITIATION_MODULES[moduleIdForUi] ?? null;
+  const moduleLessonCount = moduleMeta?.lessonIds.length ?? 0;
+  const completedLessonsCount = initiationProgressSnapshot?.completedLessonIds.length ?? 0;
+  const currentLessonNumber = moduleLessonCount
+    ? Math.min(completedLessonsCount + 1, moduleLessonCount)
+    : null;
+  const initiationLessons = initiationPlanResult?.lessons ?? [];
+  const showFallbackBanner = Boolean(initiationPlanResult?.debug.fallbackReason) && showDebugUi;
+  const fallbackBanner = showFallbackBanner ? (
+    <div
+      data-testid="mindpacing-fallback-banner"
+      className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-800"
+    >
+      <p className="font-semibold uppercase tracking-[0.3em]">MindPacing fallback</p>
+      <p className="mt-1">
+        {initiationPlanResult?.debug.fallbackReason === "unknown_mindpacing_tag"
+          ? "Tag necunoscut – folosim Clarity Foundations."
+          : "Mindpacing tag lipsă – folosim plan implicit."}
+      </p>
+    </div>
+  ) : null;
+  const lessonList = showDebugUi && initiationLessons.length ? (
+    <div
+      className="mt-4 rounded-2xl border border-[var(--omni-border-soft)] bg-white/70 px-4 py-3"
+      data-testid="initiation-lesson-plan"
+    >
+      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">Lecțiile de azi</p>
+      <ul className="mt-2 space-y-1 text-sm text-[var(--omni-ink)]">
+        {initiationLessons.map((lesson) => (
+          <li key={lesson.meta.lessonId} className="flex items-center justify-between">
+            <span>{formatLessonLabel(lesson.meta.lessonId)}</span>
+            <span className="text-[11px] uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+              {lesson.source === "wow" ? "WOW" : "DailyPath"}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : null;
 
   return (
     <>
@@ -583,6 +794,28 @@ export default function TodayOrchestrator() {
               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
                 {arcProgressLabel}
               </p>
+              {fallbackBanner}
+              {lessonList}
+              {showDebugUi ? (
+                <button
+                  type="button"
+                  data-testid="debug-reset-initiation"
+                  onClick={handleResetInitiation}
+                  className="mt-3 inline-flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
+                >
+                  Reset Initiation State
+                </button>
+              ) : null}
+              {moduleMeta ? (
+                <p className="mt-3 text-sm text-[var(--omni-ink)]/70">
+                  Modul: <span className="font-semibold">{moduleMeta.title}</span>
+                  {moduleLessonCount ? (
+                    <span className="ml-2">
+                      · Lecția {currentLessonNumber ?? moduleLessonCount}/{moduleLessonCount}
+                    </span>
+                  ) : null}
+                </p>
+              ) : null}
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 <article className="rounded-[20px] border border-[var(--omni-border-soft)] bg-white/90 px-5 py-4 shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
                   <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">

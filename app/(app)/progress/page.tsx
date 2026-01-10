@@ -21,6 +21,11 @@ import { getDemoProgressFacts } from "@/lib/demoData";
 import { useAuth } from "@/components/AuthProvider";
 import RequireAuth from "@/components/auth/RequireAuth";
 import { getTodayKey } from "@/lib/dailyReset";
+import {
+  getLocalInitiationFacts,
+  INITIATION_PROGRESS_EVENT,
+} from "@/lib/content/initiationProgressStorage";
+import { INITIATION_MODULES } from "@/config/content/initiations/modules";
 import type { ProgressFact } from "@/lib/progressFacts";
 
 const FALLBACK_GUEST_ID = (() => {
@@ -31,6 +36,14 @@ const FALLBACK_GUEST_ID = (() => {
   } catch {}
   return `guest-${Math.random().toString(36).slice(2, 10)}`;
 })();
+
+const formatLessonLabel = (lessonId: string | null): string => {
+  if (!lessonId) return "—";
+  return lessonId
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+};
 
 function ProgressContent() {
   const router = useRouter();
@@ -167,6 +180,63 @@ function ProgressContent() {
     };
   }, [journalSource, lang, stepParam]);
   const journalUserId = profile?.id ?? user?.uid ?? guestJournalId ?? (demoParam || e2e ? "demo-user" : null);
+  const initiationSummaryCard = initiationFacts ? (
+    <OmniCard className="px-5 py-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+        Inițiere · World 1
+      </p>
+      <div className="mt-3 grid gap-3 text-sm text-[var(--omni-ink)]/80 sm:grid-cols-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Streak</p>
+          <p className="text-lg font-semibold text-[var(--omni-ink)]">{streakDays} zile</p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Sesiuni</p>
+          <p className="text-lg font-semibold text-[var(--omni-ink)]">{sessionsCompleted}</p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Modul curent</p>
+          <p className="text-lg font-semibold text-[var(--omni-ink)]">{initiationModuleTitle ?? "—"}</p>
+          {initiationModuleProgress ? (
+            <p className="text-xs text-[var(--omni-muted)]">Lecția {initiationModuleProgress}</p>
+          ) : null}
+        </div>
+      </div>
+      {nextLessonLabel ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-[var(--omni-ink)]">
+            Următoarea lecție: <span className="font-semibold">{nextLessonLabel}</span>
+          </p>
+          <OmniCtaButton onClick={() => router.push("/today")} data-testid="progress-next-lesson-cta">
+            {lang === "ro" ? "Continuă lecția" : "Continue lesson"}
+          </OmniCtaButton>
+        </div>
+      ) : null}
+    </OmniCard>
+  ) : null;
+  const [initiationFactsVersion, setInitiationFactsVersion] = useState(0);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => setInitiationFactsVersion((version) => version + 1);
+    window.addEventListener(INITIATION_PROGRESS_EVENT, handler);
+    return () => window.removeEventListener(INITIATION_PROGRESS_EVENT, handler);
+  }, []);
+  const initiationFacts = useMemo(
+    () => getLocalInitiationFacts(profile?.id ?? user?.uid ?? null),
+    [profile?.id, user?.uid, initiationFactsVersion],
+  );
+  const sessionsCompleted =
+    progress?.stats?.dailySessionsCompleted ?? initiationFacts?.completedLessons ?? 0;
+  const streakDays = initiationFacts?.streakDays ?? 0;
+  const initiationModuleTitle = initiationFacts
+    ? INITIATION_MODULES[initiationFacts.currentModuleId]?.title
+    : null;
+  const initiationModuleProgress = initiationFacts
+    ? `${Math.min(initiationFacts.completedLessons + 1, initiationFacts.moduleLessonCount)}/${
+        initiationFacts.moduleLessonCount
+      }`
+    : null;
+  const nextLessonLabel = initiationFacts?.nextLessonId ? formatLessonLabel(initiationFacts.nextLessonId) : null;
 
 
   // React to open=journal in URL: open the drawer immediately, then clean the param
@@ -278,7 +348,7 @@ function ProgressContent() {
       <AppShell
         header={<SiteHeader onAuthRequest={goToAuth} onMenuToggle={() => setMenuOpen(true)} />}
       >
-        {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
+      {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
       {demoParam ? (
         <div className="mx-auto mt-3 w-full max-w-5xl px-4">
           <div className="flex items-center gap-2 text-[12px]">
@@ -313,6 +383,7 @@ function ProgressContent() {
           </OmniCard>
         </div>
       ) : null}
+      {initiationSummaryCard ? <div className="mx-auto mt-4 w-full max-w-5xl px-4">{initiationSummaryCard}</div> : null}
       {journalBlocked ? (
         <div className="mx-auto mt-3 w-full max-w-5xl px-4">
           <OmniCard className="bg-[var(--omni-bg-paper)] px-4 py-3 text-sm shadow-[0_10px_24px_rgba(0,0,0,0.05)]">

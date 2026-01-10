@@ -56,3 +56,18 @@ export async function getArenaRunsById(userId: string): Promise<Record<string, n
   });
   return counts;
 }
+
+export async function getUsageStats(userId: string): Promise<{
+  sessionsToday: number;
+  arenasRunsById: Record<string, number>;
+}> {
+  const [sessionsToday, arenasRunsById] = await Promise.allSettled([
+    getSessionsToday(userId),
+    getArenaRunsById(userId),
+  ]);
+
+  return {
+    sessionsToday: sessionsToday.status === "fulfilled" ? sessionsToday.value ?? 0 : 0,
+    arenasRunsById: arenasRunsById.status === "fulfilled" ? arenasRunsById.value ?? {} : {},
+  };
+}

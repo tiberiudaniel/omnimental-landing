@@ -1,10 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 import { loginAs } from "./helpers/auth";
 import { gotoProgress } from "./helpers/navigation";
 
 const MODULE_ID = "emotional_balance";
 
-async function openOmniKuno(page, moduleId: string) {
+async function openOmniKuno(page: Page, moduleId: string) {
   await page.goto(`/omni-kuno?area=${moduleId}&module=${moduleId}`);
   await expect(page.getByTestId("omni-kuno-header"), "OmniKuno header not loaded").toBeVisible();
 }

@@ -761,7 +761,7 @@ function NodeBasicsSection({
 
   const handleAutoAssignConfirm = () => {
     if (typeof window === "undefined") return;
-    const confirmation = window.prompt("Tastează ASSIGN pentru a auto-atribuie worlds după route.group.");
+    const confirmation = window.prompt("Tastează ASSIGN pentru a auto-atribuie zone după route.group.");
     if (!confirmation) return;
     if (confirmation.trim().toUpperCase() !== "ASSIGN") return;
     onAutoAssignChunks();
@@ -813,7 +813,7 @@ function NodeBasicsSection({
             ))}
           </div>
           <div className="space-y-2 rounded-2xl border border-[var(--omni-border-soft)] bg-white p-3">
-            <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">World</p>
+            <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--omni-muted)]">Zone</p>
             <select
               className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-3 py-2 text-sm"
               value={node.data.chunkId ?? defaultChunkId ?? ""}

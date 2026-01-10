@@ -6,6 +6,7 @@ import type { ProgressFact } from "@/lib/progressFacts";
 import { backfillProgressFacts } from "@/lib/progressFacts";
 import { getDb } from "@/lib/firebase";
 import { isE2EMode } from "@/lib/e2eMode";
+import { getLocalInitiationFacts } from "@/lib/content/initiationProgressStorage";
 
 type ProgressFactsState = {
   data: ProgressFact | null;
@@ -22,6 +23,23 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
   const backfillRequested = useRef(false);
   const e2eActive = isE2EMode();
   useEffect(() => {
+    const mergeWithInitiationFacts = (
+      facts: ProgressFact | null,
+      baseSource: "remote" | "override" | "none",
+    ): ProgressFact | null => {
+      const initiationFacts = getLocalInitiationFacts(profileId ?? null);
+      if (!facts && !initiationFacts) return null;
+      const result = { ...(facts ?? {}) } as ProgressFact;
+      let sourceLabel: "remote" | "local" | "merged" =
+        baseSource === "none" ? "local" : baseSource === "override" ? "remote" : "remote";
+      if (!result.initiation && initiationFacts) {
+        result.initiation = initiationFacts;
+        sourceLabel = facts ? "merged" : "local";
+      }
+      result.factsSource = sourceLabel;
+      return result;
+    };
+
     const maybeUseE2EOverride = (): ProgressFact | null => {
       if (typeof window === "undefined") return null;
       if (!(window as typeof window & { __OMNI_E2E__?: boolean }).__OMNI_E2E__) return null;
@@ -37,7 +55,7 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
 
     const override = maybeUseE2EOverride();
     if (override || e2eActive) {
-      const resolved = override ?? null;
+      const resolved = mergeWithInitiationFacts(override ?? null, override ? "override" : "none");
       const commit = () => setState({ data: resolved, loading: false, error: null });
       if (typeof window === "undefined") {
         if (typeof queueMicrotask === "function") {
@@ -66,14 +84,15 @@ export function useProgressFacts(profileId?: string | null): ProgressFactsState 
     let latestFacts: ProgressFact | null = null;
 
     const mergeAndSet = () => {
-      const merged: ProgressFact | null = latestProfile || latestFacts
-        ? ({ ...(latestProfile ?? {}), ...(latestFacts ?? {}) } as ProgressFact)
-        : null;
+      const merged: ProgressFact | null =
+        latestProfile || latestFacts
+          ? ({ ...(latestProfile ?? {}), ...(latestFacts ?? {}) } as ProgressFact)
+          : null;
       setState((prev) => ({
-        data: merged ?? prev.data,
+        data: mergeWithInitiationFacts(merged, merged ? "remote" : "none") ?? prev.data,
         loading: false,
         error: null,
-      }));
+        }));
     };
 
     const unsubProfile = onSnapshot(

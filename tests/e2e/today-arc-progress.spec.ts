@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { go, resetSession } from './helpers/env';
 
-function guardConsole(page) {
+function guardConsole(page: Page) {
   page.on('console', (msg) => {
     if (msg.type() === 'error') {
       const text = msg.text();

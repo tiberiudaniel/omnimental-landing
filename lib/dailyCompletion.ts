@@ -1,5 +1,6 @@
 import { getWowDayIndex } from "@/config/dailyPaths/wow";
 import { recordFoundationCycleComplete } from "@/lib/progressFacts/recorders";
+import { getTodayKey as getCanaryTodayKey } from "@/lib/time/todayKey";
 
 const COMPLETION_PREFIX = "OMNI_DAILY_COMPLETED_";
 const LAST_COMPLETION_KEY = "OMNI_DAILY_LAST_COMPLETION";
@@ -12,16 +13,7 @@ export type DailyCompletionRecord = {
   moduleKey: string | null;
 };
 
-export function getTodayKey(date: Date = new Date()): string {
-  try {
-    return date.toLocaleDateString("en-CA");
-  } catch {
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, "0");
-    const day = `${date.getDate()}`.padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-}
+export const getTodayKey = getCanaryTodayKey;
 
 export function markDailyCompletion(moduleKey: string | null = null, date: Date = new Date()): void {
   if (typeof window === "undefined") return;
@@ -118,4 +110,16 @@ export function syncFoundationCompletionFlag() {
       console.warn("Failed to sync foundation completion", error);
     },
   );
+}
+
+export function getLocalCompletionStreak(maxDays = 30, referenceDate: Date = new Date()): number {
+  let streak = 0;
+  let cursor = new Date(referenceDate.getTime());
+  for (let i = 0; i < maxDays; i += 1) {
+    if (!hasCompletedToday(cursor)) break;
+    streak += 1;
+    cursor = new Date(cursor.getTime());
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  return streak;
 }

@@ -8,6 +8,7 @@
     "start": "next start",
     "prepare": "husky install",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "gen:routes": "ts-node --project tsconfig.scripts.json --transpile-only scripts/genRoutes.ts",
     "sync:routes": "ts-node --project tsconfig.scripts.json --transpile-only scripts/syncRoutesToFirestore.ts",
     "sync:flowdoc-day1": "ts-node --project tsconfig.scripts.json --transpile-only scripts/sync-flowdoc-from-screens.ts",
@@ -17,7 +18,7 @@
     "test:unit": "node scripts/run-unit-tests.mjs",
     "test:integration": "node --test \"tests/integration/**/*.test.cjs\"",
     "test:logic:all": "npm run -s test:logic && npm run -s test:unit && npm run -s test:integration",
-    "test:v4": "node --test --loader ts-node/esm \"tests/v4/**/*.test.ts\"",
+    "test:v4": "node --test --import ./tests/setup/env.ts --import tsx \"tests/v4/**/*.test.ts\"",
     "admin:set-claim": "node scripts/setAdminClaim.mjs",
     "admin:seed-insights": "node scripts/seedInsightsAdmin.mjs",
     "mindpacing:simulate": "ts-node --project tsconfig.scripts.json -r tsconfig-paths/register --transpile-only scripts/simulateMindPacingVocab.ts",
@@ -70,6 +71,7 @@
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.2",
     "typescript": "5.9.3"
   }
 }

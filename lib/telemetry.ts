@@ -46,10 +46,15 @@ export type SessionTelemetry = {
 };
 
 export async function recordSessionTelemetry(payload: SessionTelemetry): Promise<void> {
+  const telemetryDisabled =
+    process.env.NODE_ENV === "test" ||
+    (process.env.NEXT_PUBLIC_DISABLE_TELEMETRY ?? "").toLowerCase() === "1";
+  if (telemetryDisabled) {
+    return;
+  }
   const origin = payload.origin ?? "real";
   const flowTag = payload.flowTag ?? "other";
   const normalizedPayload: SessionTelemetry = { ...payload, origin, flowTag };
-  console.log("[telemetry] session", normalizedPayload);
   if (areWritesDisabled()) return;
   if (isE2EMode()) {
     const recordedAt = normalizedPayload.recordedAtOverride ?? new Date();

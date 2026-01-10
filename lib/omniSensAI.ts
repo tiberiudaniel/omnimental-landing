@@ -1,8 +1,12 @@
 "use client";
 
-import { getUserProfileSnapshot, type UserProfileSnapshot, type CatAxisId } from "@/lib/profileEngine";
+import {
+  getUserProfileSnapshot as realGetUserProfileSnapshot,
+  type UserProfileSnapshot,
+  type CatAxisId,
+} from "@/lib/profileEngine";
 import { getTodayPlan, type SessionPlan } from "@/lib/sessionRecommenderEngine";
-import { getSessionsToday, getArenaRunsById } from "@/lib/usageStats";
+import { getUsageStats as realGetUsageStats } from "@/lib/usageStats";
 import { FREE_LIMITS } from "@/lib/gatingRules";
 import { getBenchmarkMinutes } from "@/lib/durationBenchmarks";
 
@@ -10,6 +14,16 @@ export type SensAiContext = {
   profile: UserProfileSnapshot;
   sessionsToday: number;
   arenasRunsById: Record<string, number>;
+};
+
+export type SensAiDeps = {
+  getUserProfileSnapshot: typeof realGetUserProfileSnapshot;
+  getUsageStats: typeof realGetUsageStats;
+};
+
+const defaultDeps: SensAiDeps = {
+  getUserProfileSnapshot: realGetUserProfileSnapshot,
+  getUsageStats: realGetUsageStats,
 };
 
 const SAFE_FALLBACK_PLAN: SessionPlan = {
@@ -27,22 +41,14 @@ const SAFE_FALLBACK_PLAN: SessionPlan = {
   arcLengthDays: null,
 };
 
-export async function buildSensAiContext(userId: string): Promise<SensAiContext | null> {
-  const profile = await getUserProfileSnapshot(userId);
+async function buildSensAiContext(
+  userId: string,
+  deps: SensAiDeps,
+): Promise<SensAiContext | null> {
+  const profile = await deps.getUserProfileSnapshot(userId);
   if (!profile) return null;
-  let sessionsToday = 0;
-  let arenasRunsById: Record<string, number> = {};
-  try {
-    sessionsToday = await getSessionsToday(userId);
-  } catch (error) {
-    console.warn("buildSensAiContext: getSessionsToday failed", error);
-  }
-  try {
-    arenasRunsById = await getArenaRunsById(userId);
-  } catch (error) {
-    console.warn("buildSensAiContext: getArenaRunsById failed", error);
-  }
-  return { profile, sessionsToday, arenasRunsById };
+  const usage = await deps.getUsageStats(userId);
+  return { profile, sessionsToday: usage.sessionsToday, arenasRunsById: usage.arenasRunsById };
 }
 
 function withDurationBenchmark(plan: SessionPlan | null): SessionPlan | null {
@@ -62,11 +68,13 @@ function withDurationBenchmark(plan: SessionPlan | null): SessionPlan | null {
 export async function getSensAiTodayPlan(
   userId: string,
   options?: { forcedAxis?: CatAxisId | null },
+  depsOverrides: Partial<SensAiDeps> = {},
 ): Promise<{ ctx: SensAiContext | null; plan: SessionPlan | null }> {
+  const deps = { ...defaultDeps, ...depsOverrides };
   const forcedAxis = options?.forcedAxis ?? null;
-  const ctx = await buildSensAiContext(userId);
+  const ctx = await buildSensAiContext(userId, deps);
   if (!ctx) {
-    const fallbackProfile = await getUserProfileSnapshot(userId);
+    const fallbackProfile = await deps.getUserProfileSnapshot(userId);
     if (!fallbackProfile) {
       return { ctx: null, plan: SAFE_FALLBACK_PLAN };
     }

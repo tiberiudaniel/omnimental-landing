@@ -112,7 +112,7 @@ export function ChunkPanel({
     onAddComment(chunkId, draft);
     setCommentDrafts((prev) => ({ ...prev, [chunkId]: "" }));
   };
-  const totalWorlds = chunks.length;
+  const totalZones = chunks.length;
   const totalNodes = Array.from(countsByChunk.values()).reduce((sum, entry) => sum + (entry?.total ?? 0), 0);
   const totalStarts = Array.from(countsByChunk.values()).reduce((sum, entry) => sum + (entry?.start ?? 0), 0);
 
@@ -144,7 +144,7 @@ export function ChunkPanel({
       const result = await Promise.resolve(onImportChunks(importPayload));
       if (result?.ok) {
         setImportPayload("");
-        setImportFeedback({ status: "success", message: "World-urile au fost importate." });
+        setImportFeedback({ status: "success", message: "Zonele au fost importate." });
       } else {
         setImportFeedback({
           status: "error",
@@ -161,10 +161,10 @@ export function ChunkPanel({
       <section className="rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-4 shadow-[0_25px_60px_rgba(0,0,0,0.08)]">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Worlds</p>
-          <p className="text-sm text-[var(--omni-muted)]">Organizează experiența în worlds coerente.</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Zones</p>
+          <p className="text-sm text-[var(--omni-muted)]">Organizează experiența în arii coerente.</p>
           <div className="mt-2 flex gap-2 text-[11px] text-[var(--omni-muted)]">
-            <span className="rounded-full bg-white/70 px-2 py-0.5 font-semibold text-[var(--omni-ink)]">🌐 {totalWorlds} worlds</span>
+            <span className="rounded-full bg-white/70 px-2 py-0.5 font-semibold text-[var(--omni-ink)]">🌐 {totalZones} zones</span>
             <span className="rounded-full bg-white/70 px-2 py-0.5 font-semibold text-[var(--omni-ink)]">🧩 {totalNodes} nodes</span>
             <span className="rounded-full bg-white/70 px-2 py-0.5 font-semibold text-[var(--omni-ink)]">🚀 {totalStarts} start</span>
           </div>
@@ -179,7 +179,7 @@ export function ChunkPanel({
             onClick={onCreateChunkFromSelection}
             disabled={!selectedNodeCount}
           >
-            Creează world din selecție
+            Creează arie din selecție
           </button>
           <button
             type="button"
@@ -190,7 +190,7 @@ export function ChunkPanel({
             onClick={onAddChunk}
             disabled={disabled}
           >
-            Adaugă world
+            Adaugă zonă
           </button>
           <button
             type="button"
@@ -211,7 +211,9 @@ export function ChunkPanel({
       {advancedOpen ? (
         <div className="mt-3 space-y-3 rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-white/80 p-3 text-xs">
           <p className="font-semibold text-[var(--omni-ink)]">Advanced / Dangerous actions</p>
-          <p className="text-[var(--omni-muted)]">Aceste acțiuni pot rescrie Worlds sau pot importa structuri externe. Continuă doar dacă ești sigur.</p>
+          <p className="text-[var(--omni-muted)]">
+            Aceste acțiuni pot rescrie Zonele sau pot importa structuri externe. Continuă doar dacă ești sigur.
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -226,7 +228,7 @@ export function ChunkPanel({
               }}
               disabled={disabled}
             >
-              Seed Worlds v1
+              Seed Zones v1
             </button>
             <button
               type="button"
@@ -240,7 +242,7 @@ export function ChunkPanel({
               }}
               disabled={disabled}
             >
-              Sync Worlds (Overwrite)
+              Sync Zones (Overwrite)
             </button>
             <button
               type="button"
@@ -265,7 +267,7 @@ export function ChunkPanel({
               onClick={() => setImportPanelOpen((prev) => !prev)}
               disabled={disabled}
             >
-              {importPanelOpen ? "Ascunde import" : "Import Worlds JSON"}
+              {importPanelOpen ? "Ascunde import" : "Import Zones JSON"}
             </button>
           </div>
           {importPanelOpen ? (
@@ -338,12 +340,12 @@ export function ChunkPanel({
             className="rounded-full border border-dashed border-[var(--omni-border-soft)] px-3 py-1 text-[11px] font-semibold"
             onClick={onClearFocus}
           >
-            Clear World Focus
+            Clear Zone Focus
           </button>
         ) : null}
       </div>
       {disabled ? (
-        <p className="mt-4 text-xs text-[var(--omni-muted)]">Selectează un map pentru a edita worlds.</p>
+        <p className="mt-4 text-xs text-[var(--omni-muted)]">Selectează un map pentru a edita ariile.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {chunks.map((chunk, index) => {
@@ -404,7 +406,7 @@ export function ChunkPanel({
                       <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[var(--omni-ink)]">💬 {commentsForChunk.length}</span>
                     ) : null}
                     {isDefault ? (
-                      <span className="rounded-full bg-slate-900/5 px-2 py-0.5 text-[var(--omni-ink)]">World implicit</span>
+                      <span className="rounded-full bg-slate-900/5 px-2 py-0.5 text-[var(--omni-ink)]">Zonă implicită</span>
                     ) : null}
                   </div>
                   {selectedChunkId === chunk.id ? (
@@ -450,7 +452,7 @@ export function ChunkPanel({
                           ) : null}
                         </>
                       ) : (
-                        <p className="text-[11px] text-[var(--omni-muted)]">Nu există metadata pentru acest world.</p>
+                        <p className="text-[11px] text-[var(--omni-muted)]">Nu există metadata pentru această zonă.</p>
                       )}
                     </div>
                   ) : null}
@@ -470,7 +472,7 @@ export function ChunkPanel({
                         }
                       }}
                       >
-                        {isFocused ? "World focused" : "Focus world"}
+                        {isFocused ? "Zone focused" : "Focus zone"}
                     </button>
                     <button
                       type="button"
@@ -599,7 +601,7 @@ export function ChunkPanel({
                           })}
                         </ul>
                       ) : (
-                        <p className="text-[var(--omni-muted)]">Nu există note pentru acest world.</p>
+                        <p className="text-[var(--omni-muted)]">Această zonă nu are note.</p>
                       )}
                       <textarea
                         className="w-full rounded-xl border border-[var(--omni-border-soft)] bg-white px-2 py-1 text-sm"
@@ -632,9 +634,9 @@ export function ChunkPanel({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6">
           <div className="w-full max-w-md rounded-3xl border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] p-6 text-sm shadow-2xl">
             <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Confirm Seed</p>
-            <h2 className="mt-1 text-xl font-semibold text-[var(--omni-ink)]">Seed Worlds v1</h2>
+            <h2 className="mt-1 text-xl font-semibold text-[var(--omni-ink)]">Seed Zones v1</h2>
             <p className="mt-3 text-[var(--omni-muted)]">
-              Această acțiune suprascrie structura worlds cu presetul strategic. Tastează <strong>SEED</strong> pentru a confirma.
+              Această acțiune suprascrie structura zonelor cu presetul strategic. Tastează <strong>SEED</strong> pentru a confirma.
             </p>
             <input
               type="text"

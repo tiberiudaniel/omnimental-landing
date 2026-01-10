@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { go, resetSession } from './helpers/env';
 
-function guardConsole(page) {
+function guardConsole(page: Page) {
   page.on('console', (msg) => {
     if (msg.type() === 'error') {
       const text = msg.text();
@@ -11,7 +11,7 @@ function guardConsole(page) {
   });
 }
 
-async function completeStroopRun(page) {
+async function completeStroopRun(page: Page) {
   await page.getByTestId('stroop-start').click();
   const colors = ['stroop-color-red', 'stroop-color-green', 'stroop-color-blue', 'stroop-color-yellow'];
   for (let i = 0; i < 36; i += 1) {
