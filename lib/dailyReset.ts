@@ -14,6 +14,10 @@ import {
 } from "firebase/firestore";
 import { getDb, ensureAuth } from "@/lib/firebase";
 import { recordOmniPatch } from "@/lib/progressFacts";
+import { getTodayKey as getCanonicalTodayKey } from "@/lib/time/todayKey";
+import { resolveDailyResetKeys } from "@/lib/dailyReset/dateKeys";
+
+export { getDailyResetPreviousDateKey, resolveDailyResetKeys } from "@/lib/dailyReset/dateKeys";
 
 export type DailyCheckinPayload = {
   clarity: number;
@@ -39,31 +43,8 @@ export type DailyAxesEntry = {
   energyDeltaFromPersonalMean: number;
 };
 
-const toDateKey = (date: Date) => {
-  const year = date.getUTCFullYear();
-  const month = `${date.getUTCMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getUTCDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const formatDate = (base = new Date()) => toDateKey(base);
-
-export const getTodayKey = () => formatDate();
-
-const getPreviousDateKey = (dateKey: string | null | undefined) => {
-  if (!dateKey) return null;
-  const parts = dateKey.split("-");
-  if (parts.length !== 3) return null;
-  const [year, month, day] = parts.map((segment) => Number(segment));
-  if ([year, month, day].some((unit) => Number.isNaN(unit))) return null;
-  const date = new Date(Date.UTC(year, month - 1, day));
-  date.setUTCDate(date.getUTCDate() - 1);
-  return toDateKey(date);
-};
-
-export function getDailyResetPreviousDateKey(dateKey: string | null | undefined) {
-  return getPreviousDateKey(dateKey);
-}
+/** @deprecated Use getTodayKey from "@/lib/time/todayKey" */
+export const getTodayKey = (date: Date = new Date()) => getCanonicalTodayKey(date);
 
 export async function loadDailyCheckin(userId: string) {
   const authUser = await ensureAuth();
@@ -85,7 +66,7 @@ export async function saveDailyCheckin(
   if (!authUser || authUser.uid !== userId) {
     throw new Error("User not authenticated for daily reset");
   }
-  const date = getTodayKey();
+  const { todayKey: date, yesterdayKey } = resolveDailyResetKeys();
   const checkinId = `${userId}_${date}`;
   const ref = doc(getDb(), "userDailyCheckins", checkinId);
   const entry = {
@@ -101,7 +82,6 @@ export async function saveDailyCheckin(
     ...entry,
     createdAt: serverTimestamp(),
   });
-  const yesterdayKey = getPreviousDateKey(date);
   const continuesStreak =
     yesterdayKey && summary.prevDate === yesterdayKey && typeof summary.prevStreak === "number";
   const streakDays = continuesStreak ? summary.prevStreak! + 1 : 1;
@@ -186,7 +166,7 @@ export async function getLastAxesEntries(userId: string, limitCount = 4): Promis
       createdAt?: Timestamp | Date | { toDate?: () => Date } | null;
     } & { emotion?: number; date?: string };
     const createdAt = normalizeCreatedAt(data.createdAt ?? null, data.date);
-    const dateKey = typeof data.date === "string" ? data.date : formatDate(createdAt);
+    const dateKey = typeof data.date === "string" ? data.date : getCanonicalTodayKey(createdAt);
     const clarityScore = clampScoreValue(data.clarity, 5);
     const stressScore = clampScoreValue((data as { stress?: number }).stress, undefined);
     const storedEmotion = clampScoreValue((data as { emotion?: number }).emotion, undefined);
