@@ -180,6 +180,29 @@ function ProgressContent() {
     };
   }, [journalSource, lang, stepParam]);
   const journalUserId = profile?.id ?? user?.uid ?? guestJournalId ?? (demoParam || e2e ? "demo-user" : null);
+  const [initiationFactsVersion, setInitiationFactsVersion] = useState(0);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => setInitiationFactsVersion((version) => version + 1);
+    window.addEventListener(INITIATION_PROGRESS_EVENT, handler);
+    return () => window.removeEventListener(INITIATION_PROGRESS_EVENT, handler);
+  }, []);
+  const initiationFacts = useMemo(() => {
+    void initiationFactsVersion;
+    return getLocalInitiationFacts(profile?.id ?? user?.uid ?? null);
+  }, [profile?.id, user?.uid, initiationFactsVersion]);
+  const sessionsCompleted =
+    progress?.stats?.dailySessionsCompleted ?? initiationFacts?.completedLessons ?? 0;
+  const streakDays = initiationFacts?.streakDays ?? 0;
+  const initiationModuleTitle = initiationFacts
+    ? INITIATION_MODULES[initiationFacts.currentModuleId]?.title
+    : null;
+  const initiationModuleProgress = initiationFacts
+    ? `${Math.min(initiationFacts.completedLessons + 1, initiationFacts.moduleLessonCount)}/${
+        initiationFacts.moduleLessonCount
+      }`
+    : null;
+  const nextLessonLabel = initiationFacts?.nextLessonId ? formatLessonLabel(initiationFacts.nextLessonId) : null;
   const initiationSummaryCard = initiationFacts ? (
     <OmniCard className="px-5 py-4">
       <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
@@ -214,29 +237,6 @@ function ProgressContent() {
       ) : null}
     </OmniCard>
   ) : null;
-  const [initiationFactsVersion, setInitiationFactsVersion] = useState(0);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const handler = () => setInitiationFactsVersion((version) => version + 1);
-    window.addEventListener(INITIATION_PROGRESS_EVENT, handler);
-    return () => window.removeEventListener(INITIATION_PROGRESS_EVENT, handler);
-  }, []);
-  const initiationFacts = useMemo(
-    () => getLocalInitiationFacts(profile?.id ?? user?.uid ?? null),
-    [profile?.id, user?.uid, initiationFactsVersion],
-  );
-  const sessionsCompleted =
-    progress?.stats?.dailySessionsCompleted ?? initiationFacts?.completedLessons ?? 0;
-  const streakDays = initiationFacts?.streakDays ?? 0;
-  const initiationModuleTitle = initiationFacts
-    ? INITIATION_MODULES[initiationFacts.currentModuleId]?.title
-    : null;
-  const initiationModuleProgress = initiationFacts
-    ? `${Math.min(initiationFacts.completedLessons + 1, initiationFacts.moduleLessonCount)}/${
-        initiationFacts.moduleLessonCount
-      }`
-    : null;
-  const nextLessonLabel = initiationFacts?.nextLessonId ? formatLessonLabel(initiationFacts.nextLessonId) : null;
 
 
   // React to open=journal in URL: open the drawer immediately, then clean the param

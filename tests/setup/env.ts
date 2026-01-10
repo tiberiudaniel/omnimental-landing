@@ -8,16 +8,15 @@ const envDefaults: Record<string, string> = {
   NEXT_PUBLIC_DISABLE_PROGRESS_WRITES: "true",
 };
 
-Object.entries(envDefaults).forEach(([key, value]) => {
+const ensureEnv = (key: string, value: string) => {
   if (!process.env[key]) {
-    process.env[key] = value;
+    Reflect.set(process.env, key, value);
   }
+};
+
+Object.entries(envDefaults).forEach(([key, value]) => {
+  ensureEnv(key, value);
 });
 
-if (!process.env.NODE_ENV) {
-  process.env.NODE_ENV = "test";
-}
-
-if (!process.env.NEXT_PUBLIC_DISABLE_TELEMETRY) {
-  process.env.NEXT_PUBLIC_DISABLE_TELEMETRY = "1";
-}
+ensureEnv("NODE_ENV", process.env.NODE_ENV ?? "test");
+ensureEnv("NEXT_PUBLIC_DISABLE_TELEMETRY", process.env.NEXT_PUBLIC_DISABLE_TELEMETRY ?? "1");

@@ -49,9 +49,8 @@ import { useEarnedRoundsController } from "@/components/today/useEarnedRounds";
 import {
   ensureInitiationProgress,
   markInitiationLessonsCompleted,
-  readInitiationProgressState,
   clearInitiationProgress,
-  INITIATION_PROGRESS_EVENT,
+  readInitiationProgressState,
 } from "@/lib/content/initiationProgressStorage";
 import {
   buildInitiationSessionPlan,
@@ -63,6 +62,8 @@ import {
   markInitiationRunCompleted,
   clearInitiationRunHistory,
 } from "@/lib/content/initiationRunHistory";
+import { useInitiationProgress } from "@/components/today/useInitiationProgress";
+import type { MindpacingFallbackReason } from "@/lib/mindpacing/moduleMapping";
 
 const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
 const GUIDED_ONBOARDING_KEY = "guided_onboarding_active";
@@ -98,6 +99,7 @@ export default function TodayOrchestrator() {
   const navLinks = useNavigationLinks();
   const { user, authReady } = useAuth();
   const { data: progressFacts, loading: progressFactsLoading } = useProgressFacts(user?.uid ?? null);
+  const initiationProgressSnapshot = useInitiationProgress(user?.uid ?? null);
   const earnedRounds = useEarnedRoundsController(progressFacts ?? null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [completedToday, setCompletedToday] = useState(false);
@@ -146,7 +148,6 @@ export default function TodayOrchestrator() {
   const [planLoading, setPlanLoading] = useState(false);
   const [sensAiCtx, setSensAiCtx] = useState<SensAiContext | null>(null);
   const [initiationPlanResult, setInitiationPlanResult] = useState<InitiationSessionPlanResult | null>(null);
-  const [initiationProgressVersion, setInitiationProgressVersion] = useState(0);
   const [runId, setRunId] = useState<string | null>(null);
   const [guidedOnboardingActive, setGuidedOnboardingActive] = useState(false);
   const [dayOneEntryUnlocked, setDayOneEntryUnlocked] = useState(false);
@@ -183,16 +184,9 @@ export default function TodayOrchestrator() {
     clearInitiationRunHistory(uid);
     setInitiationPlanResult(null);
     setRunId(null);
-    setInitiationProgressVersion((version) => version + 1);
     fallbackTrackedRef.current = false;
   }, [user?.uid]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const handler = () => setInitiationProgressVersion((version) => version + 1);
-    window.addEventListener(INITIATION_PROGRESS_EVENT, handler);
-    return () => window.removeEventListener(INITIATION_PROGRESS_EVENT, handler);
-  }, []);
 
   useEffect(() => {
     if (wizardUnlocked && !wizardUnlockRef.current) {
@@ -276,7 +270,6 @@ export default function TodayOrchestrator() {
         storedPlan.initiationLessonIds as LessonId[],
       );
       clearTodayPlan();
-      setInitiationProgressVersion((version) => version + 1);
       return;
     }
     if (hasInitiationRunCompleted(userId, storedPlan.runId)) {
@@ -289,7 +282,6 @@ export default function TodayOrchestrator() {
     );
     markInitiationRunCompleted(userId, storedPlan.runId);
     clearTodayPlan();
-    setInitiationProgressVersion((version) => version + 1);
   }, [sourceParam, user?.uid]);
 
   useEffect(() => {
@@ -337,7 +329,7 @@ export default function TodayOrchestrator() {
           debug: {
             moduleId: storedPlan.initiationModuleId as ModuleId,
             mindpacingTag: storedTag,
-            fallbackReason: storedPlan.fallbackReason,
+            fallbackReason: storedPlan.fallbackReason as MindpacingFallbackReason | undefined,
           },
         });
         setRunId(storedPlan.runId);
@@ -365,7 +357,7 @@ export default function TodayOrchestrator() {
       setInitiationPlanResult(null);
       setRunId(null);
     }
-  }, [normalizedMindpacingTag, initiationProgressVersion, user?.uid, todayKey]);
+  }, [normalizedMindpacingTag, user?.uid, todayKey]);
 
   useEffect(() => {
     if (!authReady || !user) return;
@@ -675,6 +667,16 @@ export default function TodayOrchestrator() {
   const handleEarnShortcut = () => {
     goToEarnGate("today_hub");
   };
+  const moduleIdForUi =
+    initiationPlanResult?.debug.moduleId ??
+    initiationProgressSnapshot?.moduleId ??
+    ("init_clarity_foundations" as ModuleId);
+  const moduleMeta = INITIATION_MODULES[moduleIdForUi] ?? null;
+  const moduleLessonCount = moduleMeta?.lessonIds.length ?? 0;
+  const completedLessonsCount = initiationProgressSnapshot?.completedLessonIds.length ?? 0;
+  const currentLessonNumber = moduleLessonCount
+    ? Math.min(completedLessonsCount + 1, moduleLessonCount)
+    : null;
 
   if (!sessionPlan) {
     return (
@@ -731,20 +733,6 @@ export default function TodayOrchestrator() {
     ? `Ziua ${arcDayNumber ?? "—"}${sessionPlan.arcLengthDays ? ` din ${sessionPlan.arcLengthDays}` : ""} în ${sessionPlan.title}`
     : "Primul tău antrenament de claritate";
   const xpForTrait = sensAiCtx?.profile.xpByTrait?.[sessionPlan.traitPrimary] ?? 0;
-  const initiationProgressSnapshot = useMemo(
-    () => readInitiationProgressState(user?.uid ?? null),
-    [initiationProgressVersion, user?.uid],
-  );
-  const moduleIdForUi =
-    initiationPlanResult?.debug.moduleId ??
-    initiationProgressSnapshot?.moduleId ??
-    ("init_clarity_foundations" as ModuleId);
-  const moduleMeta = INITIATION_MODULES[moduleIdForUi] ?? null;
-  const moduleLessonCount = moduleMeta?.lessonIds.length ?? 0;
-  const completedLessonsCount = initiationProgressSnapshot?.completedLessonIds.length ?? 0;
-  const currentLessonNumber = moduleLessonCount
-    ? Math.min(completedLessonsCount + 1, moduleLessonCount)
-    : null;
   const initiationLessons = initiationPlanResult?.lessons ?? [];
   const showFallbackBanner = Boolean(initiationPlanResult?.debug.fallbackReason) && showDebugUi;
   const fallbackBanner = showFallbackBanner ? (
