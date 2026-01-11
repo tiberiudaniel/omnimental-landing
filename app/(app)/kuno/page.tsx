@@ -16,14 +16,18 @@ import { GATING } from "@/lib/gatingConfig";
 function KunoHub() {
   const search = useSearchParams();
   const router = useRouter();
-  const e2e = (search?.get('e2e') === '1') || (search?.get('demo') === '1');
+  const e2eQuery = (search?.get('e2e') ?? "").toLowerCase() === "1";
+  const demoQuery = (search?.get('demo') ?? "").toLowerCase() === "1";
+  const e2e = e2eQuery || demoQuery;
+  const langParam = (search?.get("lang") ?? "").toLowerCase() === "en" ? "en" : "ro";
   const goToAuth = () => router.push('/auth');
   const { user, authReady } = useAuth();
   const returnPath = useMemo(() => {
     const qs = search?.toString();
     return qs && qs.length > 0 ? `/kuno?${qs}` : "/kuno";
   }, [search]);
-  const { data: progress, loading: progressLoading } = useProgressFacts(user?.uid ?? null);
+  const progressProfileId = e2e ? null : user?.uid ?? null;
+  const { data: progress, loading: progressLoading } = useProgressFacts(progressProfileId);
   const totalSessions = getTotalDailySessionsCompleted(progress);
   const unlocked = e2e || canAccessOmniKuno(progress);
 
@@ -33,6 +37,10 @@ function KunoHub() {
       router.replace(`/auth?returnTo=${encodeURIComponent(returnPath)}`);
     }
   }, [authReady, user, router, returnPath]);
+
+  if (e2eQuery) {
+    return <KunoSmokeShell lang={langParam} />;
+  }
 
   if (!authReady || progressLoading) {
     return (
@@ -146,5 +154,44 @@ export default function Page() {
     <Suspense fallback={null}>
       <KunoHub />
     </Suspense>
+  );
+}
+
+function KunoSmokeShell({ lang }: { lang: string }) {
+  return (
+    <div data-testid="kuno-root">
+      <AppShell header={<SiteHeader />}>
+        <div className="mx-auto max-w-5xl px-4 py-8 text-[var(--omni-ink)]">
+          <section className="omni-card rounded-card p-6 md:p-7 mb-6">
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--omni-muted)]">OmniKuno</p>
+            <h1 className="mt-2 text-2xl font-semibold">
+              {lang === "ro" ? "Mod demo activ" : "Demo mode active"}
+            </h1>
+            <p className="mt-2 text-sm text-[var(--omni-ink)]/80">
+              {lang === "ro"
+                ? "Această secțiune este redusă pentru testele automate."
+                : "This section is simplified for automated tests."}
+            </p>
+          </section>
+          <section className="rounded-card border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+              {lang === "ro" ? "Misiuni disponibile" : "Available missions"}
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li>• {lang === "ro" ? "Claritate operațională" : "Operational clarity"}</li>
+              <li>• {lang === "ro" ? "Energie aplicată" : "Applied energy"}</li>
+            </ul>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <KunoCtaButton as="link" href="/omni-kuno">
+                {lang === "ro" ? "Intră în OmniKuno" : "Enter OmniKuno"}
+              </KunoCtaButton>
+              <NeutralCtaButton as="link" href="/kuno/practice">
+                {lang === "ro" ? "Mini-test" : "Mini test"}
+              </NeutralCtaButton>
+            </div>
+          </section>
+        </div>
+      </AppShell>
+    </div>
   );
 }

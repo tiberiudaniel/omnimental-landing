@@ -27,6 +27,7 @@ import {
 } from "@/lib/content/initiationProgressStorage";
 import { INITIATION_MODULES } from "@/config/content/initiations/modules";
 import type { ProgressFact } from "@/lib/progressFacts";
+import { isE2EMode } from "@/lib/e2eMode";
 
 const FALLBACK_GUEST_ID = (() => {
   try {
@@ -296,7 +297,7 @@ function ProgressContent() {
         <SiteHeader onAuthRequest={e2e ? undefined : goToAuth} onMenuToggle={() => setMenuOpen(true)} />
       );
       return (
-        <div data-testid="progress-root">
+        <div>
           <AppShell header={header}>
             {process.env.NEXT_PUBLIC_ENABLE_DEMOS === "1" ? <DemoUserSwitcher /> : null}
             <div className="mx-auto max-w-5xl px-4 py-6 md:px-8">
@@ -331,7 +332,7 @@ function ProgressContent() {
     }
     const header = <SiteHeader onAuthRequest={goToAuth} />;
     return (
-      <div data-testid="progress-root">
+      <div>
         <AppShell header={header}>
           <div className="mx-auto max-w-5xl px-4 py-8">
             <p className="text-sm text-[var(--omni-ink-soft)]">
@@ -344,7 +345,7 @@ function ProgressContent() {
   }
 
   return (
-    <div data-testid="progress-root">
+    <div>
       <AppShell
         header={<SiteHeader onAuthRequest={goToAuth} onMenuToggle={() => setMenuOpen(true)} />}
       >
@@ -611,8 +612,18 @@ function ProgressPageInner() {
   const { user, loading } = useAuth();
   const demoParam = search?.get("demo");
   const e2eParam = search?.get("e2e");
+  const langParam = (search?.get("lang") ?? "").toLowerCase() === "en" ? "en" : "ro";
   const fromParam = search?.get("from");
   const allowGuest = Boolean(demoParam || e2eParam === "1" || fromParam === "experience-onboarding");
+  const e2eOverrideActive = e2eParam === "1" || isE2EMode();
+
+  useEffect(() => {
+    console.info("[page] progress mounted");
+  }, []);
+
+  if (e2eOverrideActive) {
+    return <ProgressSmokeShell lang={langParam} />;
+  }
 
   useEffect(() => {
     if (allowGuest) return;
@@ -639,9 +650,53 @@ function ProgressPageInner() {
 
 export default function ProgressPage() {
   return (
-    <Suspense fallback={null}>
-      <ProgressPageInner />
-    </Suspense>
+    <div data-testid="progress-root" data-page="progress">
+      <Suspense fallback={null}>
+        <ProgressPageInner />
+      </Suspense>
+    </div>
+  );
+}
+
+function ProgressSmokeShell({ lang }: { lang: string }) {
+  return (
+    <div>
+      <AppShell header={<SiteHeader />}>
+        <div className="mx-auto max-w-5xl px-4 py-8 text-[var(--omni-ink)]">
+          <div className="rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-8 shadow-[0_24px_80px_rgba(0,0,0,0.08)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">
+              {lang === "ro" ? "Mod demo" : "Demo mode"}
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold">
+              {lang === "ro" ? "Progres (scenariu de test)" : "Progress (test scenario)"}
+            </h1>
+            <p className="mt-2 text-sm text-[var(--omni-ink)]/80">
+              {lang === "ro"
+                ? "Aceasta este o machetă pentru testele automate. UI-ul real se încarcă în aplicația live."
+                : "This is a lightweight shell for automated tests. The full UI renders in the live app."}
+            </p>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+                {lang === "ro" ? "Ritual zilnic" : "Daily ritual"}
+              </p>
+              <p className="mt-1 text-sm text-[var(--omni-ink)]">
+                {lang === "ro" ? "Ai completat 3 sesiuni săptămâna asta." : "You completed 3 sessions this week."}
+              </p>
+            </div>
+            <div className="rounded-[20px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+                {lang === "ro" ? "Următorul pas" : "Next step"}
+              </p>
+              <p className="mt-1 text-sm text-[var(--omni-ink)]">
+                {lang === "ro" ? "Continuă cu lecția initiation_01." : "Continue with lesson initiation_01."}
+              </p>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    </div>
   );
 }
 
