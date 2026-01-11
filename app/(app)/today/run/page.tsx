@@ -22,6 +22,8 @@ import { isGuidedDayOneLane } from "@/lib/guidedDayOne";
 import { buildPlanKpiEvent } from "@/lib/sessionTelemetry";
 import { recordDailyRunnerEvent, recordDailySessionCompletion } from "@/lib/progressFacts/recorders";
 import { useUserAccessTier } from "@/components/useUserAccessTier";
+import { resolveInitiationLesson } from "@/lib/content/resolveLessonToExistingContent";
+import type { LessonId } from "@/lib/taxonomy/types";
 
 function TodayRunPageInner() {
   const router = useRouter();
@@ -38,6 +40,21 @@ function TodayRunPageInner() {
     if (storedPlan?.moduleId) return storedPlan.moduleId;
     return todayModuleKey;
   }, [storedPlan?.moduleId, todayModuleKey]);
+  const forcedModuleConfig = useMemo(() => {
+    if (storedPlan?.worldId !== "INITIATION") return null;
+    const lessonId = storedPlan.initiationLessonIds?.[0];
+    if (!lessonId) return null;
+    try {
+      const lesson = resolveInitiationLesson(lessonId as LessonId);
+      return {
+        moduleKey: lesson.refId,
+        cluster: lesson.meta.cluster,
+      };
+    } catch (error) {
+      console.warn("[today/run] failed to build forced module config", error);
+      return null;
+    }
+  }, [storedPlan?.worldId, storedPlan?.initiationLessonIds]);
   const runStartLoggedRef = useRef(false);
   const runModeParam = searchParams.get("mode");
   const runSourceParam = searchParams.get("source");
@@ -68,7 +85,16 @@ function TodayRunPageInner() {
       setCompletedToday(hasCompletedToday());
       const plan = readTodayPlan();
       setStoredPlan(plan);
-      if (plan?.moduleId) {
+      if (plan?.worldId === "INITIATION" && plan.initiationLessonIds?.length) {
+        const coreLessonId = plan.initiationLessonIds[0] as LessonId;
+        try {
+          const lesson = resolveInitiationLesson(coreLessonId);
+          setTodayModuleKey(lesson.refId);
+        } catch (error) {
+          console.warn("[today/run] failed to resolve initiation lesson", error);
+          setTodayModuleKey(plan.moduleId ?? getTodayModuleKey());
+        }
+      } else if (plan?.moduleId) {
         setTodayModuleKey(plan.moduleId);
       } else {
         setTodayModuleKey(getTodayModuleKey());
@@ -389,7 +415,11 @@ function TodayRunPageInner() {
     <>
       {renderDebugBanner()}
       {guidedLaneBadge}
-      <DailyPathRunner onCompleted={handleCompleted} todayModuleKey={todayModuleKey} />
+      <DailyPathRunner
+        onCompleted={handleCompleted}
+        todayModuleKey={todayModuleKey}
+        forcedModuleConfig={forcedModuleConfig}
+      />
     </>
   );
 }
