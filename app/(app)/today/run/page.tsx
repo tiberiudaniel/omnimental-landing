@@ -80,7 +80,6 @@ function TodayRunPageInner() {
   const e2eMode = (searchParams.get("e2e") ?? "").toLowerCase() === "1" || cookieE2E;
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (e2eMode) return;
     let alive = true;
     const timeout = window.setTimeout(() => {
       if (!alive) return;

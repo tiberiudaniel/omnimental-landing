@@ -1,0 +1,63 @@
+name: E2E Smoke (Playwright)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e_smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      CI: "1"
+      NODE_ENV: test
+
+      NEXT_PUBLIC_DISABLE_TELEMETRY: "1"
+      NEXT_PUBLIC_DISABLE_PROGRESS_WRITES: "1"
+      NEXT_PUBLIC_E2E_MODE: "1"
+      NEXT_PUBLIC_ENABLE_DEMOS: "1"
+
+      # Dummy Firebase envs (app asserts presence)
+      NEXT_PUBLIC_FIREBASE_API_KEY: "dummy"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "dummy.firebaseapp.com"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "dummy"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "dummy.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1234567890"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:1234567890:web:dummy"
+
+      # Playwright webserver settings (playwright.config.ts reads these)
+      E2E_BASE_URL: "http://localhost:3000"
+      E2E_WEB_COMMAND: "npm run build && PORT=3000 npm run start"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E Smoke
+        run: npm run test:e2e
+
+      - name: Upload Playwright report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore

@@ -1,0 +1,51 @@
+name: CI (lint + typecheck + v4)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      NODE_ENV: test
+      NEXT_PUBLIC_DISABLE_TELEMETRY: "1"
+      NEXT_PUBLIC_DISABLE_PROGRESS_WRITES: "1"
+      NEXT_PUBLIC_E2E_MODE: "1"
+
+      # Dummy Firebase envs (app asserts presence)
+      NEXT_PUBLIC_FIREBASE_API_KEY: "dummy"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "dummy.firebaseapp.com"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "dummy"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "dummy.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1234567890"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:1234567890:web:dummy"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests (v4)
+        run: npm run test:v4
