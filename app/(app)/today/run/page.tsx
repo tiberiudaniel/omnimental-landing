@@ -37,6 +37,7 @@ function TodayRunPageInner() {
   const [todayModuleKey, setTodayModuleKey] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [storedPlan, setStoredPlan] = useState<StoredTodayPlan | null>(null);
+  const [forcedLessonId, setForcedLessonId] = useState<string | null>(null);
   const [initiationResolutionError, setInitiationResolutionError] = useState<string | null>(null);
   const runModuleId = useMemo(() => {
     if (storedPlan?.moduleId) return storedPlan.moduleId;
@@ -88,6 +89,7 @@ function TodayRunPageInner() {
       setStoredPlan(plan);
       if (plan?.worldId === "INITIATION" && plan.initiationLessonIds?.length) {
         const coreLessonId = plan.initiationLessonIds[0] as LessonId;
+        setForcedLessonId(coreLessonId);
         try {
           const lesson = resolveInitiationLesson(coreLessonId);
           setTodayModuleKey(lesson.refId);
@@ -100,9 +102,11 @@ function TodayRunPageInner() {
       } else if (plan?.moduleId) {
         setTodayModuleKey(plan.moduleId);
         setInitiationResolutionError(null);
+        setForcedLessonId(null);
       } else {
         setTodayModuleKey(getTodayModuleKey());
         setInitiationResolutionError(null);
+        setForcedLessonId(null);
       }
       setInitialized(true);
     }, 0);
@@ -425,6 +429,11 @@ function TodayRunPageInner() {
     <>
       {renderDebugBanner()}
       {guidedLaneBadge}
+      {forcedLessonId ? (
+        <div data-testid="initiation-forced-module" className="sr-only">
+          {forcedLessonId}
+        </div>
+      ) : null}
       {showInitiationResolutionBanner ? (
         <div
           data-testid="initiation-resolution-failed"
