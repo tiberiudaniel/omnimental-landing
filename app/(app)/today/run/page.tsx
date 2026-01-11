@@ -36,12 +36,13 @@ function TodayRunPageInner() {
   const [todayModuleKey, setTodayModuleKey] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [storedPlan, setStoredPlan] = useState<StoredTodayPlan | null>(null);
+  const [initiationResolutionError, setInitiationResolutionError] = useState<string | null>(null);
   const runModuleId = useMemo(() => {
     if (storedPlan?.moduleId) return storedPlan.moduleId;
     return todayModuleKey;
   }, [storedPlan?.moduleId, todayModuleKey]);
   const forcedModuleConfig = useMemo(() => {
-    if (storedPlan?.worldId !== "INITIATION") return null;
+    if (!storedPlan || storedPlan.worldId !== "INITIATION") return null;
     const lessonId = storedPlan.initiationLessonIds?.[0];
     if (!lessonId) return null;
     try {
@@ -54,7 +55,7 @@ function TodayRunPageInner() {
       console.warn("[today/run] failed to build forced module config", error);
       return null;
     }
-  }, [storedPlan?.worldId, storedPlan?.initiationLessonIds]);
+  }, [storedPlan]);
   const runStartLoggedRef = useRef(false);
   const runModeParam = searchParams.get("mode");
   const runSourceParam = searchParams.get("source");
@@ -90,14 +91,18 @@ function TodayRunPageInner() {
         try {
           const lesson = resolveInitiationLesson(coreLessonId);
           setTodayModuleKey(lesson.refId);
+          setInitiationResolutionError(null);
         } catch (error) {
           console.warn("[today/run] failed to resolve initiation lesson", error);
+          setInitiationResolutionError(`Failed to resolve core lesson: ${String(error)}`);
           setTodayModuleKey(plan.moduleId ?? getTodayModuleKey());
         }
       } else if (plan?.moduleId) {
         setTodayModuleKey(plan.moduleId);
+        setInitiationResolutionError(null);
       } else {
         setTodayModuleKey(getTodayModuleKey());
+        setInitiationResolutionError(null);
       }
       setInitialized(true);
     }, 0);
@@ -158,6 +163,10 @@ function TodayRunPageInner() {
       router.push(`/session/complete?${params.toString()}`);
     },
     [completionSource, e2eMode, router, forceDailyRunner],
+  );
+
+  const showInitiationResolutionBanner = Boolean(
+    initiationResolutionError && (process.env.NODE_ENV !== "production" || e2eMode),
   );
 
   const finalizeCompletion = async (moduleKey?: string | null) => {
@@ -415,6 +424,14 @@ function TodayRunPageInner() {
     <>
       {renderDebugBanner()}
       {guidedLaneBadge}
+      {showInitiationResolutionBanner ? (
+        <div
+          data-testid="initiation-resolution-failed"
+          className="mx-4 my-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          {initiationResolutionError ?? "Failed to resolve initiation plan."}
+        </div>
+      ) : null}
       <DailyPathRunner
         onCompleted={handleCompleted}
         todayModuleKey={todayModuleKey}
