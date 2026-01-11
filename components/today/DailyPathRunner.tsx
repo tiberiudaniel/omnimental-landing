@@ -53,6 +53,7 @@ import {
 import { track } from "@/lib/telemetry/track";
 import { useUserAccessTier } from "@/components/useUserAccessTier";
 import { isE2EMode } from "@/lib/e2eMode";
+import { buildForcedDailyDecision, type ForcedModuleConfig } from "@/lib/today/forcedModuleDecision";
 
 const ADAPTIVE_NUDGES: Record<AdaptiveCluster, string> = {
   clarity_cluster: "Alege azi un lucru important și exprimă-l în minte în 7 cuvinte.",
@@ -197,9 +198,14 @@ function computeLocalStreakStats(completionKeys: Set<string>): { current: number
 type DailyPathRunnerProps = {
   onCompleted?: (configId?: string | null, moduleKey?: string | null) => void;
   todayModuleKey?: string | null;
+  forcedModuleConfig?: ForcedModuleConfig | null;
 };
 
-export default function DailyPathRunner({ onCompleted, todayModuleKey = null }: DailyPathRunnerProps) {
+export default function DailyPathRunner({
+  onCompleted,
+  todayModuleKey = null,
+  forcedModuleConfig = null,
+}: DailyPathRunnerProps) {
   const entryPath = "/today/run";
   const authReturnTo = encodeURIComponent(entryPath);
 
@@ -210,6 +216,7 @@ export default function DailyPathRunner({ onCompleted, todayModuleKey = null }: 
         authReturnTo={authReturnTo}
         onCompleted={onCompleted}
         todayModuleKey={todayModuleKey}
+        forcedModuleConfig={forcedModuleConfig}
       />
     </Suspense>
   );
@@ -220,9 +227,16 @@ type RunnerContentProps = {
   authReturnTo: string;
   onCompleted?: (configId?: string | null, moduleKey?: string | null) => void;
   todayModuleKey?: string | null;
+  forcedModuleConfig?: ForcedModuleConfig | null;
 };
 
-function RunnerContent({ entryPath, authReturnTo, onCompleted, todayModuleKey = null }: RunnerContentProps) {
+function RunnerContent({
+  entryPath,
+  authReturnTo,
+  onCompleted,
+  todayModuleKey = null,
+  forcedModuleConfig = null,
+}: RunnerContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -511,6 +525,21 @@ useEffect(() => {
   const [plannerCalled, setPlannerCalled] = useState(false);
 
   useEffect(() => {
+    if (forcedModuleConfig) {
+      setPlannerCalled(true);
+      try {
+        const forcedDecision = buildForcedDailyDecision(forcedModuleConfig, {
+          lang: decisionLang,
+          mode: modeOverride ?? undefined,
+        });
+        setDailyDecision(forcedDecision);
+      } catch (error) {
+        console.warn("Forced module load failed", error);
+        setDailyDecision(null);
+      }
+      setDecisionLoading(false);
+      return;
+    }
     if (!onboardingReady || qaOverrideActive) {
       setPlannerCalled(false);
       return;
@@ -557,6 +586,7 @@ useEffect(() => {
       cancelled = true;
     };
   }, [
+    forcedModuleConfig,
     onboardingReady,
     user?.uid,
     catProfile,
@@ -564,6 +594,7 @@ useEffect(() => {
     qaOverrideActive,
     guidedDayOneSource,
     clusterOverride,
+    modeOverride,
   ]);
 
   useEffect(() => {
