@@ -24,6 +24,7 @@ import { recordDailyRunnerEvent, recordDailySessionCompletion } from "@/lib/prog
 import { useUserAccessTier } from "@/components/useUserAccessTier";
 import { resolveInitiationLesson } from "@/lib/content/resolveLessonToExistingContent";
 import type { LessonId } from "@/lib/taxonomy/types";
+import { completeInitiationRunFromPlan } from "@/lib/today/completeInitiationRun";
 
 function TodayRunPageInner() {
   const router = useRouter();
@@ -173,6 +174,7 @@ function TodayRunPageInner() {
     markDailyCompletion(moduleKey ?? null);
     track("daily_run_completed", { moduleKey });
     const plan = readTodayPlan();
+    completeInitiationRunFromPlan(plan, profile?.id ?? null);
     if (profile?.id && plan?.arcId) {
       try {
         await advanceArcProgress(profile.id, plan.arcId, { completedToday: true });
