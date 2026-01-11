@@ -63,6 +63,8 @@ function TodayRunPageInner() {
   const runSourceParam = searchParams.get("source");
   const laneParam = (searchParams.get("lane") ?? "").toLowerCase();
   const guidedLaneActive = isGuidedDayOneLane(runSourceParam, laneParam);
+  const simulateParam = (searchParams.get("simulate") ?? "").toLowerCase() === "1";
+  const simulateTodayRun = !guidedLaneActive && (simulateParam || (runSourceParam ?? "").toLowerCase() === "today_e2e");
   const runMode = runModeParam === "deep" ? "deep" : runModeParam === "quick" ? "quick" : runModeParam === "guided_day1" ? "guided_day1" : "standard";
   const roundParam = searchParams.get("round");
   const lessonModeParam = searchParams.get("lessonMode");
@@ -340,7 +342,7 @@ function TodayRunPageInner() {
     wowLesson,
   ]);
 
-  if (e2eMode && !guidedLaneActive) {
+  if (simulateTodayRun) {
     return (
       <>
         {renderDebugBanner()}
@@ -362,7 +364,7 @@ function TodayRunPageInner() {
     );
   }
 
-  if (!initialized && !e2eMode) {
+  if (!initialized && !simulateTodayRun) {
     return null;
   }
 
@@ -429,11 +431,6 @@ function TodayRunPageInner() {
     <>
       {renderDebugBanner()}
       {guidedLaneBadge}
-      {forcedLessonId ? (
-        <div data-testid="initiation-forced-module" className="sr-only">
-          {forcedLessonId}
-        </div>
-      ) : null}
       {showInitiationResolutionBanner ? (
         <div
           data-testid="initiation-resolution-failed"

@@ -18,10 +18,12 @@ test.describe('Guided Day1 contract (lane UI)', () => {
   test('Guided Day1 run does NOT render Foundation shell / Brief selector / Quest map; Save Progress is NOT shown at start', async ({
     page,
   }) => {
-    await go(page, '/today?source=guided_day1');
-    await expect(page.getByTestId('guided-day1-hero')).toBeVisible({ timeout: 20_000 });
+    await go(page, '/today?source=guided_day1&e2e=1');
+    await expect(page.getByTestId('guided-day1-page')).toBeVisible({ timeout: 20_000 });
 
-    await page.getByTestId('guided-day1-start').click();
+    const startButton = page.getByTestId('guided-day1-start');
+    await expect(startButton).toBeEnabled({ timeout: 20_000 });
+    await startButton.click();
     await expect(page).toHaveURL(/\/today\/run\?.*source=guided_day1/i, { timeout: 20_000 });
 
     await expect(page.locator('body')).toContainText(/OmniMental/i, { timeout: 20_000 });
@@ -37,7 +39,7 @@ test.describe('Guided Day1 contract (lane UI)', () => {
   test('Session Complete (Guided Day1): Save Progress is shown and can be dismissed (sticky)', async ({ page }) => {
     await resetSession(page);
     await go(page, '/today?source=guided_day1&e2e=1');
-    await expect(page.getByTestId('guided-day1-hero')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId('guided-day1-page')).toBeVisible({ timeout: 20_000 });
     await go(page, '/session/complete?source=guided_day1&lane=guided_day1&e2e=1');
     await expect(page).toHaveURL(/\/session\/complete/i, { timeout: 20_000 });
     await expect(page.getByTestId('session-complete-root')).toBeVisible({ timeout: 20_000 });

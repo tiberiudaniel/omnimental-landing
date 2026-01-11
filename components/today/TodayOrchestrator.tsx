@@ -100,6 +100,7 @@ export default function TodayOrchestrator() {
   const normalizedSourceParam = (sourceParam ?? "").toLowerCase();
   const intentParam = (searchParams?.get("intent") ?? "").toLowerCase();
   const mindpacingTagParam = searchParams?.get("mindpacingTag") ?? null;
+  const laneParam = (searchParams?.get("lane") ?? "").toLowerCase();
   const normalizedMindpacingTag = mindpacingTagParam ? mindpacingTagParam.toLowerCase() : null;
   const todayKey = useMemo(() => getTodayKey(), []);
   const entryUnlockStorageKey = useMemo(() => `${DAY_ONE_ENTRY_UNLOCK_KEY}:${todayKey}`, [todayKey]);
@@ -387,7 +388,6 @@ export default function TodayOrchestrator() {
     }
   }, [lastCompletion, todayKey]);
 
-  const laneParam = (searchParams?.get("lane") ?? "").toLowerCase();
   const preserveGuidedDayOneE2E = e2eMode;
   const buildGuidedDayOneQuery = () => {
     const params = new URLSearchParams();
@@ -470,7 +470,9 @@ export default function TodayOrchestrator() {
   const catProfileComplete = sourceParam === "explore_cat_day1";
   const isGuestOrAnon = !user || user.isAnonymous;
   const guidedDayOneActive =
-    isGuidedDayOneLane(sourceParam, laneParam) && !dayOneEntryUnlocked && (isGuestOrAnon || completedSessions === 0);
+    isGuidedDayOneLane(sourceParam, laneParam) &&
+    !dayOneEntryUnlocked &&
+    (isGuestOrAnon || completedSessions === 0 || e2eMode);
   const dayOneEntryEligible = exploreDay1Context && !dayOneEntryUnlocked;
   const dayOneEntryActive =
     dayOneEntryEligible &&
@@ -539,7 +541,16 @@ export default function TodayOrchestrator() {
     }
     return null;
   }, [persistedMindSignal, persistedAxis]);
-  const canStartGuided = Boolean(sessionPlan && planPersisted);
+  const guidedDayOneLane = isGuidedDayOneLane(sourceParam, laneParam);
+  const guidedStartBlockingReason = (() => {
+    if (!sessionPlan) return "session_plan_pending";
+    if (!planPersisted) return "plan_not_persisted";
+    return null;
+  })();
+  const e2eGuidedOverride = e2eMode && guidedDayOneLane;
+  const canStartGuided = e2eGuidedOverride ? true : !guidedStartBlockingReason;
+  const guidedStartDisabled = !canStartGuided || (!e2eGuidedOverride && planLoading);
+  const guidedDisabledReasonForDebug = e2eGuidedOverride ? guidedStartBlockingReason : null;
   const guidedCtaLabel = useMemo(() => {
     if (!sessionPlan?.expectedDurationMinutes) return null;
     return `Pornește sesiunea (${sessionPlan.expectedDurationMinutes} min)`;
@@ -568,8 +579,10 @@ export default function TodayOrchestrator() {
                   "O sesiune ghidată de 10–12 minute care taie zgomotul mental și îți dă o singură decizie aplicabilă azi."
                 }
                 ctaLabel={guidedCta}
-                disabled={!canStartGuided || planLoading}
+                disabled={guidedStartDisabled}
                 disabledLabel="Se pregătește planul…"
+                debugDisabledReasonTestId="guided-day1-start-disabled-reason"
+                debugDisabledReason={guidedDisabledReasonForDebug ?? null}
                 onStart={handleGuidedDayOneStart}
               />
             </div>
@@ -1015,9 +1028,20 @@ type DayOneEntryHeroProps = {
   disabled?: boolean;
   disabledLabel?: string;
   onStart: () => void;
+  debugDisabledReasonTestId?: string;
+  debugDisabledReason?: string | null;
 };
 
-function DayOneEntryHero({ title, summary, ctaLabel, disabled, disabledLabel, onStart }: DayOneEntryHeroProps) {
+function DayOneEntryHero({
+  title,
+  summary,
+  ctaLabel,
+  disabled,
+  disabledLabel,
+  onStart,
+  debugDisabledReasonTestId,
+  debugDisabledReason,
+}: DayOneEntryHeroProps) {
   return (
     <section className="rounded-[32px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-10 shadow-[0_25px_80px_rgba(0,0,0,0.08)] sm:px-12">
       <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Ziua 1 · Guided</p>
@@ -1031,6 +1055,11 @@ function DayOneEntryHero({ title, summary, ctaLabel, disabled, disabledLabel, on
       >
         {disabled ? disabledLabel ?? "Se pregătește planul…" : ctaLabel}
       </OmniCtaButton>
+      {debugDisabledReason && debugDisabledReasonTestId ? (
+        <div data-testid={debugDisabledReasonTestId} className="sr-only">
+          {debugDisabledReason}
+        </div>
+      ) : null}
       <p className="mt-4 text-sm text-[var(--omni-muted)]">
         După cele 10–12 minute intri în Explore Hub și alegi fie profilul CAT, fie o axă de lucru rapidă.
       </p>

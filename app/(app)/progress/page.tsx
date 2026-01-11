@@ -621,18 +621,19 @@ function ProgressPageInner() {
     console.info("[page] progress mounted");
   }, []);
 
-  if (e2eOverrideActive) {
-    return <ProgressSmokeShell lang={langParam} />;
-  }
-
   useEffect(() => {
+    if (e2eOverrideActive) return;
     if (allowGuest) return;
     if (loading) return;
     if (!user) {
       const encoded = encodeURIComponent("/progress");
       router.replace(`/auth?returnTo=${encoded}`);
     }
-  }, [allowGuest, loading, router, user]);
+  }, [allowGuest, loading, router, user, e2eOverrideActive]);
+
+  if (e2eOverrideActive) {
+    return <ProgressSmokeShell lang={langParam} />;
+  }
 
   if (!allowGuest && (loading || !user)) {
     return null;
