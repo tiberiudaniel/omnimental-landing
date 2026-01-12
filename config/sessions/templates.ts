@@ -5,7 +5,10 @@ type SessionBlock =
   | { kind: "vocab" }
   | { kind: "checkin" }
   | { kind: "arenaTaste" }
-  | { kind: "commit" };
+  | { kind: "commit" }
+  | { kind: "core_lesson" }
+  | { kind: "elective_practice" }
+  | { kind: "recall" };
 
 export type SessionTemplate = {
   templateId: SessionTemplateId;
@@ -46,5 +49,11 @@ export const SESSION_TEMPLATES: Record<string, SessionTemplate> = {
       { kind: "arenaTaste" },
       { kind: "commit" },
     ],
+  },
+  initiation_v2_12min: {
+    templateId: "initiation_v2_12min" as SessionTemplateId,
+    title: "Initiation V2 — 12 min",
+    durationMinutes: 12,
+    blocks: [{ kind: "core_lesson" }, { kind: "elective_practice" }, { kind: "recall" }],
   },
 };

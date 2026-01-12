@@ -5,6 +5,8 @@ import { resolveModuleForMindpacingTag } from "@/lib/mindpacing/moduleMapping";
 import type { MindpacingFallbackReason } from "@/lib/mindpacing/moduleMapping";
 import type { LessonId, ModuleId, SessionTemplateId } from "@/lib/taxonomy/types";
 import type { SessionPlan } from "@/lib/sessionRecommenderEngine";
+import { selectElective } from "@/lib/initiations/selectElective";
+import { buildRecallBlock, type RecallBlock } from "@/lib/initiations/buildRecallBlock";
 
 type BuildPlanParams = {
   templateId: SessionTemplateId;
@@ -22,8 +24,20 @@ type InitiationSessionDebug = {
 export type InitiationSessionPlanResult = {
   plan?: SessionPlan;
   lessons: ReturnType<typeof resolveInitiationLesson>[];
+  blocks: InitiationSessionBlock[];
+  initiation: {
+    moduleId: ModuleId;
+    lessonIds: LessonId[];
+    recallPromptId: string | null;
+    electiveReason?: string | null;
+  };
   debug: InitiationSessionDebug;
 };
+
+export type InitiationSessionBlock =
+  | { kind: "core"; lesson: ReturnType<typeof resolveInitiationLesson> }
+  | { kind: "elective"; lesson: ReturnType<typeof resolveInitiationLesson>; reason: string }
+  | { kind: "recall"; prompt: RecallBlock };
 
 function pickLessonsForModule(
   moduleId: ModuleId,
@@ -70,12 +84,54 @@ export function buildInitiationSessionPlan({
   }
   const effectiveCompleted =
     currentModuleId && currentModuleId === moduleMeta.moduleId ? completedLessonIds : [];
-  const requiredLessons = template.blocks.filter((block) => block.kind === "lesson").length;
-  const lessonIds = pickLessonsForModule(moduleMeta.moduleId, effectiveCompleted, requiredLessons);
+  const requiresBlocksV2 = template.blocks.some(
+    (block) => block.kind === "core_lesson" || block.kind === "elective_practice" || block.kind === "recall",
+  );
+  const legacyLessonCount = template.blocks.filter((block) => block.kind === "lesson").length;
+
+  const lessonIds = pickLessonsForModule(
+    moduleMeta.moduleId,
+    effectiveCompleted,
+    requiresBlocksV2 ? 1 : Math.max(legacyLessonCount, 1),
+  );
   const lessonRefs = lessonIds.map((lessonId) => resolveInitiationLesson(lessonId));
   const primaryLesson = lessonRefs[0];
   if (!primaryLesson) {
     throw new Error("No lessons resolved for initiation plan");
+  }
+
+  const blocks: InitiationSessionBlock[] = [];
+  const initiationLessonIds: LessonId[] = [];
+  let recallPromptId: string | null = null;
+  let electiveReason: string | null = null;
+
+  if (requiresBlocksV2) {
+    blocks.push({ kind: "core", lesson: primaryLesson });
+    initiationLessonIds.push(primaryLesson.meta.lessonId);
+    const electiveBlockRequested = template.blocks.some((block) => block.kind === "elective_practice");
+    if (electiveBlockRequested) {
+      const electiveSelection = selectElective({
+        coreModuleId: moduleMeta.moduleId,
+        completedLessonIds: effectiveCompleted,
+        coreAxis: primaryLesson.meta.axis ?? null,
+      });
+      electiveReason = electiveSelection.reason;
+      if (electiveSelection.lessonId) {
+        const electiveLesson = resolveInitiationLesson(electiveSelection.lessonId);
+        blocks.push({ kind: "elective", lesson: electiveLesson, reason: electiveSelection.reason });
+        initiationLessonIds.push(electiveLesson.meta.lessonId);
+        lessonRefs.push(electiveLesson);
+      }
+    }
+    if (template.blocks.some((block) => block.kind === "recall")) {
+      const recallBlock = buildRecallBlock(primaryLesson.meta.lessonId);
+      recallPromptId = recallBlock.promptId;
+      blocks.push({ kind: "recall", prompt: recallBlock });
+    }
+  }
+
+  if (!requiresBlocksV2) {
+    initiationLessonIds.push(...lessonRefs.map((lesson) => lesson.meta.lessonId));
   }
 
   const plan: SessionPlan = {
@@ -99,5 +155,16 @@ export function buildInitiationSessionPlan({
     fallbackReason: moduleResolution.fallbackReason,
   };
 
-  return { plan, lessons: lessonRefs, debug };
+  return {
+    plan,
+    lessons: lessonRefs,
+    blocks,
+    initiation: {
+      moduleId: moduleMeta.moduleId,
+      lessonIds: initiationLessonIds,
+      recallPromptId,
+      electiveReason: electiveReason ?? undefined,
+    },
+    debug,
+  };
 }

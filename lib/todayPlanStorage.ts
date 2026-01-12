@@ -14,6 +14,8 @@ export type StoredTodayPlan = {
   canonDomain?: CanonDomainId;
   initiationModuleId?: ModuleId | null;
   initiationLessonIds?: LessonId[];
+  initiationRecallPromptId?: string | null;
+  initiationElectiveReason?: string | null;
   todayKey: string;
   runId: string | null;
   mindpacingTag?: string | null;

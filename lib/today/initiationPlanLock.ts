@@ -1,7 +1,8 @@
 import { readTodayPlan, clearTodayPlan, type StoredTodayPlan } from "@/lib/todayPlanStorage";
-import { resolveInitiationLesson, type InitiationLessonReference } from "@/lib/content/resolveLessonToExistingContent";
+import { resolveInitiationLesson } from "@/lib/content/resolveLessonToExistingContent";
 import type { LessonId, ModuleId, WorldId } from "@/lib/taxonomy/types";
 import type { MindpacingFallbackReason } from "@/lib/mindpacing/moduleMapping";
+import type { InitiationSessionPlanResult } from "@/lib/sessions/buildInitiationSessionPlan";
 
 const INITIATION_WORLD: WorldId = "INITIATION";
 const INITIATION_MODE = "initiation";
@@ -31,14 +32,7 @@ export type InitiationPlanLockResult =
   | {
       status: "reused";
       runId: string;
-      planResult: {
-        lessons: InitiationLessonReference[];
-        debug: {
-          moduleId: ModuleId;
-          mindpacingTag: string | null;
-          fallbackReason?: MindpacingFallbackReason;
-        };
-      };
+      planResult: InitiationSessionPlanResult;
     }
   | {
       status: "rebuild";
@@ -92,7 +86,15 @@ export function resolveInitiationPlanLock(
       status: "reused",
       runId: storedPlan.runId,
       planResult: {
+        plan: undefined,
         lessons,
+        blocks: [],
+        initiation: {
+          moduleId: storedPlan.initiationModuleId,
+          lessonIds: (storedPlan.initiationLessonIds ?? []) as LessonId[],
+          recallPromptId: storedPlan.initiationRecallPromptId ?? null,
+          electiveReason: storedPlan.initiationElectiveReason ?? undefined,
+        },
         debug: {
           moduleId: storedPlan.initiationModuleId,
           mindpacingTag: storedPlan.mindpacingTag ?? null,

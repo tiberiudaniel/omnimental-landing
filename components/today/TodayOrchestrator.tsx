@@ -316,7 +316,7 @@ export default function TodayOrchestrator() {
     try {
       const existingProgress = readInitiationProgressState(user?.uid ?? null);
       const builderResult = buildInitiationSessionPlan({
-        templateId: "initiation_10min" as SessionTemplateId,
+        templateId: "initiation_v2_12min" as SessionTemplateId,
         currentModuleId: existingProgress?.moduleId ?? null,
         completedLessonIds: existingProgress?.completedLessonIds ?? [],
         mindpacingTag: normalizedMindpacingTag,
@@ -363,8 +363,10 @@ export default function TodayOrchestrator() {
       traitPrimary: sessionPlan.traitPrimary,
       traitSecondary: sessionPlan.traitSecondary,
       canonDomain: sessionPlan.canonDomain,
-      initiationModuleId: initiationPlanResult.debug.moduleId,
-      initiationLessonIds: initiationPlanResult.lessons.map((lesson) => lesson.meta.lessonId),
+      initiationModuleId: initiationPlanResult.initiation.moduleId,
+      initiationLessonIds: initiationPlanResult.initiation.lessonIds,
+      initiationRecallPromptId: initiationPlanResult.initiation.recallPromptId ?? null,
+      initiationElectiveReason: initiationPlanResult.initiation.electiveReason ?? null,
       todayKey,
       runId,
       mindpacingTag: initiationPlanResult.debug.mindpacingTag ?? null,
@@ -450,8 +452,15 @@ export default function TodayOrchestrator() {
   }, [markDayOneEntryUnlocked, normalizedSourceParam]);
   const handleGuidedDayOneStart = () => {
     if (!canStartGuided) return;
-    markDayOneEntryUnlocked();
-    router.push(`/today/run?${buildGuidedDayOneQuery()}`);
+    const target = `/today/run?${buildGuidedDayOneQuery()}`;
+    if (e2eGuidedOverride && typeof window !== "undefined") {
+      window.location.assign(target);
+      return;
+    }
+    router.push(target);
+    setTimeout(() => {
+      markDayOneEntryUnlocked();
+    }, 0);
   };
   const handleStart = () => {
     track("today_primary_clicked", { completedToday });
