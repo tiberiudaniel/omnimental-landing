@@ -105,6 +105,7 @@ const KanbanBoard = memo(function KanbanBoard({
                   key={task.id}
                   data-testid={`task-card-${task.id}`}
                   onDragStart={(event) => handleDragStart(event, task.id)}
+                  onClick={() => onSelectTask(task.id)}
                   className={`rounded-lg border border-[var(--workflow-border,#2C1A14)] bg-black/25 p-2 text-xs text-[var(--workflow-ink,#F5E8D8)] transition hover:border-[var(--workflow-accent,#F2613F)]/60 ${
                     selectedTaskId === task.id ? "ring-2 ring-[var(--workflow-accent)]/70" : ""
                   }`}
@@ -116,7 +117,7 @@ const KanbanBoard = memo(function KanbanBoard({
                       onClick={() => onSelectTask(task.id)}
                       className="text-left text-sm font-semibold leading-tight"
                     >
-                      {task.title || "Untitled"}
+                      <span data-testid={`task-title-${task.id}`}>{task.title || "Untitled"}</span>
                     </button>
                     <button
                       type="button"
@@ -132,7 +133,8 @@ const KanbanBoard = memo(function KanbanBoard({
                   </div>
                   {task.description ? (
                     <p
-                      className="mt-1 truncate text-[11px] text-[var(--workflow-muted,#cbb89f)]"
+                      className="mt-1 truncate text-[12px] font-light text-[var(--workflow-muted,#cbb89f)]"
+                      style={{ fontFamily: "Inter, 'Segoe UI', system-ui, -apple-system, sans-serif" }}
                       title={task.description}
                     >
                       {task.description}
@@ -141,10 +143,16 @@ const KanbanBoard = memo(function KanbanBoard({
                   {blockedMap[task.id] ? (
                     <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-[var(--workflow-accent,#F2613F)]">Blocked</p>
                   ) : null}
-                  <div className="mt-2 flex flex-wrap justify-end gap-1 text-[10px] uppercase tracking-[0.25em] text-[var(--workflow-muted,#cbb89f)]">
-                    <span className="rounded-full border border-[var(--workflow-muted,#cbb89f)] px-2 py-0.5">{priorityLabel(task.priority)}</span>
-                    <span className="rounded-full border border-[var(--workflow-muted,#cbb89f)] px-2 py-0.5">{task.durationDays}d</span>
-                    <span className="rounded-full border border-[var(--workflow-muted,#cbb89f)] px-2 py-0.5">{task.start}</span>
+                  <div className="mt-2 flex flex-wrap justify-end gap-1 text-[9px] uppercase tracking-[0.25em] text-[var(--workflow-muted,#cbb89f)]">
+                    <span className="rounded-full border border-[var(--workflow-border,#2C1A14)] px-1.5 py-0.5 text-[var(--workflow-muted,#cbb89f)]">
+                      {priorityLabel(task.priority)}
+                    </span>
+                    <span className="rounded-full border border-[var(--workflow-border,#2C1A14)] px-1.5 py-0.5 text-[var(--workflow-muted,#cbb89f)]">
+                      {task.durationDays}d
+                    </span>
+                    <span className="rounded-full border border-[var(--workflow-border,#2C1A14)] px-1.5 py-0.5 text-[var(--workflow-muted,#cbb89f)]">
+                      {task.start}
+                    </span>
                   </div>
                 </article>
               ))}

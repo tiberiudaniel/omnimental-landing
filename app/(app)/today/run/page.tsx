@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { track } from "@/lib/telemetry/track";
 import { useProfile } from "@/components/ProfileProvider";
@@ -16,7 +16,7 @@ import { AppShell } from "@/components/AppShell";
 import { useNavigationLinks } from "@/components/useNavigationLinks";
 import { getWowLessonDefinition, resolveTraitPrimaryForModule } from "@/config/wowLessonsV2";
 import WowLessonShell, { type WowCompletionPayload } from "@/components/wow/WowLessonShell";
-import type { StoredTodayPlan } from "@/lib/todayPlanStorage";
+import type { StoredInitiationBlock, StoredTodayPlan } from "@/lib/todayPlanStorage";
 import { recordSessionTelemetry } from "@/lib/telemetry";
 import { isGuidedDayOneLane } from "@/lib/guidedDayOne";
 import { buildPlanKpiEvent } from "@/lib/sessionTelemetry";
@@ -25,6 +25,42 @@ import { useUserAccessTier } from "@/components/useUserAccessTier";
 import { resolveInitiationLesson } from "@/lib/content/resolveLessonToExistingContent";
 import type { LessonId } from "@/lib/taxonomy/types";
 import { completeInitiationRunFromPlan } from "@/lib/today/completeInitiationRun";
+import {
+  clearInitiationRunState,
+  readInitiationRunState,
+  saveInitiationRunState,
+  type InitiationRunState,
+  type RecallResponse,
+} from "@/lib/today/initiationRunState";
+import InitiationRecallBlock from "@/components/today/InitiationRecallBlock";
+import type { RecallBlock } from "@/lib/initiations/buildRecallBlock";
+
+const deriveCoreLessonId = (plan: StoredTodayPlan | null): LessonId | null => {
+  if (!plan) return null;
+  const fromBlocks = plan.initiationBlocks?.find(
+    (block): block is StoredInitiationBlock & { lessonId: LessonId } =>
+      block.kind === "core_lesson" && Boolean(block.lessonId),
+  );
+  if (fromBlocks?.lessonId) {
+    return fromBlocks.lessonId as LessonId;
+  }
+  if (plan.initiationLessonIds?.length) {
+    return plan.initiationLessonIds[0] as LessonId;
+  }
+  return null;
+};
+
+type LessonRuntimeBlock = {
+  kind: "core_lesson" | "elective_practice";
+  lesson: ReturnType<typeof resolveInitiationLesson>;
+};
+
+type RecallRuntimeBlock = {
+  kind: "recall";
+  prompt: RecallBlock;
+};
+
+type RuntimeBlock = LessonRuntimeBlock | RecallRuntimeBlock;
 
 function TodayRunPageInner() {
   const router = useRouter();
@@ -34,21 +70,99 @@ function TodayRunPageInner() {
   const { membershipTier } = useUserAccessTier();
   const [menuOpen, setMenuOpen] = useState(false);
   const [completedToday, setCompletedToday] = useState(false);
-  const [todayModuleKey, setTodayModuleKey] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
-  const [storedPlan, setStoredPlan] = useState<StoredTodayPlan | null>(null);
-  const [forcedLessonId, setForcedLessonId] = useState<string | null>(null);
-  const [initiationResolutionError, setInitiationResolutionError] = useState<string | null>(null);
-  const runModuleId = useMemo(() => {
-    if (storedPlan?.moduleId) return storedPlan.moduleId;
-    return todayModuleKey;
-  }, [storedPlan?.moduleId, todayModuleKey]);
-  const forcedModuleConfig = useMemo(() => {
+  const [storedPlan, setStoredPlan] = useState<StoredTodayPlan | null>(() => readTodayPlan());
+  const [runState, setRunState] = useState<InitiationRunState | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const plan = readTodayPlan();
+      if (!plan?.runId) return null;
+      const existing = readInitiationRunState(plan.runId);
+      if (existing) {
+        return {
+          runId: existing.runId,
+          blockIndex: existing.blockIndex ?? 0,
+          completed: existing.completed ?? {},
+          responses: existing.responses ?? undefined,
+        };
+      }
+      const initialState: InitiationRunState = {
+        runId: plan.runId,
+        blockIndex: 0,
+        completed: {},
+      };
+      saveInitiationRunState(initialState);
+      return initialState;
+    } catch {
+      return null;
+    }
+  });
+  const initiationPlanResolution = useMemo(() => {
+    const fallbackModule = storedPlan?.moduleId ?? getTodayModuleKey();
+    let moduleKey = fallbackModule;
+    let moduleError: string | null = null;
+    if (storedPlan?.worldId === "INITIATION") {
+      const coreLessonId = deriveCoreLessonId(storedPlan);
+      if (coreLessonId) {
+        try {
+          const lesson = resolveInitiationLesson(coreLessonId);
+          moduleKey = lesson.refId;
+        } catch (error) {
+          console.warn("[today/run] failed to resolve initiation lesson", error);
+          moduleError = `Failed to resolve core lesson: ${String(error)}`;
+          moduleKey = fallbackModule;
+        }
+      } else {
+        moduleError = "Missing initiation core lesson in stored plan";
+        moduleKey = fallbackModule;
+      }
+    } else if (storedPlan?.moduleId) {
+      moduleKey = storedPlan.moduleId;
+    } else {
+      moduleKey = getTodayModuleKey();
+    }
+    let blocks: RuntimeBlock[] | null = null;
+    let blockError: string | null = null;
+    if (storedPlan?.worldId === "INITIATION") {
+      const storedBlocks = storedPlan.initiationBlocks ?? null;
+      if (storedBlocks?.length) {
+        try {
+          const resolvedBlocks = storedBlocks
+            .map((block) => {
+              if ((block.kind === "core_lesson" || block.kind === "elective_practice") && block.lessonId) {
+                const lesson = resolveInitiationLesson(block.lessonId as LessonId);
+                return { kind: block.kind, lesson } as LessonRuntimeBlock;
+              }
+              if (block.kind === "recall" && block.prompt) {
+                return { kind: "recall", prompt: block.prompt } as RecallRuntimeBlock;
+              }
+              return null;
+            })
+            .filter((entry): entry is RuntimeBlock => Boolean(entry));
+          if (resolvedBlocks.length) {
+            blocks = resolvedBlocks;
+          }
+        } catch (error) {
+          console.warn("[today/run] failed to resolve initiation blocks", error);
+          blockError = `Failed to resolve initiation blocks: ${String(error)}`;
+        }
+      }
+    }
+    return {
+      moduleKey,
+      blocks,
+      error: blockError ?? moduleError,
+    };
+  }, [storedPlan]);
+  const initiationBlocks = initiationPlanResolution.blocks;
+  const baseTodayModuleKey = initiationPlanResolution.moduleKey;
+  const initiationResolutionError = initiationPlanResolution.error;
+  const legacyForcedModuleConfig = useMemo(() => {
     if (!storedPlan || storedPlan.worldId !== "INITIATION") return null;
-    const lessonId = storedPlan.initiationLessonIds?.[0];
+    const lessonId = deriveCoreLessonId(storedPlan);
     if (!lessonId) return null;
     try {
-      const lesson = resolveInitiationLesson(lessonId as LessonId);
+      const lesson = resolveInitiationLesson(lessonId);
       return {
         moduleKey: lesson.refId,
         cluster: lesson.meta.cluster,
@@ -59,6 +173,7 @@ function TodayRunPageInner() {
     }
   }, [storedPlan]);
   const runStartLoggedRef = useRef(false);
+  const runCompletionTriggeredRef = useRef(false);
   const runModeParam = searchParams.get("mode");
   const runSourceParam = searchParams.get("source");
   const laneParam = (searchParams.get("lane") ?? "").toLowerCase();
@@ -72,44 +187,58 @@ function TodayRunPageInner() {
   const isExtraRound = roundParam === "extra";
   const axisParam = searchParams.get("axis");
   const clusterParam = searchParams.get("cluster");
-  const debugFlagEnv = (process.env.NEXT_PUBLIC_TODAY_RUN_DEBUG || "").toLowerCase();
-  const debugParamEnabled = (searchParams.get("debug") ?? "").toLowerCase() === "1";
-  const debugEnabled = debugParamEnabled || debugFlagEnv === "1" || debugFlagEnv === "true";
-  const forceDailyRunner = guidedLaneActive;
   const cookieE2E = useMemo(() => {
     if (typeof document === "undefined") return false;
     return document.cookie.split(";").some((entry) => entry.trim().startsWith("omni_e2e=1"));
   }, []);
   const e2eMode = (searchParams.get("e2e") ?? "").toLowerCase() === "1" || cookieE2E;
+  const debugFlagEnv = (process.env.NEXT_PUBLIC_TODAY_RUN_DEBUG || "").toLowerCase();
+  const debugParamEnabled = (searchParams.get("debug") ?? "").toLowerCase() === "1";
+  const debugEnabled = debugParamEnabled || debugFlagEnv === "1" || debugFlagEnv === "true";
+  const blockDebugEnabled = debugEnabled || e2eMode;
+  const forceDailyRunner = guidedLaneActive;
+  const firstLessonBlock = useMemo(() => {
+    if (!initiationBlocks?.length) return null;
+    return (
+      initiationBlocks.find(
+        (block): block is LessonRuntimeBlock =>
+          block.kind === "core_lesson" || block.kind === "elective_practice",
+      ) ?? null
+    );
+  }, [initiationBlocks]);
+  const usingInitiationBlocks = Boolean(initiationBlocks?.length && storedPlan?.worldId === "INITIATION");
+  const activeBlock =
+    usingInitiationBlocks && runState && initiationBlocks
+      ? initiationBlocks[Math.min(runState.blockIndex, initiationBlocks.length - 1)] ?? null
+      : null;
+  const activeLessonBlock =
+    activeBlock && (activeBlock.kind === "core_lesson" || activeBlock.kind === "elective_practice") ? activeBlock : null;
+  const activeRecallBlock = activeBlock && activeBlock.kind === "recall" ? activeBlock : null;
+  const todayModuleKey = activeLessonBlock ? activeLessonBlock.lesson.refId : baseTodayModuleKey;
+  const runModuleId = storedPlan?.moduleId ?? todayModuleKey;
+  const sentinelLessonId = useMemo(() => {
+    if (activeLessonBlock) return activeLessonBlock.lesson.meta.lessonId;
+    if (firstLessonBlock) return firstLessonBlock.lesson.meta.lessonId;
+    const fallbackLesson = deriveCoreLessonId(storedPlan ?? null);
+    if (fallbackLesson) return fallbackLesson;
+    if (usingInitiationBlocks) return "NO_ACTIVE";
+    return legacyForcedModuleConfig?.moduleKey ?? "NO_PLAN";
+  }, [activeLessonBlock, firstLessonBlock, storedPlan, usingInitiationBlocks, legacyForcedModuleConfig]);
+  const sentinelElement = e2eMode ? (
+    <div data-testid="initiation-forced-module" className="sr-only">
+      {sentinelLessonId}
+    </div>
+  ) : null;
+  useEffect(() => {
+    runCompletionTriggeredRef.current = false;
+  }, [storedPlan?.runId]);
   useEffect(() => {
     if (typeof window === "undefined") return;
     let alive = true;
     const timeout = window.setTimeout(() => {
       if (!alive) return;
       setCompletedToday(hasCompletedToday());
-      const plan = readTodayPlan();
-      setStoredPlan(plan);
-      if (plan?.worldId === "INITIATION" && plan.initiationLessonIds?.length) {
-        const coreLessonId = plan.initiationLessonIds[0] as LessonId;
-        setForcedLessonId(coreLessonId);
-        try {
-          const lesson = resolveInitiationLesson(coreLessonId);
-          setTodayModuleKey(lesson.refId);
-          setInitiationResolutionError(null);
-        } catch (error) {
-          console.warn("[today/run] failed to resolve initiation lesson", error);
-          setInitiationResolutionError(`Failed to resolve core lesson: ${String(error)}`);
-          setTodayModuleKey(plan.moduleId ?? getTodayModuleKey());
-        }
-      } else if (plan?.moduleId) {
-        setTodayModuleKey(plan.moduleId);
-        setInitiationResolutionError(null);
-        setForcedLessonId(null);
-      } else {
-        setTodayModuleKey(getTodayModuleKey());
-        setInitiationResolutionError(null);
-        setForcedLessonId(null);
-      }
+      setStoredPlan(readTodayPlan());
       setInitialized(true);
     }, 0);
     return () => {
@@ -117,6 +246,53 @@ function TodayRunPageInner() {
       window.clearTimeout(timeout);
     };
   }, [e2eMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    let timeout: number | null = null;
+    const schedule = (fn: () => void) => {
+      if (typeof queueMicrotask === "function") {
+        queueMicrotask(() => {
+          if (!cancelled) fn();
+        });
+        return;
+      }
+      timeout = window.setTimeout(() => {
+        if (!cancelled) fn();
+      }, 0);
+    };
+    schedule(() => {
+      if (!storedPlan?.runId) {
+        setRunState(null);
+        return;
+      }
+      const existing = readInitiationRunState(storedPlan.runId);
+      if (!existing) {
+        const initialState: InitiationRunState = {
+          runId: storedPlan.runId,
+          blockIndex: 0,
+          completed: {},
+        };
+        setRunState(initialState);
+        saveInitiationRunState(initialState);
+        return;
+      }
+      const normalizedState: InitiationRunState = {
+        runId: existing.runId,
+        blockIndex: existing.blockIndex ?? 0,
+        completed: existing.completed ?? {},
+        responses: existing.responses ?? undefined,
+      };
+      setRunState(normalizedState);
+    });
+    return () => {
+      cancelled = true;
+      if (timeout !== null) {
+        window.clearTimeout(timeout);
+      }
+    };
+  }, [storedPlan?.runId]);
 
   const isBlocked = Boolean(
     membershipTier === "free" && completedToday && !isExtraRound && !e2eMode,
@@ -154,22 +330,19 @@ function TodayRunPageInner() {
   };
 
   const completionSource = forceDailyRunner ? "guided_day1" : e2eMode ? "today_e2e" : "today_run";
-  const navigateToSessionComplete = useCallback(
-    (extras?: { module?: string | null }) => {
-      const params = new URLSearchParams({ source: completionSource });
-      if (extras?.module) {
-        params.set("module", extras.module);
-      }
-      if (forceDailyRunner) {
-        params.set("lane", "guided_day1");
-      }
-      if (e2eMode) {
-        params.set("e2e", "1");
-      }
-      router.push(`/session/complete?${params.toString()}`);
-    },
-    [completionSource, e2eMode, router, forceDailyRunner],
-  );
+  const navigateToSessionComplete = (extras?: { module?: string | null }) => {
+    const params = new URLSearchParams({ source: completionSource });
+    if (extras?.module) {
+      params.set("module", extras.module);
+    }
+    if (forceDailyRunner) {
+      params.set("lane", "guided_day1");
+    }
+    if (e2eMode) {
+      params.set("e2e", "1");
+    }
+    router.push(`/session/complete?${params.toString()}`);
+  };
 
   const showInitiationResolutionBanner = Boolean(
     initiationResolutionError && (process.env.NODE_ENV !== "production" || e2eMode),
@@ -179,6 +352,7 @@ function TodayRunPageInner() {
     markDailyCompletion(moduleKey ?? null);
     track("daily_run_completed", { moduleKey });
     const plan = readTodayPlan();
+    clearInitiationRunState(plan?.runId ?? null);
     completeInitiationRunFromPlan(plan, profile?.id ?? null);
     if (profile?.id && plan?.arcId) {
       try {
@@ -191,10 +365,11 @@ function TodayRunPageInner() {
   };
 
   const handleCompleted = async (_configId?: string | null, moduleKey?: string | null) => {
-    await finalizeCompletion(moduleKey ?? null);
-    track("daily_run_completed_redirect", { moduleKey: moduleKey ?? null });
-    logRunCompleted(moduleKey ?? null);
-    navigateToSessionComplete({ module: moduleKey ?? runModuleId ?? null });
+    const targetModule = moduleKey ?? runModuleId ?? null;
+    await finalizeCompletion(targetModule);
+    track("daily_run_completed_redirect", { moduleKey: targetModule });
+    logRunCompleted(targetModule);
+    navigateToSessionComplete({ module: targetModule });
   };
 
   const handleWowComplete = async (payload: WowCompletionPayload) => {
@@ -231,6 +406,7 @@ function TodayRunPageInner() {
       } catch (error) {
         console.warn("recordSessionTelemetry failed", error);
       }
+      const xpAmount = lessonMode === "short" ? 2 : 10;
       const moduleTraitPrimary = resolveTraitPrimaryForModule(plan?.moduleId ?? null, plan?.traitPrimary);
       if (moduleTraitPrimary) {
         try {
@@ -256,6 +432,62 @@ function TodayRunPageInner() {
     await finalizeCompletion(completedModule);
     logRunCompleted(completedModule);
     navigateToSessionComplete({ module: completedModule });
+  };
+
+  const finalizeRunFromBlocks = (moduleKey?: string | null) => {
+    if (runCompletionTriggeredRef.current) return;
+    runCompletionTriggeredRef.current = true;
+    if (storedPlan?.runId) {
+      clearInitiationRunState(storedPlan.runId);
+    }
+    setRunState(null);
+    void handleCompleted(null, moduleKey ?? storedPlan?.moduleId ?? runModuleId ?? null);
+  };
+
+  const handleLessonBlockCompletion = (block: LessonRuntimeBlock, moduleKeyOverride?: string | null) => {
+    if (!runState || !initiationBlocks?.length || !storedPlan?.runId) return;
+    const completed = {
+      ...runState.completed,
+      [block.kind === "core_lesson" ? "core" : "elective"]: true,
+    };
+    const nextIndex = runState.blockIndex + 1;
+    const moduleKey = moduleKeyOverride ?? block.lesson.refId;
+    if (nextIndex >= initiationBlocks.length) {
+      finalizeRunFromBlocks(moduleKey);
+      return;
+    }
+    const nextState: InitiationRunState = {
+      runId: storedPlan.runId,
+      blockIndex: nextIndex,
+      completed,
+      responses: runState.responses ?? undefined,
+    };
+    setRunState(nextState);
+    saveInitiationRunState(nextState);
+  };
+
+  const handleRecallComplete = (payload: RecallResponse) => {
+    if (!runState || !initiationBlocks?.length || !storedPlan?.runId) return;
+    const nextIndex = runState.blockIndex + 1;
+    const completed = { ...runState.completed, recall: true };
+    const responses = { ...(runState.responses ?? {}), [payload.promptId]: payload };
+    if (nextIndex >= initiationBlocks.length) {
+      finalizeRunFromBlocks(storedPlan.moduleId ?? runModuleId ?? null);
+      return;
+    }
+    const nextState: InitiationRunState = {
+      runId: storedPlan.runId,
+      blockIndex: nextIndex,
+      completed,
+      responses,
+    };
+    setRunState(nextState);
+    saveInitiationRunState(nextState);
+  };
+
+  const handleDebugAdvanceBlock = () => {
+    if (!activeLessonBlock) return;
+    handleLessonBlockCompletion(activeLessonBlock, activeLessonBlock.lesson.refId);
   };
 
   const handleBackToToday = () => {
@@ -342,12 +574,10 @@ function TodayRunPageInner() {
     wowLesson,
   ]);
 
+  let branchContent: React.ReactNode = null;
   if (simulateTodayRun) {
-    return (
-      <>
-        {renderDebugBanner()}
-        {guidedLaneBadge}
-        <main
+    branchContent = (
+      <main
         className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--omni-bg-main)] px-4 py-10 text-[var(--omni-ink)]"
         data-testid="today-run-e2e"
       >
@@ -359,98 +589,167 @@ function TodayRunPageInner() {
         >
           Finalizează sesiunea
         </Link>
-        </main>
-      </>
+      </main>
     );
-  }
-
-  if (!initialized && !simulateTodayRun) {
-    return null;
-  }
-
-  const xpTrait = wowLesson?.traitPrimary ?? storedPlan?.traitPrimary ?? null;
-  const xpAmount = lessonMode === "short" ? 2 : 10;
-  const xpLabel = xpTrait ? `+${xpAmount} XP ${getTraitLabel(xpTrait)}` : `+${xpAmount} XP`;
-
-  if (wowLesson && !isBlocked) {
-    return (
-      <>
-        {renderDebugBanner()}
-        {guidedLaneBadge}
+  } else if (!initialized) {
+    branchContent = (
+      <div className="px-4 py-10 text-center text-sm text-[var(--omni-muted)]">Se pregătește sesiunea…</div>
+    );
+  } else if (usingInitiationBlocks) {
+    if (!runState || !activeBlock) {
+      branchContent = (
+        <>
+          {showInitiationResolutionBanner ? (
+            <div
+              data-testid="initiation-resolution-failed"
+              className="mx-4 my-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            >
+              {initiationResolutionError ?? "Failed to resolve initiation plan."}
+            </div>
+          ) : null}
+          <div className="px-4 py-10 text-center text-sm text-[var(--omni-muted)]">Se pregătește planul de inițiere…</div>
+        </>
+      );
+    } else {
+      const forcedConfig =
+        activeLessonBlock != null
+          ? { moduleKey: activeLessonBlock.lesson.refId, cluster: activeLessonBlock.lesson.meta.cluster }
+          : legacyForcedModuleConfig;
+      const lessonRunnerHandler =
+        activeLessonBlock != null
+          ? (configId?: string | null, moduleKey?: string | null) =>
+              handleLessonBlockCompletion(activeLessonBlock, moduleKey ?? activeLessonBlock.lesson.refId)
+          : handleCompleted;
+      const runnerOnComplete = activeLessonBlock ? lessonRunnerHandler : handleCompleted;
+      branchContent = (
+        <>
+          {showInitiationResolutionBanner ? (
+            <div
+              data-testid="initiation-resolution-failed"
+              className="mx-4 my-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            >
+              {initiationResolutionError ?? "Failed to resolve initiation plan."}
+            </div>
+          ) : null}
+          {blockDebugEnabled && activeLessonBlock ? (
+            <div className="mx-4 my-2 flex justify-end">
+              <button
+                type="button"
+                className="rounded-full border border-[var(--omni-border-soft)] px-3 py-1 text-xs uppercase tracking-[0.25em] text-[var(--omni-muted)] transition hover:border-[var(--omni-ink)]/60"
+                onClick={handleDebugAdvanceBlock}
+                data-testid="initiation-block-debug-complete"
+              >
+                Marchează blocul finalizat
+              </button>
+            </div>
+          ) : null}
+          {activeLessonBlock ? (
+            <DailyPathRunner
+              onCompleted={runnerOnComplete}
+              todayModuleKey={activeLessonBlock.lesson.refId}
+              forcedModuleConfig={forcedConfig}
+            />
+          ) : activeRecallBlock ? (
+            <InitiationRecallBlock prompt={activeRecallBlock.prompt} onComplete={handleRecallComplete} />
+          ) : null}
+        </>
+      );
+    }
+  } else {
+    const xpTrait = wowLesson?.traitPrimary ?? storedPlan?.traitPrimary ?? null;
+    const xpAmount = lessonMode === "short" ? 2 : 10;
+    const xpLabel = xpTrait ? `+${xpAmount} XP ${getTraitLabel(xpTrait)}` : `+${xpAmount} XP`;
+    if (wowLesson && !isBlocked) {
+      branchContent = (
         <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-8">
-        <div className="mx-auto max-w-3xl">
-          <WowLessonShell
-            lesson={wowLesson}
-            sessionType="daily"
-            xpRewardLabel={xpLabel}
-            onComplete={handleWowComplete}
-            mode={lessonMode === "short" ? "short" : "full"}
-          />
+          <div className="mx-auto max-w-3xl">
+            <WowLessonShell
+              lesson={wowLesson}
+              sessionType="daily"
+              xpRewardLabel={xpLabel}
+              onComplete={handleWowComplete}
+              mode={lessonMode === "short" ? "short" : "full"}
+            />
+          </div>
         </div>
-        </div>
-      </>
-    );
-  }
-
-  if (isBlocked) {
-    const header = (
-      <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => router.push("/auth?returnTo=%2Ftoday")} />
-    );
-    return (
-      <>
-        {renderDebugBanner()}
-        {guidedLaneBadge}
-        <AppShell header={header}>
-          <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-xl rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
-              <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Limită zilnică</p>
-              <h1 className="mt-3 text-2xl font-semibold">Ai completat sesiunea de azi</h1>
-              <p className="mt-3 text-sm text-[var(--omni-ink)]/80">
-                Ai făcut deja sesiunea zilnică azi. Poți debloca încă o rundă trecând prin Earn Gate sau activând OmniMental Premium.
-              </p>
-              <div className="mt-6 flex flex-col gap-3">
-                <OmniCtaButton className="justify-center" onClick={handleEarnGateRedirect}>
-                  Deblochează încă o rundă
-                </OmniCtaButton>
-                <OmniCtaButton className="justify-center" variant="neutral" onClick={handleBackToToday}>
-                  Înapoi la Today
-                </OmniCtaButton>
-                <OmniCtaButton as="link" href="/upgrade" variant="secondary" className="justify-center">
-                  Activează Premium
-                </OmniCtaButton>
+      );
+    } else if (isBlocked) {
+      const header = (
+        <SiteHeader showMenu onMenuToggle={() => setMenuOpen(true)} onAuthRequest={() => router.push("/auth?returnTo=%2Ftoday")} />
+      );
+      branchContent = (
+        <>
+          <AppShell header={header}>
+            <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-12 text-[var(--omni-ink)] sm:px-6 lg:px-8">
+              <div className="mx-auto max-w-xl rounded-[28px] border border-[var(--omni-border-soft)] bg-[var(--omni-bg-paper)] px-6 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
+                <p className="text-xs uppercase tracking-[0.35em] text-[var(--omni-muted)]">Limită zilnică</p>
+                <h1 className="mt-3 text-2xl font-semibold">Ai completat sesiunea de azi</h1>
+                <p className="mt-3 text-sm text-[var(--omni-ink)]/80">
+                  Ai făcut deja sesiunea zilnică azi. Poți debloca încă o rundă trecând prin Earn Gate sau activând OmniMental Premium.
+                </p>
+                <div className="mt-6 flex flex-col gap-3">
+                  <OmniCtaButton className="justify-center" onClick={handleEarnGateRedirect}>
+                    Deblochează încă o rundă
+                  </OmniCtaButton>
+                  <OmniCtaButton className="justify-center" variant="neutral" onClick={handleBackToToday}>
+                    Înapoi la Today
+                  </OmniCtaButton>
+                  <OmniCtaButton as="link" href="/upgrade" variant="secondary" className="justify-center">
+                    Activează Premium
+                  </OmniCtaButton>
+                </div>
               </div>
             </div>
-          </div>
-        </AppShell>
-        <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
-      </>
-    );
+          </AppShell>
+          <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+        </>
+      );
+    } else {
+      branchContent = (
+        <>
+          {showInitiationResolutionBanner ? (
+            <div
+              data-testid="initiation-resolution-failed"
+              className="mx-4 my-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            >
+              {initiationResolutionError ?? "Failed to resolve initiation plan."}
+            </div>
+          ) : null}
+          <DailyPathRunner
+            onCompleted={handleCompleted}
+            todayModuleKey={todayModuleKey}
+            forcedModuleConfig={legacyForcedModuleConfig}
+          />
+        </>
+      );
+    }
   }
 
   return (
-    <>
+    <div data-testid="today-run-root">
       {renderDebugBanner()}
       {guidedLaneBadge}
-      {showInitiationResolutionBanner ? (
-        <div
-          data-testid="initiation-resolution-failed"
-          className="mx-4 my-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-        >
-          {initiationResolutionError ?? "Failed to resolve initiation plan."}
+      {sentinelElement ?? (
+        <div data-testid="initiation-forced-module" className="sr-only">
+          NO_PLAN
         </div>
-      ) : null}
-      <DailyPathRunner
-        onCompleted={handleCompleted}
-        todayModuleKey={todayModuleKey}
-        forcedModuleConfig={forcedModuleConfig}
-      />
-    </>
+      )}
+      {branchContent}
+    </div>
   );
 }
 
 export default function TodayRunPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[var(--omni-bg-main)]" />}>
+    <Suspense
+      fallback={
+        <div data-testid="today-run-root" className="min-h-screen bg-[var(--omni-bg-main)]">
+          <div data-testid="initiation-forced-module" className="sr-only">
+            { "NO_PLAN" }
+          </div>
+        </div>
+      }
+    >
       <TodayRunPageInner />
     </Suspense>
   );

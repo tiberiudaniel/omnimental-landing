@@ -23,7 +23,7 @@ test("initiation plan forces module key on today run", async ({ page }) => {
     mode: "initiation",
     initiationModuleId: "init_clarity_foundations",
     initiationLessonIds: ["clarity_01_illusion_of_clarity"],
-    schemaVersion: "initiation_v1",
+    schemaVersion: "initiation_v2_blocks",
   };
   await page.addInitScript(({ storedPlan }) => {
     try {

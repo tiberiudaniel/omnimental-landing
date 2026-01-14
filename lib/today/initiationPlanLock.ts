@@ -1,4 +1,4 @@
-import { readTodayPlan, clearTodayPlan, type StoredTodayPlan } from "@/lib/todayPlanStorage";
+import { readTodayPlan, clearTodayPlan, type StoredTodayPlan, type StoredInitiationBlock } from "@/lib/todayPlanStorage";
 import { resolveInitiationLesson } from "@/lib/content/resolveLessonToExistingContent";
 import type { LessonId, ModuleId, WorldId } from "@/lib/taxonomy/types";
 import type { MindpacingFallbackReason } from "@/lib/mindpacing/moduleMapping";
@@ -46,9 +46,13 @@ const isStoredPlanReusable = (
 ): storedPlan is StoredTodayPlan & {
   initiationModuleId: ModuleId;
   initiationLessonIds: LessonId[];
+  initiationBlocks: StoredInitiationBlock[];
   runId: string;
 } => {
   const storedTag = storedPlan.mindpacingTag ?? null;
+  const hasCoreBlock = Array.isArray(storedPlan.initiationBlocks)
+    ? storedPlan.initiationBlocks.some((block) => block.kind === "core_lesson" && Boolean(block.lessonId))
+    : false;
   return (
     storedPlan.todayKey === todayKey &&
     storedPlan.worldId === INITIATION_WORLD &&
@@ -56,6 +60,8 @@ const isStoredPlanReusable = (
     Boolean(storedPlan.initiationModuleId) &&
     Array.isArray(storedPlan.initiationLessonIds) &&
     storedPlan.initiationLessonIds.length > 0 &&
+    hasCoreBlock &&
+    Array.isArray(storedPlan.initiationBlocks) &&
     Boolean(storedPlan.runId) &&
     storedTag === mindpacingTag
   );
@@ -79,20 +85,49 @@ export function resolveInitiationPlanLock(
     return { status: "rebuild", runId: deps.generateRunId() };
   }
   try {
-    const lessons = storedPlan.initiationLessonIds.map((lessonId) =>
-      deps.resolveLesson(lessonId as LessonId),
-    );
+    const blockLessons: ReturnType<typeof deps.resolveLesson>[] = [];
+    const planBlocks: InitiationSessionPlanResult["blocks"] = [];
+    for (const block of storedPlan.initiationBlocks ?? []) {
+      if (block.kind === "core_lesson" && block.lessonId) {
+        const lesson = deps.resolveLesson(block.lessonId as LessonId);
+        planBlocks.push({ kind: "core", lesson });
+        blockLessons.push(lesson);
+      } else if (block.kind === "elective_practice" && block.lessonId) {
+        const lesson = deps.resolveLesson(block.lessonId as LessonId);
+        const blockReason = "reason" in block ? block.reason : undefined;
+        planBlocks.push({
+          kind: "elective",
+          lesson,
+          reason: blockReason ?? storedPlan.initiationElectiveReason ?? "module_pool",
+        });
+        blockLessons.push(lesson);
+      } else if (block.kind === "recall" && block.prompt) {
+        planBlocks.push({ kind: "recall", prompt: block.prompt });
+      }
+    }
+    const lessons =
+      blockLessons.length > 0
+        ? blockLessons
+        : storedPlan.initiationLessonIds.map((lessonId) => deps.resolveLesson(lessonId as LessonId));
+    const derivedLessonIds =
+      blockLessons.length > 0
+        ? (blockLessons.map((lesson) => lesson.meta.lessonId) as LessonId[])
+        : (storedPlan.initiationLessonIds as LessonId[]);
+    const recallPromptId =
+      planBlocks.find((block) => block.kind === "recall")?.prompt.promptId ??
+      storedPlan.initiationRecallPromptId ??
+      null;
     return {
       status: "reused",
       runId: storedPlan.runId,
       planResult: {
         plan: undefined,
         lessons,
-        blocks: [],
+        blocks: planBlocks,
         initiation: {
           moduleId: storedPlan.initiationModuleId,
-          lessonIds: (storedPlan.initiationLessonIds ?? []) as LessonId[],
-          recallPromptId: storedPlan.initiationRecallPromptId ?? null,
+          lessonIds: derivedLessonIds,
+          recallPromptId,
           electiveReason: storedPlan.initiationElectiveReason ?? undefined,
         },
         debug: {

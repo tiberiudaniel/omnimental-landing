@@ -17,6 +17,7 @@ const basePlan: StoredTodayPlan = {
   mode: "initiation",
   initiationModuleId: MODULE_ID,
   initiationLessonIds: [LESSON_ID],
+  initiationBlocks: [{ kind: "core_lesson", lessonId: LESSON_ID }],
   mindpacingTag: "focus",
 };
 

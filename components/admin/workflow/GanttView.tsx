@@ -1,7 +1,7 @@
 "use client";
 
 import type { WorkflowTask } from "@/lib/workflow/types";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 type Props = {
   tasks: WorkflowTask[];
@@ -12,9 +12,10 @@ type Props = {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const GanttView = ({ tasks, criticalPath, scheduleConflicts }: Props) => {
+  const [emptyBase] = useState(() => Date.now());
   const timeline = useMemo(() => {
     if (!tasks.length) {
-      return { base: Date.now(), span: DAY_MS, rows: [] as Array<{ task: WorkflowTask; offset: number; width: number }> };
+      return { base: emptyBase, span: DAY_MS, rows: [] as Array<{ task: WorkflowTask; offset: number; width: number }> };
     }
     const starts = tasks.map((task) => Date.parse(task.start));
     const ends = tasks.map((task) => Date.parse(task.start) + Math.max(1, task.durationDays) * DAY_MS);
@@ -26,7 +27,7 @@ const GanttView = ({ tasks, criticalPath, scheduleConflicts }: Props) => {
       return { task, offset, width };
     });
     return { base, span, rows };
-  }, [tasks]);
+  }, [tasks, emptyBase]);
 
   return (
     <div className="rounded-3xl border border-[var(--workflow-border,#2C1A14)] bg-[var(--workflow-surface,#1a100d)] p-4">

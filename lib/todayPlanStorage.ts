@@ -1,8 +1,15 @@
 import type { CanonDomainId, CatAxisId } from "@/lib/profileEngine";
 import type { LessonId, ModuleId, WorldId } from "@/lib/taxonomy/types";
+import type { RecallBlock } from "@/lib/initiations/buildRecallBlock";
 
 const STORAGE_KEY = "omnimental:todayPlanV2";
-const SCHEMA_VERSION = "initiation_v1";
+const SCHEMA_VERSION = "initiation_v2_blocks";
+
+export type StoredInitiationBlock =
+  | { kind: "core_lesson"; lessonId: LessonId }
+  | { kind: "elective_practice"; lessonId: LessonId | null; reason?: string | null }
+  | { kind: "recall"; prompt: RecallBlock }
+  | { kind: string; lessonId?: LessonId | null; prompt?: RecallBlock | null };
 
 export type StoredTodayPlan = {
   arcId: string | null;
@@ -14,6 +21,7 @@ export type StoredTodayPlan = {
   canonDomain?: CanonDomainId;
   initiationModuleId?: ModuleId | null;
   initiationLessonIds?: LessonId[];
+  initiationBlocks?: StoredInitiationBlock[];
   initiationRecallPromptId?: string | null;
   initiationElectiveReason?: string | null;
   todayKey: string;

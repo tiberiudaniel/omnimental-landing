@@ -58,7 +58,7 @@ test("legacy key migrates when accessed in browser context", () => {
       localStorage: localStorageMock,
       dispatchEvent: () => true,
     } as unknown) as Window & typeof globalThis);
-  const originalLocalStorage = workingWindow.localStorage;
+  const originalGlobalLocalStorage = globalThis.localStorage;
   const originalDispatchEvent = workingWindow.dispatchEvent;
   const dispatchEventMock: typeof workingWindow.dispatchEvent = (event: Event) => {
     void event;
@@ -70,6 +70,7 @@ test("legacy key migrates when accessed in browser context", () => {
     dispatchEvent: dispatchEventMock,
   } as Window & typeof globalThis;
   globalWithWindow.window = patchedWindow;
+  (globalThis as { localStorage: Storage }).localStorage = localStorageMock;
   const legacyPayload = JSON.stringify({
     moduleId: MODULE_B,
     completedLessonIds: ["focus_energy_01_energy_not_motivation"],
@@ -78,10 +79,10 @@ test("legacy key migrates when accessed in browser context", () => {
   const state = readInitiationProgressState("legacy-user");
   assert.equal(state?.moduleId, MODULE_B);
   if (originalWindow) {
-    originalWindow.localStorage = originalLocalStorage;
     originalWindow.dispatchEvent = originalDispatchEvent;
     globalWithWindow.window = originalWindow;
   } else {
     delete globalWithWindow.window;
   }
+  (globalThis as { localStorage: Storage }).localStorage = originalGlobalLocalStorage;
 });

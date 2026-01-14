@@ -33,10 +33,22 @@ const TaskDetailsPanel = ({
   const tasksById = useMemo(() => new Map(tasks.map((item) => [item.id, item])), [tasks]);
 
   useEffect(() => {
-    if (task) {
+    if (!task) return;
+    let timeout: number | null = null;
+    const schedule = () => {
       setDraft(task);
       setEditing(false);
+    };
+    if (typeof queueMicrotask === "function") {
+      queueMicrotask(schedule);
+    } else {
+      timeout = window.setTimeout(schedule, 0);
     }
+    return () => {
+      if (timeout !== null) {
+        window.clearTimeout(timeout);
+      }
+    };
   }, [task]);
 
   const prereqItems = useMemo(() => {

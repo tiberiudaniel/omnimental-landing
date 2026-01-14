@@ -24,7 +24,7 @@ import { getTodayKey } from "@/lib/time/todayKey";
 import { getTraitLabel, type CatAxisId } from "@/lib/profileEngine";
 import type { LessonId, ModuleId, SessionTemplateId, WorldId } from "@/lib/taxonomy/types";
 import { type SessionPlan } from "@/lib/sessionRecommenderEngine";
-import { clearTodayPlan, readTodayPlan, saveTodayPlan } from "@/lib/todayPlanStorage";
+import { clearTodayPlan, readTodayPlan, saveTodayPlan, type StoredInitiationBlock } from "@/lib/todayPlanStorage";
 import { getSensAiTodayPlan, hasFreeDailyLimit, type SensAiContext } from "@/lib/omniSensAI";
 import { useProgressFacts } from "@/components/useProgressFacts";
 import {
@@ -63,6 +63,7 @@ import {
 } from "@/lib/content/initiationRunHistory";
 import { useInitiationProgress } from "@/components/today/useInitiationProgress";
 import { resolveInitiationPlanLock } from "@/lib/today/initiationPlanLock";
+import { clearInitiationRunState } from "@/lib/today/initiationRunState";
 
 const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
 const GUIDED_ONBOARDING_KEY = "guided_onboarding_active";
@@ -84,6 +85,42 @@ const formatLessonLabel = (lessonId: string): string =>
     .split("_")
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" ");
+
+const mapBlocksToStored = (
+  blocks: InitiationSessionPlanResult["blocks"],
+): { stored: StoredInitiationBlock[]; unknownKinds: string[] } => {
+  const unknownKinds: string[] = [];
+  const stored = blocks.flatMap((block) => {
+    if (block.kind === "core") {
+      return { kind: "core_lesson", lessonId: block.lesson.meta.lessonId };
+    }
+    if (block.kind === "elective") {
+      return {
+        kind: "elective_practice",
+        lessonId: block.lesson.meta.lessonId,
+        reason: block.reason,
+      };
+    }
+    if (block.kind === "recall") {
+      return { kind: "recall", prompt: block.prompt };
+    }
+    const unknownKind = (block as { kind?: string }).kind ?? "unknown";
+    console.error("[TodayOrchestrator] Unknown initiation block kind:", block);
+    unknownKinds.push(unknownKind);
+    return [];
+  });
+  return { stored, unknownKinds };
+};
+
+const deriveLessonIdsFromBlocks = (blocks: StoredInitiationBlock[]): LessonId[] =>
+  blocks
+    .map((block) => {
+      if (block.kind === "core_lesson" || block.kind === "elective_practice") {
+        return block.lessonId ?? null;
+      }
+      return null;
+    })
+    .filter((lessonId): lessonId is LessonId => Boolean(lessonId));
 
 export default function TodayOrchestrator() {
   const router = useRouter();
@@ -135,6 +172,7 @@ export default function TodayOrchestrator() {
   const cameFromGuided = sourceParam === "guided";
   const e2eParamActive = (searchParams?.get("e2e") ?? "").toLowerCase() === "1";
   const e2eMode = e2eParamActive || isE2EMode();
+  const allowGuidedHardNav = e2eParamActive && normalizedSourceParam === "guided_day1";
   const [triedExtraToday, setTriedExtraTodayState] = useState(false);
   const [sessionPlan, setSessionPlan] = useState<SessionPlan | null>(null);
   const [planPersisted, setPlanPersisted] = useState(false);
@@ -142,8 +180,18 @@ export default function TodayOrchestrator() {
   const [sensAiCtx, setSensAiCtx] = useState<SensAiContext | null>(null);
   const [initiationPlanResult, setInitiationPlanResult] = useState<InitiationSessionPlanResult | null>(null);
   const [runId, setRunId] = useState<string | null>(null);
+  const mappedPlanBlocks = useMemo<{
+    stored: StoredInitiationBlock[] | undefined;
+    unknownKinds: string[];
+  }>(() => {
+    if (!initiationPlanResult?.blocks?.length) {
+      return { stored: undefined, unknownKinds: [] };
+    }
+    return mapBlocksToStored(initiationPlanResult.blocks);
+  }, [initiationPlanResult?.blocks]);
   const [guidedOnboardingActive, setGuidedOnboardingActive] = useState(false);
   const [dayOneEntryUnlocked, setDayOneEntryUnlocked] = useState(false);
+  const [hasStartedGuidedDay1, setHasStartedGuidedDay1] = useState(false);
   const totalDailySessionsCompleted = useMemo(() => getTotalDailySessionsCompleted(progressFacts), [progressFacts]);
   const totalActionsCompleted = useMemo(() => getTotalActionsCompleted(progressFacts), [progressFacts]);
   const wizardUnlocked = canAccessWizard(progressFacts);
@@ -170,15 +218,20 @@ export default function TodayOrchestrator() {
   const fallbackTrackedRef = useRef(false);
   const debugQueryActive = (searchParams?.get("debug") ?? "").toLowerCase() === "1";
   const showDebugUi = process.env.NODE_ENV !== "production" || e2eMode || debugQueryActive;
+  const unknownInitiationBlockKinds =
+    initiationPlanResult?.blocks?.length && mappedPlanBlocks.unknownKinds.length
+      ? mappedPlanBlocks.unknownKinds
+      : [];
   const handleResetInitiation = useCallback(() => {
     const uid = user?.uid ?? null;
     clearTodayPlan();
     clearInitiationProgress(uid);
     clearInitiationRunHistory(uid);
+    clearInitiationRunState(runId);
     setInitiationPlanResult(null);
     setRunId(null);
     fallbackTrackedRef.current = false;
-  }, [user?.uid]);
+  }, [user?.uid, runId]);
 
 
   useEffect(() => {
@@ -355,6 +408,8 @@ export default function TodayOrchestrator() {
       setPlanPersisted(false);
       return;
     }
+    const storedBlocks = mappedPlanBlocks.stored;
+    const lessonIdsFromBlocks = storedBlocks?.length ? deriveLessonIdsFromBlocks(storedBlocks) : undefined;
     saveTodayPlan({
       arcId: sessionPlan.arcId,
       arcDayIndex: sessionPlan.arcDayIndex,
@@ -364,7 +419,10 @@ export default function TodayOrchestrator() {
       traitSecondary: sessionPlan.traitSecondary,
       canonDomain: sessionPlan.canonDomain,
       initiationModuleId: initiationPlanResult.initiation.moduleId,
-      initiationLessonIds: initiationPlanResult.initiation.lessonIds,
+      initiationLessonIds: lessonIdsFromBlocks?.length
+        ? lessonIdsFromBlocks
+        : initiationPlanResult.initiation.lessonIds,
+      initiationBlocks: storedBlocks,
       initiationRecallPromptId: initiationPlanResult.initiation.recallPromptId ?? null,
       initiationElectiveReason: initiationPlanResult.initiation.electiveReason ?? null,
       todayKey,
@@ -375,7 +433,7 @@ export default function TodayOrchestrator() {
       mode: "initiation",
     });
     setPlanPersisted(true);
-  }, [sessionPlan, initiationPlanResult, todayKey, runId]);
+  }, [sessionPlan, initiationPlanResult, todayKey, runId, mappedPlanBlocks]);
 
   const lastSessionLabel = useMemo(() => {
     if (!lastCompletion) return "—";
@@ -431,36 +489,44 @@ export default function TodayOrchestrator() {
       setDayOneEntryUnlocked(false);
     }
   }, [entryUnlockStorageKey]);
-  const markDayOneEntryUnlocked = useCallback(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(entryUnlockStorageKey, "1");
-    } catch {
-      // ignore
-    }
-    setDayOneEntryUnlocked(true);
-  }, [entryUnlockStorageKey]);
+  const markDayOneEntryUnlocked = useCallback(
+    (options?: { dataOnly?: boolean }) => {
+      if (typeof window === "undefined") return;
+      try {
+        window.localStorage.setItem(entryUnlockStorageKey, "1");
+      } catch {
+        // ignore
+      }
+      if (!options?.dataOnly) {
+        setDayOneEntryUnlocked(true);
+      }
+    },
+    [entryUnlockStorageKey],
+  );
   useEffect(() => {
     if (!normalizedSourceParam) return;
-    if (
-      normalizedSourceParam === "guided_day1" ||
-      normalizedSourceParam === "explore_cat_day1" ||
-      normalizedSourceParam === "explore_axes_day1"
-    ) {
+    if (normalizedSourceParam === "explore_cat_day1" || normalizedSourceParam === "explore_axes_day1") {
       markDayOneEntryUnlocked();
     }
   }, [markDayOneEntryUnlocked, normalizedSourceParam]);
+  const scheduleGuidedUnlockPersist = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.setTimeout(() => {
+      markDayOneEntryUnlocked({ dataOnly: true });
+    }, 0);
+  }, [markDayOneEntryUnlocked]);
   const handleGuidedDayOneStart = () => {
-    if (!canStartGuided) return;
+    if (!canStartGuided || hasStartedGuidedDay1) return;
+    setHasStartedGuidedDay1(true);
     const target = `/today/run?${buildGuidedDayOneQuery()}`;
-    if (e2eGuidedOverride && typeof window !== "undefined") {
+    if (e2eGuidedOverride && allowGuidedHardNav && typeof window !== "undefined") {
+      // test-only: avoid Playwright click race (button unmount during router.push)
       window.location.assign(target);
+      scheduleGuidedUnlockPersist();
       return;
     }
     router.push(target);
-    setTimeout(() => {
-      markDayOneEntryUnlocked();
-    }, 0);
+    scheduleGuidedUnlockPersist();
   };
   const handleStart = () => {
     track("today_primary_clicked", { completedToday });
@@ -478,14 +544,15 @@ export default function TodayOrchestrator() {
     (sourceParam === "guided" || sourceParam === "explore_cat_day1" || sourceParam === "intro") && completedSessions <= 1;
   const catProfileComplete = sourceParam === "explore_cat_day1";
   const isGuestOrAnon = !user || user.isAnonymous;
-  const guidedDayOneActive =
+  const baseGuidedDayOneActive =
     isGuidedDayOneLane(sourceParam, laneParam) &&
     !dayOneEntryUnlocked &&
     (isGuestOrAnon || completedSessions === 0 || e2eMode);
+  const guidedDayOneActive = hasStartedGuidedDay1 || baseGuidedDayOneActive;
   const dayOneEntryEligible = exploreDay1Context && !dayOneEntryUnlocked;
   const dayOneEntryActive =
     dayOneEntryEligible &&
-    !guidedDayOneActive &&
+    !baseGuidedDayOneActive &&
     (normalizedSourceParam === "intro" || (!normalizedSourceParam && completedSessions <= 0));
   const axisParamToday = searchParams?.get("axis") ?? null;
   const clusterParamToday = searchParams?.get("cluster") ?? null;
@@ -558,8 +625,12 @@ export default function TodayOrchestrator() {
   })();
   const e2eGuidedOverride = e2eMode && guidedDayOneLane;
   const canStartGuided = e2eGuidedOverride ? true : !guidedStartBlockingReason;
-  const guidedStartDisabled = !canStartGuided || (!e2eGuidedOverride && planLoading);
-  const guidedDisabledReasonForDebug = e2eGuidedOverride ? guidedStartBlockingReason : null;
+  const guidedStartDisabled = hasStartedGuidedDay1 || !canStartGuided || (!e2eGuidedOverride && planLoading);
+  const guidedDisabledReasonForDebug = hasStartedGuidedDay1
+    ? "navigation_pending"
+    : e2eGuidedOverride
+      ? guidedStartBlockingReason
+      : null;
   const guidedCtaLabel = useMemo(() => {
     if (!sessionPlan?.expectedDurationMinutes) return null;
     return `Pornește sesiunea (${sessionPlan.expectedDurationMinutes} min)`;
@@ -775,6 +846,14 @@ export default function TodayOrchestrator() {
               </p>
               {fallbackBanner}
               {lessonList}
+              {unknownInitiationBlockKinds.length ? (
+                <div
+                  data-testid="today-unknown-block-kind"
+                  className="mt-3 rounded-xl border border-amber-400/60 bg-amber-200/10 px-4 py-2 text-xs text-amber-200"
+                >
+                  Unknown initiation block kind(s): {unknownInitiationBlockKinds.join(", ")}
+                </div>
+              ) : null}
               {showDebugUi ? (
                 <button
                   type="button"

@@ -39,6 +39,7 @@ export function completeInitiationRunFromPlan(
   if (deps.hasRunCompleted(userId, runId)) {
     return { applied: false };
   }
+  // TODO(PR4): V2 plan includes elective/recall blocks; completion is core-only until block-level runId handling arrives.
   deps.markLessonsCompleted(userId, moduleId, [coreLessonId]);
   deps.markRunCompleted(userId, runId);
   return { applied: true };

@@ -94,8 +94,8 @@ export function buildInitiationSessionPlan({
     effectiveCompleted,
     requiresBlocksV2 ? 1 : Math.max(legacyLessonCount, 1),
   );
-  const lessonRefs = lessonIds.map((lessonId) => resolveInitiationLesson(lessonId));
-  const primaryLesson = lessonRefs[0];
+  const resolvedLessons = lessonIds.map((lessonId) => resolveInitiationLesson(lessonId));
+  const primaryLesson = resolvedLessons[0];
   if (!primaryLesson) {
     throw new Error("No lessons resolved for initiation plan");
   }
@@ -113,6 +113,8 @@ export function buildInitiationSessionPlan({
       const electiveSelection = selectElective({
         coreModuleId: moduleMeta.moduleId,
         completedLessonIds: effectiveCompleted,
+        plannedLessonIds: initiationLessonIds,
+        coreLessonId: primaryLesson.meta.lessonId,
         coreAxis: primaryLesson.meta.axis ?? null,
       });
       electiveReason = electiveSelection.reason;
@@ -120,7 +122,6 @@ export function buildInitiationSessionPlan({
         const electiveLesson = resolveInitiationLesson(electiveSelection.lessonId);
         blocks.push({ kind: "elective", lesson: electiveLesson, reason: electiveSelection.reason });
         initiationLessonIds.push(electiveLesson.meta.lessonId);
-        lessonRefs.push(electiveLesson);
       }
     }
     if (template.blocks.some((block) => block.kind === "recall")) {
@@ -131,8 +132,17 @@ export function buildInitiationSessionPlan({
   }
 
   if (!requiresBlocksV2) {
-    initiationLessonIds.push(...lessonRefs.map((lesson) => lesson.meta.lessonId));
+    initiationLessonIds.push(...resolvedLessons.map((lesson) => lesson.meta.lessonId));
   }
+  const lessonRefs =
+    blocks.length > 0
+      ? blocks
+          .filter(
+            (block): block is Extract<InitiationSessionBlock, { kind: "core" | "elective" }> =>
+              block.kind === "core" || block.kind === "elective",
+          )
+          .map((block) => block.lesson)
+      : resolvedLessons;
 
   const plan: SessionPlan = {
     id: `${templateId}_${moduleMeta.moduleId}_${primaryLesson.meta.lessonId}`,

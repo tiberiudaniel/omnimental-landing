@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { WorkflowEdge, WorkflowState, WorkflowTask, WorkflowStatus } from "@/lib/workflow/types";
-import { loadWorkflowState, sanitizeWorkflowState, saveWorkflowState } from "@/lib/workflow/storage";
+import { loadWorkflowState, sanitizeWorkflowState } from "@/lib/workflow/storage";
 import { buildGraphMaps, computeCriticalPath, getScheduleConflicts, wouldCreateCycle } from "@/lib/workflow/graph";
 import { emptyWorkflowState, WORKFLOW_STORAGE_KEY } from "@/lib/workflow/types";
 import KanbanBoard from "./KanbanBoard";
@@ -24,8 +24,10 @@ const formatLocalDate = () => {
 
 const createTask = (title: string, description: string): WorkflowTask => {
   const now = Date.now();
+  const id =
+    typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `t_${now}_${Math.random().toString(36).slice(2, 8)}`;
   return {
-    id: `t_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    id,
     title,
     description,
     status: "todo",
@@ -44,64 +46,73 @@ const createEdge = (from: string, to: string): WorkflowEdge => ({
 });
 
 const WorkflowBoard = () => {
-  const [state, setState] = useState<WorkflowState>(() => loadWorkflowState());
+  const [boardState, setBoardState] = useState<WorkflowState>(() => loadWorkflowState());
+  const skipNextPersistRef = useRef(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [draftTaskTitle, setDraftTaskTitle] = useState("");
+  const [draftTaskDescription, setDraftTaskDescription] = useState("");
   const [blockedMove, setBlockedMove] = useState<BlockedMove | null>(null);
   const [dependencyError, setDependencyError] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   useEffect(() => {
-    saveWorkflowState(state);
-  }, [state]);
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(WORKFLOW_STORAGE_KEY, JSON.stringify(boardState));
+  }, [boardState]);
 
   const tasksById = useMemo(() => {
     const map = new Map<string, WorkflowTask>();
-    for (const task of state.tasks) {
+    for (const task of boardState.tasks) {
       map.set(task.id, task);
     }
     return map;
-  }, [state.tasks]);
+  }, [boardState.tasks]);
 
-  const graphMaps = useMemo(() => buildGraphMaps(state.tasks, state.edges), [state.tasks, state.edges]);
-  const criticalPath = useMemo(() => computeCriticalPath(state.tasks, state.edges), [state.tasks, state.edges]);
+  const graphMaps = useMemo(() => buildGraphMaps(boardState.tasks, boardState.edges), [boardState.tasks, boardState.edges]);
+  const criticalPath = useMemo(() => computeCriticalPath(boardState.tasks, boardState.edges), [boardState.tasks, boardState.edges]);
   const scheduleConflicts = useMemo(
-    () => getScheduleConflicts(state.tasks, state.edges),
-    [state.tasks, state.edges],
+    () => getScheduleConflicts(boardState.tasks, boardState.edges),
+    [boardState.tasks, boardState.edges],
   );
 
   const counts = useMemo(() => {
     return {
-      todo: state.tasks.filter((t) => t.status === "todo").length,
-      in_progress: state.tasks.filter((t) => t.status === "in_progress").length,
-      done: state.tasks.filter((t) => t.status === "done").length,
+      todo: boardState.tasks.filter((t) => t.status === "todo").length,
+      in_progress: boardState.tasks.filter((t) => t.status === "in_progress").length,
+      done: boardState.tasks.filter((t) => t.status === "done").length,
     };
-  }, [state.tasks]);
+  }, [boardState.tasks]);
 
   const sortedGanttTasks = useMemo(() => {
-    return [...state.tasks].sort((a, b) => {
+    return [...boardState.tasks].sort((a, b) => {
       if (a.start !== b.start) return a.start.localeCompare(b.start);
       if (a.priority !== b.priority) return a.priority - b.priority;
       return a.createdAt - b.createdAt;
     });
-  }, [state.tasks]);
+  }, [boardState.tasks]);
 
   const handleStatusChange = (taskId: string, nextStatus: WorkflowStatus) => {
     const task = tasksById.get(taskId);
     if (!task || task.status === nextStatus) return;
     if (nextStatus === "done") {
       const blockers = (graphMaps.incoming[taskId] ?? [])
-        .map((edge) => tasksById.get(edge.from))
-        .filter((t): t is WorkflowTask => Boolean(t) && t.status !== "done");
+        .map((edge) => {
+          const upstream = tasksById.get(edge.from);
+          return upstream && upstream.status !== "done" ? upstream : null;
+        })
+        .filter((task): task is WorkflowTask => Boolean(task));
       if (blockers.length) {
         setBlockedMove({ task, blockers });
         return;
       }
     }
-    setState((prev) => ({
+    setBoardState((prev) => ({
       ...prev,
       tasks: prev.tasks.map((t) =>
         t.id === taskId ? { ...t, status: nextStatus, updatedAt: Date.now() } : t,
@@ -110,21 +121,21 @@ const WorkflowBoard = () => {
   };
 
   const handleUpdateTask = (updated: WorkflowTask) => {
-    setState((prev) => ({
+    setBoardState((prev) => ({
       ...prev,
       tasks: prev.tasks.map((task) => (task.id === updated.id ? { ...updated, updatedAt: Date.now() } : task)),
     }));
   };
 
   const handleRemoveDependency = (edgeId: string) => {
-    setState((prev) => ({
+    setBoardState((prev) => ({
       ...prev,
       edges: prev.edges.filter((edge) => edge.id !== edgeId),
     }));
   };
 
   const handleDeleteTask = (taskId: string) => {
-    setState((prev) => ({
+    setBoardState((prev) => ({
       ...prev,
       tasks: prev.tasks.filter((t) => t.id !== taskId),
       edges: prev.edges.filter((edge) => edge.from !== taskId && edge.to !== taskId),
@@ -134,15 +145,21 @@ const WorkflowBoard = () => {
     }
   };
 
+  const openNewTaskModal = () => {
+    setDraftTaskTitle("");
+    setDraftTaskDescription("");
+    setShowModal(true);
+  };
+
   const handleAddTask = () => {
-    if (!newTaskTitle.trim()) return;
-    const task = createTask(newTaskTitle.trim(), newTaskDescription.trim());
-    setState((prev) => ({
+    if (!draftTaskTitle.trim()) return;
+    const task = createTask(draftTaskTitle.trim(), draftTaskDescription.trim());
+    setBoardState((prev) => ({
       ...prev,
       tasks: [...prev.tasks, task],
     }));
-    setNewTaskTitle("");
-    setNewTaskDescription("");
+    setDraftTaskTitle("");
+    setDraftTaskDescription("");
     setShowModal(false);
     setSelectedTaskId(task.id);
   };
@@ -150,15 +167,15 @@ const WorkflowBoard = () => {
   const handleAddDependency = (fromId: string, toId: string) => {
     if (!fromId || !toId || fromId === toId) return;
     const edge = createEdge(fromId, toId);
-    if (state.edges.some((e) => e.from === fromId && e.to === toId)) {
+    if (boardState.edges.some((e) => e.from === fromId && e.to === toId)) {
       setDependencyError("Dependency already exists.");
       return;
     }
-    if (wouldCreateCycle(state.tasks, state.edges, edge)) {
+    if (wouldCreateCycle(boardState.tasks, boardState.edges, edge)) {
       setDependencyError("Cannot add dependency: cycle detected.");
       return;
     }
-    setState((prev) => ({
+    setBoardState((prev) => ({
       ...prev,
       edges: [...prev.edges, edge],
     }));
@@ -172,7 +189,7 @@ const WorkflowBoard = () => {
       try {
         const parsed = JSON.parse(String(reader.result)) as WorkflowState;
         const validated = sanitizeWorkflowState(parsed);
-        setState(validated);
+        setBoardState(validated);
         setImportError(null);
       } catch (error) {
         setImportError(error instanceof Error ? error.message : "Failed to import data");
@@ -182,13 +199,23 @@ const WorkflowBoard = () => {
   };
 
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(boardState, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = "workflow.json";
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleResetBoard = () => {
+    skipNextPersistRef.current = true;
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(WORKFLOW_STORAGE_KEY);
+    }
+    setBoardState(emptyWorkflowState());
+    setSelectedTaskId(null);
+    setResetConfirmOpen(false);
   };
 
   const selectedTask = selectedTaskId ? tasksById.get(selectedTaskId) ?? null : null;
@@ -219,11 +246,7 @@ const WorkflowBoard = () => {
           <button
             type="button"
             data-testid="add-task"
-            onClick={() => {
-              setShowModal(true);
-              setNewTaskTitle("");
-              setNewTaskDescription("");
-            }}
+            onClick={openNewTaskModal}
             className="rounded-full bg-[var(--workflow-accent,#F2613F)] px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-[var(--workflow-accent,#F2613F)]/30 transition hover:translate-y-[-1px]"
           >
             Add task
@@ -260,7 +283,7 @@ const WorkflowBoard = () => {
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-4">
           <KanbanBoard
-            tasks={state.tasks}
+            tasks={boardState.tasks}
             incoming={graphMaps.incoming}
             counts={counts}
             onStatusChange={handleStatusChange}
@@ -272,7 +295,7 @@ const WorkflowBoard = () => {
         <div className="space-y-4">
           <TaskDetailsPanel
             task={selectedTask}
-            tasks={state.tasks}
+            tasks={boardState.tasks}
             incoming={graphMaps.incoming}
             outgoing={graphMaps.outgoing}
             onAddDependency={handleAddDependency}
@@ -299,19 +322,21 @@ const WorkflowBoard = () => {
               <label className="block text-sm">
                 Title
                 <input
+                  data-testid="new-task-title"
                   type="text"
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-white/40"
-                  value={newTaskTitle}
-                  onChange={(event) => setNewTaskTitle(event.target.value)}
+                  value={draftTaskTitle}
+                  onChange={(event) => setDraftTaskTitle(event.target.value)}
                 />
               </label>
               <label className="block text-sm">
                 Description
                 <textarea
+                  data-testid="new-task-description"
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-white/40"
                   rows={3}
-                  value={newTaskDescription}
-                  onChange={(event) => setNewTaskDescription(event.target.value)}
+                  value={draftTaskDescription}
+                  onChange={(event) => setDraftTaskDescription(event.target.value)}
                 />
               </label>
             </div>
@@ -325,6 +350,7 @@ const WorkflowBoard = () => {
               </button>
               <button
                 type="button"
+                data-testid="create-task"
                 className="rounded-full bg-white px-4 py-1 font-semibold text-black"
                 onClick={handleAddTask}
               >
@@ -393,11 +419,3 @@ const WorkflowBoard = () => {
 };
 
 export default WorkflowBoard;
-  const handleResetBoard = () => {
-    setState(emptyWorkflowState());
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(WORKFLOW_STORAGE_KEY);
-    }
-    setSelectedTaskId(null);
-    setResetConfirmOpen(false);
-  };
