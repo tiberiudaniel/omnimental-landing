@@ -9,8 +9,8 @@ import { WORKFLOW_STORAGE_KEY, type WorkflowState } from "@/lib/workflow/types";
 const ensureDom = () => {
   if (globalThis.document?.body) return;
   const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost" });
-  (globalThis as unknown as { window: Window }).window = dom.window;
-  (globalThis as unknown as { document: Document }).document = dom.window.document;
+  (globalThis as typeof globalThis).window = dom.window as unknown as Window & typeof globalThis;
+  (globalThis as typeof globalThis).document = dom.window.document;
   if (!("navigator" in globalThis) || !globalThis.navigator) {
     Object.defineProperty(globalThis, "navigator", {
       value: dom.window.navigator,
