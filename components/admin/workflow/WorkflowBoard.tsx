@@ -204,9 +204,10 @@ const WorkflowBoard = () => {
         ["--workflow-ink" as string]: "#F5E8D8",
         ["--workflow-accent" as string]: "#F2613F",
         ["--workflow-accent-soft" as string]: "#9B3922",
-        ["--workflow-surface" as string]: "#1a100d",
-        ["--workflow-surface-deep" as string]: "#481E14",
-        ["--workflow-muted" as string]: "rgba(245,232,216,0.65)",
+        ["--workflow-border" as string]: "#2C1A14",
+        ["--workflow-surface" as string]: "#141010",
+        ["--workflow-surface-deep" as string]: "#1D1411",
+        ["--workflow-muted" as string]: "rgba(245,232,216,0.72)",
       }}
     >
       <div className="mb-6 flex flex-wrap items-center gap-4">
@@ -223,7 +224,7 @@ const WorkflowBoard = () => {
               setNewTaskTitle("");
               setNewTaskDescription("");
             }}
-            className="rounded-full bg-[var(--omni-ink,#ffffff)] px-4 py-2 text-sm font-semibold text-black transition hover:opacity-90"
+            className="rounded-full bg-[var(--workflow-accent,#F2613F)] px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-[var(--workflow-accent,#F2613F)]/30 transition hover:translate-y-[-1px]"
           >
             Add task
           </button>
@@ -231,7 +232,7 @@ const WorkflowBoard = () => {
             type="button"
             data-testid="export-json"
             onClick={handleExport}
-            className="rounded-full border border-[var(--workflow-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--workflow-ink)] transition hover:bg-[var(--workflow-accent)]/20"
+            className="rounded-full border border-[var(--workflow-border,#2C1A14)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--workflow-ink)] transition hover:bg-white/5"
           >
             Export
           </button>

@@ -106,7 +106,7 @@ const TaskDetailsPanel = ({
           <button
             type="button"
             data-testid="task-edit-toggle"
-            className="rounded-full border border-[var(--workflow-accent,#F2613F)] px-3 py-1 text-xs uppercase tracking-[0.25em]"
+            className="rounded-full border border-[var(--workflow-border,#2C1A14)] px-3 py-1 text-xs uppercase tracking-[0.25em] text-[var(--workflow-muted,#cbb89f)] hover:border-[var(--workflow-accent,#F2613F)]"
             onClick={() => {
               setEditing((prev) => !prev);
               setDraft(task);

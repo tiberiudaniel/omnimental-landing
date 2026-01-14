@@ -82,13 +82,13 @@ const KanbanBoard = memo(function KanbanBoard({
   }, [incoming, tasks, tasksById]);
 
   return (
-    <div className="rounded-3xl border border-[var(--workflow-accent-soft,#2f1a12)] bg-[var(--workflow-surface,#1a100d)] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+    <div className="rounded-3xl border border-[var(--workflow-border,#2C1A14)] bg-[var(--workflow-surface,#141010)] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
       <div className="grid gap-4 md:grid-cols-3">
         {COLUMN_META.map((column) => (
           <div
             key={column.status}
             data-testid={column.testId}
-            className="rounded-2xl border border-[var(--workflow-accent-soft,#9B3922)] bg-[var(--workflow-surface-deep,#28140f)]/60 p-2"
+            className="rounded-2xl border border-[var(--workflow-border,#2C1A14)] bg-[var(--workflow-surface-deep,#1D1411)] p-2"
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => handleDrop(event, column.status)}
           >
@@ -105,7 +105,7 @@ const KanbanBoard = memo(function KanbanBoard({
                   key={task.id}
                   data-testid={`task-card-${task.id}`}
                   onDragStart={(event) => handleDragStart(event, task.id)}
-                  className={`rounded-lg border border-[var(--workflow-accent,#F2613F)]/20 bg-black/40 p-2 text-xs text-[var(--workflow-ink,#F5E8D8)] transition hover:border-[var(--workflow-accent)] ${
+                  className={`rounded-lg border border-[var(--workflow-border,#2C1A14)] bg-black/25 p-2 text-xs text-[var(--workflow-ink,#F5E8D8)] transition hover:border-[var(--workflow-accent,#F2613F)]/60 ${
                     selectedTaskId === task.id ? "ring-2 ring-[var(--workflow-accent)]/70" : ""
                   }`}
                 >
@@ -125,7 +125,7 @@ const KanbanBoard = memo(function KanbanBoard({
                         event.stopPropagation();
                         onDeleteTask(task.id);
                       }}
-                      className="text-[10px] uppercase tracking-[0.25em] text-[var(--workflow-accent,#F2613F)] hover:text-white"
+                      className="text-[10px] uppercase tracking-[0.25em] text-[var(--workflow-muted,#cbb89f)] transition hover:text-[var(--workflow-accent,#F2613F)]"
                     >
                       Delete
                     </button>
@@ -141,7 +141,7 @@ const KanbanBoard = memo(function KanbanBoard({
                   {blockedMap[task.id] ? (
                     <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-[var(--workflow-accent,#F2613F)]">Blocked</p>
                   ) : null}
-                  <div className="mt-2 flex flex-wrap gap-1 text-[10px] uppercase tracking-[0.25em] text-[var(--workflow-muted,#cbb89f)]">
+                  <div className="mt-2 flex flex-wrap justify-end gap-1 text-[10px] uppercase tracking-[0.25em] text-[var(--workflow-muted,#cbb89f)]">
                     <span className="rounded-full border border-[var(--workflow-muted,#cbb89f)] px-2 py-0.5">{priorityLabel(task.priority)}</span>
                     <span className="rounded-full border border-[var(--workflow-muted,#cbb89f)] px-2 py-0.5">{task.durationDays}d</span>
                     <span className="rounded-full border border-[var(--workflow-muted,#cbb89f)] px-2 py-0.5">{task.start}</span>

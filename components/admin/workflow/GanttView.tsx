@@ -29,7 +29,7 @@ const GanttView = ({ tasks, criticalPath, scheduleConflicts }: Props) => {
   }, [tasks]);
 
   return (
-    <div className="rounded-3xl border border-[var(--workflow-accent-soft,#9B3922)] bg-[var(--workflow-surface,#1a100d)] p-4">
+    <div className="rounded-3xl border border-[var(--workflow-border,#2C1A14)] bg-[var(--workflow-surface,#1a100d)] p-4">
       <div className="mb-3 flex items-center justify-between text-[var(--workflow-ink,#F5E8D8)]">
         <h2 className="text-sm font-semibold uppercase tracking-[0.35em]">Timeline</h2>
         <div
@@ -49,7 +49,7 @@ const GanttView = ({ tasks, criticalPath, scheduleConflicts }: Props) => {
             const critical = criticalPath.has(task.id);
             const conflict = scheduleConflicts.has(task.id);
             return (
-              <div key={task.id} className="rounded-2xl border border-[var(--workflow-accent-soft,#9B3922)] bg-[var(--workflow-surface-deep,#28140f)] p-3">
+              <div key={task.id} className="rounded-2xl border border-[var(--workflow-border,#2C1A14)] bg-[var(--workflow-surface-deep,#1D1411)] p-3">
                 <div className="flex items-center justify-between text-sm">
                   <p className="font-semibold">{task.title}</p>
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-[var(--workflow-muted,#cbb89f)]">
