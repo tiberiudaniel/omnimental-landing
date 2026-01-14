@@ -23,6 +23,14 @@ const tools = [
     href: "/admin/v4-debug",
     accent: "border-amber-200 bg-amber-50",
   },
+  {
+    title: "Workflow Manager",
+    description: "Coordonează task-urile și dependențele echipei dintr-un singur loc.",
+    href: "/admin/workflow",
+    accent: "border-indigo-200 bg-indigo-50",
+    cardTestId: "admin-card-workflow",
+    buttonTestId: "admin-open-workflow",
+  },
 ];
 
 export default function AdminLandingPage() {
@@ -36,7 +44,12 @@ export default function AdminLandingPage() {
         </header>
         <div className="grid gap-4 sm:grid-cols-2">
           {tools.map((tool) => (
-            <Link key={tool.title} href={tool.href} className="group">
+            <Link
+              key={tool.title}
+              href={tool.href}
+              className="group"
+              data-testid={tool.cardTestId}
+            >
               <div
                 className={`h-full rounded-3xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${tool.accent}`}
               >
@@ -45,7 +58,11 @@ export default function AdminLandingPage() {
                     <p className="text-xs uppercase tracking-[0.3em] text-[var(--omni-muted)]">{tool.title}</p>
                     <p className="mt-1 text-lg font-semibold text-[var(--omni-ink)]">{tool.description}</p>
                   </div>
-                  <OmniCtaButton size="sm" className="mt-auto w-fit">
+                  <OmniCtaButton
+                    size="sm"
+                    className="mt-auto w-fit"
+                    data-testid={tool.buttonTestId}
+                  >
                     Deschide
                   </OmniCtaButton>
                 </div>
