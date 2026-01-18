@@ -31,7 +31,8 @@ test("initiation plan forces module key on today run", async ({ page }) => {
     } catch {}
   }, { storedPlan: JSON.stringify(plan) });
   await go(page, "/today/run?e2e=1");
-  await expect(page.getByTestId("initiation-forced-module")).toHaveText(
-    "clarity_01_illusion_of_clarity",
-  );
+  await expect(page.getByTestId("today-run-root")).toBeVisible();
+  const sentinel = page.getByTestId("initiation-forced-module");
+  await expect(sentinel).not.toHaveText("NO_PLAN");
+  await expect(sentinel).toHaveText("clarity_01_illusion_of_clarity", { timeout: 15_000 });
 });

@@ -13,6 +13,8 @@ import {
 } from "@/lib/intro/guidedState";
 import { track } from "@/lib/telemetry/track";
 import { FREE_CONTINUE_URL, UPGRADE_URL } from "@/lib/constants/routes";
+import { setLastNavReason } from "@/lib/debug/runtimeDebug";
+import { NAV_REASON } from "@/lib/debug/reasons";
 
 type QuestionOption = { id: string; label: string };
 type QuestionStep = {
@@ -266,6 +268,7 @@ export default function GuidedDay1Flow() {
       }
     }
     if (!showOfferForUser) {
+      setLastNavReason(NAV_REASON.GUIDED_DAY1_REFLECTION_COMPLETE, { target: "/today?source=guided" });
       router.replace("/today?source=guided");
       return;
     }

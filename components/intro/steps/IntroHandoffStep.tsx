@@ -6,6 +6,8 @@ import type { StepComponentProps } from "@/components/stepRunner/types";
 import { getGuidedClusterParam } from "@/lib/guidedDayOne";
 import type { IntroMindPacingResult } from "./IntroMindPacingStep";
 import type { CatAxisId } from "@/lib/profileEngine";
+import { setLastNavReason } from "@/lib/debug/runtimeDebug";
+import { NAV_REASON } from "@/lib/debug/reasons";
 
 function buildTarget(intent: "guided" | "explore", preserveE2E: boolean, axisId: CatAxisId | null) {
   const params = new URLSearchParams({ source: "intro" });
@@ -37,6 +39,7 @@ export function IntroHandoffStep({ state }: StepComponentProps) {
     const mindResult = (state.introMindPacing ?? null) as IntroMindPacingResult | null;
     const axisId = (mindResult?.axisId ?? null) as CatAxisId | null;
     const target = buildTarget(intent, preserveE2E, axisId);
+    setLastNavReason(NAV_REASON.INTRO_HANDOFF, { intent, target });
     router.replace(target);
   }, [router, searchParams, state.introIntent, state.introMindPacing]);
   return (

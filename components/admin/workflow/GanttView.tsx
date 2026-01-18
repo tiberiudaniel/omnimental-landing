@@ -37,7 +37,7 @@ const GanttView = ({ tasks, criticalPath, scheduleConflicts }: Props) => {
           data-testid="critical-path-legend"
           className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-[var(--workflow-muted,#cbb89f)]"
         >
-          <span className="h-2 w-6 rounded-full bg-amber-400" /> Critical path
+          <span className="h-2 w-6 rounded-full bg-[var(--workflow-gantt-bar-strong,#e9a178)]" /> Critical path
         </div>
       </div>
       <div data-testid="gantt-root" className="space-y-3 text-[var(--workflow-ink,#F5E8D8)]">
@@ -61,10 +61,16 @@ const GanttView = ({ tasks, criticalPath, scheduleConflicts }: Props) => {
                     ) : null}
                   </div>
                 </div>
-                <div className="mt-2 h-3 rounded-full bg-white/5">
+                <div className="mt-2 h-2.5 rounded-full bg-[rgba(248,233,218,0.08)]">
                   <div
-                    className={`h-3 rounded-full ${critical ? "bg-[var(--workflow-accent,#F2613F)]" : "bg-white/40"}`}
-                    style={{ marginLeft: left, width: barWidth }}
+                    className="h-2.5 rounded-full shadow-[0_6px_25px_rgba(233,161,120,0.18)]"
+                    style={{
+                      marginLeft: left,
+                      width: barWidth,
+                      background: critical
+                        ? "linear-gradient(90deg, var(--workflow-gantt-bar-strong,#e9a178), rgba(233,161,120,0.45))"
+                        : "var(--workflow-gantt-bar-soft, rgba(233,161,120,0.38))",
+                    }}
                   />
                 </div>
               </div>

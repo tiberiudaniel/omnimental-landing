@@ -1,10 +1,7 @@
-import type { StoredTodayPlan } from "@/lib/todayPlanStorage";
+import type { StoredInitiationBlock, StoredTodayPlan } from "@/lib/todayPlanStorage";
 import type { LessonId, ModuleId } from "@/lib/taxonomy/types";
 import { markInitiationLessonsCompleted } from "@/lib/content/initiationProgressStorage";
-import {
-  hasInitiationRunCompleted,
-  markInitiationRunCompleted,
-} from "@/lib/content/initiationRunHistory";
+import { hasInitiationRunCompleted, markInitiationRunCompleted } from "@/lib/content/initiationRunHistory";
 
 type CompletionDeps = {
   hasRunCompleted: typeof hasInitiationRunCompleted;
@@ -18,11 +15,45 @@ const defaultDeps: CompletionDeps = {
   markRunCompleted: markInitiationRunCompleted,
 };
 
+type CompletionResult = {
+  applied: boolean;
+  alreadyCompleted?: boolean;
+};
+
+const deriveLessonIdsFromBlocks = (
+  blocks: StoredInitiationBlock[] | undefined,
+  fallbackLessons: LessonId[] | undefined,
+): { coreLessonId: LessonId | null; electiveLessonId: LessonId | null } => {
+  let coreLessonId: LessonId | null = null;
+  let electiveLessonId: LessonId | null = null;
+  if (blocks?.length) {
+    for (const block of blocks) {
+      if (!coreLessonId && block.kind === "core_lesson" && block.lessonId) {
+        coreLessonId = block.lessonId as LessonId;
+      } else if (!electiveLessonId && block.kind === "elective_practice" && block.lessonId) {
+        electiveLessonId = block.lessonId as LessonId;
+      }
+      if (coreLessonId && electiveLessonId) {
+        break;
+      }
+    }
+  }
+  if (!coreLessonId && fallbackLessons?.length) {
+    coreLessonId = fallbackLessons[0] ?? null;
+    if (!electiveLessonId && fallbackLessons.length > 1) {
+      electiveLessonId = fallbackLessons[1] ?? null;
+    }
+  } else if (!electiveLessonId && fallbackLessons?.length) {
+    electiveLessonId = fallbackLessons.find((id) => id !== coreLessonId) ?? null;
+  }
+  return { coreLessonId, electiveLessonId };
+};
+
 export function completeInitiationRunFromPlan(
   plan: StoredTodayPlan | null,
   userId: string | null | undefined,
   deps: CompletionDeps = defaultDeps,
-): { applied: boolean } {
+): CompletionResult {
   if (!plan || plan.worldId !== "INITIATION") {
     return { applied: false };
   }
@@ -30,17 +61,22 @@ export function completeInitiationRunFromPlan(
     return { applied: false };
   }
   const runId = plan.runId;
-  const moduleId = plan.initiationModuleId as ModuleId | undefined | null;
-  const lessonIds = plan.initiationLessonIds as LessonId[] | undefined;
-  const coreLessonId = lessonIds?.[0];
+  const moduleId = (plan.initiationModuleId ?? plan.moduleId ?? null) as ModuleId | null;
+  const { coreLessonId, electiveLessonId } = deriveLessonIdsFromBlocks(
+    plan.initiationBlocks,
+    plan.initiationLessonIds as LessonId[] | undefined,
+  );
   if (!runId || !moduleId || !coreLessonId) {
     return { applied: false };
   }
   if (deps.hasRunCompleted(userId, runId)) {
-    return { applied: false };
+    return { applied: false, alreadyCompleted: true };
   }
-  // TODO(PR4): V2 plan includes elective/recall blocks; completion is core-only until block-level runId handling arrives.
-  deps.markLessonsCompleted(userId, moduleId, [coreLessonId]);
+  const lessonsToMark = new Set<LessonId>([coreLessonId]);
+  if (electiveLessonId) {
+    lessonsToMark.add(electiveLessonId);
+  }
+  deps.markLessonsCompleted(userId, moduleId, Array.from(lessonsToMark));
   deps.markRunCompleted(userId, runId);
   return { applied: true };
 }

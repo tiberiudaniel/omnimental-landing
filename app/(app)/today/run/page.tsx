@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { track } from "@/lib/telemetry/track";
 import { useProfile } from "@/components/ProfileProvider";
@@ -34,6 +35,12 @@ import {
 } from "@/lib/today/initiationRunState";
 import InitiationRecallBlock from "@/components/today/InitiationRecallBlock";
 import type { RecallBlock } from "@/lib/initiations/buildRecallBlock";
+import { setLastNavReason } from "@/lib/debug/runtimeDebug";
+import { NAV_REASON } from "@/lib/debug/reasons";
+
+const RuntimeDebugPanel = dynamic(() => import("@/components/debug/RuntimeDebugPanel").then((mod) => mod.RuntimeDebugPanel), {
+  ssr: false,
+});
 
 const deriveCoreLessonId = (plan: StoredTodayPlan | null): LessonId | null => {
   if (!plan) return null;
@@ -61,6 +68,49 @@ type RecallRuntimeBlock = {
 };
 
 type RuntimeBlock = LessonRuntimeBlock | RecallRuntimeBlock;
+
+const getLessonIdFromBlock = (block: RuntimeBlock | null | undefined): LessonId | null => {
+  if (!block) return null;
+  if (block.kind === "core_lesson" || block.kind === "elective_practice") {
+    return block.lesson.meta.lessonId;
+  }
+  return null;
+};
+
+const getForcedSentinelText = ({
+  runState,
+  initiationBlocks,
+  storedPlan,
+}: {
+  runState: InitiationRunState | null;
+  initiationBlocks: RuntimeBlock[] | null | undefined;
+  storedPlan: StoredTodayPlan | null;
+}): string => {
+  if (runState && initiationBlocks?.length) {
+    const boundedIndex = Math.min(Math.max(runState.blockIndex ?? 0, 0), initiationBlocks.length - 1);
+    const activeLessonId = getLessonIdFromBlock(initiationBlocks[boundedIndex]);
+    if (activeLessonId) {
+      return activeLessonId;
+    }
+  }
+  if (initiationBlocks?.length) {
+    const firstCore = initiationBlocks.find(
+      (block): block is LessonRuntimeBlock => block.kind === "core_lesson",
+    );
+    const fallbackLessonBlock =
+      firstCore ??
+      initiationBlocks.find((block): block is LessonRuntimeBlock => block.kind === "elective_practice");
+    const fallbackLessonId = getLessonIdFromBlock(fallbackLessonBlock ?? null);
+    if (fallbackLessonId) {
+      return fallbackLessonId;
+    }
+  }
+  const derivedCore = deriveCoreLessonId(storedPlan);
+  if (derivedCore) {
+    return derivedCore;
+  }
+  return "NO_PLAN";
+};
 
 function TodayRunPageInner() {
   const router = useRouter();
@@ -197,15 +247,6 @@ function TodayRunPageInner() {
   const debugEnabled = debugParamEnabled || debugFlagEnv === "1" || debugFlagEnv === "true";
   const blockDebugEnabled = debugEnabled || e2eMode;
   const forceDailyRunner = guidedLaneActive;
-  const firstLessonBlock = useMemo(() => {
-    if (!initiationBlocks?.length) return null;
-    return (
-      initiationBlocks.find(
-        (block): block is LessonRuntimeBlock =>
-          block.kind === "core_lesson" || block.kind === "elective_practice",
-      ) ?? null
-    );
-  }, [initiationBlocks]);
   const usingInitiationBlocks = Boolean(initiationBlocks?.length && storedPlan?.worldId === "INITIATION");
   const activeBlock =
     usingInitiationBlocks && runState && initiationBlocks
@@ -216,19 +257,10 @@ function TodayRunPageInner() {
   const activeRecallBlock = activeBlock && activeBlock.kind === "recall" ? activeBlock : null;
   const todayModuleKey = activeLessonBlock ? activeLessonBlock.lesson.refId : baseTodayModuleKey;
   const runModuleId = storedPlan?.moduleId ?? todayModuleKey;
-  const sentinelLessonId = useMemo(() => {
-    if (activeLessonBlock) return activeLessonBlock.lesson.meta.lessonId;
-    if (firstLessonBlock) return firstLessonBlock.lesson.meta.lessonId;
-    const fallbackLesson = deriveCoreLessonId(storedPlan ?? null);
-    if (fallbackLesson) return fallbackLesson;
-    if (usingInitiationBlocks) return "NO_ACTIVE";
-    return legacyForcedModuleConfig?.moduleKey ?? "NO_PLAN";
-  }, [activeLessonBlock, firstLessonBlock, storedPlan, usingInitiationBlocks, legacyForcedModuleConfig]);
-  const sentinelElement = e2eMode ? (
-    <div data-testid="initiation-forced-module" className="sr-only">
-      {sentinelLessonId}
-    </div>
-  ) : null;
+  const sentinelText = useMemo(
+    () => getForcedSentinelText({ runState, initiationBlocks, storedPlan }),
+    [runState, initiationBlocks, storedPlan],
+  );
   useEffect(() => {
     runCompletionTriggeredRef.current = false;
   }, [storedPlan?.runId]);
@@ -297,6 +329,39 @@ function TodayRunPageInner() {
   const isBlocked = Boolean(
     membershipTier === "free" && completedToday && !isExtraRound && !e2eMode,
   );
+  const runtimeDebugContext = useMemo(() => {
+    if (!initiationBlocks?.length) {
+      return {
+        worldId: storedPlan?.worldId ?? "INITIATION",
+        todayPlanVersion: storedPlan?.arcId ?? storedPlan?.moduleId ?? null,
+        runId: storedPlan?.runId ?? runState?.runId ?? null,
+        blockIndex: runState?.blockIndex ?? null,
+        activeBlockKind: null,
+        activeLessonId: null,
+        moduleId: storedPlan?.moduleId ?? null,
+        extras: {
+          mode: runMode,
+          blocked: isBlocked,
+        },
+      };
+    }
+    const index = Math.min(Math.max(runState?.blockIndex ?? 0, 0), initiationBlocks.length - 1);
+    const block = initiationBlocks[index];
+    const activeLessonId = block && block.kind !== "recall" ? block.lesson.meta.lessonId : null;
+    return {
+      worldId: storedPlan?.worldId ?? "INITIATION",
+      todayPlanVersion: storedPlan?.arcId ?? storedPlan?.moduleId ?? null,
+      runId: storedPlan?.runId ?? runState?.runId ?? null,
+      blockIndex: runState?.blockIndex ?? null,
+      activeBlockKind: block?.kind ?? null,
+      activeLessonId,
+      moduleId: storedPlan?.moduleId ?? null,
+      extras: {
+        mode: runMode,
+        blocked: isBlocked,
+      },
+    };
+  }, [initiationBlocks, isBlocked, runMode, runState, storedPlan]);
 
   useEffect(() => {
     if (e2eMode) return;
@@ -341,6 +406,7 @@ function TodayRunPageInner() {
     if (e2eMode) {
       params.set("e2e", "1");
     }
+    setLastNavReason(NAV_REASON.TODAY_RUN_COMPLETE, { target: `/session/complete?${params.toString()}` });
     router.push(`/session/complete?${params.toString()}`);
   };
 
@@ -349,11 +415,15 @@ function TodayRunPageInner() {
   );
 
   const finalizeCompletion = async (moduleKey?: string | null) => {
-    markDailyCompletion(moduleKey ?? null);
-    track("daily_run_completed", { moduleKey });
+    const resolvedModule = moduleKey ?? null;
+    markDailyCompletion(resolvedModule);
+    track("daily_run_completed", { moduleKey: resolvedModule });
     const plan = readTodayPlan();
-    clearInitiationRunState(plan?.runId ?? null);
     completeInitiationRunFromPlan(plan, profile?.id ?? null);
+    const runId = plan?.runId ?? null;
+    if (runId) {
+      clearInitiationRunState(runId);
+    }
     if (profile?.id && plan?.arcId) {
       try {
         await advanceArcProgress(profile.id, plan.arcId, { completedToday: true });
@@ -437,9 +507,6 @@ function TodayRunPageInner() {
   const finalizeRunFromBlocks = (moduleKey?: string | null) => {
     if (runCompletionTriggeredRef.current) return;
     runCompletionTriggeredRef.current = true;
-    if (storedPlan?.runId) {
-      clearInitiationRunState(storedPlan.runId);
-    }
     setRunState(null);
     void handleCompleted(null, moduleKey ?? storedPlan?.moduleId ?? runModuleId ?? null);
   };
@@ -726,16 +793,17 @@ function TodayRunPageInner() {
   }
 
   return (
-    <div data-testid="today-run-root">
-      {renderDebugBanner()}
-      {guidedLaneBadge}
-      {sentinelElement ?? (
+    <>
+      <div data-testid="today-run-root">
         <div data-testid="initiation-forced-module" className="sr-only">
-          NO_PLAN
+          {sentinelText}
         </div>
-      )}
-      {branchContent}
-    </div>
+        {renderDebugBanner()}
+        {guidedLaneBadge}
+        {branchContent}
+      </div>
+      <RuntimeDebugPanel context={runtimeDebugContext} />
+    </>
   );
 }
 
@@ -745,7 +813,7 @@ export default function TodayRunPage() {
       fallback={
         <div data-testid="today-run-root" className="min-h-screen bg-[var(--omni-bg-main)]">
           <div data-testid="initiation-forced-module" className="sr-only">
-            { "NO_PLAN" }
+            NO_PLAN
           </div>
         </div>
       }

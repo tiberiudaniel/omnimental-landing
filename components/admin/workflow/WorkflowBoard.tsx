@@ -31,6 +31,7 @@ const createTask = (title: string, description: string): WorkflowTask => {
     title,
     description,
     status: "todo",
+    order: 0,
     start: formatLocalDate(),
     durationDays: 1,
     priority: 2,
@@ -45,8 +46,48 @@ const createEdge = (from: string, to: string): WorkflowEdge => ({
   to,
 });
 
+const orderValue = (task: WorkflowTask) => (typeof task.order === "number" ? task.order : task.createdAt);
+
+const reindexStatus = (tasks: WorkflowTask[], status: WorkflowStatus) => {
+  const ordered = tasks
+    .filter((task) => task.status === status)
+    .sort((a, b) => orderValue(a) - orderValue(b));
+  ordered.forEach((task, index) => {
+    task.order = index + 1;
+  });
+};
+
+const reorderState = (state: WorkflowState, taskId: string, targetId: string | null, targetStatus: WorkflowStatus): WorkflowState => {
+  const tasks = state.tasks.map((task) => ({ ...task }));
+  const movingTask = tasks.find((task) => task.id === taskId);
+  if (!movingTask) return state;
+  const sourceStatus = movingTask.status;
+  if (sourceStatus !== targetStatus) {
+    movingTask.status = targetStatus;
+    movingTask.updatedAt = Date.now();
+  }
+  const targetList = tasks
+    .filter((task) => task.status === targetStatus && task.id !== taskId)
+    .sort((a, b) => orderValue(a) - orderValue(b));
+  const insertionIndex = targetId ? targetList.findIndex((task) => task.id === targetId) : targetList.length;
+  if (targetId && insertionIndex === -1) {
+    return state;
+  }
+  targetList.splice(insertionIndex, 0, movingTask);
+  targetList.forEach((task, index) => {
+    task.order = index + 1;
+  });
+  if (sourceStatus !== targetStatus) {
+    reindexStatus(tasks, sourceStatus);
+  }
+  return {
+    ...state,
+    tasks,
+  };
+};
+
 const WorkflowBoard = () => {
-  const [boardState, setBoardState] = useState<WorkflowState>(() => loadWorkflowState());
+  const [boardState, setBoardState] = useState<WorkflowState>(() => emptyWorkflowState());
   const skipNextPersistRef = useRef(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -56,6 +97,10 @@ const WorkflowBoard = () => {
   const [dependencyError, setDependencyError] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    setBoardState(loadWorkflowState());
+  }, []);
 
   useEffect(() => {
     if (skipNextPersistRef.current) {
@@ -97,27 +142,31 @@ const WorkflowBoard = () => {
     });
   }, [boardState.tasks]);
 
-  const handleStatusChange = (taskId: string, nextStatus: WorkflowStatus) => {
+  const handleMoveTask = (taskId: string, targetStatus: WorkflowStatus, targetId: string | null) => {
     const task = tasksById.get(taskId);
-    if (!task || task.status === nextStatus) return;
-    if (nextStatus === "done") {
+    if (!task) return;
+    if (targetStatus === "done" && task.status !== "done") {
       const blockers = (graphMaps.incoming[taskId] ?? [])
         .map((edge) => {
           const upstream = tasksById.get(edge.from);
           return upstream && upstream.status !== "done" ? upstream : null;
         })
-        .filter((task): task is WorkflowTask => Boolean(task));
+        .filter((candidate): candidate is WorkflowTask => Boolean(candidate));
       if (blockers.length) {
         setBlockedMove({ task, blockers });
         return;
       }
     }
-    setBoardState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) =>
-        t.id === taskId ? { ...t, status: nextStatus, updatedAt: Date.now() } : t,
-      ),
-    }));
+    setBoardState((prev) => reorderState(prev, taskId, targetId, targetStatus));
+  };
+
+  const handleStatusChange = (taskId: string, nextStatus: WorkflowStatus) => {
+    handleMoveTask(taskId, nextStatus, null);
+  };
+
+  const handleReorderTask = (taskId: string, targetTaskId: string | null, status: WorkflowStatus) => {
+    if (targetTaskId === taskId) return;
+    handleMoveTask(taskId, status, targetTaskId);
   };
 
   const handleUpdateTask = (updated: WorkflowTask) => {
@@ -135,11 +184,18 @@ const WorkflowBoard = () => {
   };
 
   const handleDeleteTask = (taskId: string) => {
-    setBoardState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.filter((t) => t.id !== taskId),
-      edges: prev.edges.filter((edge) => edge.from !== taskId && edge.to !== taskId),
-    }));
+    const taskToDelete = tasksById.get(taskId);
+    setBoardState((prev) => {
+      const nextTasks = prev.tasks.filter((task) => task.id !== taskId).map((task) => ({ ...task }));
+      if (taskToDelete) {
+        reindexStatus(nextTasks, taskToDelete.status);
+      }
+      return {
+        ...prev,
+        tasks: nextTasks,
+        edges: prev.edges.filter((edge) => edge.from !== taskId && edge.to !== taskId),
+      };
+    });
     if (selectedTaskId === taskId) {
       setSelectedTaskId(null);
     }
@@ -153,15 +209,19 @@ const WorkflowBoard = () => {
 
   const handleAddTask = () => {
     if (!draftTaskTitle.trim()) return;
-    const task = createTask(draftTaskTitle.trim(), draftTaskDescription.trim());
-    setBoardState((prev) => ({
-      ...prev,
-      tasks: [...prev.tasks, task],
-    }));
+    const protoTask = createTask(draftTaskTitle.trim(), draftTaskDescription.trim());
+    setBoardState((prev) => {
+      const nextTasks = [...prev.tasks.map((task) => ({ ...task })), { ...protoTask }];
+      reindexStatus(nextTasks, "todo");
+      return {
+        ...prev,
+        tasks: nextTasks,
+      };
+    });
     setDraftTaskTitle("");
     setDraftTaskDescription("");
     setShowModal(false);
-    setSelectedTaskId(task.id);
+    setSelectedTaskId(protoTask.id);
   };
 
   const handleAddDependency = (fromId: string, toId: string) => {
@@ -225,16 +285,19 @@ const WorkflowBoard = () => {
       data-testid="workflow-admin-root"
       className="min-h-screen p-6"
       style={{
-        backgroundColor: "#0C0C0C",
-        color: "#F5E8D8",
-        ["--workflow-bg" as string]: "#0C0C0C",
-        ["--workflow-ink" as string]: "#F5E8D8",
-        ["--workflow-accent" as string]: "#F2613F",
-        ["--workflow-accent-soft" as string]: "#9B3922",
-        ["--workflow-border" as string]: "#2C1A14",
-        ["--workflow-surface" as string]: "#141010",
-        ["--workflow-surface-deep" as string]: "#1D1411",
-        ["--workflow-muted" as string]: "rgba(245,232,216,0.72)",
+        backgroundColor: "#210F37",
+        color: "#DCA06D",
+        ["--workflow-bg" as string]: "#210F37",
+        ["--workflow-ink" as string]: "#DCA06D",
+        ["--workflow-accent" as string]: "#4F1C51",
+        ["--workflow-accent-soft" as string]: "#A55B4B",
+        ["--workflow-accent-faint" as string]: "rgba(165,91,75,0.2)",
+        ["--workflow-border" as string]: "#4F1C51",
+        ["--workflow-surface" as string]: "#4F1C51",
+        ["--workflow-surface-deep" as string]: "#210F37",
+        ["--workflow-muted" as string]: "rgba(220,160,109,0.75)",
+        ["--workflow-gantt-bar-soft" as string]: "rgba(165,91,75,0.4)",
+        ["--workflow-gantt-bar-strong" as string]: "rgba(220,160,109,0.8)",
       }}
     >
       <div className="mb-6 flex flex-wrap items-center gap-4">
@@ -247,7 +310,7 @@ const WorkflowBoard = () => {
             type="button"
             data-testid="add-task"
             onClick={openNewTaskModal}
-            className="rounded-full bg-[var(--workflow-accent,#F2613F)] px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-[var(--workflow-accent,#F2613F)]/30 transition hover:translate-y-[-1px]"
+            className="rounded-full border border-[var(--workflow-accent,#e9a178)] px-4 py-2 text-sm font-semibold text-[var(--workflow-accent,#e9a178)] transition hover:bg-[rgba(233,161,120,0.12)]"
           >
             Add task
           </button>
@@ -255,7 +318,7 @@ const WorkflowBoard = () => {
             type="button"
             data-testid="export-json"
             onClick={handleExport}
-            className="rounded-full border border-[var(--workflow-border,#2C1A14)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--workflow-ink)] transition hover:bg-white/5"
+            className="rounded-full border border-[var(--workflow-accent,#e9a178)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--workflow-accent,#e9a178)] transition hover:bg-[rgba(233,161,120,0.08)]"
           >
             Export
           </button>
@@ -273,7 +336,7 @@ const WorkflowBoard = () => {
             type="button"
             data-testid="reset-board"
             onClick={() => setResetConfirmOpen(true)}
-            className="rounded-full border border-[var(--workflow-accent-soft)] px-3 py-1 text-xs uppercase tracking-[0.25em] text-[var(--workflow-accent-soft)] hover:bg-[var(--workflow-accent-soft)]/20"
+            className="rounded-full border border-[var(--workflow-accent-soft,#c06b49)] px-3 py-1 text-xs uppercase tracking-[0.25em] text-[var(--workflow-accent-soft,#c06b49)] hover:bg-[rgba(192,107,73,0.15)]"
           >
             Reset
           </button>
@@ -287,6 +350,7 @@ const WorkflowBoard = () => {
             incoming={graphMaps.incoming}
             counts={counts}
             onStatusChange={handleStatusChange}
+            onReorderTask={handleReorderTask}
             onDeleteTask={handleDeleteTask}
             onSelectTask={setSelectedTaskId}
             selectedTaskId={selectedTaskId}

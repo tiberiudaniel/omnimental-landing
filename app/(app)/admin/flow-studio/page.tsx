@@ -41,6 +41,7 @@ import type {
   FlowNode,
   FlowNodeData,
   FlowNodeKind,
+  FlowNodeLayer,
   FlowNodePortalConfig,
   FlowOverlay,
   FlowOverlayStep,
@@ -118,6 +119,15 @@ const LAST_FLOW_KEY = "flowStudio:lastFlowId";
 const EMPTY_COPY: CopyFields = {};
 const DEFAULT_EDGE_COLOR = "#0f172a";
 const AUTOSAVE_INTERVAL_MS = 3 * 60 * 1000;
+const NODE_LAYER_OPTIONS: FlowNodeLayer[] = ["journey", "system", "side", "debug"];
+const DEFAULT_NODE_LAYER: FlowNodeLayer = "journey";
+const LAYER_TAG_PREFIX = "layer:";
+const NODE_LAYER_LABEL: Record<FlowNodeLayer, string> = {
+  journey: "Journey",
+  system: "System",
+  side: "Side quests",
+  debug: "Debug",
+};
 const AUTOSAVE_DOC_ID = "autosave";
 const autosaveTimeFormatter = new Intl.DateTimeFormat("ro-RO", { hour: "2-digit", minute: "2-digit" });
 const VIEW_MODE_STORAGE_KEY = "flowStudio:viewMode";
@@ -284,6 +294,14 @@ export default function FlowStudioPage() {
   const [, setLastChunkSaveAt] = useState<Date | null>(null);
   const [chunks, setChunks] = useState<FlowChunk[]>(() => normalizeChunks());
   const [viewMode, setViewMode] = useState<FlowViewMode>("nodes");
+  const [layerVisibility, setLayerVisibility] = useState<Record<FlowNodeLayer, boolean>>({
+    journey: true,
+    system: true,
+    side: false,
+    debug: false,
+  });
+  const [showRedirectEdges, setShowRedirectEdges] = useState(true);
+  const [criticalFocusTag, setCriticalFocusTag] = useState<string>("");
   const [chunkLayoutOrientation, setChunkLayoutOrientation] = useState<"vertical" | "horizontal">("vertical");
   const [chunkLayoutDensity, setChunkLayoutDensity] = useState<"compact" | "spacious">("compact");
   const [selectedChunkId, setSelectedChunkId] = useState<string | null>(null);
@@ -1113,6 +1131,17 @@ useEffect(() => {
     });
     return map;
   }, [nodeCommentsMap]);
+  const criticalTagOptions = useMemo(() => {
+    const set = new Set<string>();
+    nodes.forEach((node) => {
+      node.data.tags?.forEach((tag) => {
+        if (tag.startsWith("critical_")) {
+          set.add(tag);
+        }
+      });
+    });
+    return Array.from(set).sort();
+  }, [nodes]);
   const portalNodeOptions = useMemo(
     () =>
       nodes.map((node) => ({
@@ -1142,10 +1171,21 @@ useEffect(() => {
     if (!chunkFocusHideOthers || !chunkFocusedNodeIdSet || !focusedChunkId) return null;
     return chunkFocusedNodeIdSet;
   }, [chunkFocusHideOthers, chunkFocusedNodeIdSet, focusedChunkId]);
+  const layerFilterSet = useMemo(() => {
+    if (viewMode !== "nodes") return null;
+    const visibleLayers = NODE_LAYER_OPTIONS.filter((layer) => layerVisibility[layer]);
+    if (visibleLayers.length === NODE_LAYER_OPTIONS.length) return null;
+    const visibleLayerSet = new Set<FlowNodeLayer>(visibleLayers);
+    const ids = nodes
+      .filter((node) => visibleLayerSet.has(node.data.layer ?? DEFAULT_NODE_LAYER))
+      .map((node) => node.id);
+    return new Set(ids);
+  }, [layerVisibility, nodes, viewMode]);
   const filteredNodeIdSet = useMemo(() => {
     const filters: Array<Set<string>> = [];
     if (chunkHideFilterSet) filters.push(chunkHideFilterSet);
     if (tagFilteredNodeIdSet) filters.push(tagFilteredNodeIdSet);
+    if (layerFilterSet) filters.push(layerFilterSet);
     if (!filters.length) return null;
     if (filters.length === 1) return filters[0];
     const [first, ...rest] = filters;
@@ -1156,7 +1196,7 @@ useEffect(() => {
       }
     });
     return intersection;
-  }, [chunkHideFilterSet, tagFilteredNodeIdSet]);
+  }, [chunkHideFilterSet, layerFilterSet, tagFilteredNodeIdSet]);
   const chunkHighlightNodeIdSet = useMemo(() => {
     if (!focusedChunkId || !chunkFocusedNodeIdSet) return null;
     return chunkFocusedNodeIdSet;
@@ -1222,9 +1262,36 @@ useEffect(() => {
     return dimmed;
   }, [nodes, overlayFocusHideOthers, overlayHighlightActive, overlayNodeIdSet]);
   const overlayHighlightDimOthers = overlayHighlightActive && overlayFocusHideOthers;
-  const activeHighlightNodeIdSet = overlayHighlightActive ? overlayNodeIdSet : chunkHighlightNodeIdSet;
+  const criticalFocusNodeIdSet = useMemo(() => {
+    if (!criticalFocusTag || viewMode !== "nodes") return null;
+    const ids = nodes.filter((node) => node.data.tags?.includes(criticalFocusTag)).map((node) => node.id);
+    return ids.length ? new Set(ids) : null;
+  }, [criticalFocusTag, nodes, viewMode]);
+  const criticalDimmedNodeIdSet = useMemo(() => {
+    if (!criticalFocusNodeIdSet) return null;
+    const dimmed = new Set<string>();
+    nodes.forEach((node) => {
+      if (!criticalFocusNodeIdSet.has(node.id)) {
+        dimmed.add(node.id);
+      }
+    });
+    return dimmed;
+  }, [criticalFocusNodeIdSet, nodes]);
+  const highlightOriginSet = overlayHighlightActive ? overlayNodeIdSet : chunkHighlightNodeIdSet;
+  const activeHighlightNodeIdSet = highlightOriginSet ?? criticalFocusNodeIdSet;
   const highlightDimOthers = overlayHighlightActive ? overlayHighlightDimOthers : chunkHighlightDimOthers;
-  const activeDimmedNodeIdSet = overlayHighlightActive ? overlayDimmedNodeIdSet : chunkDimmedNodeIdSet;
+  const baseDimmedNodeIdSet = overlayHighlightActive ? overlayDimmedNodeIdSet : chunkDimmedNodeIdSet;
+  const activeDimmedNodeIdSet = useMemo(() => {
+    const sets: Array<Set<string>> = [];
+    if (baseDimmedNodeIdSet) sets.push(baseDimmedNodeIdSet);
+    if (criticalDimmedNodeIdSet) sets.push(criticalDimmedNodeIdSet);
+    if (!sets.length) return null;
+    const union = new Set<string>();
+    sets.forEach((set) => {
+      set.forEach((id) => union.add(id));
+    });
+    return union;
+  }, [baseDimmedNodeIdSet, criticalDimmedNodeIdSet]);
   const overlayChunkHighlightMap = useMemo(() => {
     if (!overlayNodeIdSet?.size) return null;
     const map = new Map<string, number>();
@@ -1789,6 +1856,12 @@ useEffect(() => {
           workingEdge = { ...edge, hidden: shouldHide };
         }
       }
+      if (viewMode === "nodes" && (!showRedirectEdges && (edge.data?.trigger ?? "user") === "auto")) {
+        if (!workingEdge.hidden) {
+          workingEdge = { ...workingEdge, hidden: true };
+        }
+        return workingEdge;
+      }
       if (highlightDimOthers && activeHighlightNodeIdSet && viewMode === "nodes") {
         const inFocus = activeHighlightNodeIdSet.has(edge.source) && activeHighlightNodeIdSet.has(edge.target);
         workingEdge = {
@@ -1798,6 +1871,19 @@ useEffect(() => {
             opacity: inFocus ? 1 : 0.25,
           },
         };
+      }
+      if (criticalFocusNodeIdSet && viewMode === "nodes") {
+        const connectedToFocus =
+          criticalFocusNodeIdSet.has(edge.source) && criticalFocusNodeIdSet.has(edge.target);
+        if (!connectedToFocus) {
+          workingEdge = {
+            ...workingEdge,
+            style: {
+              ...(workingEdge.style ?? {}),
+              opacity: Math.min(workingEdge.style?.opacity ?? 0.4, 0.4),
+            },
+          };
+        }
       }
       const issues = edgeIssueMap.get(edge.id) ?? 0;
       if (issues) {
@@ -1838,6 +1924,7 @@ useEffect(() => {
     });
   }, [
     activeHighlightNodeIdSet,
+    criticalFocusNodeIdSet,
     edgeIssueMap,
     edges,
     filteredNodeIdSet,
@@ -1845,6 +1932,7 @@ useEffect(() => {
     nodeRouteById,
     observedEdgeStatsMap,
     observedEnabled,
+    showRedirectEdges,
     viewMode,
   ]);
   const edgesForCanvas = useMemo(() => {
@@ -1853,6 +1941,15 @@ useEffect(() => {
     }
     return [...baseDisplayEdges, ...stepEdgesList];
   }, [baseDisplayEdges, chunkGraph.edges, stepEdgesList, viewMode]);
+  const handleToggleLayerVisibility = useCallback((layer: FlowNodeLayer) => {
+    setLayerVisibility((prev) => ({
+      ...prev,
+      [layer]: !prev[layer],
+    }));
+  }, []);
+  const handleToggleRedirectVisibility = useCallback(() => {
+    setShowRedirectEdges((prev) => !prev);
+  }, []);
   const handleAssignNodesToChunk = useCallback(
     (nodeIds: string[], chunkId: string) => {
       if (!nodeIds?.length) return;
@@ -2283,6 +2380,9 @@ useEffect(() => {
             tags,
             chunkId,
             portal: options?.portal ?? null,
+            layer: DEFAULT_NODE_LAYER,
+            route: route.routePath,
+            paramsSignature: null,
           },
         },
       ]);
@@ -2548,6 +2648,15 @@ useEffect(() => {
       stored.chunkId = node.data.chunkId ?? UNGROUPED_CHUNK_ID;
       if (label) stored.label = label;
       if (tags) stored.tags = tags;
+      if (node.data.layer && node.data.layer !== DEFAULT_NODE_LAYER) {
+        stored.layer = node.data.layer;
+      }
+      if (node.data.route) {
+        stored.route = node.data.route;
+      }
+      if (node.data.paramsSignature?.length) {
+        stored.paramsSignature = Array.from(new Set(node.data.paramsSignature));
+      }
       if (node.data.portal) {
         stored.portal = { ...node.data.portal };
       }
@@ -2575,6 +2684,8 @@ useEffect(() => {
       if (edge.data?.eventName) stored.eventName = edge.data.eventName;
       if (edge.data?.color) stored.color = edge.data.color;
       if (edge.data?.command) stored.command = edge.data.command;
+      if (edge.data?.trigger) stored.trigger = edge.data.trigger;
+      if (edge.data?.reasonCode) stored.reasonCode = edge.data.reasonCode;
       return stored;
     });
     const storedChunks = chunks.map((chunk, index) => serializeChunkForSave(chunk, index));
@@ -3941,6 +4052,81 @@ useEffect(() => {
         </button>
       )
       : null;
+  const layerToggleControls = (
+    <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-[var(--omni-border-soft)] bg-white/80 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--omni-muted)]">
+      {NODE_LAYER_OPTIONS.map((layer) => {
+        const active = layerVisibility[layer];
+        return (
+          <button
+            key={layer}
+            type="button"
+            className={clsx(
+              "rounded-full px-2 py-0.5",
+              active ? "bg-[var(--omni-ink)] text-white" : "bg-white text-[var(--omni-muted)]",
+            )}
+            onClick={() => handleToggleLayerVisibility(layer)}
+            title={`Show layer: ${NODE_LAYER_LABEL[layer]}`}
+          >
+            {NODE_LAYER_LABEL[layer]}
+          </button>
+        );
+      })}
+      <button
+        type="button"
+        className={clsx(
+          "rounded-full px-2 py-0.5",
+          showRedirectEdges ? "bg-[var(--omni-ink)] text-white" : "bg-white text-[var(--omni-muted)]",
+        )}
+        onClick={handleToggleRedirectVisibility}
+        title="Toggle automatic redirects"
+      >
+        Redirects
+      </button>
+    </div>
+  );
+  const criticalFocusControl = (
+    <label className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-[var(--omni-muted)]">
+      Focus journey
+      <select
+        className="rounded-full border border-[var(--omni-border-soft)] bg-white px-2 py-1 text-[11px]"
+        value={criticalFocusTag}
+        onChange={(event) => setCriticalFocusTag(event.target.value)}
+      >
+        <option value="">None</option>
+        {criticalTagOptions.map((tag) => (
+          <option key={tag} value={tag}>
+            {tag}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+  const flowLegendPanel = (
+    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-dashed border-[var(--omni-border-soft)] bg-white/80 px-3 py-2 text-[11px] text-[var(--omni-muted)]">
+      <span className="flex items-center gap-1">
+        <span className="h-2 w-2 rounded-full bg-[var(--omni-ink)]" />
+        Journey
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="h-2 w-2 rounded-full bg-indigo-400" />
+        System
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="h-2 w-2 rounded-full bg-slate-400" />
+        Side
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="h-2 w-2 rounded-full bg-rose-400" />
+        Debug
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1 rounded-full border border-dashed border-[var(--omni-muted)] px-1 py-0.5">
+          <span className="border-b border-dashed border-[var(--omni-muted)] pr-2"> </span>
+        </span>
+        Auto redirect
+      </span>
+    </div>
+  );
   const canvasPrimaryActions = (
     <OmniCtaButton size="sm" onClick={handleSaveFlow} disabled={!selectedFlowId || !flowNameDraft.trim()}>
       Salveaza
@@ -3957,6 +4143,11 @@ useEffect(() => {
       {worldFocusControls}
       {viewZoomControls}
       {filtersControls}
+      <div className="flex flex-wrap items-center gap-2">
+        {layerToggleControls}
+        {criticalFocusControl}
+        {flowLegendPanel}
+      </div>
       <button
         type="button"
         className={clsx(
@@ -5100,6 +5291,20 @@ function migrateLegacyWorldAssignment(
   return { chunkId: nextChunkId, tags: nextTags };
 }
 
+function resolveStoredLayer(stored: FlowNode): FlowNodeLayer {
+  if (stored.layer && NODE_LAYER_OPTIONS.includes(stored.layer)) {
+    return stored.layer;
+  }
+  const tagLayer = stored.tags?.find((tag) => tag.startsWith(LAYER_TAG_PREFIX));
+  if (tagLayer) {
+    const candidate = tagLayer.slice(LAYER_TAG_PREFIX.length) as FlowNodeLayer;
+    if (NODE_LAYER_OPTIONS.includes(candidate)) {
+      return candidate;
+    }
+  }
+  return DEFAULT_NODE_LAYER;
+}
+
 function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeByPath: Map<string, RouteDoc>): ReactFlowNode<FlowNodeData> {
   const kind: FlowNodeKind = stored.kind ?? "route";
   let routeId = stored.routeId;
@@ -5125,6 +5330,8 @@ function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeB
   }
   const baseRoutePath = stored.routePath ?? route?.routePath ?? stored.stepScreen?.hostRoutePath ?? routeId ?? "";
   const routePath = baseRoutePath || "/";
+  const layer = resolveStoredLayer(stored);
+  const paramsSignature = stored.paramsSignature?.filter((entry): entry is string => Boolean(entry)) ?? null;
   const rawTags = Array.isArray(stored.tags) ? [...stored.tags] : [];
   const migration = migrateLegacyWorldAssignment(stored.chunkId, rawTags);
   const resolvedChunkId = migration.chunkId ?? stored.chunkId;
@@ -5146,6 +5353,9 @@ function buildFlowNode(stored: FlowNode, routeMap: Map<string, RouteDoc>, routeB
       portal: stored.portal ?? null,
       stepScreen: stored.stepScreen ?? null,
       internalSteps: stored.internalSteps ?? null,
+      layer,
+      route: stored.route ?? routePath,
+      paramsSignature,
     },
   };
 }
@@ -5163,6 +5373,8 @@ function buildFlowEdge(edge: FlowEdge): Edge<FlowEdgeData> {
       eventName: edge.eventName,
       color: edge.color,
       command: edge.command,
+      trigger: edge.trigger,
+      reasonCode: edge.reasonCode ?? null,
     },
     label: edge.label?.ro ?? edge.label?.en ?? edge.conditionTag ?? "",
   };

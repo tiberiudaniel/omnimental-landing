@@ -1,0 +1,546 @@
+{
+  "flow": {
+    "id": "asis_today_intro_run",
+    "name": "AS-IS Intro → Today Run Wiring",
+    "version": 1,
+    "updatedAt": "2026-01-16T00:00:00.000Z"
+  },
+  "nodes": [
+    {
+      "id": "n_intro_route",
+      "routePath": "/intro",
+      "label": { "ro": "Intro StepRunner gate" },
+      "position": { "x": 40, "y": 80 },
+      "chunkId": "entry_intro",
+      "tags": [
+        "type:page",
+        "cond:getIntroSeen=false",
+        "notes:app/(public)/intro/page.tsx guards and loads StepRunner manifest"
+      ],
+      "internalSteps": [
+        {
+          "id": "intro_seen_guard",
+          "label": "Gate: introSeen",
+          "description": "app/(public)/intro/page.tsx:22-43 reads localStorage via getIntroSeen(); if true router.replace('/today') before StepRunner renders.",
+          "tags": ["guard:auto-redirect"]
+        },
+        {
+          "id": "manifest_load",
+          "label": "Load FlowDoc manifest",
+          "description": "lib/stepManifests/intro.ts + lib/flowStudio/runtime.ts load the canonical FlowDoc definition for cinematic → mindpacing → vocab → handoff."
+        }
+      ]
+    },
+    {
+      "id": "n_intro_cinematic_step",
+      "kind": "stepScreen",
+      "routePath": "/intro",
+      "stepScreen": { "hostRoutePath": "/intro", "stepKey": "cinematic", "label": "Cinematic" },
+      "label": { "ro": "Intro cinematic" },
+      "position": { "x": 220, "y": 20 },
+      "chunkId": "entry_intro",
+      "tags": ["type:step", "notes:IntroCinematicStep primes audio + records introIntent"]
+    },
+    {
+      "id": "n_intro_mindpacing_step",
+      "kind": "stepScreen",
+      "routePath": "/intro",
+      "stepScreen": { "hostRoutePath": "/intro", "stepKey": "mindpacing", "label": "MindPacing" },
+      "label": { "ro": "MindPacing" },
+      "position": { "x": 220, "y": 110 },
+      "chunkId": "entry_intro",
+      "tags": [
+        "type:step",
+        "notes:components/intro/steps/IntroMindPacingStep.tsx emits data-testid mindpacing-root + mindpacing-option-*"
+      ]
+    },
+    {
+      "id": "n_intro_vocab_step",
+      "kind": "stepScreen",
+      "routePath": "/intro",
+      "stepScreen": { "hostRoutePath": "/intro", "stepKey": "vocab", "label": "Primer vocab" },
+      "label": { "ro": "Vocab primer" },
+      "position": { "x": 220, "y": 200 },
+      "chunkId": "entry_intro",
+      "tags": [
+        "type:step",
+        "notes:components/intro/steps/IntroVocabStep.tsx (same exp as /intro/vocab) with CTA mindpacing-continue"
+      ]
+    },
+    {
+      "id": "n_intro_handoff_step",
+      "kind": "stepScreen",
+      "routePath": "/intro",
+      "stepScreen": { "hostRoutePath": "/intro", "stepKey": "handoff", "label": "Handoff" },
+      "label": { "ro": "Handoff" },
+      "position": { "x": 220, "y": 290 },
+      "chunkId": "entry_intro",
+      "tags": [
+        "type:step",
+        "notes:components/intro/steps/IntroHandoffStep.tsx auto router.replace() into /intro/guided or /intro/explore"
+      ]
+    },
+    {
+      "id": "n_intro_guided",
+      "routePath": "/intro/guided",
+      "label": { "ro": "Guided Day-1 micro flow" },
+      "position": { "x": 420, "y": 80 },
+      "chunkId": "guided_day1",
+      "tags": [
+        "type:page",
+        "cond:intent=guided",
+        "notes:components/intro/GuidedDay1Flow.tsx questionnaire + reflection"
+      ],
+      "internalSteps": [
+        {
+          "id": "guided_questions",
+          "label": "Signal capture",
+          "description": "GuidedDay1Flow questions (mind_state, block_time, biggest_cost) map to guided answers + track events.",
+          "tags": ["type:step"]
+        },
+        {
+          "id": "guided_reflection",
+          "label": "Reflection + CTA",
+          "description": "handleReflectionContinue increments guided completion, sets localStorage keys, router.replace('/today?source=guided').",
+          "tags": ["trigger:auto-redirect", "params:source=guided"]
+        },
+        {
+          "id": "guided_offer",
+          "label": "Offer (optional)",
+          "description": "If user qualifies for monetization, show offer step; otherwise immediate redirect to Today."
+        }
+      ]
+    },
+    {
+      "id": "n_intro_explore",
+      "routePath": "/intro/explore",
+      "label": { "ro": "Explore hub" },
+      "position": { "x": 420, "y": 280 },
+      "chunkId": "sidequests",
+      "tags": [
+        "type:page",
+        "notes:components/intro/ExploreHub.tsx cards for CAT Lite + Axis lessons"
+      ],
+      "internalSteps": [
+        {
+          "id": "explore_cards",
+          "label": "Explore CTAs",
+          "description": "Track explore_opened_final; CTA data-testids explore-card-cat-lite + explore-card-axes push into cat-lite redirect or axis picker.",
+          "tags": ["cta:explore-card-cat-lite", "cta:explore-card-axes"]
+        }
+      ]
+    },
+    {
+      "id": "n_intro_explore_catlite",
+      "routePath": "/intro/explore/cat-lite",
+      "label": { "ro": "CAT Lite redirect" },
+      "position": { "x": 640, "y": 240 },
+      "chunkId": "sidequests",
+      "tags": [
+        "type:redirect",
+        "notes:app/(app)/intro/explore/cat-lite/page.tsx builds returnTo=/intro/explore/complete"
+      ]
+    },
+    {
+      "id": "n_onboarding_catlite2",
+      "routePath": "/onboarding/cat-lite-2",
+      "label": { "ro": "CAT Lite Part 2" },
+      "position": { "x": 860, "y": 220 },
+      "chunkId": "sidequests",
+      "tags": [
+        "type:page",
+        "cond:needsCatLitePart2=TRUE or force (e2e/explore)",
+        "notes:app/(app)/onboarding/cat-lite-2/page.tsx gated, saves profile + records events"
+      ],
+      "internalSteps": [
+        {
+          "id": "catlite_questions",
+          "label": "Extended axes sliders",
+          "description": "Questions array resolves axes + autop-saves via saveCatLiteSnapshot; setExploreCompletion('cat-lite').",
+          "tags": ["step:form"]
+        }
+      ]
+    },
+    {
+      "id": "n_intro_vocab_catlite",
+      "routePath": "/intro/vocab",
+      "label": { "ro": "Vocab (CAT Lite return)" },
+      "position": { "x": 1080, "y": 220 },
+      "chunkId": "sidequests",
+      "tags": [
+        "type:page",
+        "notes:app/(app)/intro/vocab/page.tsx acts as StepRunner continuation with returnTo param"
+      ]
+    },
+    {
+      "id": "n_intro_explore_complete",
+      "routePath": "/intro/explore/complete",
+      "label": { "ro": "Explore completion" },
+      "position": { "x": 1300, "y": 220 },
+      "chunkId": "sidequests",
+      "tags": [
+        "type:page",
+        "notes:app/(app)/intro/explore/complete/page.tsx writes completion + pushes /today?mode=deep&source=explore_*"
+      ]
+    },
+    {
+      "id": "n_intro_explore_axes",
+      "routePath": "/intro/explore/axes",
+      "label": { "ro": "Axis picker" },
+      "position": { "x": 640, "y": 340 },
+      "chunkId": "sidequests",
+      "tags": [
+        "type:page",
+        "notes:Axis selection stored via setAxisLessonChoice; back CTA returns to Today (mode=short, source=explore)"
+      ]
+    },
+    {
+      "id": "n_intro_explore_axis_detail",
+      "routePath": "/intro/explore/axes/[axisId]",
+      "label": { "ro": "Axis lesson detail" },
+      "position": { "x": 860, "y": 340 },
+      "chunkId": "sidequests",
+      "tags": [
+        "type:page",
+        "notes:EXPLORE_AXIS_LESSONS content + CTA returns to completion or Today"
+      ]
+    },
+    {
+      "id": "n_today_entry",
+      "routePath": "/today",
+      "label": { "ro": "Today hub" },
+      "position": { "x": 640, "y": 80 },
+      "chunkId": "today_core",
+      "tags": [
+        "type:page",
+        "notes:components/today/TodayOrchestrator.tsx orchestrates guided hero vs board vs explore"
+      ],
+      "internalSteps": [
+        {
+          "id": "guided_day1_gate",
+          "label": "Guided lane hero",
+          "description": "lines 520-708 compute guidedDayOneActive via lane=guided_day1, unlock flags, mind axis; CTA data-testid guided-day1-start pushes /today/run?mode=deep&lane=guided_day1&source=guided_day1 (+axis/cluster).",
+          "tags": ["type:guard", "condition:lane=guided_day1"]
+        },
+        {
+          "id": "today_board_default",
+          "label": "Standard board",
+          "description": "lines 708-820 render hero (h1/subtitle overrides from useCopy). handleStart() pushes /today/run or /today/run?e2e=1 when tests.",
+          "tags": ["cta:today-start"]
+        },
+        {
+          "id": "today_deep_loop_cta",
+          "label": "Deep Loop / Another round CTA",
+          "description": "handleDeepLoop() (lines 708-733) pushes /today/next?source=today_hub&mode=deep&round=extra unless Earn credit required.",
+          "tags": ["cta:today-deep-loop"]
+        },
+        {
+          "id": "today_explore_cards",
+          "label": "Explore row",
+          "description": "handleExploreCatLite + handleExploreAxes route back into Intro Explore with CTA ids today-explore-cat / today-explore-axes.",
+          "tags": ["cta:today-explore-cat", "cta:today-explore-axes"]
+        },
+        {
+          "id": "today_intruders",
+          "label": "Intruder: query overrides + debug badges",
+          "description": "TodayOrchestrator lines 556-566 + 600-640 read axis/cluster/lang/mode/qa params. When present they unlock guidedLaneBadge and bypass locks; these QA states expose dailypath list + resets not meant for prod.",
+          "tags": ["intruder:qa-panel", "debug:query-overrides"]
+        }
+      ]
+    },
+    {
+      "id": "n_today_next",
+      "routePath": "/today/next",
+      "label": { "ro": "Another round redirect" },
+      "position": { "x": 860, "y": 40 },
+      "chunkId": "today_core",
+      "tags": [
+        "type:redirect",
+        "notes:app/(app)/today/next/page.tsx auto chooses /today/run (quick) vs /today/run?mode=deep"
+      ],
+      "internalSteps": [
+        {
+          "id": "resolve_plan",
+          "label": "resolveNextPlan()",
+          "description": "If last today_run_completed <20m (RECENT_RUN_WINDOW) route to /today/run?mode=deep, else default quick run.",
+          "tags": ["condition:lastRun<20m"]
+        },
+        {
+          "id": "auto_redirect",
+          "label": "Auto replace",
+          "description": "useEffect triggers router.replace(destination) after 1.2s, track today_next_auto_start.",
+          "tags": ["trigger:auto-redirect"]
+        }
+      ]
+    },
+    {
+      "id": "n_today_run",
+      "routePath": "/today/run",
+      "label": { "ro": "Today Run (Initiation V2)" },
+      "position": { "x": 1060, "y": 80 },
+      "chunkId": "today_run",
+      "tags": [
+        "type:page",
+        "notes:app/(app)/today/run/page.tsx + DailyPathRunner orchestrate initiation_v2 blocks"
+      ],
+      "internalSteps": [
+        {
+          "id": "initiation_core",
+          "label": "Core lesson block",
+          "description": "TodayRunPageInner derives module/blocks from readTodayPlan + resolveInitiationLesson (lines 210-270) before handing to DailyPathRunner.",
+          "tags": ["step:core_lesson"]
+        },
+        {
+          "id": "initiation_elective",
+          "label": "Elective practice",
+          "description": "Optional block kind 'elective_practice' (buildInitiationSessionPlan) stored as initiationBlocks; displayed before recall when available.",
+          "tags": ["step:elective_optional"]
+        },
+        {
+          "id": "initiation_recall",
+          "label": "Recall prompt",
+          "description": "If plan includes recall prompt, InitiationRecallBlock renders journaling step before completion.",
+          "tags": ["step:recall"]
+        },
+        {
+          "id": "run_complete",
+          "label": "Completion + telemetry",
+          "description": "handleCompleted() lines 330-380 markDailyCompletion, recordDailyRunnerEvent, clear plan, router.push('/session/complete?...').",
+          "tags": ["trigger:auto-redirect", "params:source=today_run|guided_day1"]
+        },
+        {
+          "id": "run_intruder_debug",
+          "label": "Intruder: QA & Arc debug",
+          "description": "components/today/DailyPathRunner.tsx:340-420 allow qa=1/debug=1/skipOnboarding to bypass gating, swap clusters, or expose ArcStateDebugPanel (lines 829-1173) showing dailypath list/resets.",
+          "tags": ["intruder:daily-path-list", "debug:qa"]
+        }
+      ]
+    },
+    {
+      "id": "n_today_earn",
+      "routePath": "/today/earn",
+      "label": { "ro": "Earn gate" },
+      "position": { "x": 1060, "y": 200 },
+      "chunkId": "intruders",
+      "tags": [
+        "type:page",
+        "intruder:earn_gate",
+        "notes:app/(app)/today/earn/page.tsx collects feedback + micro-commit -> awards credit"
+      ],
+      "internalSteps": [
+        {
+          "id": "earn_feedback",
+          "label": "Feedback choice",
+          "description": "User picks FEEDBACK_OPTIONS; required before unlocking extra round.",
+          "tags": ["step:form"]
+        },
+        {
+          "id": "earn_micro_commit",
+          "label": "Micro commitment",
+          "description": "User selects micro action; handleSubmit => earnedRounds.earn() then router.push('/today/next?source=earn_gate').",
+          "tags": ["trigger:auto-redirect"]
+        }
+      ]
+    },
+    {
+      "id": "n_session_complete",
+      "routePath": "/session/complete",
+      "label": { "ro": "Session complete" },
+      "position": { "x": 1280, "y": 60 },
+      "chunkId": "session",
+      "tags": [
+        "type:page",
+        "notes:app/(app)/session/complete/page.tsx summary + guided follow-up"
+      ],
+      "internalSteps": [
+        {
+          "id": "guided_summary",
+          "label": "Guided day-1 summary",
+          "description": "Guided lanes show insight copy based on mindpacing tag, plus follow-up CTAs (continue guided, explore hub).",
+          "tags": ["condition:lane=guided_day1"]
+        },
+        {
+          "id": "another_round",
+          "label": "Another round CTA",
+          "description": "handleAnotherRound() -> /today/next?source=session_complete when premium or Earn credit available; else open earn gate.",
+          "tags": ["cta:another-round"]
+        },
+        {
+          "id": "earn_prompt",
+          "label": "Earn prompt intruder",
+          "description": "Session complete can push into /today/earn (applyNavigation buildUrl('/today/earn', {source:'session_complete'})).",
+          "tags": ["intruder:earn_prompt"]
+        },
+        {
+          "id": "back_today",
+          "label": "Return to Today",
+          "description": "todayHrefBase = guided ? '/today?source=guided_day1' : '/today'; CTA uses router push/replace depending on e2e/test context.",
+          "tags": ["cta:today-back"]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "edge_intro_guard_to_today", "source": "n_intro_route", "target": "n_today_entry", "label": { "ro": "trigger:auto guard · params: introSeen=1" } },
+    { "id": "edge_intro_route_to_cinematic", "source": "n_intro_route", "target": "n_intro_cinematic_step", "label": { "ro": "trigger:StepRunner start" } },
+    { "id": "edge_cinematic_to_mindpacing", "source": "n_intro_cinematic_step", "target": "n_intro_mindpacing_step", "label": { "ro": "trigger:next" } },
+    { "id": "edge_mindpacing_to_vocab", "source": "n_intro_mindpacing_step", "target": "n_intro_vocab_step", "label": { "ro": "trigger:mindpacing-continue" } },
+    { "id": "edge_vocab_to_handoff", "source": "n_intro_vocab_step", "target": "n_intro_handoff_step", "label": { "ro": "trigger:vocab-continue" } },
+    {
+      "id": "edge_handoff_to_guided",
+      "source": "n_intro_handoff_step",
+      "target": "n_intro_guided",
+      "label": { "ro": "trigger:auto-redirect · params: intent=guided&lane=guided_day1&source=intro&axis|cluster dynamic" }
+    },
+    {
+      "id": "edge_handoff_to_explore",
+      "source": "n_intro_handoff_step",
+      "target": "n_intro_explore",
+      "label": { "ro": "trigger:auto-redirect · params:intent=explore&mode=explore&source=intro" }
+    },
+    {
+      "id": "edge_guided_to_today",
+      "source": "n_intro_guided",
+      "target": "n_today_entry",
+      "label": { "ro": "trigger:auto replace after reflection · query:source=guided" }
+    },
+    {
+      "id": "edge_today_guided_start",
+      "source": "n_today_entry",
+      "target": "n_today_run",
+      "label": { "ro": "trigger:CTA guided-day1-start · params:mode=deep&lane=guided_day1&source=guided_day1&axis?/cluster?" }
+    },
+    {
+      "id": "edge_today_quick_start",
+      "source": "n_today_entry",
+      "target": "n_today_run",
+      "label": { "ro": "trigger:CTA today-start · params:mode=quick|deep depending on plan" }
+    },
+    {
+      "id": "edge_today_to_next",
+      "source": "n_today_entry",
+      "target": "n_today_next",
+      "label": { "ro": "trigger:CTA Pornește Deep Loop · params:mode=deep&source=today_hub&round=extra" }
+    },
+    {
+      "id": "edge_today_to_explore_hub",
+      "source": "n_today_entry",
+      "target": "n_intro_explore",
+      "label": { "ro": "trigger:CTA today-explore-{cat|axes} · params:source=today&entry=cat-lite|axes" }
+    },
+    {
+      "id": "edge_today_to_earn_gate",
+      "source": "n_today_entry",
+      "target": "n_today_earn",
+      "label": { "ro": "trigger:CTA earn shortcut when deepNeedsEarnCredit=true · params:source=today_hub&round=extra" }
+    },
+    {
+      "id": "edge_today_next_to_run_deep",
+      "source": "n_today_next",
+      "target": "n_today_run",
+      "label": { "ro": "trigger:auto redirect when lastRun<20m · params:mode=deep&round=extra" }
+    },
+    {
+      "id": "edge_today_next_to_run_quick",
+      "source": "n_today_next",
+      "target": "n_today_run",
+      "label": { "ro": "trigger:auto redirect default plan · params:mode=quick" }
+    },
+    {
+      "id": "edge_run_to_complete",
+      "source": "n_today_run",
+      "target": "n_session_complete",
+      "label": { "ro": "trigger:auto on DailyPathRunner completion · params:source=today_run/guided_day1&lane?=guided_day1" }
+    },
+    {
+      "id": "edge_complete_to_today",
+      "source": "n_session_complete",
+      "target": "n_today_entry",
+      "label": { "ro": "trigger:CTA Înapoi la Today · params:source=guided_day1?|run_complete" }
+    },
+    {
+      "id": "edge_complete_to_next",
+      "source": "n_session_complete",
+      "target": "n_today_next",
+      "label": { "ro": "trigger:CTA Another Round / auto after Earn credit · params:source=session_complete&round=extra" }
+    },
+    {
+      "id": "edge_complete_to_earn",
+      "source": "n_session_complete",
+      "target": "n_today_earn",
+      "label": { "ro": "trigger:CTA Earn credit (non-premium) · params:source=session_complete&round=extra" }
+    },
+    {
+      "id": "edge_complete_to_explore",
+      "source": "n_session_complete",
+      "target": "n_intro_explore",
+      "label": { "ro": "trigger:CTA Explore after guided summary · params:source=guided_day1&entry=cat-lite" }
+    },
+    {
+      "id": "edge_earn_to_next",
+      "source": "n_today_earn",
+      "target": "n_today_next",
+      "label": { "ro": "trigger:Earn submit success · params:source=earn_gate&round=extra" }
+    },
+    {
+      "id": "edge_explore_to_catlite",
+      "source": "n_intro_explore",
+      "target": "n_intro_explore_catlite",
+      "label": { "ro": "trigger:CTA explore-card-cat-lite · params:entry=cat-lite" }
+    },
+    {
+      "id": "edge_explore_to_axes",
+      "source": "n_intro_explore",
+      "target": "n_intro_explore_axes",
+      "label": { "ro": "trigger:CTA explore-card-axes · params:entry=axes" }
+    },
+    {
+      "id": "edge_catlite_redirect_to_part2",
+      "source": "n_intro_explore_catlite",
+      "target": "n_onboarding_catlite2",
+      "label": { "ro": "trigger:auto replace to /onboarding/cat-lite-2 · params:source=explore&returnTo=/intro/explore/complete" }
+    },
+    {
+      "id": "edge_catlite_part2_to_vocab",
+      "source": "n_onboarding_catlite2",
+      "target": "n_intro_vocab_catlite",
+      "label": { "ro": "trigger:CTA Salvează și revino · params:source=cat-lite&returnTo=/intro/explore/complete" }
+    },
+    {
+      "id": "edge_vocab_to_complete",
+      "source": "n_intro_vocab_catlite",
+      "target": "n_intro_explore_complete",
+      "label": { "ro": "trigger:onContinue -> router.replace(returnTo) default /intro/explore/complete" }
+    },
+    {
+      "id": "edge_complete_explore_to_today",
+      "source": "n_intro_explore_complete",
+      "target": "n_today_entry",
+      "label": { "ro": "trigger:CTA Înapoi în Today · params:mode=deep&source=explore_cat_day1|explore_axes_day1" }
+    },
+    {
+      "id": "edge_axes_to_detail",
+      "source": "n_intro_explore_axes",
+      "target": "n_intro_explore_axis_detail",
+      "label": { "ro": "trigger:CTA 👉 Explorează (axis id) · params:e2e?" }
+    },
+    {
+      "id": "edge_axis_detail_to_complete",
+      "source": "n_intro_explore_axis_detail",
+      "target": "n_intro_explore_complete",
+      "label": { "ro": "trigger:CTA Revenim în Today · params:source=axes&axis={id}" }
+    },
+    {
+      "id": "edge_axes_back_to_today",
+      "source": "n_intro_explore_axes",
+      "target": "n_today_entry",
+      "label": { "ro": "trigger:CTA explore-back-today · params:mode=short&source=explore" }
+    },
+    {
+      "id": "edge_axis_detail_back_today",
+      "source": "n_intro_explore_axis_detail",
+      "target": "n_today_entry",
+      "label": { "ro": "trigger:CTA Înapoi la Today (neutral) · params:mode=short&source=explore" }
+    }
+  ]
+}

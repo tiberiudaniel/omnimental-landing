@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { go, resetSession } from './helpers/env';
+import { test, expect, type Page } from "@playwright/test";
+import { go, resetSession } from "./helpers/env";
 
 const FORBIDDEN_ON_RUN = [
   /Foundation Cycle/i,
@@ -10,9 +10,26 @@ const FORBIDDEN_ON_RUN = [
   /Calibration Mission/i,
 ];
 
-test.describe('Guided Day1 contract (lane UI)', () => {
+function guardConsole(page: Page) {
+  const firestoreNoise = /FIRESTORE.*INTERNAL (ASSERTION|UNHANDLED) ERROR/i;
+  page.on("console", (msg) => {
+    if (msg.type() !== "error") return;
+    const text = msg.text();
+    if (firestoreNoise.test(text)) return;
+    if (/Download the React DevTools/i.test(text)) return;
+    throw new Error(`Console error: ${text}`);
+  });
+  page.on("pageerror", (error) => {
+    const text = error?.message ?? String(error);
+    if (firestoreNoise.test(text)) return;
+    throw error;
+  });
+}
+
+test.describe("Guided Day1 contract (lane UI)", () => {
   test.beforeEach(async ({ page }) => {
     await resetSession(page);
+    guardConsole(page);
   });
 
   test('Guided Day1 run does NOT render Foundation shell / Brief selector / Quest map; Save Progress is NOT shown at start', async ({

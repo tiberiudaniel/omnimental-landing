@@ -173,6 +173,8 @@ function ParallelEdge(props: ParallelEdgeProps) {
   const targetX = props.targetX + perpX;
   const targetY = props.targetY + perpY;
   const color = props.data?.color ?? FALLBACK_EDGE_COLOR;
+  const isAutoTrigger = props.data?.trigger === "auto";
+  const reasonCode = props.data?.reasonCode;
   const [path, labelX, labelY] = getSimpleBezierPath({
     sourceX,
     sourceY,
@@ -181,7 +183,12 @@ function ParallelEdge(props: ParallelEdgeProps) {
     targetY,
     targetPosition: props.targetPosition,
   });
-  const label = props.data?.command ?? props.label;
+  const baseLabel = props.data?.command ?? props.label ?? "";
+  const labelParts: string[] = [];
+  if (isAutoTrigger) labelParts.push("AUTO");
+  if (baseLabel) labelParts.push(baseLabel);
+  if (reasonCode) labelParts.push(reasonCode);
+  const label = labelParts.join(" · ");
 
   return (
     <>
@@ -191,7 +198,12 @@ function ParallelEdge(props: ParallelEdgeProps) {
         markerEnd={props.markerEnd}
         markerStart={props.markerStart}
         interactionWidth={props.interactionWidth ?? 42}
-        style={{ ...(props.style ?? {}), stroke: color, strokeWidth: 2 }}
+        style={{
+          ...(props.style ?? {}),
+          stroke: color,
+          strokeWidth: 2,
+          strokeDasharray: isAutoTrigger ? "6 4" : props.style?.strokeDasharray,
+        }}
       />
       {label ? (
         <EdgeLabelRenderer>

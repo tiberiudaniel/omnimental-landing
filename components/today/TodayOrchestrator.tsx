@@ -64,6 +64,13 @@ import {
 import { useInitiationProgress } from "@/components/today/useInitiationProgress";
 import { resolveInitiationPlanLock } from "@/lib/today/initiationPlanLock";
 import { clearInitiationRunState } from "@/lib/today/initiationRunState";
+import dynamic from "next/dynamic";
+import { setLastNavReason } from "@/lib/debug/runtimeDebug";
+import { NAV_REASON } from "@/lib/debug/reasons";
+
+const RuntimeDebugPanel = dynamic(() => import("@/components/debug/RuntimeDebugPanel").then((mod) => mod.RuntimeDebugPanel), {
+  ssr: false,
+});
 
 const TODAY_SCREEN_ID = getScreenIdForRoute("/today");
 const GUIDED_ONBOARDING_KEY = "guided_onboarding_active";
@@ -218,6 +225,7 @@ export default function TodayOrchestrator() {
   const fallbackTrackedRef = useRef(false);
   const debugQueryActive = (searchParams?.get("debug") ?? "").toLowerCase() === "1";
   const showDebugUi = process.env.NODE_ENV !== "production" || e2eMode || debugQueryActive;
+  const showInitiationDebugPanels = e2eMode || debugQueryActive;
   const unknownInitiationBlockKinds =
     initiationPlanResult?.blocks?.length && mappedPlanBlocks.unknownKinds.length
       ? mappedPlanBlocks.unknownKinds
@@ -333,6 +341,7 @@ export default function TodayOrchestrator() {
   useEffect(() => {
     if (!sourceParam) return;
     if (sourceParam === "run_complete" || sourceParam === "guided") {
+      setLastNavReason(NAV_REASON.TODAY_RESET_SOURCE, { source: sourceParam });
       router.replace("/today");
     }
   }, [sourceParam, router]);
@@ -519,6 +528,7 @@ export default function TodayOrchestrator() {
     if (!canStartGuided || hasStartedGuidedDay1) return;
     setHasStartedGuidedDay1(true);
     const target = `/today/run?${buildGuidedDayOneQuery()}`;
+    setLastNavReason(NAV_REASON.GUIDED_DAY1_START, { target, lane: "guided_day1" });
     if (e2eGuidedOverride && allowGuidedHardNav && typeof window !== "undefined") {
       // test-only: avoid Playwright click race (button unmount during router.push)
       window.location.assign(target);
@@ -536,6 +546,7 @@ export default function TodayOrchestrator() {
       setGuidedOnboardingActive(false);
     }
     const runTarget = e2eMode ? "/today/run?e2e=1" : "/today/run";
+    setLastNavReason(NAV_REASON.TODAY_PRIMARY_START, { target: runTarget });
     router.push(runTarget);
   };
 
@@ -638,6 +649,7 @@ export default function TodayOrchestrator() {
 
   const goToEarnGate = useCallback(
     (source: string) => {
+      setLastNavReason(NAV_REASON.EARN_GATE_ENTRY, { source });
       router.push(`/today/earn?source=${source}&round=extra`);
     },
     [router],
@@ -647,28 +659,31 @@ export default function TodayOrchestrator() {
     const guidedSummary = guidedReasonText ?? sessionPlan?.summary ?? undefined;
     const guidedCta = guidedCtaLabel ?? "Pornește sesiunea (10–12 min)";
     return (
-      <div data-testid="today-root">
-        <div data-testid="guided-day1-page">
-          {guidedLaneBadge}
-          <AppShell header={null} bodyClassName="bg-[var(--omni-bg-soft)]" mainClassName="px-0 py-10">
-            <div className="mx-auto w-full max-w-4xl px-4">
-              <DayOneEntryHero
-                title={guidedTitle}
-                summary={
-                  guidedSummary ??
-                  "O sesiune ghidată de 10–12 minute care taie zgomotul mental și îți dă o singură decizie aplicabilă azi."
-                }
-                ctaLabel={guidedCta}
-                disabled={guidedStartDisabled}
-                disabledLabel="Se pregătește planul…"
-                debugDisabledReasonTestId="guided-day1-start-disabled-reason"
-                debugDisabledReason={guidedDisabledReasonForDebug ?? null}
-                onStart={handleGuidedDayOneStart}
-              />
-            </div>
-          </AppShell>
+      <>
+        <div data-testid="today-root">
+          <div data-testid="guided-day1-page">
+            {guidedLaneBadge}
+            <AppShell header={null} bodyClassName="bg-[var(--omni-bg-soft)]" mainClassName="px-0 py-10">
+              <div className="mx-auto w-full max-w-4xl px-4">
+                <DayOneEntryHero
+                  title={guidedTitle}
+                  summary={
+                    guidedSummary ??
+                    "O sesiune ghidată de 10–12 minute care taie zgomotul mental și îți dă o singură decizie aplicabilă azi."
+                  }
+                  ctaLabel={guidedCta}
+                  disabled={guidedStartDisabled}
+                  disabledLabel="Se pregătește planul…"
+                  debugDisabledReasonTestId="guided-day1-start-disabled-reason"
+                  debugDisabledReason={guidedDisabledReasonForDebug ?? null}
+                  onStart={handleGuidedDayOneStart}
+                />
+              </div>
+            </AppShell>
+          </div>
         </div>
-      </div>
+        <RuntimeDebugPanel context={runtimeDebugContext} />
+      </>
     );
   }
   const quickButtonLabel = completedToday ? "Completat azi" : primaryCtaLabel;
@@ -704,14 +719,17 @@ export default function TodayOrchestrator() {
   const handleDeepLoop = () => {
     track("today_deep_loop_selected", { premium: isPremiumMember });
     if (deepNeedsEarnCredit) {
+      setLastNavReason(NAV_REASON.TODAY_DEEP_LOOP_LOCKED, { credits: earnedRounds.state.credits });
       goToEarnGate("today_deep");
       return;
     }
     const params = new URLSearchParams({ source: "today_hub", mode: "deep", round: "extra" });
+    setLastNavReason(NAV_REASON.TODAY_DEEP_LOOP, { target: `/today/next?${params.toString()}` });
     router.push(`/today/next?${params.toString()}`);
   };
   const handleExploreCatLite = () => {
     track("today_explore_cat_clicked", { intent: intentParam || null, source: sourceParam ?? null });
+    setLastNavReason(NAV_REASON.TODAY_EXPLORE_CAT, { target: exploreCatUrl, source: sourceParam ?? null });
     router.push(exploreCatUrl);
   };
   const exploreCatTitle = "Profil mental Ziua 1";
@@ -724,6 +742,7 @@ export default function TodayOrchestrator() {
     : "Dacă vrei doar context rapid, alege o axă și primești vocab + mini-instrucțiuni pentru zona respectivă.";
   const handleExploreAxes = () => {
     track("today_explore_axes_clicked", { intent: intentParam || null, source: sourceParam ?? null });
+    setLastNavReason(NAV_REASON.TODAY_EXPLORE_AXES, { target: exploreAxesUrl, source: sourceParam ?? null });
     router.push(exploreAxesUrl);
   };
   const handleEarnShortcut = () => {
@@ -739,6 +758,25 @@ export default function TodayOrchestrator() {
   const currentLessonNumber = moduleLessonCount
     ? Math.min(completedLessonsCount + 1, moduleLessonCount)
     : null;
+  const runtimeDebugContext = useMemo(() => {
+    const primaryBlock = initiationPlanResult?.blocks?.[0];
+    const activeLessonId =
+      primaryBlock && primaryBlock.kind !== "recall" ? primaryBlock.lesson.meta.lessonId : null;
+    return {
+      worldId: "INITIATION",
+      todayPlanVersion: initiationPlanResult?.plan?.id ?? sessionPlan?.id ?? null,
+      runId,
+      blockIndex: null,
+      activeBlockKind: primaryBlock?.kind ?? null,
+      activeLessonId: activeLessonId ?? null,
+      moduleId: initiationPlanResult?.initiation.moduleId ?? sessionPlan?.moduleId ?? null,
+      extras: {
+        source: sourceParam ?? null,
+        lane: laneParam ?? null,
+        guidedActive: guidedDayOneActive,
+      },
+    };
+  }, [initiationPlanResult, laneParam, runId, sessionPlan, sourceParam, guidedDayOneActive]);
 
   if (!sessionPlan) {
     return (
@@ -810,7 +848,7 @@ export default function TodayOrchestrator() {
       </p>
     </div>
   ) : null;
-  const lessonList = showDebugUi && initiationLessons.length ? (
+  const lessonList = showInitiationDebugPanels && initiationLessons.length ? (
     <div
       className="mt-4 rounded-2xl border border-[var(--omni-border-soft)] bg-white/70 px-4 py-3"
       data-testid="initiation-lesson-plan"
@@ -854,7 +892,7 @@ export default function TodayOrchestrator() {
                   Unknown initiation block kind(s): {unknownInitiationBlockKinds.join(", ")}
                 </div>
               ) : null}
-              {showDebugUi ? (
+              {showInitiationDebugPanels ? (
                 <button
                   type="button"
                   data-testid="debug-reset-initiation"
@@ -874,38 +912,56 @@ export default function TodayOrchestrator() {
                   ) : null}
                 </p>
               ) : null}
-              <div className="mt-6 grid gap-4 md:grid-cols-3">
-                <article className="rounded-[20px] border border-[var(--omni-border-soft)] bg-white/90 px-5 py-4 shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
-                  <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-                    <span>Quick Loop</span>
-                    <span>{quickDurationLabel}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{heroSubtitle}</p>
-                  <p className="mt-1 text-xs text-[var(--omni-muted)]">Ultima sesiune: {lastSessionLabel}</p>
-                  <OmniCtaButton
-                    className="mt-4 w-full justify-center"
-                    disabled={quickButtonDisabled}
-                    onClick={handleQuickLoop}
-                    data-testid="today-start-run"
-                  >
-                    {quickButtonLabel}
-                  </OmniCtaButton>
-                </article>
-                <article className="rounded-[20px] border border-[var(--omni-border-soft)] bg-white/90 px-5 py-4 shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
-                  <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
-                    <span>Deep Loop</span>
-                    <span>30–60 min</span>
-                  </div>
-                  <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{deepDescription}</p>
-                  <OmniCtaButton
-                    className="mt-4 w-full justify-center"
-                    variant="neutral"
-                    onClick={handleDeepLoop}
-                    disabled={planLoading}
-                  >
-                    {deepButtonLabel}
-                  </OmniCtaButton>
-                </article>
+              <div className="mt-6 space-y-2">
+                <OmniCtaButton
+                  className="w-full justify-center text-base font-semibold"
+                  size="lg"
+                  onClick={handleQuickLoop}
+                  disabled={quickButtonDisabled}
+                  data-testid="today-primary-session"
+                >
+                  Sesiunea de azi (12 min): Core + Practică + Recall
+                </OmniCtaButton>
+                <p className="text-xs text-[var(--omni-muted)]">
+                  Include lecția principală, practică ghidată și recapitulare pentru claritate completă azi.
+                </p>
+              </div>
+              <div className="mt-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--omni-muted)]">Opțiuni secundare</p>
+                <div className="mt-3 grid gap-4 md:grid-cols-3">
+                  <article className="rounded-[20px] border border-[var(--omni-border-soft)] bg-white/90 px-5 py-4 shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
+                    <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                      <span>Quick Loop</span>
+                      <span>{quickDurationLabel}</span>
+                    </div>
+                    <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{heroSubtitle}</p>
+                    <p className="mt-1 text-xs text-[var(--omni-muted)]">Ultima sesiune: {lastSessionLabel}</p>
+                    <OmniCtaButton
+                      className="mt-4 w-full justify-center"
+                      variant="neutral"
+                      disabled={quickButtonDisabled}
+                      onClick={handleQuickLoop}
+                      data-testid="today-start-run"
+                    >
+                      {quickButtonLabel}
+                    </OmniCtaButton>
+                  </article>
+                  <article className="rounded-[20px] border border-[var(--omni-border-soft)] bg-white/90 px-5 py-4 shadow-[0_10px_35px_rgba(0,0,0,0.05)]">
+                    <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--omni-muted)]">
+                      <span>Deep Loop</span>
+                      <span>30–60 min</span>
+                    </div>
+                    <p className="mt-2 text-sm text-[var(--omni-ink)]/80">{deepDescription}</p>
+                    <OmniCtaButton
+                      className="mt-4 w-full justify-center"
+                      variant="neutral"
+                      onClick={handleDeepLoop}
+                      disabled={planLoading}
+                    >
+                      {deepButtonLabel}
+                    </OmniCtaButton>
+                  </article>
+                </div>
               </div>
               <div className="mt-4 flex flex-col gap-2 rounded-[18px] border border-[var(--omni-border-soft)] bg-white/60 px-4 py-3 text-xs text-[var(--omni-muted)] sm:flex-row sm:items-center sm:justify-between">
                 <p className="font-semibold uppercase tracking-[0.35em] text-[var(--omni-ink)]">{earnStatusLabel}</p>
@@ -1064,6 +1120,7 @@ export default function TodayOrchestrator() {
         </div>
       </AppShell>
       {!guidedOnboardingActive ? <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} /> : null}
+      <RuntimeDebugPanel context={runtimeDebugContext} />
     </>
   );
 }

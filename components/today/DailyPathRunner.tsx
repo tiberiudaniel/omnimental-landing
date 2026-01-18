@@ -211,20 +211,13 @@ export default function DailyPathRunner({
 
   return (
     <Suspense fallback={null}>
-      <>
-        {forcedModuleConfig ? (
-          <div data-testid="initiation-forced-module" className="sr-only">
-            {forcedModuleConfig.moduleKey}
-          </div>
-        ) : null}
-        <RunnerContent
-          entryPath={entryPath}
-          authReturnTo={authReturnTo}
-          onCompleted={onCompleted}
-          todayModuleKey={todayModuleKey}
-          forcedModuleConfig={forcedModuleConfig}
-        />
-      </>
+      <RunnerContent
+        entryPath={entryPath}
+        authReturnTo={authReturnTo}
+        onCompleted={onCompleted}
+        todayModuleKey={todayModuleKey}
+        forcedModuleConfig={forcedModuleConfig}
+      />
     </Suspense>
   );
 }

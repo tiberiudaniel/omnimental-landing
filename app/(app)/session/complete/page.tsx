@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
@@ -28,6 +29,12 @@ import {
   markGuidedDayOneMigrationPending,
   markGuidedDayOneSavePromptSeen,
 } from "@/lib/migration/migrateGuestProgress";
+import { setLastNavReason } from "@/lib/debug/runtimeDebug";
+import { NAV_REASON } from "@/lib/debug/reasons";
+
+const RuntimeDebugPanel = dynamic(() => import("@/components/debug/RuntimeDebugPanel").then((mod) => mod.RuntimeDebugPanel), {
+  ssr: false,
+});
 
 const SUMMARY_WINDOW_MINUTES = 45;
 
@@ -159,6 +166,24 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
     () => events24h.filter((event) => event.type === "today_run_completed").length,
     [events24h],
   );
+  const runtimeDebugContext = useMemo(
+    () => ({
+      worldId: null,
+      todayPlanVersion: null,
+      runId: null,
+      blockIndex: null,
+      activeBlockKind: null,
+      activeLessonId: null,
+      moduleId: null,
+      extras: {
+        source: sourceParam ?? null,
+        lane: laneParam ?? null,
+        guided: guidedLaneActive,
+        sessionsToday,
+      },
+    }),
+    [guidedLaneActive, laneParam, sessionsToday, sourceParam],
+  );
   const latestUnlock = summary.unlocks[0] ?? null;
   const modules = summary.modules.length ? summary.modules : ["Sesiune adaptivă"];
   const durationLabel = formatDurationLabel(summary.durationMs);
@@ -257,6 +282,7 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
 
   const applyNavigation = useCallback(
     (target: string, replace = false) => {
+      setLastNavReason(NAV_REASON.SESSION_COMPLETE_NAV, { target, replace });
       if (isE2E && typeof window !== "undefined") {
         if (replace) {
           window.location.replace(target);
@@ -526,6 +552,7 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
         )}
       </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+      <RuntimeDebugPanel context={runtimeDebugContext} />
     </>
   );
 }

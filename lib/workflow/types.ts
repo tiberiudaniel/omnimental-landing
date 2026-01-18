@@ -7,6 +7,7 @@ export type WorkflowTask = {
   title: string;
   description: string;
   status: WorkflowStatus;
+  order?: number;
   start: string;
   durationDays: number;
   priority: WorkflowPriority;

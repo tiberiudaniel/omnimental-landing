@@ -36,6 +36,7 @@ export function FlowNodeCard({
   highlighted = false,
 }: FlowNodeCardProps) {
   const isStepScreen = data.kind === "stepScreen";
+  const layer = data.layer ?? "journey";
   const label = data.stepScreen?.label ?? data.labelOverrides?.ro ?? data.routePath;
   const isStart = Boolean(data.tags?.includes("start"));
   const labelIsPortal = Boolean(label?.toUpperCase().startsWith("PORTAL:"));
@@ -74,11 +75,22 @@ export function FlowNodeCard({
     if (selected) {
       return isPortalNode ? "bg-sky-50 border-[var(--omni-energy)]" : "bg-white border-[var(--omni-energy)]";
     }
+    if (layer === "system") {
+      return "bg-indigo-50 border-indigo-200 text-indigo-900";
+    }
+    if (layer === "side") {
+      return "bg-slate-50 border-slate-200 text-slate-700";
+    }
+    if (layer === "debug") {
+      return "bg-rose-50 border-rose-200 text-rose-700";
+    }
     if (isPortalNode) {
       return "bg-sky-50 border-sky-300";
     }
     return "bg-white/90 border-[var(--omni-border-soft)]";
   })();
+  const layerBadgeLabel =
+    layer === "journey" ? null : layer === "system" ? "SYS" : layer === "side" ? "SIDE" : "DBG";
   const highlightClasses = highlighted ? "outline outline-4 outline-sky-200 shadow-[0_18px_32px_rgba(56,189,248,0.25)]" : "";
   return (
     <div className="relative">
@@ -109,6 +121,11 @@ export function FlowNodeCard({
           <div className="flex items-center justify-between gap-2">
             <span className="truncate select-text">{label}</span>
             <div className="flex items-center gap-1">
+              {layerBadgeLabel ? (
+                <span className="rounded-full bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                  {layerBadgeLabel}
+                </span>
+              ) : null}
               {isStepScreen ? (
                 <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">
                   STEP
@@ -125,25 +142,27 @@ export function FlowNodeCard({
                 </span>
               ) : null}
               {isStart ? (
-                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">Start</span>
+                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                  Start
+                </span>
               ) : null}
             </div>
           </div>
-        <div className="flex items-center gap-2">
-          {!isStepScreen ? <StepStatusBadge status={stepStatus} variant="ghost" /> : null}
-          {!isStepScreen && canExpandSteps ? (
-            <button
-              type="button"
-              className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--omni-ink)]"
-              onClick={(event) => {
-                event.stopPropagation();
-                onExpandSteps?.(id);
-              }}
-            >
-              Steps
-            </button>
-          ) : null}
-        </div>
+          <div className="flex items-center gap-2">
+            {!isStepScreen ? <StepStatusBadge status={stepStatus} variant="ghost" /> : null}
+            {!isStepScreen && canExpandSteps ? (
+              <button
+                type="button"
+                className="rounded-full border border-[var(--omni-border-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--omni-ink)]"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onExpandSteps?.(id);
+                }}
+              >
+                Steps
+              </button>
+            ) : null}
+          </div>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[var(--omni-muted)]">
           <a
@@ -169,6 +188,9 @@ export function FlowNodeCard({
             Copy
           </button>
         </div>
+        {data.route && data.route !== data.routePath ? (
+          <p className="mt-1 text-[10px] text-[var(--omni-muted)]">Route: {data.route}</p>
+        ) : null}
         {tagHighlights.length ? (
           <div className="mt-2 flex flex-wrap items-center gap-1">
             {tagHighlights.map((tag) => (
@@ -198,6 +220,18 @@ export function FlowNodeCard({
           <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-emerald-700">
             {typeof observedStats.views === "number" ? <span>Vizualizări: {observedStats.views}</span> : null}
             {typeof observedStats.completions === "number" ? <span>Completări: {observedStats.completions}</span> : null}
+          </div>
+        ) : null}
+        {data.paramsSignature?.length ? (
+          <div className="mt-2 flex flex-wrap items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--omni-muted)]">
+            {data.paramsSignature.map((param) => (
+              <span
+                key={`${id}-param-${param}`}
+                className="rounded-full border border-dashed border-[var(--omni-border-soft)] px-2 py-0.5"
+              >
+                {param}
+              </span>
+            ))}
           </div>
         ) : null}
       </div>

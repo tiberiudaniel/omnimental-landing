@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
@@ -12,6 +13,12 @@ import { useProgressFacts } from "@/components/useProgressFacts";
 import { deriveAccessTier } from "@/lib/accessTier";
 import { getRecentSessionEvents } from "@/lib/sessionSummary";
 import { track } from "@/lib/telemetry/track";
+import { setLastNavReason } from "@/lib/debug/runtimeDebug";
+import { NAV_REASON } from "@/lib/debug/reasons";
+
+const RuntimeDebugPanel = dynamic(() => import("@/components/debug/RuntimeDebugPanel").then((mod) => mod.RuntimeDebugPanel), {
+  ssr: false,
+});
 
 type NextPlan = {
   destination: string;
@@ -80,6 +87,7 @@ function TodayNextPageInner() {
     autoRedirectRef.current = true;
     const timer = window.setTimeout(() => {
       track("today_next_auto_start", { destination: resolvedDestination });
+      setLastNavReason(NAV_REASON.TODAY_NEXT_AUTO, { target: resolvedDestination });
       router.replace(resolvedDestination);
     }, 1200);
     return () => {
@@ -91,11 +99,13 @@ function TodayNextPageInner() {
   const handleStartNow = () => {
     if (!resolvedDestination) return;
     track("today_next_manual_start", { destination: resolvedDestination });
+    setLastNavReason(NAV_REASON.TODAY_NEXT_MANUAL_START, { target: resolvedDestination });
     router.replace(resolvedDestination);
   };
 
   const handleBackToToday = () => {
     track("today_next_back");
+    setLastNavReason(NAV_REASON.TODAY_NEXT_BACK, { target: "/today" });
     router.push("/today");
   };
 
@@ -145,6 +155,7 @@ function TodayNextPageInner() {
         </div>
       </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+      <RuntimeDebugPanel context={runtimeDebugContext} />
     </>
   );
 }
@@ -156,3 +167,19 @@ export default function TodayNextPage() {
     </Suspense>
   );
 }
+  const runtimeDebugContext = useMemo(
+    () => ({
+      worldId: null,
+      todayPlanVersion: null,
+      runId: null,
+      blockIndex: null,
+      activeBlockKind: null,
+      activeLessonId: null,
+      moduleId: null,
+      extras: {
+        destination: resolvedDestination ?? null,
+        round: roundParam ?? null,
+      },
+    }),
+    [resolvedDestination, roundParam],
+  );

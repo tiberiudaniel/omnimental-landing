@@ -1,4 +1,11 @@
-import { emptyWorkflowState, WORKFLOW_STORAGE_KEY, type WorkflowEdge, type WorkflowState, type WorkflowTask } from "./types";
+import {
+  emptyWorkflowState,
+  WORKFLOW_STORAGE_KEY,
+  type WorkflowEdge,
+  type WorkflowState,
+  type WorkflowStatus,
+  type WorkflowTask,
+} from "./types";
 
 const isValidTask = (task: WorkflowTask): boolean => {
   return (
@@ -18,6 +25,25 @@ const isValidEdge = (edge: WorkflowEdge): boolean => {
   return typeof edge.id === "string" && typeof edge.from === "string" && typeof edge.to === "string";
 };
 
+const normalizeOrder = (tasks: WorkflowTask[]): WorkflowTask[] => {
+  const statusList: Record<WorkflowStatus, WorkflowTask[]> = {
+    todo: [],
+    in_progress: [],
+    done: [],
+  };
+  for (const task of tasks) {
+    statusList[task.status].push(task);
+  }
+  const toOrderValue = (task: WorkflowTask) => (typeof task.order === "number" ? task.order : task.createdAt);
+  (Object.keys(statusList) as WorkflowStatus[]).forEach((status) => {
+    const list = statusList[status].sort((a, b) => toOrderValue(a) - toOrderValue(b));
+    list.forEach((task, index) => {
+      task.order = index + 1;
+    });
+  });
+  return tasks;
+};
+
 export const sanitizeWorkflowState = (value: unknown): WorkflowState => {
   if (!value || typeof value !== "object") return emptyWorkflowState();
   const state = value as WorkflowState;
@@ -25,13 +51,14 @@ export const sanitizeWorkflowState = (value: unknown): WorkflowState => {
     return emptyWorkflowState();
   }
   const validTasks = state.tasks.filter((task): task is WorkflowTask => isValidTask(task));
-  const taskIds = new Set(validTasks.map((task) => task.id));
+  const normalizedTasks = normalizeOrder(validTasks.map((task) => ({ ...task })));
+  const taskIds = new Set(normalizedTasks.map((task) => task.id));
   const validEdges = state.edges.filter(
     (edge): edge is WorkflowEdge => isValidEdge(edge) && taskIds.has(edge.from) && taskIds.has(edge.to),
   );
   return {
     version: 1,
-    tasks: validTasks,
+    tasks: normalizedTasks,
     edges: validEdges,
   };
 };

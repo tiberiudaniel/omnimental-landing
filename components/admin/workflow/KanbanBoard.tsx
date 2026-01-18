@@ -8,6 +8,7 @@ type Props = {
   incoming: Record<string, WorkflowEdge[]>;
   counts: Record<WorkflowStatus, number>;
   onStatusChange: (taskId: string, status: WorkflowStatus) => void;
+  onReorderTask: (taskId: string, targetTaskId: string | null, status: WorkflowStatus) => void;
   onDeleteTask: (taskId: string) => void;
   onSelectTask: (taskId: string) => void;
   selectedTaskId: string | null;
@@ -25,11 +26,14 @@ const priorityLabel = (priority: number) => {
   return "Medium";
 };
 
+const orderValue = (task: WorkflowTask) => (typeof task.order === "number" ? task.order : task.createdAt);
+
 const KanbanBoard = memo(function KanbanBoard({
   tasks,
   incoming,
   counts,
   onStatusChange,
+  onReorderTask,
   onDeleteTask,
   onSelectTask,
   selectedTaskId,
@@ -43,11 +47,7 @@ const KanbanBoard = memo(function KanbanBoard({
     for (const task of tasks) {
       map[task.status].push(task);
     }
-    const sorter = (a: WorkflowTask, b: WorkflowTask) => {
-      if (a.priority !== b.priority) return a.priority - b.priority;
-      if (a.start !== b.start) return a.start.localeCompare(b.start);
-      return a.createdAt - b.createdAt;
-    };
+    const sorter = (a: WorkflowTask, b: WorkflowTask) => orderValue(a) - orderValue(b);
     map.todo.sort(sorter);
     map.in_progress.sort(sorter);
     map.done.sort(sorter);
@@ -66,6 +66,15 @@ const KanbanBoard = memo(function KanbanBoard({
     const taskId = event.dataTransfer.getData("text/task-id");
     if (taskId) {
       onStatusChange(taskId, status);
+    }
+  };
+
+  const handleCardDrop = (event: React.DragEvent, status: WorkflowStatus, targetId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const taskId = event.dataTransfer.getData("text/task-id");
+    if (taskId && taskId !== targetId) {
+      onReorderTask(taskId, targetId, status);
     }
   };
 
@@ -105,6 +114,8 @@ const KanbanBoard = memo(function KanbanBoard({
                   key={task.id}
                   data-testid={`task-card-${task.id}`}
                   onDragStart={(event) => handleDragStart(event, task.id)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => handleCardDrop(event, column.status, task.id)}
                   onClick={() => onSelectTask(task.id)}
                   className={`rounded-lg border border-[var(--workflow-border,#2C1A14)] bg-black/25 p-2 text-xs text-[var(--workflow-ink,#F5E8D8)] transition hover:border-[var(--workflow-accent,#F2613F)]/60 ${
                     selectedTaskId === task.id ? "ring-2 ring-[var(--workflow-accent)]/70" : ""

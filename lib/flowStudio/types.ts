@@ -39,6 +39,8 @@ export type StepScreenConfig = {
   queryPreset?: Record<string, string>;
 };
 
+export type FlowNodeLayer = "journey" | "system" | "side" | "debug";
+
 export type FlowNode = {
   id: string;
   kind?: FlowNodeKind;
@@ -52,6 +54,9 @@ export type FlowNode = {
   portal?: FlowNodePortalConfig | null;
   stepScreen?: StepScreenConfig | null;
   internalSteps?: FlowNodeInternalStep[] | null;
+  layer?: FlowNodeLayer;
+  route?: string | null;
+  paramsSignature?: string[] | null;
 };
 
 export type FlowEdge = {
@@ -65,6 +70,8 @@ export type FlowEdge = {
   targetHandle?: string | null;
   color?: string;
   command?: string;
+  trigger?: "user" | "auto";
+  reasonCode?: string | null;
 };
 
 export type FlowOverlayStep = {
@@ -126,6 +133,9 @@ export type FlowNodeData = {
   portal?: FlowNodePortalConfig | null;
   stepScreen?: StepScreenConfig | null;
   internalSteps?: FlowNodeInternalStep[] | null;
+  layer: FlowNodeLayer;
+  route?: string | null;
+  paramsSignature?: string[] | null;
 };
 
 export type FlowEdgeData = {
@@ -138,6 +148,8 @@ export type FlowEdgeData = {
   runtime?: {
     onLabelSelect?: (edgeId: string) => void;
   };
+  trigger?: "user" | "auto";
+  reasonCode?: string | null;
 };
 
 export type StepNodeRenderData = {

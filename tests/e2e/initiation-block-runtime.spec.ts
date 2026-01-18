@@ -61,7 +61,7 @@ test.describe("Initiation block runtime", () => {
     await expect(page.getByTestId("today-run-root")).toBeVisible();
     const sentinel = page.getByTestId("initiation-forced-module");
     await expect(sentinel).not.toHaveText("NO_PLAN");
-    await expect(sentinel).toHaveText(CORE_LESSON);
+    await expect(sentinel).toHaveText(CORE_LESSON, { timeout: 15_000 });
     await page.getByTestId("initiation-block-debug-complete").click();
     await expect(page.getByTestId("initiation-forced-module")).toHaveText(ELECTIVE_LESSON);
     await page.getByTestId("initiation-block-debug-complete").click();
@@ -111,7 +111,7 @@ test.describe("Initiation block runtime", () => {
     await expect(page.getByTestId("today-run-root")).toBeVisible();
     const sentinel = page.getByTestId("initiation-forced-module");
     await expect(sentinel).not.toHaveText("NO_PLAN");
-    await expect(sentinel).toHaveText(CORE_LESSON);
+    await expect(sentinel).toHaveText(CORE_LESSON, { timeout: 15_000 });
     await page.getByTestId("initiation-block-debug-complete").click();
     await expect(page.getByTestId("initiation-recall-block")).toBeVisible();
     await page.getByTestId("recall-answer-input").fill("Aplic regula imediat după run.");

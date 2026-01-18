@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import MenuOverlay from "@/components/MenuOverlay";
@@ -12,6 +13,12 @@ import { useProgressFacts } from "@/components/useProgressFacts";
 import { useEarnedRoundsController } from "@/components/today/useEarnedRounds";
 import { useUserAccessTier } from "@/components/useUserAccessTier";
 import { track } from "@/lib/telemetry/track";
+import { setLastNavReason } from "@/lib/debug/runtimeDebug";
+import { NAV_REASON } from "@/lib/debug/reasons";
+
+const RuntimeDebugPanel = dynamic(() => import("@/components/debug/RuntimeDebugPanel").then((mod) => mod.RuntimeDebugPanel), {
+  ssr: false,
+});
 
 const FEEDBACK_OPTIONS = [
   { id: "not-useful", label: "Nu prea utilă" },
@@ -87,11 +94,13 @@ function TodayEarnPageInner() {
 
   const handleBackToToday = () => {
     track("today_earn_back");
+    setLastNavReason(NAV_REASON.EARN_EXIT_TO_TODAY, { round: roundParam ?? null });
     router.push("/today");
   };
 
   const handleUpgrade = () => {
     track("today_earn_upgrade");
+    setLastNavReason(NAV_REASON.EARN_UPGRADE, { round: roundParam ?? null });
     router.push("/upgrade");
   };
 
@@ -109,6 +118,7 @@ function TodayEarnPageInner() {
       if (roundParam) {
         params.set("round", roundParam);
       }
+      setLastNavReason(NAV_REASON.EARN_GRANTED_CREDIT, { target: `/today/next?${params.toString()}` });
       router.push(`/today/next?${params.toString()}`);
     } finally {
       setSubmitting(false);
@@ -116,6 +126,23 @@ function TodayEarnPageInner() {
   };
 
   const canSubmit = Boolean(feedbackChoice && commitChoice && !submitting && !limitReached);
+  const runtimeDebugContext = useMemo(
+    () => ({
+      worldId: null,
+      todayPlanVersion: null,
+      runId: null,
+      blockIndex: null,
+      activeBlockKind: null,
+      activeLessonId: null,
+      moduleId: null,
+      extras: {
+        round: roundParam ?? null,
+        creditsRemaining,
+        limitReached,
+      },
+    }),
+    [creditsRemaining, limitReached, roundParam],
+  );
 
   const header = (
     <SiteHeader
@@ -212,6 +239,7 @@ function TodayEarnPageInner() {
         </div>
       </AppShell>
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} />
+      <RuntimeDebugPanel context={runtimeDebugContext} />
     </>
   );
 }
