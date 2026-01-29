@@ -121,7 +121,10 @@ function TodayRunPageInner() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [completedToday, setCompletedToday] = useState(false);
   const [initialized, setInitialized] = useState(false);
-  const [storedPlan, setStoredPlan] = useState<StoredTodayPlan | null>(() => readTodayPlan());
+  const [storedPlan, setStoredPlan] = useState<StoredTodayPlan | null>(() => {
+    if (typeof window === "undefined") return null;
+    return readTodayPlan();
+  });
   const [runState, setRunState] = useState<InitiationRunState | null>(() => {
     if (typeof window === "undefined") return null;
     try {

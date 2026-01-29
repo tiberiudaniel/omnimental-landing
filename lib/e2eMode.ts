@@ -41,6 +41,21 @@ export function isE2EMode(): boolean {
   if (typeof window !== "undefined") {
     if (window.__OMNI_E2E__) return true;
     try {
+      if (typeof document !== "undefined" && document.cookie) {
+        const cookieEntries = document.cookie.split(";").map((entry) => entry.trim());
+        const e2eCookie = cookieEntries.find((entry) => entry.startsWith("omni_e2e="));
+        if (e2eCookie) {
+          const value = e2eCookie.split("=")[1]?.toLowerCase();
+          if (value === "1" || value === "true") {
+            markE2EFlag();
+            return true;
+          }
+        }
+      }
+    } catch {
+      // ignore cookie parsing failures
+    }
+    try {
       const params = new URLSearchParams(window.location.search);
       if ((params.get("e2e") || "").toLowerCase() === "1") {
         markE2EFlag();

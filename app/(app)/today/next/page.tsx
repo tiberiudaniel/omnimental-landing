@@ -72,6 +72,22 @@ function TodayNextPageInner() {
     if (!plan) return null;
     return appendRoundParam(plan.destination, roundParam);
   }, [plan, roundParam]);
+  const runtimeDebugContext = useMemo(
+    () => ({
+      worldId: null,
+      todayPlanVersion: null,
+      runId: null,
+      blockIndex: null,
+      activeBlockKind: null,
+      activeLessonId: null,
+      moduleId: null,
+      extras: {
+        destination: resolvedDestination ?? null,
+        round: roundParam ?? null,
+      },
+    }),
+    [resolvedDestination, roundParam],
+  );
   const trackedPlanRef = useRef<string | null>(null);
   const autoRedirectRef = useRef(false);
 
@@ -167,19 +183,3 @@ export default function TodayNextPage() {
     </Suspense>
   );
 }
-  const runtimeDebugContext = useMemo(
-    () => ({
-      worldId: null,
-      todayPlanVersion: null,
-      runId: null,
-      blockIndex: null,
-      activeBlockKind: null,
-      activeLessonId: null,
-      moduleId: null,
-      extras: {
-        destination: resolvedDestination ?? null,
-        round: roundParam ?? null,
-      },
-    }),
-    [resolvedDestination, roundParam],
-  );

@@ -1707,6 +1707,7 @@ useEffect(() => {
           routeMismatch: false,
           chunkId: hostNode.data.chunkId ?? UNGROUPED_CHUNK_ID,
           portal: null,
+          layer: hostNode.data.layer ?? DEFAULT_NODE_LAYER,
           stepScreen: {
             hostRoutePath,
             stepKey: stepId,
@@ -1876,11 +1877,14 @@ useEffect(() => {
         const connectedToFocus =
           criticalFocusNodeIdSet.has(edge.source) && criticalFocusNodeIdSet.has(edge.target);
         if (!connectedToFocus) {
+          const existingOpacity = workingEdge.style?.opacity ?? 0.4;
+          const numericOpacity =
+            typeof existingOpacity === "number" ? existingOpacity : parseFloat(existingOpacity ?? "0.4") || 0.4;
           workingEdge = {
             ...workingEdge,
             style: {
               ...(workingEdge.style ?? {}),
-              opacity: Math.min(workingEdge.style?.opacity ?? 0.4, 0.4),
+              opacity: Math.min(numericOpacity, 0.4),
             },
           };
         }

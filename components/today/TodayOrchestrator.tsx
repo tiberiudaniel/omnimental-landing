@@ -654,6 +654,36 @@ export default function TodayOrchestrator() {
     },
     [router],
   );
+  const moduleIdForUi =
+    initiationPlanResult?.debug.moduleId ??
+    initiationProgressSnapshot?.moduleId ??
+    ("init_clarity_foundations" as ModuleId);
+  const moduleMeta = INITIATION_MODULES[moduleIdForUi] ?? null;
+  const moduleLessonCount = moduleMeta?.lessonIds.length ?? 0;
+  const completedLessonsCount = initiationProgressSnapshot?.completedLessonIds.length ?? 0;
+  const currentLessonNumber = moduleLessonCount
+    ? Math.min(completedLessonsCount + 1, moduleLessonCount)
+    : null;
+  const runtimeDebugContext = useMemo(() => {
+    const primaryBlock = initiationPlanResult?.blocks?.[0];
+    const activeLessonId =
+      primaryBlock && primaryBlock.kind !== "recall" ? primaryBlock.lesson.meta.lessonId : null;
+    return {
+      worldId: "INITIATION",
+      todayPlanVersion: initiationPlanResult?.plan?.id ?? sessionPlan?.id ?? null,
+      runId,
+      blockIndex: null,
+      activeBlockKind: primaryBlock?.kind ?? null,
+      activeLessonId: activeLessonId ?? null,
+      moduleId: initiationPlanResult?.initiation.moduleId ?? sessionPlan?.moduleId ?? null,
+      extras: {
+        source: sourceParam ?? null,
+        lane: laneParam ?? null,
+        guidedActive: guidedDayOneActive,
+      },
+    };
+  }, [initiationPlanResult, laneParam, runId, sessionPlan, sourceParam, guidedDayOneActive]);
+
   if (guidedDayOneActive) {
     const guidedTitle = sessionPlan?.title ?? "Start clar pentru Ziua 1";
     const guidedSummary = guidedReasonText ?? sessionPlan?.summary ?? undefined;
@@ -748,36 +778,6 @@ export default function TodayOrchestrator() {
   const handleEarnShortcut = () => {
     goToEarnGate("today_hub");
   };
-  const moduleIdForUi =
-    initiationPlanResult?.debug.moduleId ??
-    initiationProgressSnapshot?.moduleId ??
-    ("init_clarity_foundations" as ModuleId);
-  const moduleMeta = INITIATION_MODULES[moduleIdForUi] ?? null;
-  const moduleLessonCount = moduleMeta?.lessonIds.length ?? 0;
-  const completedLessonsCount = initiationProgressSnapshot?.completedLessonIds.length ?? 0;
-  const currentLessonNumber = moduleLessonCount
-    ? Math.min(completedLessonsCount + 1, moduleLessonCount)
-    : null;
-  const runtimeDebugContext = useMemo(() => {
-    const primaryBlock = initiationPlanResult?.blocks?.[0];
-    const activeLessonId =
-      primaryBlock && primaryBlock.kind !== "recall" ? primaryBlock.lesson.meta.lessonId : null;
-    return {
-      worldId: "INITIATION",
-      todayPlanVersion: initiationPlanResult?.plan?.id ?? sessionPlan?.id ?? null,
-      runId,
-      blockIndex: null,
-      activeBlockKind: primaryBlock?.kind ?? null,
-      activeLessonId: activeLessonId ?? null,
-      moduleId: initiationPlanResult?.initiation.moduleId ?? sessionPlan?.moduleId ?? null,
-      extras: {
-        source: sourceParam ?? null,
-        lane: laneParam ?? null,
-        guidedActive: guidedDayOneActive,
-      },
-    };
-  }, [initiationPlanResult, laneParam, runId, sessionPlan, sourceParam, guidedDayOneActive]);
-
   if (!sessionPlan) {
     return (
       <div className="min-h-screen bg-[var(--omni-bg-main)] px-4 py-10 text-center text-[var(--omni-ink)]">

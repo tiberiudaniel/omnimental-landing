@@ -12,16 +12,19 @@ const FORBIDDEN_ON_RUN = [
 
 function guardConsole(page: Page) {
   const firestoreNoise = /FIRESTORE.*INTERNAL (ASSERTION|UNHANDLED) ERROR/i;
+  const firestoreUnavailable = /FirebaseError:\s*\[code=unavailable]/i;
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const text = msg.text();
     if (firestoreNoise.test(text)) return;
+    if (firestoreUnavailable.test(text)) return;
     if (/Download the React DevTools/i.test(text)) return;
     throw new Error(`Console error: ${text}`);
   });
   page.on("pageerror", (error) => {
     const text = error?.message ?? String(error);
     if (firestoreNoise.test(text)) return;
+    if (firestoreUnavailable.test(text)) return;
     throw error;
   });
 }

@@ -87,7 +87,7 @@ const reorderState = (state: WorkflowState, taskId: string, targetId: string | n
 };
 
 const WorkflowBoard = () => {
-  const [boardState, setBoardState] = useState<WorkflowState>(() => emptyWorkflowState());
+  const [boardState, setBoardState] = useState<WorkflowState>(() => loadWorkflowState());
   const skipNextPersistRef = useRef(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -97,10 +97,6 @@ const WorkflowBoard = () => {
   const [dependencyError, setDependencyError] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-
-  useEffect(() => {
-    setBoardState(loadWorkflowState());
-  }, []);
 
   useEffect(() => {
     if (skipNextPersistRef.current) {

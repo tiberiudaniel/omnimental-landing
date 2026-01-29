@@ -166,6 +166,9 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
     () => events24h.filter((event) => event.type === "today_run_completed").length,
     [events24h],
   );
+  const sourceParam = forcedSource ?? searchParams?.get("source");
+  const laneParam = forcedLane ?? searchParams?.get("lane");
+  const guidedLaneActive = isGuidedDayOneLane(sourceParam, laneParam);
   const runtimeDebugContext = useMemo(
     () => ({
       worldId: null,
@@ -215,9 +218,6 @@ export function SessionCompletePageInner({ forcedSource = null, forcedLane = nul
     [isE2E],
   );
 
-  const sourceParam = forcedSource ?? searchParams?.get("source");
-  const laneParam = forcedLane ?? searchParams?.get("lane");
-  const guidedLaneActive = isGuidedDayOneLane(sourceParam, laneParam);
   const isGuestOrAnon = !user || user.isAnonymous || isE2E;
   const guidedDayOneSummaryActive = guidedLaneActive;
   const alreadyDidMicro = hasCompletedGuidedDayOneMicro();

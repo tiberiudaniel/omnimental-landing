@@ -183,10 +183,13 @@ function ParallelEdge(props: ParallelEdgeProps) {
     targetY,
     targetPosition: props.targetPosition,
   });
-  const baseLabel = props.data?.command ?? props.label ?? "";
+  const labelFromProps = props.label;
+  const baseLabel =
+    props.data?.command ??
+    (typeof labelFromProps === "string" || typeof labelFromProps === "number" ? String(labelFromProps) : null);
   const labelParts: string[] = [];
   if (isAutoTrigger) labelParts.push("AUTO");
-  if (baseLabel) labelParts.push(baseLabel);
+  if (typeof baseLabel === "string") labelParts.push(baseLabel);
   if (reasonCode) labelParts.push(reasonCode);
   const label = labelParts.join(" · ");
 
